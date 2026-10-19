@@ -1,0 +1,848 @@
+/* ==========================================================================
+   Finovo AI - Fleet Categories Management (Responsive Luxury Design System)
+   ========================================================================== */
+
+.cat-container {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 clamp(14px, 2.8vw, 32px) 60px;
+  font-family: var(--font-family-sans, "Manrope", sans-serif);
+}
+
+/* Breadcrumb */
+.cat-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: clamp(0.78rem, 1.4vw, 0.85rem);
+  color: #8A7090;
+}
+
+.cat-breadcrumb a {
+  color: #8A7090;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.cat-breadcrumb a:hover {
+  color: #6C1E84;
+}
+
+.cat-breadcrumb-current {
+  color: #1E0432;
+  font-weight: 800;
+}
+
+/* Page Header */
+.cat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.cat-header-title-wrap {
+  flex: 1;
+  min-width: 260px;
+}
+
+.cat-header-title {
+  font-size: clamp(1.45rem, 2.6vw, 2.1rem);
+  font-weight: 800;
+  color: #1E0432;
+  letter-spacing: -0.025em;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+/* Header Description - Responsive fluid font */
+.cat-header-desc {
+  margin: 0;
+  font-size: clamp(0.8125rem, 1.4vw, 0.92rem);
+  color: #66566A;
+  line-height: 1.5;
+  max-width: 700px;
+  word-break: break-word;
+}
+
+.cat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cat-btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background-color: #FFFFFF;
+  border: 1.5px solid #EFEAEF;
+  border-radius: 10px;
+  color: #4A315A;
+  font-size: clamp(0.82rem, 1.4vw, 0.88rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-height: 42px;
+}
+
+.cat-btn-refresh:hover:not(:disabled) {
+  background-color: #FAF8FB;
+  border-color: #DED7E2;
+  color: #1E0432;
+}
+
+.cat-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: #FAB826;
+  border: none;
+  border-radius: 10px;
+  color: #1A0322;
+  font-size: clamp(0.85rem, 1.4vw, 0.9rem);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(250, 184, 38, 0.35);
+  transition: all 0.18s ease;
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.cat-btn-primary:hover {
+  background-color: #F5AE18;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(250, 184, 38, 0.45);
+}
+
+/* KPI Stat Cards Grid */
+.cat-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.cat-kpi-card {
+  background-color: #FFFFFF;
+  border: 1.5px solid #EFEAEF;
+  border-radius: 16px;
+  padding: clamp(14px, 1.8vw, 20px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  min-width: 0;
+}
+
+.cat-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(30, 4, 50, 0.08);
+}
+
+.cat-kpi-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.cat-kpi-label {
+  font-size: clamp(0.68rem, 1.2vw, 0.75rem);
+  font-weight: 700;
+  color: #8A7090;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-kpi-value {
+  font-size: clamp(1.25rem, 2.4vw, 1.65rem);
+  font-weight: 800;
+  color: #1E0432;
+  margin-top: 4px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-kpi-subtext {
+  font-size: clamp(0.72rem, 1.2vw, 0.78rem);
+  color: #66566A;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-kpi-icon {
+  width: clamp(38px, 3.5vw, 46px);
+  height: clamp(38px, 3.5vw, 46px);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+/* Toolbar & Filter Bar */
+.cat-toolbar {
+  background-color: #FFFFFF;
+  border: 1.5px solid #EFEAEF;
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cat-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.cat-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #FAF8FB;
+  border: 1.5px solid #EBE4ED;
+  border-radius: 10px;
+  padding: 0 12px;
+  height: 40px;
+  width: 100%;
+  max-width: 360px;
+  transition: border-color 0.15s ease;
+}
+
+.cat-search-box:focus-within {
+  border-color: #6C1E84;
+  background-color: #FFFFFF;
+}
+
+.cat-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: clamp(0.82rem, 1.4vw, 0.875rem);
+  color: #1E0432;
+  width: 100%;
+}
+
+.cat-search-count {
+  font-size: clamp(0.78rem, 1.3vw, 0.85rem);
+  color: #8A7090;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cat-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cat-sort-wrapper {
+  width: 180px;
+}
+
+.cat-view-toggles {
+  display: flex;
+  background-color: #FAF8FB;
+  border: 1.5px solid #EBE4ED;
+  border-radius: 9px;
+  padding: 2px;
+}
+
+.cat-view-btn {
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #8A7090;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
+}
+
+.cat-view-btn.active {
+  background-color: #FFFFFF;
+  color: #1E0432;
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================================================
+   Table View & Cell Descriptions (Responsive Typography)
+   ========================================================================== */
+
+.cat-table-card {
+  background-color: #FFFFFF;
+  border: 1.5px solid #EFEAEF;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(30, 4, 50, 0.03);
+}
+
+.cat-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cat-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: clamp(0.82rem, 1.3vw, 0.88rem);
+  min-width: 680px;
+}
+
+.cat-table th {
+  padding: 14px 18px;
+  font-weight: 800;
+  color: #1E0432;
+  background-color: #FAF8FB;
+  border-bottom: 1.5px solid #EFEAEF;
+  white-space: nowrap;
+}
+
+.cat-table td {
+  padding: 16px 18px;
+  vertical-align: middle;
+  border-bottom: 1px solid #F5EEF8;
+}
+
+.cat-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.cat-table-row:hover {
+  background-color: #FAF8FB;
+}
+
+/* Category Description in Table - Fluid, beautifully wrapped & sized */
+.cat-table-desc {
+  font-size: clamp(0.78rem, 1.3vw, 0.875rem);
+  line-height: 1.52;
+  color: #5A4761;
+  font-weight: 500;
+  max-width: 380px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Action Buttons */
+.cat-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid;
+}
+
+.cat-action-btn-edit {
+  background-color: #FFFFFF;
+  border-color: #E5DCE8;
+  color: #6C1E84;
+}
+
+.cat-action-btn-edit:hover {
+  background-color: #F5EEF8;
+  border-color: #D1BED6;
+}
+
+.cat-action-btn-delete {
+  background-color: #FEF2F2;
+  border-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.cat-action-btn-delete:hover {
+  background-color: #FEE2E2;
+  border-color: #FECACA;
+}
+
+/* ==========================================================================
+   Grid View & Card Descriptions (Responsive Typography)
+   ========================================================================== */
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.cat-card {
+  background-color: #FFFFFF;
+  border: 1.5px solid #EFEAEF;
+  border-radius: 16px;
+  padding: clamp(16px, 2vw, 20px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(30, 4, 50, 0.08);
+}
+
+.cat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 8px;
+}
+
+.cat-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cat-card-name {
+  margin: 0;
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  font-weight: 800;
+  color: #1E0432;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-card-slug {
+  font-size: clamp(0.72rem, 1.2vw, 0.76rem);
+  color: #8A7090;
+  font-family: monospace;
+  font-weight: 600;
+  display: block;
+}
+
+/* Category Description in Grid Card - Fluid, responsive font size */
+.cat-card-desc {
+  font-size: clamp(0.8125rem, 1.45vw, 0.88rem);
+  color: #5A4761;
+  font-weight: 500;
+  margin: 0 0 16px;
+  line-height: 1.55;
+  min-height: 40px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.cat-card-footer {
+  border-top: 1px solid #F5EEF8;
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cat-card-rate-label {
+  font-size: clamp(0.68rem, 1.1vw, 0.72rem);
+  font-weight: 700;
+  color: #8A7090;
+  text-transform: uppercase;
+}
+
+.cat-card-rate-value {
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  font-weight: 800;
+  color: #1E0432;
+}
+
+.cat-card-rate-unit {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #8A7090;
+}
+
+/* ==========================================================================
+   Modal Dialog (Mobile-Optimized)
+   ========================================================================== */
+
+.cat-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 2, 32, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.cat-modal-dialog {
+  background-color: #FFFFFF;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  box-shadow: 0 24px 60px rgba(20, 2, 32, 0.35);
+  border: 1.5px solid #EFEAEF;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: 0.2s ease-out modalEnter;
+}
+
+.cat-modal-header {
+  padding: clamp(16px, 2.5vw, 20px) clamp(18px, 3vw, 24px);
+  border-bottom: 1.5px solid #F5EEF8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #FAF8FB;
+  flex-shrink: 0;
+}
+
+.cat-modal-body {
+  padding: clamp(16px, 3vw, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cat-modal-footer {
+  padding: 16px clamp(18px, 3vw, 24px);
+  background-color: #FAF8FB;
+  border-top: 1.5px solid #F5EEF8;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cat-modal-desc-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #DED7E2;
+  font-size: clamp(0.825rem, 1.4vw, 0.88rem);
+  color: #1E0432;
+  background-color: #FAF8FB;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: border-color 0.15s ease;
+}
+
+.cat-modal-desc-input:focus {
+  border-color: #6C1E84;
+  background-color: #FFFFFF;
+}
+
+/* ==========================================================================
+   RESPONSIVE MEDIA QUERIES (Mobile, Tablet, Desktop)
+   ========================================================================== */
+
+/* Tablet (1024px and down) */
+@media (max-width: 1024px) {
+  .cat-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile & Small Tablets (768px and down) */
+@media (max-width: 768px) {
+  .cat-container {
+    padding-bottom: 40px;
+  }
+
+  .cat-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .cat-header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 10px;
+  }
+
+  .cat-btn-refresh,
+  .cat-btn-primary {
+    width: 100%;
+  }
+
+  .cat-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .cat-toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .cat-search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .cat-toolbar-right {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .cat-sort-wrapper {
+    flex: 1;
+    max-width: none;
+  }
+
+  .cat-view-toggles {
+    display: none !important;
+  }
+
+  .cat-table-card,
+  .cat-desktop-table-wrap {
+    display: none !important;
+  }
+
+  .cat-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+/* Mobile Phones (480px and down) */
+@media (max-width: 480px) {
+  .cat-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .cat-kpi-card {
+    padding: 12px 14px;
+  }
+
+  .cat-kpi-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .cat-header-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .cat-modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .cat-modal-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   Dual-Mode Table (Desktop Data Table & Mobile Touch Cards)
+   ========================================================================== */
+
+.cat-desktop-table-wrap {
+  display: block;
+}
+
+.cat-mobile-table-list {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .cat-desktop-table-wrap {
+    display: none;
+  }
+
+  .cat-mobile-table-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+}
+
+.cat-mobile-row {
+  background-color: #FFFFFF;
+  border: 1.5px solid #EFEAEF;
+  border-radius: 14px;
+  padding: clamp(12px, 3vw, 16px);
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cat-mobile-row:active {
+  background-color: #FAF8FB;
+}
+
+.cat-mobile-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cat-mobile-row-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cat-mobile-row-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cat-mobile-row-name-group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cat-mobile-row-name {
+  font-size: clamp(0.92rem, 2.2vw, 1.05rem);
+  font-weight: 800;
+  color: #1E0432;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-mobile-row-slug {
+  font-family: monospace;
+  font-size: 0.74rem;
+  color: #6C1E84;
+  background-color: #F4EEF7;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-weight: 600;
+  display: inline-block;
+  width: fit-content;
+}
+
+.cat-mobile-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cat-mobile-row-desc {
+  font-size: clamp(0.8125rem, 1.8vw, 0.88rem);
+  line-height: 1.55;
+  color: #55435B;
+  font-weight: 500;
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.cat-mobile-row-footer {
+  border-top: 1px solid #F5EEF8;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cat-mobile-row-rate {
+  display: flex;
+  flex-direction: column;
+}
+
+.cat-mobile-row-rate-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #8A7090;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cat-mobile-row-rate-val {
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  font-weight: 800;
+  color: #1E0432;
+}
+
+.cat-mobile-row-rate-sub {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #8A7090;
+}
+
+.cat-mobile-row-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  border: 1px solid;
+  transition: all 0.15s ease;
+}
+

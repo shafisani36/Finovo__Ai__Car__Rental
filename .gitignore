@@ -1,0 +1,51 @@
+# ==============================================================================
+# Finovo AI Car Rental — Comprehensive Root Git Ignore
+# ==============================================================================
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production Builds & Output
+dist/
+build/
+*/dist/
+*/build/
+dist-ssr/
+*.tsbuildinfo
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*/.env
+*/.env.*
+!*/.env.example
+
+# Logs & Debug
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & IDE metadata
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp

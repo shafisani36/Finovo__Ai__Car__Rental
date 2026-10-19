@@ -1,0 +1,1579 @@
+/* ==========================================================================
+   FINOVO FLEET ONBOARDING & CAR MANAGEMENT CRUD DESIGN SYSTEM
+   Authoritative Production Stylesheet — Fully Responsive & Token-Aware
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. DESIGN TOKENS & SYSTEM VARIABLES
+-------------------------------------------------------------------------- */
+:root {
+  --finovo-purple-950: #140220;
+  --finovo-purple-900: #1E0432;
+  --finovo-purple-800: #2E0949;
+  --finovo-purple-700: #4A1270;
+  --finovo-purple-600: #6C1E84;
+  --finovo-purple-500: #8B2DB0;
+  --finovo-purple-100: #F5EEF8;
+  --finovo-purple-50:  #FAF6FC;
+
+  --finovo-gold-500: #FAB826;
+  --finovo-gold-600: #E5A417;
+  --finovo-gold-100: #FEF8E7;
+
+  --finovo-bg-canvas: #F7F5F8;
+  --finovo-bg-surface: #FFFFFF;
+  --finovo-bg-subtle: #FAF7FA;
+
+  --finovo-border-subtle: #EFEAEF;
+  --finovo-border-strong: #E0D8E3;
+  --finovo-border-focus: #6C1E84;
+
+  --finovo-text-main: #1E0432;
+  --finovo-text-body: #4A315A;
+  --finovo-text-muted: #8A7090;
+
+  --finovo-success-bg: #ECFDF5;
+  --finovo-success-border: #A7F3D0;
+  --finovo-success-text: #065F46;
+
+  --finovo-error-bg: #FEF2F2;
+  --finovo-error-border: #FECACA;
+  --finovo-error-text: #991B1B;
+
+  --finovo-shadow-sm: 0 1px 3px rgba(30, 4, 50, 0.04);
+  --finovo-shadow-md: 0 4px 16px rgba(30, 4, 50, 0.05);
+  --finovo-shadow-lg: 0 10px 30px rgba(30, 4, 50, 0.08);
+  --finovo-shadow-gold: 0 4px 14px rgba(250, 184, 38, 0.35);
+
+  --finovo-radius-sm: 8px;
+  --finovo-radius-md: 12px;
+  --finovo-radius-lg: 16px;
+  --finovo-radius-xl: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   2. PAGE CONTAINER & LAYOUT FOUNDATIONS
+-------------------------------------------------------------------------- */
+.add-car-page-root,
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: var(--container-admin-max-width, 1400px);
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   3. BREADCRUMBS & HEADER WRAPPER
+-------------------------------------------------------------------------- */
+.add-car-header-wrapper {
+  background-color: #FFFFFF;
+  border-radius: var(--finovo-radius-lg);
+  border: 1.5px solid var(--finovo-border-subtle);
+  box-shadow: var(--finovo-shadow-sm);
+  padding: 22px 28px;
+  box-sizing: border-box;
+}
+
+.add-car-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--finovo-text-muted);
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.add-car-breadcrumb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--finovo-purple-600) !important;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.add-car-breadcrumb-back:hover {
+  transform: translateX(-2px);
+  color: var(--finovo-purple-900) !important;
+}
+
+.breadcrumb-separator {
+  color: var(--finovo-text-muted);
+  font-size: 0.85rem;
+  margin: 0 4px;
+}
+
+.add-car-breadcrumb a {
+  color: var(--finovo-text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.add-car-breadcrumb a:hover {
+  color: var(--finovo-purple-600);
+}
+
+.add-car-breadcrumb .active-crumb {
+  color: var(--finovo-purple-900);
+  font-weight: 800;
+}
+
+/* Quick Catalog Links in Header */
+.add-car-quick-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.quick-links-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--finovo-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.quick-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  background-color: var(--finovo-purple-50);
+  border: 1px solid #ECE7ED;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--finovo-purple-600);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.quick-link-pill:hover {
+  background-color: var(--finovo-purple-100);
+  border-color: var(--finovo-purple-600);
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   4. PAGE HEADER & ACTIONS
+-------------------------------------------------------------------------- */
+.add-car-page-header,
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-text-block {
+  flex: 1;
+  min-width: 280px;
+}
+
+.add-car-page-title,
+.page-title {
+  font-size: clamp(1.4rem, 2.2vw, 1.95rem);
+  font-weight: 800;
+  color: var(--finovo-purple-900);
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.add-car-page-subtitle,
+.page-description {
+  margin: 6px 0 0;
+  color: var(--finovo-text-body);
+  font-size: clamp(0.85rem, 1.1vw, 0.94rem);
+  line-height: 1.5;
+  max-width: 620px;
+}
+
+.fleet-header-actions,
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   5. BUTTON SYSTEM (.btn, .fleet-header-action-btn)
+-------------------------------------------------------------------------- */
+.btn,
+.fleet-header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--finovo-radius-md);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 1;
+  border: none;
+  font-family: inherit;
+  min-height: 42px;
+}
+
+.btn:active,
+.fleet-header-action-btn:active {
+  transform: translateY(1px);
+}
+
+/* Primary / Gold Button */
+.btn-primary,
+.fleet-btn-gold {
+  background-color: var(--finovo-gold-500);
+  color: #1A0322;
+  border: none;
+  font-weight: 800;
+  box-shadow: var(--finovo-shadow-gold);
+}
+
+.btn-primary:hover:not(:disabled),
+.fleet-btn-gold:hover:not(:disabled) {
+  background-color: var(--finovo-gold-600);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(250, 184, 38, 0.48);
+}
+
+.btn-primary:disabled,
+.fleet-btn-gold:disabled {
+  background-color: #E2CA89;
+  color: #66522A;
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Secondary Button (Outlined white) */
+.btn-secondary,
+.fleet-btn-secondary {
+  background-color: #FFFFFF;
+  color: var(--finovo-text-body);
+  border: 1.5px solid var(--finovo-border-subtle);
+  box-shadow: var(--finovo-shadow-sm);
+}
+
+.btn-secondary:hover,
+.fleet-btn-secondary:hover {
+  background-color: #FAF8FB;
+  border-color: var(--finovo-purple-600);
+  color: var(--finovo-purple-900);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 30, 132, 0.08);
+}
+
+/* Neutral Button */
+.btn-neutral,
+.fleet-btn-neutral {
+  background-color: #F8F5F1;
+  color: var(--finovo-text-body);
+  border: 1.5px solid var(--finovo-border-subtle);
+}
+
+.btn-neutral:hover,
+.fleet-btn-neutral:hover {
+  background-color: #ECE7E1;
+  transform: translateY(-1px);
+}
+
+/* Danger Button */
+.btn-danger,
+.fleet-btn-danger {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border: 1.5px solid #FCA5A5;
+}
+
+.btn-danger:hover:not(:disabled),
+.fleet-btn-danger:hover:not(:disabled) {
+  background-color: #FCDCDC;
+  border-color: #EF4444;
+  color: #B91C1C;
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled,
+.fleet-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading button */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* Responsive labels inside buttons */
+.fleet-btn-label .label-short { display: none; }
+.fleet-btn-label .label-full  { display: inline; }
+
+/* --------------------------------------------------------------------------
+   6. KPI OVERVIEW ROW
+-------------------------------------------------------------------------- */
+.car-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.car-kpi-card {
+  background-color: #FFFFFF;
+  border-radius: var(--finovo-radius-lg);
+  padding: 16px 20px;
+  border: 1.5px solid var(--finovo-border-subtle);
+  box-shadow: var(--finovo-shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.car-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--finovo-shadow-md);
+}
+
+.car-kpi-label {
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--finovo-text-muted);
+}
+
+.car-kpi-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--finovo-purple-900);
+  margin-top: 4px;
+  line-height: 1.15;
+}
+
+.car-kpi-meta {
+  font-size: 0.76rem;
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+.car-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--finovo-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   7. ALERTS & NOTIFICATIONS
+-------------------------------------------------------------------------- */
+.add-car-alert {
+  padding: 12px 18px;
+  border-radius: var(--finovo-radius-md);
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+.add-car-alert-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.add-car-alert-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.add-car-alert-dismiss:hover {
+  opacity: 0.7;
+}
+
+.add-car-alert-success {
+  background-color: var(--finovo-success-bg);
+  border: 1.5px solid var(--finovo-success-border);
+  color: var(--finovo-success-text);
+}
+.add-car-alert-success .add-car-alert-dismiss {
+  color: var(--finovo-success-text);
+}
+
+.add-car-alert-error {
+  background-color: var(--finovo-error-bg);
+  border: 1.5px solid var(--finovo-error-border);
+  color: var(--finovo-error-text);
+}
+.add-car-alert-error .add-car-alert-dismiss {
+  color: var(--finovo-error-text);
+}
+
+.add-car-alert-warning {
+  background-color: #FFFBEB;
+  border: 1.5px solid #FCD34D;
+  color: #92400E;
+}
+
+/* --------------------------------------------------------------------------
+   8. MOBILE TAB SWITCHER (For Screens <= 991px)
+-------------------------------------------------------------------------- */
+.car-mobile-segment {
+  display: none;
+  background-color: #FFFFFF;
+  border-radius: var(--finovo-radius-md);
+  padding: 5px;
+  border: 1.5px solid var(--finovo-border-strong);
+  box-shadow: var(--finovo-shadow-sm);
+  gap: 6px;
+}
+
+.car-mobile-seg-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border-radius: var(--finovo-radius-sm);
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--finovo-text-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  min-height: 40px;
+}
+
+.car-mobile-seg-btn.active {
+  background-color: var(--finovo-purple-900);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   9. TWO-COLUMN WORKSPACE GRID
+-------------------------------------------------------------------------- */
+.car-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+.car-form-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.car-preview-pane {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   10. SECTION CARDS (.content-card, .car-card-section)
+-------------------------------------------------------------------------- */
+.car-card-section,
+.content-card {
+  background-color: #FFFFFF;
+  border-radius: var(--finovo-radius-lg);
+  border: 1.5px solid var(--finovo-border-subtle);
+  box-shadow: var(--finovo-shadow-sm);
+  padding: 24px 28px;
+  box-sizing: border-box;
+}
+
+.car-card-header,
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid #F3EEF5;
+  flex-wrap: wrap;
+}
+
+.car-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.car-card-icon-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--finovo-radius-md);
+  background-color: var(--finovo-purple-100);
+  color: var(--finovo-purple-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.car-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--finovo-purple-900);
+  margin: 0;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.car-card-subtitle {
+  font-size: 0.8125rem;
+  color: var(--finovo-text-muted);
+  margin: 3px 0 0;
+  line-height: 1.45;
+}
+
+.car-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   11. FORM SYSTEM (.form-group, .form-control, .form-grid)
+-------------------------------------------------------------------------- */
+.fleet-form-group,
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.fleet-form-label,
+.form-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--finovo-text-body);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.fleet-form-label-required::after,
+.form-label-required::after {
+  content: ' *';
+  color: #EF4444;
+}
+
+.fleet-form-input,
+.fleet-form-select,
+.fleet-form-textarea,
+.form-control,
+.form-select,
+.form-textarea {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--finovo-radius-sm);
+  border: 1.5px solid var(--finovo-border-strong);
+  background-color: var(--finovo-bg-subtle);
+  font-size: 0.9rem;
+  color: var(--finovo-purple-900);
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fleet-form-textarea,
+.form-textarea {
+  height: auto;
+  min-height: 84px;
+  padding: 10px 14px;
+  resize: vertical;
+}
+
+.fleet-form-input::placeholder,
+.fleet-form-select::placeholder,
+.fleet-form-textarea::placeholder,
+.form-control::placeholder,
+.form-select::placeholder,
+.form-textarea::placeholder,
+.add-car-page-root input::placeholder,
+.add-car-page-root textarea::placeholder {
+  font-size: calc(0.9rem - 2px);
+  color: #9D8DA3;
+  opacity: 0.9;
+}
+
+/* No ugly yellow or default blue focus ring! */
+.fleet-form-input:focus,
+.fleet-form-select:focus,
+.fleet-form-textarea:focus,
+.form-control:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--finovo-purple-600);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(108, 30, 132, 0.12);
+  outline: none !important;
+}
+
+.fleet-form-input:disabled,
+.form-control:disabled {
+  background-color: #F1EDF3;
+  color: #9D8DA3;
+  cursor: not-allowed;
+}
+
+.fleet-form-hint,
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--finovo-text-muted);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.fleet-form-error,
+.form-error {
+  font-size: 0.77rem;
+  color: #DC2626;
+  margin-top: 5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Form Row Layouts */
+.car-row-2,
+.form-grid.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.car-row-3,
+.form-grid.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.car-row-4,
+.form-grid.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.car-row-last {
+  margin-bottom: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   12. SPECIALIZED FORM WIDGETS
+-------------------------------------------------------------------------- */
+/* Stepper Counter (+/-) */
+/* Stepper Counter (+/- with direct input, 100% symmetrically centered on X) */
+.car-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 44px;
+  background-color: #FAF8FB;
+  border: 1.5px solid #DED7E2;
+  border-radius: 10px;
+  padding: 3px 4px;
+  box-sizing: border-box;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.car-stepper:hover {
+  background-color: #FFFFFF;
+  border-color: #BCA9C3;
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.04);
+}
+
+.car-stepper:focus-within {
+  background-color: #FFFFFF;
+  border-color: var(--finovo-purple-600);
+  box-shadow: 0 0 0 3.5px rgba(108, 30, 132, 0.14), 0 3px 12px rgba(108, 30, 132, 0.08);
+}
+
+.car-stepper-btn {
+  width: 36px;
+  height: 36px;
+  background-color: #FFFFFF;
+  border: 1px solid #EBE4ED;
+  border-radius: 8px;
+  color: var(--finovo-purple-900);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(30, 4, 50, 0.04);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.car-stepper-btn:hover {
+  background-color: var(--finovo-purple-100);
+  color: var(--finovo-purple-600);
+  border-color: #D2C0D9;
+  transform: translateY(-0.5px) scale(1.05);
+  box-shadow: 0 2px 6px rgba(108, 30, 132, 0.12);
+}
+
+.car-stepper-btn:active {
+  transform: translateY(0.5px) scale(0.96);
+  background-color: #E6DAEB;
+}
+
+.car-stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  background-color: #F5F2F7 !important;
+  color: #B5A7BC !important;
+  border-color: #EAE3ED !important;
+}
+
+.car-stepper-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 4px;
+  cursor: text;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.car-stepper-input {
+  width: auto;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--finovo-purple-900);
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  line-height: 1.2;
+}
+
+.car-stepper-input::-webkit-outer-spin-button,
+.car-stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.car-stepper-unit {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #8A7090;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+
+.car-stepper-type-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--finovo-purple-600);
+  background-color: var(--finovo-purple-100);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* Color Swatches Palette */
+.car-color-swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.car-color-swatch-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+
+.car-color-swatch-btn:hover {
+  transform: scale(1.12);
+}
+
+.car-color-swatch-btn.selected {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--finovo-purple-600);
+}
+
+/* Custom Color Input Wrapper */
+.car-custom-color-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.car-color-picker-input {
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--finovo-border-strong);
+  border-radius: var(--finovo-radius-sm);
+  padding: 2px;
+  background-color: #FFFFFF;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Feature Chips */
+.car-features-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.car-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--finovo-border-subtle);
+  background-color: var(--finovo-bg-subtle);
+  color: var(--finovo-text-body);
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.car-feature-chip:hover {
+  border-color: var(--finovo-purple-600);
+  background-color: #FAF5FC;
+}
+
+.car-feature-chip.selected {
+  background-color: var(--finovo-purple-100);
+  border-color: var(--finovo-purple-600);
+  color: var(--finovo-purple-600);
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   13. LIVE CATALOG PREVIEW CARD (RIGHT COLUMN)
+-------------------------------------------------------------------------- */
+.catalog-preview-card {
+  background-color: #FFFFFF;
+  border-radius: var(--finovo-radius-lg);
+  border: 1.5px solid var(--finovo-border-subtle);
+  box-shadow: var(--finovo-shadow-md);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.catalog-preview-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #ECE7ED;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #FAF9FB;
+}
+
+.catalog-preview-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--finovo-purple-900);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-badge.badge-available {
+  background-color: #DEF7EC;
+  color: #03543F;
+}
+
+.status-badge.badge-rented {
+  background-color: #E1EFFE;
+  color: #1E429F;
+}
+
+.status-badge.badge-maintenance {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.status-badge.badge-reserved {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.status-badge.badge-archived {
+  background-color: #F3F4F6;
+  color: #4B5563;
+}
+
+/* Vehicle Hero Image Container */
+.preview-hero-wrap {
+  position: relative;
+  height: 220px;
+  background-color: var(--finovo-purple-900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.25s ease;
+}
+
+.preview-hero-caption {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background-color: rgba(26, 3, 34, 0.88);
+  color: #FFFFFF;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+}
+
+.preview-arrow-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: rgba(26, 3, 34, 0.7);
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: background-color 0.15s ease;
+}
+
+.preview-arrow-btn:hover {
+  background-color: rgba(26, 3, 34, 0.95);
+}
+
+.preview-arrow-btn.arrow-left { left: 8px; }
+.preview-arrow-btn.arrow-right { right: 8px; }
+
+.preview-dots-row {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 5px;
+}
+
+.preview-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Thumbnail Strip */
+.preview-thumb-strip {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #FAF9FB;
+  border-bottom: 1px solid #ECE7ED;
+  overflow-x: auto;
+}
+
+.preview-thumb-btn {
+  width: 46px;
+  height: 34px;
+  border-radius: 6px;
+  overflow: hidden;
+  padding: 0;
+  background-color: #1A0322;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 1px solid #DED7E2;
+}
+
+.preview-thumb-btn.active {
+  border: 2px solid var(--finovo-purple-600);
+}
+
+.preview-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Card Body */
+.catalog-preview-body {
+  padding: 18px 20px;
+}
+
+.preview-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.preview-badge-category {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--finovo-purple-600);
+  background-color: var(--finovo-purple-100);
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.preview-plate {
+  font-family: monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+  background-color: #F3EEF5;
+  color: var(--finovo-purple-900);
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+
+.preview-car-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--finovo-purple-900);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.preview-car-trim {
+  font-size: 0.8rem;
+  color: var(--finovo-text-muted);
+  margin-top: 2px;
+}
+
+.preview-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  background-color: #FAF8FB;
+  border-radius: var(--finovo-radius-sm);
+}
+
+.preview-spec-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--finovo-text-body);
+}
+
+.preview-price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1.5px solid #F0EAF2;
+}
+
+.preview-rate-amount {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: var(--finovo-purple-900);
+}
+
+.preview-rate-unit {
+  font-size: 0.8rem;
+  color: var(--finovo-text-muted);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   14. COMPLIANCE & READINESS CARD
+-------------------------------------------------------------------------- */
+.compliance-card {
+  background-color: #FFFFFF;
+  border-radius: var(--finovo-radius-lg);
+  border: 1.5px solid var(--finovo-border-subtle);
+  padding: 20px;
+  box-shadow: var(--finovo-shadow-sm);
+}
+
+.compliance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.compliance-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--finovo-purple-900);
+  margin: 0;
+}
+
+.compliance-pct {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.compliance-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background-color: #F3EEF5;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.compliance-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.compliance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.compliance-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+
+/* --------------------------------------------------------------------------
+   15. LOADING & EMPTY STATES
+-------------------------------------------------------------------------- */
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  background-color: #FFFFFF;
+  border-radius: var(--finovo-radius-lg);
+  border: 1.5px solid var(--finovo-border-subtle);
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--finovo-purple-100);
+  border-top-color: var(--finovo-purple-600);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 14px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+   16. AUTHORITATIVE RESPONSIVE BREAKPOINTS
+-------------------------------------------------------------------------- */
+
+/* DESKTOP & WIDE SCREENS (>= 992px): Both columns ALWAYS visible! */
+@media (min-width: 992px) {
+  .car-workspace-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 380px !important;
+  }
+  .car-form-pane,
+  .car-preview-pane {
+    display: flex !important;
+  }
+  .car-mobile-segment {
+    display: none !important;
+  }
+}
+
+/* LAPTOPS & DESKTOPS (<= 1400px): Generous 2-column layout for 4-item rows */
+@media (max-width: 1400px) {
+  .car-row-4,
+  .form-grid.grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px;
+  }
+}
+
+/* MEDIUM SCREENS (1024px - 1200px) */
+@media (max-width: 1200px) and (min-width: 992px) {
+  .car-workspace-grid {
+    grid-template-columns: minmax(0, 1fr) 340px !important;
+    gap: 18px;
+  }
+  .car-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .car-card-section {
+    padding: 22px 24px;
+  }
+}
+
+/* TABLETS & MOBILE (< 992px): Stack with tab switcher */
+@media (max-width: 991px) {
+  .car-mobile-segment {
+    display: flex;
+  }
+  .car-workspace-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .car-preview-pane {
+    position: static;
+  }
+  /* JSX toggles pane-hidden on tablet/mobile only */
+  .car-form-pane.pane-hidden,
+  .car-preview-pane.pane-hidden {
+    display: none !important;
+  }
+  .car-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .car-row-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* MOBILE PHONES (<= 768px) */
+@media (max-width: 768px) {
+  .add-car-page-root,
+  .page-container {
+    gap: 18px;
+  }
+  .add-car-page-title,
+  .page-title {
+    font-size: 1.45rem;
+  }
+  .add-car-page-subtitle,
+  .page-description {
+    font-size: 0.85rem;
+  }
+
+  /* Header action buttons wrap into clean 2-column touch targets */
+  .fleet-header-actions,
+  .page-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .btn,
+  .fleet-header-action-btn {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    min-height: 44px;
+  }
+  .fleet-btn-label .label-full  { display: none; }
+  .fleet-btn-label .label-short { display: inline; }
+
+  /* KPI cards */
+  .car-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .car-kpi-card {
+    padding: 12px 14px;
+  }
+  .car-kpi-value {
+    font-size: 1.15rem;
+  }
+
+  /* Section cards */
+  .car-card-section,
+  .content-card {
+    padding: 16px;
+    border-radius: var(--finovo-radius-md);
+  }
+  .car-card-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  /* All form row grids -> single column */
+  .car-row-2,
+  .car-row-3,
+  .car-row-4,
+  .form-grid.grid-2,
+  .form-grid.grid-3,
+  .form-grid.grid-4 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .preview-spec-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* SMALL PHONES (<= 480px, including 320px, 360px, 375px, 390px, 414px, 430px) */
+@media (max-width: 480px) {
+  .add-car-page-root,
+  .page-container {
+    gap: 14px;
+  }
+  .add-car-page-title,
+  .page-title {
+    font-size: 1.3rem;
+  }
+  .fleet-header-actions {
+    grid-template-columns: 1fr;
+  }
+  .car-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .car-card-section,
+  .content-card {
+    padding: 14px 12px;
+  }
+  .car-mobile-seg-btn {
+    font-size: 0.8rem;
+    padding: 8px 10px;
+  }
+  .car-feature-chip {
+    padding: 6px 11px;
+    font-size: 0.78rem;
+  }
+  .preview-hero-wrap {
+    height: 190px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   17. MOBILE FLOATING ACTION BAR
+-------------------------------------------------------------------------- */
+.car-mobile-floating-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .add-car-page-root {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .car-mobile-floating-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1.5px solid var(--finovo-border-strong);
+    padding: 12px 18px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    box-shadow: 0 -4px 20px rgba(30, 4, 50, 0.08);
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-sizing: border-box;
+  }
+
+  .floating-bar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .floating-bar-readiness {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--finovo-purple-900);
+  }
+
+  .floating-bar-rate {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--finovo-purple-600);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .floating-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .floating-preview-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--finovo-radius-sm);
+    background-color: var(--finovo-purple-50);
+    border: 1px solid var(--finovo-purple-600);
+    color: var(--finovo-purple-600);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: 40px;
+  }
+
+  .floating-submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--finovo-radius-sm);
+    background-color: var(--finovo-gold-500);
+    border: none;
+    color: #1A0322;
+    font-size: 0.84rem;
+    font-weight: 800;
+    box-shadow: var(--finovo-shadow-gold);
+    cursor: pointer;
+    min-height: 40px;
+  }
+}
+
+/* ULTRA-NARROW PHONES (<= 375px, e.g. 320px, 360px, 375px) */
+@media (max-width: 375px) {
+  .car-mobile-floating-bar {
+    padding: 8px 12px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+    gap: 8px;
+  }
+
+  .floating-bar-info {
+    display: none;
+  }
+
+  .floating-bar-actions {
+    width: 100%;
+    display: flex;
+  }
+
+  .floating-preview-btn,
+  .floating-submit-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    min-height: 38px;
+  }
+}

@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300..900;1,300..900&family=Manrope:wght@300..800&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-family-sans);
+  background-color: var(--color-primary-950);
+  color: var(--text-white);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  background-color: #FFFFFF;
+  font-family: var(--font-family-sans);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-family-display);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #6C1E84;
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  outline: none;
+}
+
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none !important;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-gutter);
+  padding-right: var(--container-gutter);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   FINOVO LUXURY GLOBAL CUSTOM SCROLLBAR
+   ========================================================================== */
+
+/* Firefox & Standard CSS */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #C0AFC8 transparent;
+}
+
+/* Chrome, Edge, Safari, Opera */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF7FB;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #CABBCD 0%, #9F8AA8 100%);
+  border-radius: 9999px;
+  border: 2px solid #FAF7FB;
+  transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6C1E84 0%, #3E0E61 100%);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #1E0432;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Compact Scrollbar Utility for Modals, Dropdowns, Cards, Tables, Sidebars */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #D6CADB transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #D6CADB;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6C1E84;
+}
+
+/* Dark surface custom scrollbar (Hero sections, dark modals) */
+.dark-surface,
+[data-theme='dark'] {
+  scrollbar-color: rgba(250, 184, 38, 0.4) transparent;
+}
+
+.dark-surface::-webkit-scrollbar-track,
+[data-theme='dark']::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.dark-surface::-webkit-scrollbar-thumb,
+[data-theme='dark']::-webkit-scrollbar-thumb {
+  background: rgba(250, 184, 38, 0.4);
+  border-radius: 9999px;
+  border: 1px solid rgba(27, 3, 36, 0.8);
+}
+
+.dark-surface::-webkit-scrollbar-thumb:hover,
+[data-theme='dark']::-webkit-scrollbar-thumb:hover {
+  background: #FAB826;
+}
+
+/* Explicitly hide scrollbars inside dropdown menus for clean native touch scrolling */
+.custom-select-options-list {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.custom-select-options-list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
