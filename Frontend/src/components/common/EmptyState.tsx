@@ -1,5 +1,5 @@
-import type { ReactNode, CSSProperties } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { isValidElement, type ReactNode, type CSSProperties, type ComponentType } from 'react';
+import type { LucideIcon, LucideProps } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Layers } from 'lucide-react';
 
@@ -26,11 +26,12 @@ export function EmptyState({
   style = {},
 }: EmptyStateProps) {
   const renderIcon = () => {
-    if (typeof Icon === 'function') {
-      const LucideComp = Icon as LucideIcon;
-      return <LucideComp size={36} />;
+    if (!Icon) return null;
+    if (isValidElement(Icon)) {
+      return Icon;
     }
-    return Icon;
+    const Component = Icon as ComponentType<LucideProps>;
+    return <Component size={36} />;
   };
 
   return (

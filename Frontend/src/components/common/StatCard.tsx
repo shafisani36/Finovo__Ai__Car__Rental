@@ -1,5 +1,5 @@
-import type { ReactNode, CSSProperties } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { isValidElement, type ReactNode, type CSSProperties, type ComponentType } from 'react';
+import type { LucideIcon, LucideProps } from 'lucide-react';
 
 export type StatVariant = 'purple' | 'gold' | 'green' | 'blue' | 'amber' | 'red' | 'gray';
 
@@ -66,11 +66,11 @@ export function StatCard({
 
   const renderIcon = () => {
     if (!Icon) return null;
-    if (typeof Icon === 'function') {
-      const LucideComp = Icon as LucideIcon;
-      return <LucideComp size={22} />;
+    if (isValidElement(Icon)) {
+      return Icon;
     }
-    return Icon;
+    const Component = Icon as ComponentType<LucideProps>;
+    return <Component size={22} />;
   };
 
   return (
