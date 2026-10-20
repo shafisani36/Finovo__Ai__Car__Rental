@@ -11,6 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "tsx src/seed_categories.ts && tsx src/seed_admin.ts",
     "test:auth": "tsx tests/unit/auth.test.ts",
     "test:pricing": "tsx tests/unit/pricing.test.ts",
     "test": "tsx tests/unit/auth.test.ts && tsx tests/unit/pricing.test.ts"

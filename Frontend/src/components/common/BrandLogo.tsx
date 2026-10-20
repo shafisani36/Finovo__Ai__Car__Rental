@@ -1,3 +1,5 @@
+import finovoLogo from '../../assets/finovo-logo.png';
+
 interface BrandLogoProps {
   variant?: 'light' | 'dark';
   size?: 'sm' | 'md' | 'lg';
@@ -12,9 +14,9 @@ export function BrandLogo({
   className = '',
 }: BrandLogoProps) {
   const iconSizes = {
-    sm: 28,
-    md: 36,
-    lg: 46,
+    sm: 30,
+    md: 40,
+    lg: 52,
   };
 
   const textSizes = {
@@ -37,42 +39,25 @@ export function BrandLogo({
         userSelect: 'none',
       }}
     >
-      {/* Official Finovo Emblem SVG - Vector representation of the uploaded logo */}
-      <svg
+      <img
+        src={finovoLogo}
+        alt="Finovo Logo"
         width={iconSizes[size]}
         height={iconSizes[size]}
-        viewBox="0 0 100 100"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-        style={{ flexShrink: 0, display: 'block' }}
-      >
-        {/* Rounded square container */}
-        <rect width="100" height="100" rx="26" fill={isLight ? '#FFFFFF' : '#1A032A'} />
-        
-        {/* Outer angled chevron bracket */}
-        <path
-          d="M26 62V38C26 31.3726 31.3726 26 38 26H52L36 42V62H26Z"
-          fill={isLight ? '#1A032A' : '#FFFFFF'}
-        />
-        
-        {/* Inner parallel angled stripe */}
-        <path
-          d="M44 26H60L36 50V74H46V56L68 34H56L44 26Z"
-          fill={isLight ? '#1A032A' : '#FFFFFF'}
-        />
-
-        {/* Lower interlocking hook */}
-        <path
-          d="M74 38L52 60V74C52 74 68 74 74 68V38Z"
-          fill={isLight ? '#1A032A' : '#FFFFFF'}
-        />
-      </svg>
+        style={{
+          width: `${iconSizes[size]}px`,
+          height: `${iconSizes[size]}px`,
+          borderRadius: size === 'sm' ? '8px' : size === 'md' ? '10px' : '14px',
+          objectFit: 'contain',
+          display: 'block',
+          flexShrink: 0,
+        }}
+      />
 
       {showText && (
         <span
           style={{
-            fontFamily: 'var(--font-family-display)',
+            fontFamily: 'var(--font-family-display, "Archivo", sans-serif)',
             fontSize: textSizes[size],
             fontWeight: 800,
             letterSpacing: '-0.025em',

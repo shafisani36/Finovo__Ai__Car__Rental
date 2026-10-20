@@ -8,3 +8,4 @@ export * from './inspections.api';
 export * from './customers.api';
 export * from './branches.api';
 export * from './admin.api';
+export * from './inquiry.api';

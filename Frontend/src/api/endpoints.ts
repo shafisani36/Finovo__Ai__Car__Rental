@@ -95,9 +95,19 @@ export const API_ENDPOINTS = {
     OVERVIEW: '/dashboard/overview',
   },
 
+  // Public Inquiries
+  INQUIRIES: {
+    SUBMIT: '/inquiries',
+  },
+
   // Admin Operations
   ADMIN: {
     USERS: '/admin/users',
+    USER_BY_ID: (id: string) => `/admin/users/${id}`,
     AUDIT_LOGS: '/admin/audit-logs',
+    INQUIRIES: '/admin/inquiries',
+    INQUIRY_BY_ID: (id: string) => `/admin/inquiries/${id}`,
+    INQUIRY_STATUS: (id: string) => `/admin/inquiries/${id}/status`,
+    INQUIRY_REPLY: (id: string) => `/admin/inquiries/${id}/reply`,
   },
 } as const;

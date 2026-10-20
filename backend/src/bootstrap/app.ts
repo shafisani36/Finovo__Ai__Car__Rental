@@ -13,6 +13,7 @@ import { rentalRouter } from '../api/routes/rental.routes';
 import { inspectionRouter } from '../api/routes/inspection.routes';
 import { customerRouter } from '../api/routes/customer.routes';
 import { branchRouter } from '../api/routes/branch.routes';
+import { inquiryRouter } from '../api/routes/inquiry.routes';
 import { errorHandler } from '../middleware/error-handler';
 
 export function createApp(): Application {
@@ -96,6 +97,7 @@ export function createApp(): Application {
   app.use('/api/v1/inspections', inspectionRouter);
   app.use('/api/v1/customers', customerRouter);
   app.use('/api/v1/branches', branchRouter);
+  app.use('/api/v1/inquiries', inquiryRouter);
 
   // Centralized Error Handler
   app.use(errorHandler);

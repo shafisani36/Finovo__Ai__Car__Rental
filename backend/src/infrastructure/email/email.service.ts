@@ -41,4 +41,15 @@ export class EmailService {
     console.log(`Device: ${userAgent}`);
     console.log('=======================================================================\n');
   }
+
+  /**
+   * Sends an inquiry reply to customer
+   */
+  static async sendInquiryReply(email: string, fullName: string, subject: string, replyMessage: string): Promise<void> {
+    console.log('\n=================== [EMAIL SERVICE: INQUIRY REPLY] ===================');
+    console.log(`To: ${fullName} <${email}>`);
+    console.log(`Subject: Re: ${subject}`);
+    console.log(`Message: \n${replyMessage}`);
+    console.log('=======================================================================\n');
+  }
 }

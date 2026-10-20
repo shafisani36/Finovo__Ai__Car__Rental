@@ -24,6 +24,8 @@ import {
   Globe,
   Layers,
   Tag,
+  MessageSquare,
+  UserCog,
 } from 'lucide-react';
 
 export function AdminLayout() {
@@ -141,6 +143,8 @@ export function AdminLayout() {
               { to: '/admin/calendar', icon: Calendar, label: 'Schedule' },
               { to: '/admin/rentals', icon: KeyRound, label: 'Rentals' },
               { to: '/admin/inspections', icon: ShieldAlert, label: 'AI Inspections' },
+              { to: '/admin/inquiries', icon: MessageSquare, label: 'Inquiries' },
+              { to: '/admin/users', icon: UserCog, label: 'Manage Users' },
               { to: '/admin/customers', icon: Users, label: 'Customers' },
               { to: '/admin/employees', icon: Briefcase, label: 'Staff' },
               { to: '/admin/branches', icon: Building2, label: 'Branches' },
