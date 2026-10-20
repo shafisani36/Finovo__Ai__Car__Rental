@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { BrandLogo } from '../common/BrandLogo';
 import { Button } from '../common/Button';
-import { User, X, Sun, Moon } from 'lucide-react';
+import { User, X, Sun, Moon, Globe, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../features/auth/context';
 
 interface HeaderProps {
@@ -25,27 +26,26 @@ export function Header({ onSignInClick }: HeaderProps) {
     };
   }, [mobileMenuOpen]);
 
+  // Primary customer navigation links in strictly required order:
+  // 1. Home
+  // 2. Cars
+  // 3. Insurance
+  // 4. About Us
+  // 5. AI Inspection
+  // 6. Contact
   const navLinks = [
-    { label: 'Cars', href: '#browse-cars' },
-    { label: 'Categories', href: '#categories' },
-    { label: 'AI Inspection', href: '#ai-inspection' },
-    { label: 'Why Us', href: '#why-us' },
-    { label: 'How It Works', href: '#how-it-works' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'Home', to: '/' },
+    { label: 'Cars', to: '/cars' },
+    { label: 'Insurance', to: '/insurance' },
+    { label: 'About Us', to: '/about' },
+    { label: 'AI Inspection', to: '/ai-inspection' },
+    { label: 'Contact', to: '/contact' },
   ];
-
-  const handleNavClick = (href: string) => {
-    setMobileMenuOpen(false);
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   return (
     <header
       style={{
-        position: 'absolute',
+        position: 'sticky',
         top: 0,
         left: 0,
         right: 0,
@@ -53,7 +53,9 @@ export function Header({ onSignInClick }: HeaderProps) {
         height: 'var(--header-height)',
         display: 'flex',
         alignItems: 'center',
-        backgroundColor: 'transparent',
+        backgroundColor: '#1E0426',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
       }}
     >
       <div
@@ -95,9 +97,9 @@ export function Header({ onSignInClick }: HeaderProps) {
           )}
         </button>
 
-        <a href="#" className="header-brand-logo" aria-label="Finovo Car Rental Homepage" style={{ display: 'inline-flex' }}>
+        <Link to="/" className="header-brand-logo" aria-label="Finovo Car Rental Homepage" style={{ display: 'inline-flex' }}>
           <BrandLogo size="md" variant="light" />
-        </a>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav
@@ -110,34 +112,47 @@ export function Header({ onSignInClick }: HeaderProps) {
           }}
         >
           {navLinks.map((link) => (
-            <a
+            <NavLink
               key={link.label}
-              href={link.href}
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick(link.href);
-              }}
-              style={{
+              to={link.to}
+              style={({ isActive }) => ({
                 fontSize: '0.925rem',
-                fontWeight: 600,
-                color: 'rgba(255, 255, 255, 0.85)',
-                transition: 'color var(--transition-fast)',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? '#FAB826' : 'rgba(255, 255, 255, 0.85)',
+                borderBottom: isActive ? '2px solid #FAB826' : '2px solid transparent',
+                paddingBottom: '3px',
+                transition: 'all var(--transition-fast)',
+                textDecoration: 'none',
                 cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--color-accent-500)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.85)';
-              }}
+              })}
             >
               {link.label}
-            </a>
+            </NavLink>
           ))}
         </nav>
 
         {/* Right side controls */}
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Language selector pill */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 10px',
+              borderRadius: '20px',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              color: 'rgba(255, 255, 255, 0.85)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <Globe size={14} />
+            <span>EN</span>
+            <ChevronDown size={12} />
+          </div>
+
           {/* Dark / Light Pill Switch */}
           <button
             type="button"
@@ -156,12 +171,6 @@ export function Header({ onSignInClick }: HeaderProps) {
               color: '#FFFFFF',
               cursor: 'pointer',
               transition: 'all var(--transition-fast)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.16)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
             }}
           >
             {isDarkMode ? <Moon size={16} /> : <Sun size={16} />}
@@ -186,7 +195,7 @@ export function Header({ onSignInClick }: HeaderProps) {
                 : undefined
             }
           >
-            {isAuthenticated ? user?.fullName?.split(' ')[0] || 'Dashboard' : 'Sign In'}
+            {isAuthenticated ? user?.fullName?.split(' ')[0] || 'My Booking' : 'Login / My Booking'}
           </Button>
 
           {/* Mobile Profile Avatar Button */}
@@ -235,28 +244,27 @@ export function Header({ onSignInClick }: HeaderProps) {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {navLinks.map((link) => (
-              <a
+              <NavLink
                 key={link.label}
-                href={link.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavClick(link.href);
-                }}
-                style={{
+                to={link.to}
+                onClick={() => setMobileMenuOpen(false)}
+                style={({ isActive }) => ({
                   fontSize: '1.25rem',
                   fontWeight: 700,
-                  color: '#FFFFFF',
+                  color: isActive ? '#FAB826' : '#FFFFFF',
                   padding: '14px 12px',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-                }}
+                  textDecoration: 'none',
+                  backgroundColor: isActive ? 'rgba(250, 184, 38, 0.08)' : 'transparent',
+                })}
               >
                 <span>{link.label}</span>
-                <span style={{ color: 'var(--color-accent-500)', fontSize: '1rem' }}>→</span>
-              </a>
+                <span style={{ color: '#FAB826', fontSize: '1rem' }}>→</span>
+              </NavLink>
             ))}
           </div>
 
@@ -267,51 +275,19 @@ export function Header({ onSignInClick }: HeaderProps) {
               fullWidth
               onClick={() => {
                 setMobileMenuOpen(false);
-                const el = document.getElementById('search-form');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              Search & Book a Car
-            </Button>
-            <Button
-              variant="glass"
-              size="md"
-              fullWidth
-              icon={<User size={16} />}
-              iconPosition="left"
-              onClick={() => {
-                setMobileMenuOpen(false);
                 onSignInClick?.();
               }}
+              style={{
+                backgroundColor: '#FAB826',
+                color: '#1C0324',
+                fontWeight: 700,
+              }}
             >
-              {isAuthenticated ? 'Go to Dashboard' : 'Sign In to Account'}
+              {isAuthenticated ? 'Go to Dashboard' : 'Login / My Booking'}
             </Button>
           </div>
         </div>
       )}
-
-      <style>{`
-        @media (max-width: 960px) {
-          .desktop-navigation {
-            display: none !important;
-          }
-          .mobile-toggle-btn {
-            display: inline-flex !important;
-          }
-          .signin-button {
-            display: none !important;
-          }
-          .theme-toggle-btn {
-            display: none !important;
-          }
-          .mobile-profile-btn {
-            display: inline-flex !important;
-          }
-          .header-brand-logo {
-            margin: 0 auto !important;
-          }
-        }
-      `}</style>
     </header>
   );
 }

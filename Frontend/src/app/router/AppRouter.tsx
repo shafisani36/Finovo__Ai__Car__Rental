@@ -8,6 +8,12 @@ import {
 import { RootLayout } from '../layouts/RootLayout';
 import { AdminLayout } from '../layouts/AdminLayout';
 import { HomePage } from '../../features/home/HomePage';
+import { AvailableCarsPage } from '../../pages/customer/AvailableCarsPage';
+import { CarDetailsPage } from '../../pages/customer/CarDetailsPage';
+import { InsurancePage } from '../../pages/customer/InsurancePage';
+import { AboutUsPage } from '../../pages/customer/AboutUsPage';
+import { AiInspectionPage } from '../../pages/customer/AiInspectionPage';
+import { ContactUsPage } from '../../pages/customer/ContactUsPage';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
@@ -47,6 +53,8 @@ import { CustomersListPage } from '../../features/customers/pages/CustomersListP
 import { EmployeesListPage } from '../../features/employees/pages/EmployeesListPage';
 import { BranchesListPage } from '../../features/branches/pages/BranchesListPage';
 import { AuditLogsPage } from '../../features/audit-logs/pages/AuditLogsPage';
+import { InquiriesListPage } from '../../features/inquiries/pages/InquiriesListPage';
+import { UsersManagementPage } from '../../features/users/pages/UsersManagementPage';
 
 export function AppRouter() {
   return (
@@ -56,6 +64,12 @@ export function AppRouter() {
           {/* Main Website Layout */}
           <Route path="/" element={<RootLayout />}>
             <Route index element={<HomePage />} />
+            <Route path="cars" element={<AvailableCarsPage />} />
+            <Route path="cars/:id" element={<CarDetailsPage />} />
+            <Route path="insurance" element={<InsurancePage />} />
+            <Route path="about" element={<AboutUsPage />} />
+            <Route path="ai-inspection" element={<AiInspectionPage />} />
+            <Route path="contact" element={<ContactUsPage />} />
           </Route>
 
           {/* Guest Only Auth Routes */}
@@ -150,6 +164,8 @@ export function AppRouter() {
             <Route path="inspections/:id" element={<InspectionDetailPage />} />
 
             {/* Administration & Directory */}
+            <Route path="inquiries" element={<InquiriesListPage />} />
+            <Route path="users" element={<UsersManagementPage />} />
             <Route path="customers" element={<CustomersListPage />} />
             <Route path="employees" element={<EmployeesListPage />} />
             <Route path="branches" element={<BranchesListPage />} />

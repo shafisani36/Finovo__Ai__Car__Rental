@@ -8,10 +8,6 @@ import {
   Trash2,
   RotateCcw,
   Eye,
-  Mail,
-  User,
-  Phone,
-  Calendar,
 } from 'lucide-react';
 import {
   PageContainer,

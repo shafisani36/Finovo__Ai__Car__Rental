@@ -158,11 +158,11 @@ export function Footer() {
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
-                { label: 'Browse All Cars', href: '#browse-cars' },
-                { label: 'Brand Categories', href: '#categories' },
-                { label: 'AI Inspection Tech', href: '#ai-inspection' },
-                { label: 'Why Choose Finovo', href: '#why-us' },
-                { label: 'How It Works', href: '#how-it-works' },
+                { label: 'Available Cars', href: '/cars' },
+                { label: 'Insurance Protection', href: '/insurance' },
+                { label: 'AI Inspection Tech', href: '/ai-inspection' },
+                { label: 'About Us', href: '/about' },
+                { label: 'Contact Support', href: '/contact' },
                 { label: 'Frequently Asked Questions', href: '#faq' },
               ].map((link) => (
                 <li key={link.label}>
