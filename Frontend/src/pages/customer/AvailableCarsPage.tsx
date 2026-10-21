@@ -24,9 +24,10 @@ import { vehiclesApi } from '../../api/services/vehicles.api';
 import type { Vehicle } from '../../features/fleet/types/fleet.types';
 import './AvailableCarsPage.css';
 
-// Master Visual Assets
+// Master Visual Assets matching Figma Design Specification
 import heroCarImg from '../../assets/cars/finovo-available-hero-car.png';
 import buildingBackdrop from '../../assets/cars/finovo-building.png';
+import cityBackdrop from '../../assets/cars/finovo-city.png';
 import redCar from '../../assets/cars/finovo-red-car.png';
 import grayCar from '../../assets/cars/finovo-gray-car.png';
 import blueCar from '../../assets/cars/finovo-blue-car.png';
@@ -57,9 +58,8 @@ export interface CatalogCar {
   zeroDeposit?: boolean;
 }
 
-// Master 12-Car Collection matching the Master Reference Image
+// Master Fallback Catalog (In sync with MySQL Seeder)
 const MASTER_FLEET: CatalogCar[] = [
-  // Row 1 - Card 1: Wide Hero (Red sports car)
   {
     id: 'car-1',
     name: 'Lamborghini Huracán Evo',
@@ -78,7 +78,6 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 1 - Card 2: Standard (Dark grey sedan)
   {
     id: 'car-2',
     name: 'BMW 520 i',
@@ -96,7 +95,6 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 2 - Card 3: Standard (Blue SUV)
   {
     id: 'car-3',
     name: 'BMW 520 i',
@@ -114,7 +112,6 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 2 - Card 4: Standard (Dark grey sedan)
   {
     id: 'car-4',
     name: 'BMW 520 i',
@@ -132,7 +129,6 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 2 - Card 5: Standard (Silver sedan)
   {
     id: 'car-5',
     name: 'BMW 520 i',
@@ -150,7 +146,6 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 3 - Card 6: Standard (Dark grey sedan)
   {
     id: 'car-6',
     name: 'BMW 520 i',
@@ -168,12 +163,11 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 3 - Card 7: Wide Hero (Yellow sports hatchback)
   {
     id: 'car-7',
     name: 'Lamborghini Focus ST',
     brand: 'Lamborghini',
-    model: 'Performante',
+    model: 'Focus ST',
     year: 2026,
     type: 'Sports',
     fuel: 'Petrol',
@@ -187,12 +181,11 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 4 - Card 8: Wide Hero (Dark green Mini Cooper)
   {
     id: 'car-8',
     name: 'Lamborghini Cooper Works',
     brand: 'Lamborghini',
-    model: 'Sport Edition',
+    model: 'Cooper Works',
     year: 2026,
     type: 'Sports',
     fuel: 'Petrol',
@@ -206,7 +199,6 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Row 4 - Card 9: Standard (Blue SUV)
   {
     id: 'car-9',
     name: 'BMW 520 i',
@@ -224,7 +216,6 @@ const MASTER_FLEET: CatalogCar[] = [
     mileageLimit: '250 km',
     available: true,
   },
-  // Additional vehicles for extended catalog & filters
   {
     id: 'car-10',
     name: 'BMW 740 i Pure Luxury',
@@ -280,7 +271,6 @@ const MASTER_FLEET: CatalogCar[] = [
 ];
 
 export function AvailableCarsPage() {
-
   // Primary State Pipeline
   const [period, setPeriod] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
   const [search, setSearch] = useState('');
@@ -309,7 +299,7 @@ export function AvailableCarsPage() {
   const [endDate, setEndDate] = useState('');
   const [dateDisplay, setDateDisplay] = useState('MM/DD/YYYY - MM/DD/YYYY');
 
-  // Live Backend Data Layer
+  // Live Dynamic Backend Vehicles State Layer
   const [fleet, setFleet] = useState<CatalogCar[]>(MASTER_FLEET);
 
   // Close dropdown on outside click
@@ -326,7 +316,7 @@ export function AvailableCarsPage() {
     };
   }, []);
 
-  // Fetch Live Vehicles from backend API
+  // Fetch Live Vehicles Dynamically from backend API
   useEffect(() => {
     let isMounted = true;
     async function loadVehicles() {
@@ -337,21 +327,30 @@ export function AvailableCarsPage() {
             const isLambo =
               v.brand?.toLowerCase().includes('lambo') ||
               v.model?.toLowerCase().includes('hurac') ||
-              v.model?.toLowerCase().includes('urus');
-            
-            // Asymmetric rhythm for live vehicles: indices 0, 6, 7 are wide heroes
+              v.model?.toLowerCase().includes('urus') ||
+              v.model?.toLowerCase().includes('focus') ||
+              v.model?.toLowerCase().includes('cooper');
+
+            // Exact layout match: indices 0, 6, 7 on page 1 are Hero Wide Cards
             const isWide = isLambo || i === 0 || i === 6 || i === 7;
 
-            // Image selection based on make and color
+            // Intelligent image assignment matching vehicle color and category
             let carImg = grayCar;
-            if (isLambo) {
-              carImg = i % 3 === 0 ? redCar : i % 3 === 1 ? yellowCar : greenCar;
-            } else if (v.category?.name?.toLowerCase().includes('suv')) {
+            const colorLower = (v.color || '').toLowerCase();
+            const catLower = (v.category?.name || '').toLowerCase();
+
+            if (colorLower.includes('red') || i === 0) {
+              carImg = redCar;
+            } else if (colorLower.includes('yellow') || i === 6 || i === 10) {
+              carImg = yellowCar;
+            } else if (colorLower.includes('green') || i === 7) {
+              carImg = greenCar;
+            } else if (colorLower.includes('blue') || catLower.includes('suv') || i === 2 || i === 8) {
               carImg = blueCar;
-            } else if (v.fuelType?.toLowerCase().includes('electric') || v.color?.toLowerCase().includes('white')) {
+            } else if (colorLower.includes('white') || v.fuelType === 'ELECTRIC' || i === 4 || i === 9) {
               carImg = whiteCar;
             } else {
-              carImg = i % 2 === 0 ? grayCar : blueCar;
+              carImg = grayCar;
             }
 
             return {
@@ -361,8 +360,8 @@ export function AvailableCarsPage() {
               model: v.model || '520 i',
               year: v.year || 2026,
               type: v.category?.name || 'Sedan',
-              fuel: v.fuelType || 'Petrol',
-              transmission: v.transmission || 'Automatic',
+              fuel: v.fuelType ? (v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase()) : 'Petrol',
+              transmission: v.transmission ? (v.transmission.charAt(0) + v.transmission.slice(1).toLowerCase()) : 'Automatic',
               seats: v.seats || 5,
               pricePerDay: Number(v.dailyRate || 500),
               isWideHero: isWide,
@@ -376,11 +375,10 @@ export function AvailableCarsPage() {
             };
           });
 
-          // Prepend API vehicles to master showcase fleet
-          setFleet([...apiCars, ...MASTER_FLEET.filter((mf) => !apiCars.some((ac) => ac.id === mf.id))]);
+          setFleet(apiCars);
         }
       } catch (err) {
-        // Fall back gracefully to MASTER_FLEET
+        // Fall back gracefully to MASTER_FLEET if offline
       }
     }
     loadVehicles();
@@ -471,7 +469,6 @@ export function AvailableCarsPage() {
         if (sortOption === 'Price: Low to High') return a.pricePerDay - b.pricePerDay;
         if (sortOption === 'Price: High to Low') return b.pricePerDay - a.pricePerDay;
         if (sortOption === 'Most Popular') return (b.isWideHero ? 1 : 0) - (a.isWideHero ? 1 : 0);
-        // Default: Newest First
         return b.year - a.year;
       });
   }, [
@@ -927,7 +924,7 @@ export function AvailableCarsPage() {
               padding: '70px 20px',
               backgroundColor: '#FFFFFF',
               borderRadius: '26px',
-              border: '1px solid #ECE7F2',
+              border: '2px solid #3B094E',
             }}
           >
             <CarFront size={54} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
@@ -963,101 +960,110 @@ export function AvailableCarsPage() {
             {paginatedCars.map((car, idx) => {
               const displayRate = (car.pricePerDay * rateMultiplier).toFixed(2);
 
-              // Strict visual alignment to master reference:
+              // Strict visual alignment to master Figma reference:
               // Indices 0, 6, 7 on page 1 are Hero Wide Cards
               const isHeroWideCard = car.isWideHero || idx === 0 || idx === 6 || idx === 7;
 
               if (isHeroWideCard) {
                 return (
                   <article key={car.id} className="car-card-hero-wide">
-                    {/* Left Concave Plum Shield */}
-                    <div className="car-card-hero-left">
-                      <div className="car-card-hero-brand-header">
-                        <h3 className="car-card-hero-brand-name">{car.brand}</h3>
-                        <div className="car-card-hero-year">{car.year}</div>
-                        <p className="car-card-hero-tagline">
-                          {car.tagline || 'Unleash extraordinary performance.'}
-                        </p>
+                    {/* Upper Body: Plum left & Beige Building Capsule on right */}
+                    <div className="car-card-hero-body">
+                      {/* Left Plum Content Area */}
+                      <div className="car-card-hero-left-content">
+                        <div>
+                          <h3 className="car-card-hero-brand-name">{car.brand}</h3>
+                          <div className="car-card-hero-year">{car.year}</div>
+                          <p className="car-card-hero-tagline">
+                            {car.tagline || 'Unleash extraordinary performance.'}
+                          </p>
+                        </div>
+
+                        {/* Golden Emblem Badge */}
+                        <div className="car-card-hero-emblem-wrap">
+                          <img
+                            src={car.logo}
+                            alt={`${car.brand} Crest`}
+                            className="car-card-hero-emblem-img"
+                          />
+                        </div>
                       </div>
 
-                      {/* Golden Emblem Badge */}
-                      <div className="car-card-hero-emblem-wrap">
+                      {/* Right Capsule: Beige Stage with Building Silhouette & Car */}
+                      <div className="car-card-hero-capsule-stage">
+                        {/* Watermark Building Silhouette */}
                         <img
-                          src={car.logo}
-                          alt={`${car.brand} Crest`}
-                          className="car-card-hero-emblem-img"
+                          src={buildingBackdrop}
+                          alt="Finovo Urban Architecture"
+                          className="car-card-hero-capsule-backdrop"
                         />
-                      </div>
 
-                      {/* Bottom Specs & Arrow Button */}
-                      <div className="car-card-hero-bottom-bar">
-                        <div className="car-card-spec-item">
-                          <Gauge size={16} className="car-card-spec-icon" />
-                          <div className="car-card-spec-info">
-                            <h5>{car.mileageLimit}</h5>
-                            <p>Mileage</p>
-                          </div>
+                        {/* Available Pill Badge */}
+                        <div className="car-available-pill-badge">
+                          <span>Available</span>
                         </div>
 
-                        <div className="car-card-spec-item">
-                          <Tag size={16} className="car-card-spec-icon" />
-                          <div className="car-card-spec-info">
-                            <h5>SAR {displayRate}</h5>
-                            <p>{periodLabel}</p>
-                          </div>
-                        </div>
-
-                        <Link
-                          to={`/cars/${car.id}`}
-                          className="car-card-circle-arrow-btn"
-                          aria-label={`View details for ${car.name}`}
-                        >
-                          <ChevronRight size={18} />
-                        </Link>
+                        {/* Centered Vehicle Cutout */}
+                        <img
+                          src={car.image}
+                          alt={car.name}
+                          className="car-card-hero-capsule-car"
+                          loading="lazy"
+                        />
                       </div>
                     </div>
 
-                    {/* Right Architectural Showcase Area */}
-                    <div className="car-card-hero-right">
-                      {/* Watermark Building Silhouette */}
-                      <img
-                        src={buildingBackdrop}
-                        alt="Finovo Urban Architecture"
-                        className="car-card-building-backdrop"
-                      />
-
-                      {/* Available Pill */}
-                      <div className="car-card-available-badge">
-                        <span>Available</span>
+                    {/* Wide Card White Footer Bar */}
+                    <div className="car-card-hero-footer-bar">
+                      <div className="car-spec-unit">
+                        <Gauge size={16} className="car-spec-unit-icon" />
+                        <div className="car-spec-unit-text">
+                          <h5>{car.mileageLimit}</h5>
+                          <p>Mileage</p>
+                        </div>
                       </div>
 
-                      {/* Vehicle Cutout with Shadow */}
-                      <img
-                        src={car.image}
-                        alt={car.name}
-                        className="car-card-hero-vehicle-img"
-                        loading="lazy"
-                      />
+                      <div className="car-spec-unit">
+                        <Tag size={16} className="car-spec-unit-icon" />
+                        <div className="car-spec-unit-text">
+                          <h5>SAR {displayRate}</h5>
+                          <p>{periodLabel}</p>
+                        </div>
+                      </div>
+
+                      <Link
+                        to={`/cars/${car.id}`}
+                        className="car-card-circle-arrow-btn"
+                        aria-label={`View details for ${car.name}`}
+                      >
+                        <ChevronRight size={18} />
+                      </Link>
                     </div>
                   </article>
                 );
               }
 
               // Standard Luxury Card (spans 1 col)
+              // Exact Figma match: Twilight City Skyline Header + Organic White Wave Scoop + White Footer
               return (
                 <article key={car.id} className="car-card-standard">
-                  {/* Top Area: Building Backdrop & Centered Vehicle */}
-                  <div className="car-card-standard-top">
+                  {/* Top Area: Twilight City Skyline Stage */}
+                  <div className="car-card-standard-skyline-stage">
                     <img
-                      src={buildingBackdrop}
-                      alt="Finovo Urban Architecture"
-                      className="car-card-building-backdrop"
+                      src={cityBackdrop}
+                      alt="Twilight City Skyline"
+                      className="car-card-standard-skyline-img"
                     />
 
-                    <div className="car-card-available-badge">
+                    {/* Organic White Wave Scoop rising from bottom */}
+                    <div className="car-card-standard-wave-scoop" />
+
+                    {/* Available Pill Badge */}
+                    <div className="car-available-pill-badge">
                       <span>Available</span>
                     </div>
 
+                    {/* Vehicle Cutout with Shadow */}
                     <img
                       src={car.image}
                       alt={car.name}
@@ -1066,35 +1072,33 @@ export function AvailableCarsPage() {
                     />
                   </div>
 
-                  {/* Bottom Area: Brand info, Specs, and Arrow */}
-                  <div className="car-card-standard-bottom">
-                    <div className="car-card-standard-brand-box">
+                  {/* Bottom Area: White Info Bar */}
+                  <div className="car-card-standard-footer-bar">
+                    <div className="car-card-brand-box">
                       <img
                         src={car.logo}
                         alt={car.brand}
-                        className="car-card-standard-logo-img"
+                        className="car-card-brand-logo"
                       />
-                      <div className="car-card-standard-brand-text">
-                        <h4 className="car-card-standard-name">{car.name}</h4>
-                        <div className="car-card-standard-year">{car.year}</div>
+                      <div className="car-card-brand-info">
+                        <h4>{car.name}</h4>
+                        <p>{car.year}</p>
                       </div>
                     </div>
 
-                    <div className="car-card-standard-spec-box">
-                      <div className="car-card-standard-spec-item">
-                        <Gauge size={14} className="car-card-spec-icon" />
-                        <div>
-                          <h5>{car.mileageLimit}</h5>
-                          <p>Mileage</p>
-                        </div>
+                    <div className="car-spec-unit">
+                      <Gauge size={14} className="car-spec-unit-icon" />
+                      <div className="car-spec-unit-text">
+                        <h5>{car.mileageLimit}</h5>
+                        <p>Mileage</p>
                       </div>
+                    </div>
 
-                      <div className="car-card-standard-spec-item">
-                        <Tag size={14} className="car-card-spec-icon" />
-                        <div>
-                          <h5>SAR {displayRate}</h5>
-                          <p>{periodLabel}</p>
-                        </div>
+                    <div className="car-spec-unit">
+                      <Tag size={14} className="car-spec-unit-icon" />
+                      <div className="car-spec-unit-text">
+                        <h5>SAR {displayRate}</h5>
+                        <p>{periodLabel}</p>
                       </div>
                     </div>
 
@@ -1127,7 +1131,7 @@ export function AvailableCarsPage() {
                       />
                     </div>
                     <div className="car-card-list-details">
-                      <div className="car-card-available-badge" style={{ position: 'static', marginBottom: '6px' }}>
+                      <div className="car-available-pill-badge" style={{ position: 'static', marginBottom: '6px' }}>
                         <span>Available</span>
                       </div>
                       <h3>{car.name}</h3>
@@ -1136,18 +1140,18 @@ export function AvailableCarsPage() {
                   </div>
 
                   <div className="car-card-list-specs">
-                    <div className="car-card-spec-item">
-                      <Gauge size={16} color="#22052C" />
-                      <div className="car-card-spec-info">
-                        <h5 style={{ color: '#1C0324' }}>{car.mileageLimit}</h5>
-                        <p style={{ color: '#6B7280' }}>Mileage</p>
+                    <div className="car-spec-unit">
+                      <Gauge size={16} color="#3B094E" />
+                      <div className="car-spec-unit-text">
+                        <h5>{car.mileageLimit}</h5>
+                        <p>Mileage</p>
                       </div>
                     </div>
-                    <div className="car-card-spec-item">
-                      <Users size={16} color="#22052C" />
-                      <div className="car-card-spec-info">
-                        <h5 style={{ color: '#1C0324' }}>{car.seats} Seats</h5>
-                        <p style={{ color: '#6B7280' }}>Capacity</p>
+                    <div className="car-spec-unit">
+                      <Users size={16} color="#3B094E" />
+                      <div className="car-spec-unit-text">
+                        <h5>{car.seats} Seats</h5>
+                        <p>Capacity</p>
                       </div>
                     </div>
                   </div>

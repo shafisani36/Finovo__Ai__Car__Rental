@@ -4,30 +4,29 @@
    ========================================================================== */
 
 :root {
+  --finovo-plum-border: #3B094E;
   --finovo-plum-dark: #1A0322;
-  --finovo-plum-deep: #22052C;
-  --finovo-plum-medium: #2F0A3C;
-  --finovo-plum-gradient: linear-gradient(135deg, #180220 0%, #250630 50%, #350A43 100%);
+  --finovo-plum-deep: #24052E;
+  --finovo-plum-medium: #350843;
+  --finovo-plum-gradient: linear-gradient(135deg, #24052E 0%, #350843 55%, #460B58 100%);
   --finovo-gold: #FAB826;
   --finovo-gold-hover: #E5A315;
   --finovo-gold-glow: rgba(250, 184, 38, 0.28);
   --finovo-bg: #F7F5FA;
   --finovo-card-bg: #FFFFFF;
   --finovo-border: #E8E3EE;
-  --finovo-border-light: #F0EDF5;
   --finovo-text-primary: #1C0324;
   --finovo-text-secondary: #6B7280;
   --finovo-text-muted: #9CA3AF;
   --finovo-green-badge-bg: #E8F9F0;
+  --finovo-green-badge-border: #A7F3D0;
   --finovo-green-badge-text: #057A55;
   --finovo-green-dot: #10B981;
   --finovo-font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --finovo-font-display: 'Archivo', 'Manrope', sans-serif;
   --finovo-font-script: 'Caveat', 'Great Vibes', cursive;
-  --finovo-shadow-soft: 0 10px 30px rgba(28, 3, 36, 0.06);
-  --finovo-shadow-hover: 0 18px 45px rgba(28, 3, 36, 0.12);
-  --finovo-radius-card: 26px;
-  --finovo-radius-pill: 9999px;
+  --finovo-shadow-soft: 0 10px 30px rgba(45, 6, 60, 0.1);
+  --finovo-shadow-hover: 0 18px 45px rgba(45, 6, 60, 0.18);
 }
 
 /* Page Wrapper */
@@ -118,7 +117,6 @@
   max-width: 480px;
 }
 
-/* Hero 3 Feature Badges */
 .cars-hero-badges {
   display: flex;
   flex-wrap: wrap;
@@ -161,7 +159,6 @@
   line-height: 1.2;
 }
 
-/* Hero Car Visual (Right Side) */
 .cars-hero-visual {
   position: absolute;
   top: 0;
@@ -215,7 +212,6 @@
   border: 1px solid var(--finovo-border);
 }
 
-/* Row 1: Search, Frequency, Date */
 .cars-filter-row-top {
   display: flex;
   flex-wrap: wrap;
@@ -273,12 +269,6 @@
   border-radius: 50%;
 }
 
-.cars-search-clear-btn:hover {
-  color: var(--finovo-text-primary);
-  background: #ECE7F2;
-}
-
-/* Frequency Pills */
 .cars-frequency-pill-group {
   display: inline-flex;
   align-items: center;
@@ -310,7 +300,6 @@
   box-shadow: 0 3px 10px rgba(26, 3, 34, 0.2);
 }
 
-/* Date Range Button Box */
 .cars-date-picker-box {
   display: flex;
   align-items: center;
@@ -356,7 +345,6 @@
   line-height: 1;
 }
 
-/* Row 2: Dropdowns and Action Buttons */
 .cars-filter-row-bottom {
   display: flex;
   flex-wrap: wrap;
@@ -424,7 +412,6 @@
   color: var(--finovo-plum-dark);
 }
 
-/* Custom Dropdown Menu */
 .cars-dropdown-menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -442,14 +429,8 @@
 }
 
 @keyframes dropdownSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .cars-dropdown-item {
@@ -481,7 +462,6 @@
   font-weight: 700;
 }
 
-/* More Filters Button */
 .cars-more-filters-btn {
   background: var(--finovo-plum-dark);
   color: #FFFFFF;
@@ -518,7 +498,6 @@
   justify-content: center;
 }
 
-/* Apply Filters Button */
 .cars-apply-filters-btn {
   background: var(--finovo-gold);
   color: #1A0322;
@@ -544,12 +523,8 @@
   box-shadow: 0 6px 18px rgba(250, 184, 38, 0.4);
 }
 
-.cars-apply-filters-btn:active {
-  transform: translateY(0);
-}
-
 /* ==========================================================================
-   3. CATALOG SECTION HEADER (Count, Sort, Grid/List Toggles)
+   3. CATALOG SECTION HEADER
    ========================================================================== */
 .cars-catalog-header {
   display: flex;
@@ -606,10 +581,6 @@
   transition: all 0.2s;
 }
 
-.cars-sort-dropdown:focus {
-  border-color: var(--finovo-plum-deep);
-}
-
 .cars-view-toggle-group {
   display: flex;
   background: #EFEBF4;
@@ -639,12 +610,7 @@
 }
 
 /* ==========================================================================
-   4. LUXURY ASYMMETRIC GRID
-   Pattern:
-   Row 1: [Hero Wide (2 cols)] + [Standard (1 col)]
-   Row 2: [Standard (1 col)] + [Standard (1 col)] + [Standard (1 col)]
-   Row 3: [Standard (1 col)] + [Hero Wide (2 cols)]
-   Row 4: [Hero Wide (2 cols)] + [Standard (1 col)]
+   4. ASYMMETRIC GRID & CARD ARCHITECTURE (EXACT MATCH TO FIGMA)
    ========================================================================== */
 .available-cars-grid {
   display: grid;
@@ -653,182 +619,15 @@
   margin-bottom: 50px;
 }
 
-/* --------------------------------------------------------------------------
-   CARD TYPE A: HERO WIDE CARD (spans 2 columns)
-   -------------------------------------------------------------------------- */
-.car-card-hero-wide {
-  grid-column: span 2;
-  background: #FFFFFF;
-  border-radius: var(--finovo-radius-card);
-  border: 1px solid var(--finovo-border);
-  box-shadow: var(--finovo-shadow-soft);
-  display: flex;
-  position: relative;
-  overflow: hidden;
-  min-height: 270px;
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  text-decoration: none;
-  color: inherit;
-}
-
-.car-card-hero-wide:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--finovo-shadow-hover);
-  border-color: #DDD4E5;
-}
-
-/* Left Section: Deep Plum Concave Shield */
-.car-card-hero-left {
-  flex: 0 0 46%;
-  background: var(--finovo-plum-gradient);
-  color: #FFFFFF;
-  padding: 26px 28px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-  z-index: 2;
-  border-top-left-radius: var(--finovo-radius-card);
-  border-bottom-left-radius: var(--finovo-radius-card);
-  border-top-right-radius: 90px 50%;
-  border-bottom-right-radius: 90px 50%;
-  box-shadow: 4px 0 16px rgba(18, 1, 24, 0.2);
-}
-
-.car-card-hero-brand-header {
-  position: relative;
-}
-
-.car-card-hero-brand-name {
-  font-family: var(--finovo-font-display);
-  font-size: 24px;
-  font-weight: 800;
-  color: #FFFFFF;
-  margin: 0;
-  line-height: 1.15;
-  letter-spacing: -0.3px;
-}
-
-.car-card-hero-year {
-  font-size: 13.5px;
-  color: #D6A8FF;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.car-card-hero-tagline {
-  font-size: 12px;
-  line-height: 1.5;
-  color: #D3C5DF;
-  margin: 8px 0 0 0;
-  max-width: 220px;
-}
-
-/* Emblem Badge */
-.car-card-hero-emblem-wrap {
-  margin: 12px 0 8px 0;
-}
-
-.car-card-hero-emblem-img {
-  height: 48px;
-  max-width: 60px;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
-}
-
-/* Specs & CTA Bar at Bottom of Left Panel */
-.car-card-hero-bottom-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.car-card-spec-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.car-card-spec-icon {
-  color: #D6A8FF;
-}
-
-.car-card-spec-info h5 {
-  margin: 0;
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #FFFFFF;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.car-card-spec-info p {
-  margin: 2px 0 0 0;
-  font-size: 10px;
-  font-weight: 600;
-  color: #BCAEC9;
-  line-height: 1;
-}
-
-.car-card-circle-arrow-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  color: var(--finovo-plum-dark);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.car-card-hero-wide:hover .car-card-circle-arrow-btn,
-.car-card-standard:hover .car-card-circle-arrow-btn {
-  background: var(--finovo-gold);
-  color: #1A0322;
-  transform: translateX(3px) scale(1.05);
-  box-shadow: 0 4px 14px var(--finovo-gold-glow);
-}
-
-/* Right Section: Architectural Background & High-Definition Floating Vehicle */
-.car-card-hero-right {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  overflow: hidden;
-  background: #FAF8FC;
-}
-
-.car-card-building-backdrop {
+/* Common Available Pill Badge */
+.car-available-pill-badge {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.14;
-  pointer-events: none;
-  filter: grayscale(80%) contrast(110%);
-}
-
-.car-card-available-badge {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 5;
+  top: 14px;
+  right: 14px;
+  z-index: 6;
   background: var(--finovo-green-badge-bg);
   color: var(--finovo-green-badge-text);
-  border: 1px solid #B8EBD2;
+  border: 1px solid var(--finovo-green-badge-border);
   border-radius: 20px;
   padding: 4px 10px;
   font-size: 11px;
@@ -839,7 +638,7 @@
   line-height: 1;
 }
 
-.car-card-available-badge::before {
+.car-available-pill-badge::before {
   content: '';
   display: inline-block;
   width: 6px;
@@ -849,157 +648,317 @@
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
-.car-card-hero-vehicle-img {
-  position: relative;
-  z-index: 3;
-  max-width: 96%;
-  max-height: 175px;
-  object-fit: contain;
-  filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.16));
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+/* Common Spec Unit */
+.car-spec-unit {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
-.car-card-hero-wide:hover .car-card-hero-vehicle-img {
-  transform: scale(1.04) translateY(-3px);
+.car-spec-unit-icon {
+  color: var(--finovo-plum-border);
+}
+
+.car-spec-unit-text h5 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--finovo-text-primary);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.car-spec-unit-text p {
+  margin: 2px 0 0 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #8C8299;
+  line-height: 1;
+}
+
+/* Common Circular Arrow Button */
+.car-card-circle-arrow-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: var(--finovo-plum-border);
+  border: 1.5px solid var(--finovo-plum-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.car-card-hero-wide:hover .car-card-circle-arrow-btn,
+.car-card-standard:hover .car-card-circle-arrow-btn {
+  background: var(--finovo-plum-border);
+  color: var(--finovo-gold);
+  border-color: var(--finovo-plum-border);
+  transform: translateX(3px) scale(1.06);
+  box-shadow: 0 4px 14px rgba(59, 9, 78, 0.3);
 }
 
 /* --------------------------------------------------------------------------
-   CARD TYPE B: STANDARD LUXURY CARD (spans 1 column)
+   CARD TYPE A: MASTER WIDE HERO CARD (spans 2 columns)
+   Exact match: Plum left & top + Beige Building Capsule on right + White Footer
    -------------------------------------------------------------------------- */
-.car-card-standard {
-  grid-column: span 1;
+.car-card-hero-wide {
+  grid-column: span 2;
+  border: 2px solid var(--finovo-plum-border);
+  border-radius: 40px;
   background: #FFFFFF;
-  border-radius: var(--finovo-radius-card);
-  border: 1px solid var(--finovo-border);
+  position: relative;
+  overflow: hidden;
   box-shadow: var(--finovo-shadow-soft);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
-  overflow: hidden;
-  min-height: 270px;
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 290px;
   text-decoration: none;
   color: inherit;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.car-card-hero-wide:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--finovo-shadow-hover);
+}
+
+/* Upper Body: Plum left & Beige Capsule right */
+.car-card-hero-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  background: var(--finovo-plum-gradient);
+  min-height: 215px;
+  overflow: hidden;
+}
+
+/* Left Content Area */
+.car-card-hero-left-content {
+  flex: 0 0 42%;
+  padding: 24px 26px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 3;
+}
+
+.car-card-hero-brand-name {
+  font-family: var(--finovo-font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.3px;
+}
+
+.car-card-hero-year {
+  font-size: 13px;
+  color: #D6A8FF;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.car-card-hero-tagline {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #D8CADF;
+  margin: 8px 0 0 0;
+  max-width: 200px;
+}
+
+.car-card-hero-emblem-wrap {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.car-card-hero-emblem-img {
+  height: 48px;
+  max-width: 58px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+/* Right Capsule: Beige Stage with Building Silhouette & Car */
+.car-card-hero-capsule-stage {
+  flex: 1;
+  position: relative;
+  margin: 10px 10px 10px 0;
+  border-radius: 120px 32px 32px 40px;
+  background: #EFE8DE;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.car-card-hero-capsule-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.18;
+  filter: grayscale(80%);
+  pointer-events: none;
+}
+
+.car-card-hero-capsule-car {
+  position: relative;
+  z-index: 2;
+  max-width: 90%;
+  max-height: 160px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.22));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.car-card-hero-wide:hover .car-card-hero-capsule-car {
+  transform: scale(1.05) translateY(-2px);
+}
+
+/* Wide Card White Footer Bar */
+.car-card-hero-footer-bar {
+  background: #FFFFFF;
+  padding: 14px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #ECE7F2;
+  gap: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   CARD TYPE B: MASTER STANDARD LUXURY CARD (spans 1 column)
+   Exact match: Twilight City Skyline Header + Organic White Wave Scoop + White Footer
+   -------------------------------------------------------------------------- */
+.car-card-standard {
+  grid-column: span 1;
+  border: 2px solid var(--finovo-plum-border);
+  border-radius: 36px;
+  background: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--finovo-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 290px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .car-card-standard:hover {
   transform: translateY(-4px);
   box-shadow: var(--finovo-shadow-hover);
-  border-color: #DDD4E5;
 }
 
-/* Top Area: Architectural Backdrop & Centered Floating Car */
-.car-card-standard-top {
+/* Top Area: Twilight City Skyline with Lit Buildings */
+.car-card-standard-skyline-stage {
   position: relative;
-  height: 185px;
+  height: 200px;
+  background: var(--finovo-plum-gradient);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #FAF8FC;
-  overflow: hidden;
-  padding: 16px;
+}
+
+.car-card-standard-skyline-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.42;
+  mix-blend-mode: luminosity;
+  pointer-events: none;
+}
+
+/* Organic White Wave Scoop rising from bottom of skyline */
+.car-card-standard-wave-scoop {
+  position: absolute;
+  bottom: -2px;
+  left: -5%;
+  width: 110%;
+  height: 85px;
+  background: #FFFFFF;
+  border-top-left-radius: 50% 36px;
+  border-top-right-radius: 50% 24px;
+  z-index: 1;
 }
 
 .car-card-standard-vehicle-img {
   position: relative;
   z-index: 3;
-  max-width: 90%;
+  max-width: 88%;
   max-height: 140px;
   object-fit: contain;
-  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.14));
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 15px;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.25));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .car-card-standard:hover .car-card-standard-vehicle-img {
   transform: scale(1.05) translateY(-2px);
 }
 
-/* Bottom Area: Brand info, Specs, and Arrow */
-.car-card-standard-bottom {
-  padding: 18px 20px 20px;
+/* Bottom White Info Section */
+.car-card-standard-footer-bar {
   background: #FFFFFF;
+  padding: 12px 18px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+  z-index: 2;
   border-top: 1px solid #F3EEF8;
 }
 
-.car-card-standard-brand-box {
+.car-card-brand-box {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1 1 auto;
+  gap: 8px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
-.car-card-standard-logo-img {
-  width: 32px;
-  height: 32px;
+.car-card-brand-logo {
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
-.car-card-standard-brand-text {
-  min-width: 0;
-}
-
-.car-card-standard-name {
+.car-card-brand-info h4 {
+  margin: 0;
   font-family: var(--finovo-font-display);
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 800;
   color: var(--finovo-text-primary);
-  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
-.car-card-standard-year {
-  font-size: 11px;
-  color: var(--finovo-text-secondary);
+.car-card-brand-info p {
   margin: 2px 0 0 0;
-  line-height: 1;
-}
-
-.car-card-standard-spec-box {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-shrink: 0;
-}
-
-.car-card-standard-spec-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.car-card-standard-spec-item .car-card-spec-icon {
-  color: var(--finovo-plum-dark);
-}
-
-.car-card-standard-spec-item h5 {
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 800;
-  color: var(--finovo-text-primary);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.car-card-standard-spec-item p {
-  margin: 2px 0 0 0;
-  font-size: 9.5px;
-  font-weight: 600;
-  color: #7D7388;
+  font-size: 10px;
+  color: #8C8299;
   line-height: 1;
 }
 
 /* ==========================================================================
-   5. LIST VIEW (When List toggle is clicked)
+   5. LIST VIEW
    ========================================================================== */
 .available-cars-list {
   display: flex;
@@ -1011,7 +970,7 @@
 .car-card-list-item {
   background: #FFFFFF;
   border-radius: 20px;
-  border: 1px solid var(--finovo-border);
+  border: 2px solid var(--finovo-plum-border);
   box-shadow: var(--finovo-shadow-soft);
   display: flex;
   align-items: center;
@@ -1026,7 +985,6 @@
 .car-card-list-item:hover {
   transform: translateY(-2px);
   box-shadow: var(--finovo-shadow-hover);
-  border-color: #DDD4E5;
 }
 
 .car-card-list-left {
@@ -1150,7 +1108,6 @@
   line-height: 1.2;
 }
 
-/* Pagination Control */
 .cars-pagination {
   display: inline-flex;
   align-items: center;
@@ -1195,7 +1152,6 @@
   font-weight: 700;
 }
 
-/* Right Tagline */
 .cars-footer-tagline {
   text-align: right;
 }
@@ -1217,7 +1173,7 @@
 }
 
 /* ==========================================================================
-   7. MORE FILTERS MODAL (ADVANCED CRITERIA)
+   7. MORE FILTERS MODAL
    ========================================================================== */
 .cars-modal-overlay {
   position: fixed;
@@ -1345,10 +1301,6 @@
   padding: 8px 16px;
 }
 
-.cars-modal-reset-btn:hover {
-  color: var(--finovo-plum-dark);
-}
-
 .cars-modal-apply-btn {
   background: var(--finovo-plum-dark);
   color: #FFFFFF;
@@ -1359,10 +1311,6 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.cars-modal-apply-btn:hover {
-  background: var(--finovo-plum-medium);
 }
 
 /* ==========================================================================
@@ -1476,33 +1424,35 @@
   /* Strict Single Column on Mobile */
   .available-cars-grid {
     grid-template-columns: 1fr !important;
-    gap: 18px;
+    gap: 20px;
   }
 
   .car-card-hero-wide {
     grid-column: span 1 !important;
-    flex-direction: column;
-    min-height: auto;
   }
 
-  .car-card-hero-left {
+  .car-card-hero-body {
+    flex-direction: column;
+  }
+
+  .car-card-hero-left-content {
     flex: none;
     width: 100%;
-    border-radius: var(--finovo-radius-card) var(--finovo-radius-card) 0 0;
     box-sizing: border-box;
-    padding: 22px 20px;
+    padding: 22px 20px 10px;
   }
 
-  .car-card-hero-right {
-    min-height: 180px;
-    padding: 16px;
+  .car-card-hero-capsule-stage {
+    margin: 10px;
+    height: 180px;
+    border-radius: 40px;
   }
 
   .car-card-standard {
     grid-column: span 1 !important;
   }
 
-  .car-card-standard-bottom {
+  .car-card-standard-footer-bar {
     flex-wrap: wrap;
     gap: 10px;
   }
