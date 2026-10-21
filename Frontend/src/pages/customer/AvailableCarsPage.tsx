@@ -1,20 +1,32 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
-  CalendarDays,
+  X,
+  ChevronRight,
+  ChevronDown,
+  Calendar,
   CarFront,
+  CalendarDays,
+  Globe,
+  SlidersHorizontal,
   Grid2X2,
   List,
-  ChevronRight,
-  Globe,
+  Leaf,
+  Gauge,
+  Tag,
+  Check,
+  RotateCcw,
+  Users,
+  Sparkles,
 } from 'lucide-react';
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import type { Vehicle } from '../../features/fleet/types/fleet.types';
+import './AvailableCarsPage.css';
 
-// Assets
-import heroImg from '../../assets/cars/finovo-hero.png';
+// Master Visual Assets
+import heroCarImg from '../../assets/cars/finovo-available-hero-car.png';
+import buildingBackdrop from '../../assets/cars/finovo-building.png';
 import redCar from '../../assets/cars/finovo-red-car.png';
 import grayCar from '../../assets/cars/finovo-gray-car.png';
 import blueCar from '../../assets/cars/finovo-blue-car.png';
@@ -24,7 +36,7 @@ import greenCar from '../../assets/cars/finovo-green-car.png';
 import bmwLogo from '../../assets/cars/finovo-bmw-logo.png';
 import lamboLogo from '../../assets/cars/finovo-lamborghini-logo.png';
 
-interface CatalogCar {
+export interface CatalogCar {
   id: string;
   name: string;
   brand: string;
@@ -35,13 +47,19 @@ interface CatalogCar {
   transmission: string;
   seats: number;
   pricePerDay: number;
-  featured?: boolean;
+  isWideHero?: boolean;
+  tagline?: string;
   image: string;
   logo: string;
   mileageLimit: string;
+  available: boolean;
+  unlimitedMileage?: boolean;
+  zeroDeposit?: boolean;
 }
 
-const DEFAULT_FLEET: CatalogCar[] = [
+// Master 12-Car Collection matching the Master Reference Image
+const MASTER_FLEET: CatalogCar[] = [
+  // Row 1 - Card 1: Wide Hero (Red sports car)
   {
     id: 'car-1',
     name: 'Lamborghini Huracán Evo',
@@ -53,75 +71,180 @@ const DEFAULT_FLEET: CatalogCar[] = [
     transmission: 'Automatic',
     seats: 2,
     pricePerDay: 1000,
-    featured: true,
+    isWideHero: true,
+    tagline: 'Unleash extraordinary performance.',
     image: redCar,
     logo: lamboLogo,
-    mileageLimit: '250 km/day',
+    mileageLimit: '250 km',
+    available: true,
   },
+  // Row 1 - Card 2: Standard (Dark grey sedan)
   {
     id: 'car-2',
-    name: 'BMW 520i M Sport',
+    name: 'BMW 520 i',
     brand: 'BMW',
-    model: '520i',
+    model: '520 i',
     year: 2026,
     type: 'Sedan',
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 5,
     pricePerDay: 500,
+    isWideHero: false,
     image: grayCar,
     logo: bmwLogo,
-    mileageLimit: '300 km/day',
+    mileageLimit: '250 km',
+    available: true,
   },
+  // Row 2 - Card 3: Standard (Blue SUV)
   {
     id: 'car-3',
-    name: 'BMW X5 xDrive40i',
+    name: 'BMW 520 i',
     brand: 'BMW',
-    model: 'X5',
+    model: '520 i',
     year: 2026,
     type: 'SUV',
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 550,
+    pricePerDay: 500,
+    isWideHero: false,
     image: blueCar,
     logo: bmwLogo,
-    mileageLimit: '300 km/day',
+    mileageLimit: '250 km',
+    available: true,
   },
+  // Row 2 - Card 4: Standard (Dark grey sedan)
   {
     id: 'car-4',
-    name: 'BMW 740i Pure Luxury',
+    name: 'BMW 520 i',
     brand: 'BMW',
-    model: '740i',
+    model: '520 i',
+    year: 2026,
+    type: 'Sedan',
+    fuel: 'Petrol',
+    transmission: 'Automatic',
+    seats: 5,
+    pricePerDay: 500,
+    isWideHero: false,
+    image: grayCar,
+    logo: bmwLogo,
+    mileageLimit: '250 km',
+    available: true,
+  },
+  // Row 2 - Card 5: Standard (Silver sedan)
+  {
+    id: 'car-5',
+    name: 'BMW 520 i',
+    brand: 'BMW',
+    model: '520 i',
+    year: 2026,
+    type: 'Sedan',
+    fuel: 'Hybrid',
+    transmission: 'Automatic',
+    seats: 5,
+    pricePerDay: 500,
+    isWideHero: false,
+    image: whiteCar,
+    logo: bmwLogo,
+    mileageLimit: '250 km',
+    available: true,
+  },
+  // Row 3 - Card 6: Standard (Dark grey sedan)
+  {
+    id: 'car-6',
+    name: 'BMW 520 i',
+    brand: 'BMW',
+    model: '520 i',
+    year: 2026,
+    type: 'Sedan',
+    fuel: 'Petrol',
+    transmission: 'Automatic',
+    seats: 5,
+    pricePerDay: 500,
+    isWideHero: false,
+    image: grayCar,
+    logo: bmwLogo,
+    mileageLimit: '250 km',
+    available: true,
+  },
+  // Row 3 - Card 7: Wide Hero (Yellow sports hatchback)
+  {
+    id: 'car-7',
+    name: 'Lamborghini Focus ST',
+    brand: 'Lamborghini',
+    model: 'Performante',
+    year: 2026,
+    type: 'Sports',
+    fuel: 'Petrol',
+    transmission: 'Automatic',
+    seats: 4,
+    pricePerDay: 1000,
+    isWideHero: true,
+    tagline: 'Unleash extraordinary performance.',
+    image: yellowCar,
+    logo: lamboLogo,
+    mileageLimit: '250 km',
+    available: true,
+  },
+  // Row 4 - Card 8: Wide Hero (Dark green Mini Cooper)
+  {
+    id: 'car-8',
+    name: 'Lamborghini Cooper Works',
+    brand: 'Lamborghini',
+    model: 'Sport Edition',
+    year: 2026,
+    type: 'Sports',
+    fuel: 'Petrol',
+    transmission: 'Automatic',
+    seats: 4,
+    pricePerDay: 1000,
+    isWideHero: true,
+    tagline: 'Unleash extraordinary performance.',
+    image: greenCar,
+    logo: lamboLogo,
+    mileageLimit: '250 km',
+    available: true,
+  },
+  // Row 4 - Card 9: Standard (Blue SUV)
+  {
+    id: 'car-9',
+    name: 'BMW 520 i',
+    brand: 'BMW',
+    model: '520 i',
+    year: 2026,
+    type: 'SUV',
+    fuel: 'Petrol',
+    transmission: 'Automatic',
+    seats: 5,
+    pricePerDay: 500,
+    isWideHero: false,
+    image: blueCar,
+    logo: bmwLogo,
+    mileageLimit: '250 km',
+    available: true,
+  },
+  // Additional vehicles for extended catalog & filters
+  {
+    id: 'car-10',
+    name: 'BMW 740 i Pure Luxury',
+    brand: 'BMW',
+    model: '740 i',
     year: 2026,
     type: 'Sedan',
     fuel: 'Electric',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 600,
+    pricePerDay: 650,
+    isWideHero: false,
     image: whiteCar,
     logo: bmwLogo,
-    mileageLimit: 'Unlimited',
+    mileageLimit: '300 km',
+    available: true,
   },
   {
-    id: 'car-5',
-    name: 'Lamborghini Revuelto V12',
-    brand: 'Lamborghini',
-    model: 'Revuelto',
-    year: 2026,
-    type: 'Sports',
-    fuel: 'Hybrid',
-    transmission: 'Automatic',
-    seats: 2,
-    pricePerDay: 1200,
-    featured: true,
-    image: yellowCar,
-    logo: lamboLogo,
-    mileageLimit: '250 km/day',
-  },
-  {
-    id: 'car-6',
-    name: 'Lamborghini Urus Performante',
+    id: 'car-11',
+    name: 'Lamborghini Urus S',
     brand: 'Lamborghini',
     model: 'Urus',
     year: 2026,
@@ -129,55 +252,135 @@ const DEFAULT_FLEET: CatalogCar[] = [
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 1100,
-    featured: true,
-    image: greenCar,
+    pricePerDay: 1200,
+    isWideHero: true,
+    tagline: 'Extraordinary luxury in every terrain.',
+    image: yellowCar,
     logo: lamboLogo,
-    mileageLimit: '300 km/day',
+    mileageLimit: '300 km',
+    available: true,
+  },
+  {
+    id: 'car-12',
+    name: 'BMW M4 Competition',
+    brand: 'BMW',
+    model: 'M4',
+    year: 2026,
+    type: 'Sports',
+    fuel: 'Petrol',
+    transmission: 'Automatic',
+    seats: 4,
+    pricePerDay: 800,
+    isWideHero: false,
+    image: grayCar,
+    logo: bmwLogo,
+    mileageLimit: '250 km',
+    available: true,
   },
 ];
 
 export function AvailableCarsPage() {
-  const { t } = useTranslation();
+
+  // Primary State Pipeline
   const [period, setPeriod] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
   const [search, setSearch] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('All Brands');
   const [selectedType, setSelectedType] = useState('All Types');
-  const [priceRange, setPriceRange] = useState('Any Price');
+  const [selectedPriceRange, setSelectedPriceRange] = useState('Any Price');
+  const [selectedTransmission, setSelectedTransmission] = useState('Any');
+  const [selectedFuel, setSelectedFuel] = useState('Any');
   const [sortOption, setSortOption] = useState('Newest First');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [liveCars, setLiveCars] = useState<CatalogCar[]>(DEFAULT_FLEET);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 9;
 
-  // Fetch live available vehicles from backend, mapping into catalog items
+  // Dropdown Open State Management
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // More Filters Modal
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const [selectedSeats, setSelectedSeats] = useState<string>('Any');
+  const [zeroDepositOnly, setZeroDepositOnly] = useState<boolean>(false);
+  const [unlimitedMileageOnly, setUnlimitedMileageOnly] = useState<boolean>(false);
+
+  // Date Range State
+  const [dateModalOpen, setDateModalOpen] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [dateDisplay, setDateDisplay] = useState('MM/DD/YYYY - MM/DD/YYYY');
+
+  // Live Backend Data Layer
+  const [fleet, setFleet] = useState<CatalogCar[]>(MASTER_FLEET);
+
+  // Close dropdown on outside click
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Fetch Live Vehicles from backend API
   useEffect(() => {
     let isMounted = true;
     async function loadVehicles() {
       try {
-        const res = await vehiclesApi.list({ status: 'AVAILABLE', limit: 50 });
+        const res = await vehiclesApi.list({ limit: 100 });
         if (res?.vehicles && res.vehicles.length > 0 && isMounted) {
-          const mapped: CatalogCar[] = res.vehicles.map((v: Vehicle, i: number) => {
-            const isLambo = v.brand?.toLowerCase().includes('lambo') || v.model?.toLowerCase().includes('hurac');
+          const apiCars: CatalogCar[] = res.vehicles.map((v: Vehicle, i: number) => {
+            const isLambo =
+              v.brand?.toLowerCase().includes('lambo') ||
+              v.model?.toLowerCase().includes('hurac') ||
+              v.model?.toLowerCase().includes('urus');
+            
+            // Asymmetric rhythm for live vehicles: indices 0, 6, 7 are wide heroes
+            const isWide = isLambo || i === 0 || i === 6 || i === 7;
+
+            // Image selection based on make and color
+            let carImg = grayCar;
+            if (isLambo) {
+              carImg = i % 3 === 0 ? redCar : i % 3 === 1 ? yellowCar : greenCar;
+            } else if (v.category?.name?.toLowerCase().includes('suv')) {
+              carImg = blueCar;
+            } else if (v.fuelType?.toLowerCase().includes('electric') || v.color?.toLowerCase().includes('white')) {
+              carImg = whiteCar;
+            } else {
+              carImg = i % 2 === 0 ? grayCar : blueCar;
+            }
+
             return {
               id: v.id,
               name: `${v.brand} ${v.model}`,
-              brand: v.brand,
-              model: v.model,
+              brand: v.brand || 'BMW',
+              model: v.model || '520 i',
               year: v.year || 2026,
               type: v.category?.name || 'Sedan',
               fuel: v.fuelType || 'Petrol',
               transmission: v.transmission || 'Automatic',
               seats: v.seats || 5,
               pricePerDay: Number(v.dailyRate || 500),
-              featured: isLambo,
-              image: isLambo ? (i % 2 === 0 ? redCar : yellowCar) : (i % 2 === 0 ? grayCar : blueCar),
+              isWideHero: isWide,
+              tagline: isWide ? 'Unleash extraordinary performance.' : undefined,
+              image: carImg,
               logo: isLambo ? lamboLogo : bmwLogo,
-              mileageLimit: v.mileageLimitPerDay ? `${v.mileageLimitPerDay} km/day` : '300 km/day',
+              mileageLimit: v.mileageLimitPerDay ? `${v.mileageLimitPerDay} km` : '250 km',
+              available: v.status === 'AVAILABLE',
+              zeroDeposit: false,
+              unlimitedMileage: !v.mileageLimitPerDay,
             };
           });
-          setLiveCars(mapped);
+
+          // Prepend API vehicles to master showcase fleet
+          setFleet([...apiCars, ...MASTER_FLEET.filter((mf) => !apiCars.some((ac) => ac.id === mf.id))]);
         }
       } catch (err) {
-        // Fallback to DEFAULT_FLEET on offline / network error
+        // Fall back gracefully to MASTER_FLEET
       }
     }
     loadVehicles();
@@ -186,297 +389,529 @@ export function AvailableCarsPage() {
     };
   }, []);
 
-  const multiplier = period === 'Weekly' ? 7 : period === 'Monthly' ? 30 : 1;
+  // Multiplier for rental frequency
+  const rateMultiplier = useMemo(() => {
+    if (period === 'Weekly') return 7 * 0.9; // 10% discount for weekly
+    if (period === 'Monthly') return 30 * 0.75; // 25% discount for monthly
+    return 1;
+  }, [period]);
 
+  const periodLabel = useMemo(() => {
+    if (period === 'Weekly') return 'Weekly Fee';
+    if (period === 'Monthly') return 'Monthly Fee';
+    return 'Daily Fee';
+  }, [period]);
+
+  // Extract available brands and types dynamically from fleet
+  const brandOptions = useMemo(() => {
+    const brands = Array.from(new Set(fleet.map((c) => c.brand)));
+    return ['All Brands', ...brands];
+  }, [fleet]);
+
+  const typeOptions = useMemo(() => {
+    const types = Array.from(new Set(fleet.map((c) => c.type)));
+    return ['All Types', ...types];
+  }, [fleet]);
+
+  const priceOptions = ['Any Price', 'SAR 500 or less', 'SAR 500–1,000', 'Above SAR 1,000'];
+  const transmissionOptions = ['Any', 'Automatic', 'Manual'];
+  const fuelOptions = ['Any', 'Petrol', 'Electric', 'Hybrid', 'Diesel'];
+
+  // Advanced Multi-Stage Filtering & Sorting Pipeline
   const filteredCars = useMemo(() => {
-    return liveCars.filter((car) => {
-      const matchSearch =
-        search === '' ||
-        car.name.toLowerCase().includes(search.toLowerCase()) ||
-        car.brand.toLowerCase().includes(search.toLowerCase());
-      const matchBrand = selectedBrand === 'All Brands' || car.brand.toLowerCase() === selectedBrand.toLowerCase();
-      const matchType = selectedType === 'All Types' || car.type.toLowerCase() === selectedType.toLowerCase();
+    return fleet
+      .filter((car) => {
+        // 1. Search Query
+        if (search.trim() !== '') {
+          const query = search.toLowerCase();
+          const matchName = car.name.toLowerCase().includes(query);
+          const matchBrand = car.brand.toLowerCase().includes(query);
+          const matchModel = car.model.toLowerCase().includes(query);
+          const matchType = car.type.toLowerCase().includes(query);
+          if (!matchName && !matchBrand && !matchModel && !matchType) return false;
+        }
 
-      let matchPrice = true;
-      if (priceRange === 'SAR 500 or less') matchPrice = car.pricePerDay <= 500;
-      if (priceRange === 'SAR 500–1,000') matchPrice = car.pricePerDay > 500 && car.pricePerDay <= 1000;
-      if (priceRange === 'Above SAR 1,000') matchPrice = car.pricePerDay > 1000;
+        // 2. Brand Filter
+        if (selectedBrand !== 'All Brands' && car.brand.toLowerCase() !== selectedBrand.toLowerCase()) {
+          return false;
+        }
 
-      return matchSearch && matchBrand && matchType && matchPrice;
-    }).sort((a, b) => {
-      if (sortOption === 'Price: Low to High') return a.pricePerDay - b.pricePerDay;
-      if (sortOption === 'Price: High to Low') return b.pricePerDay - a.pricePerDay;
-      return b.year - a.year;
-    });
-  }, [liveCars, search, selectedBrand, selectedType, priceRange, sortOption]);
+        // 3. Vehicle Type Filter
+        if (selectedType !== 'All Types' && car.type.toLowerCase() !== selectedType.toLowerCase()) {
+          return false;
+        }
+
+        // 4. Price Filter
+        if (selectedPriceRange === 'SAR 500 or less' && car.pricePerDay > 500) return false;
+        if (selectedPriceRange === 'SAR 500–1,000' && (car.pricePerDay <= 500 || car.pricePerDay > 1000)) return false;
+        if (selectedPriceRange === 'Above SAR 1,000' && car.pricePerDay <= 1000) return false;
+
+        // 5. Transmission
+        if (selectedTransmission !== 'Any' && car.transmission.toLowerCase() !== selectedTransmission.toLowerCase()) {
+          return false;
+        }
+
+        // 6. Fuel Type
+        if (selectedFuel !== 'Any' && car.fuel.toLowerCase() !== selectedFuel.toLowerCase()) {
+          return false;
+        }
+
+        // 7. Extended Filters (Seats, Mileage, Deposit)
+        if (selectedSeats !== 'Any') {
+          if (selectedSeats === '2 Seats' && car.seats !== 2) return false;
+          if (selectedSeats === '4-5 Seats' && car.seats < 4) return false;
+          if (selectedSeats === '7+ Seats' && car.seats < 7) return false;
+        }
+        if (zeroDepositOnly && !car.zeroDeposit) return false;
+        if (unlimitedMileageOnly && !car.unlimitedMileage) return false;
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortOption === 'Price: Low to High') return a.pricePerDay - b.pricePerDay;
+        if (sortOption === 'Price: High to Low') return b.pricePerDay - a.pricePerDay;
+        if (sortOption === 'Most Popular') return (b.isWideHero ? 1 : 0) - (a.isWideHero ? 1 : 0);
+        // Default: Newest First
+        return b.year - a.year;
+      });
+  }, [
+    fleet,
+    search,
+    selectedBrand,
+    selectedType,
+    selectedPriceRange,
+    selectedTransmission,
+    selectedFuel,
+    selectedSeats,
+    zeroDepositOnly,
+    unlimitedMileageOnly,
+    sortOption,
+  ]);
+
+  // Pagination Slice
+  const totalPages = Math.max(1, Math.ceil(filteredCars.length / pageSize));
+  const paginatedCars = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCars.slice(start, start + pageSize);
+  }, [filteredCars, currentPage]);
+
+  // Active filters count for badge
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedBrand !== 'All Brands') count++;
+    if (selectedType !== 'All Types') count++;
+    if (selectedPriceRange !== 'Any Price') count++;
+    if (selectedTransmission !== 'Any') count++;
+    if (selectedFuel !== 'Any') count++;
+    if (selectedSeats !== 'Any') count++;
+    if (zeroDepositOnly) count++;
+    if (unlimitedMileageOnly) count++;
+    if (search.trim() !== '') count++;
+    return count;
+  }, [
+    selectedBrand,
+    selectedType,
+    selectedPriceRange,
+    selectedTransmission,
+    selectedFuel,
+    selectedSeats,
+    zeroDepositOnly,
+    unlimitedMileageOnly,
+    search,
+  ]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedBrand('All Brands');
+    setSelectedType('All Types');
+    setSelectedPriceRange('Any Price');
+    setSelectedTransmission('Any');
+    setSelectedFuel('Any');
+    setSelectedSeats('Any');
+    setZeroDepositOnly(false);
+    setUnlimitedMileageOnly(false);
+    setCurrentPage(1);
+  };
+
+  const handleApplyDates = () => {
+    if (startDate && endDate) {
+      setDateDisplay(`${startDate} - ${endDate}`);
+    } else {
+      setDateDisplay('MM/DD/YYYY - MM/DD/YYYY');
+    }
+    setDateModalOpen(false);
+  };
 
   return (
-    <div style={{ backgroundColor: '#F9F8FA', minHeight: '100vh', color: '#1E0426', fontFamily: 'var(--font-family-sans, "Manrope", sans-serif)' }}>
-      {/* Hero Banner */}
-      <section
-        style={{
-          position: 'relative',
-          backgroundColor: '#1E0426',
-          color: '#FFFFFF',
-          padding: '50px 6% 60px',
-          overflow: 'hidden',
-        }}
-      >
-        <img
-          src={heroImg}
-          alt="Finovo Available Fleet"
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '60%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.85,
-            clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)',
-          }}
-        />
+    <div className="available-cars-page">
+      {/* 1. HERO SHOWCASE BANNER */}
+      <div className="cars-hero-wrapper">
+        <section className="cars-hero-card" aria-label="Available Luxury Cars Banner">
+          {/* Left Content Area */}
+          <div className="cars-hero-content">
+            <p className="cars-hero-tagline">EXTRAORDINARY CARS. MEMORABLE JOURNEYS.</p>
+            <h1 className="cars-hero-title">Available Cars</h1>
+            <p className="cars-hero-subtitle">
+              Find your perfect drive from our premium collection of world-class vehicles.
+            </p>
 
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: '600px' }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', color: '#FAB826', textTransform: 'uppercase', marginBottom: '8px' }}>
-            EXTRAORDINARY CARS · MEMORABLE JOURNEYS
-          </p>
-          <h1 style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.15, marginBottom: '14px' }}>
-            Available Cars
-          </h1>
-          <p style={{ fontSize: '15px', lineHeight: 1.6, opacity: 0.9, marginBottom: '28px' }}>
-            Find your perfect drive from our curated collection of world-class sedans, SUVs, and exotics.
-          </p>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ padding: '8px', borderRadius: '50%', backgroundColor: 'rgba(250, 184, 38, 0.15)', color: '#FAB826' }}>
-                <CarFront size={18} />
-              </span>
-              <div>
-                <p style={{ fontWeight: 700, fontSize: '13px', margin: 0 }}>Premium Fleet</p>
-                <p style={{ fontSize: '11px', opacity: 0.8, margin: 0 }}>Latest 2025/2026 models</p>
+            {/* 3 Value Badges */}
+            <div className="cars-hero-badges">
+              <div className="cars-hero-badge-item">
+                <div className="cars-hero-badge-icon">
+                  <CarFront size={18} />
+                </div>
+                <div className="cars-hero-badge-text">
+                  <h4>Premium Fleet</h4>
+                  <p>Latest Models</p>
+                </div>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ padding: '8px', borderRadius: '50%', backgroundColor: 'rgba(250, 184, 38, 0.15)', color: '#FAB826' }}>
-                <CalendarDays size={18} />
-              </span>
-              <div>
-                <p style={{ fontWeight: 700, fontSize: '13px', margin: 0 }}>Flexible Rental</p>
-                <p style={{ fontSize: '11px', opacity: 0.8, margin: 0 }}>Daily, Weekly, Monthly</p>
+              <div className="cars-hero-badge-item">
+                <div className="cars-hero-badge-icon">
+                  <CalendarDays size={18} />
+                </div>
+                <div className="cars-hero-badge-text">
+                  <h4>Flexible Rental</h4>
+                  <p>Daily, Weekly, Monthly</p>
+                </div>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ padding: '8px', borderRadius: '50%', backgroundColor: 'rgba(250, 184, 38, 0.15)', color: '#FAB826' }}>
-                <Globe size={18} />
-              </span>
-              <div>
-                <p style={{ fontWeight: 700, fontSize: '13px', margin: 0 }}>Trusted Service</p>
-                <p style={{ fontSize: '11px', opacity: 0.8, margin: 0 }}>Free 24hr cancellation</p>
+              <div className="cars-hero-badge-item">
+                <div className="cars-hero-badge-icon">
+                  <Globe size={18} />
+                </div>
+                <div className="cars-hero-badge-text">
+                  <h4>Trusted Worldwide</h4>
+                  <p>Thousands of Happy Customers</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Filter Bar */}
-      <section style={{ maxWidth: '1240px', margin: '-30px auto 40px', padding: '0 24px', position: 'relative', zIndex: 5 }}>
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '20px',
-            padding: '24px 28px',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
-            border: '1px solid #ECEAEF',
-          }}
-        >
-          {/* Top row: Search + Period pills */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          {/* Right Visual Area with Chevrolet Camaro Cutout */}
+          <div className="cars-hero-visual">
+            <img
+              src={heroCarImg}
+              alt="Finovo Master Purple Camaro Fleet"
+              className="cars-hero-car-img"
+              loading="eager"
+            />
+            {/* Cursive Signature Tagline */}
+            <span className="cars-hero-handwritten-tag">More Than a Ride</span>
+          </div>
+        </section>
+      </div>
+
+      {/* 2. FLOATING LUXURY FILTER & SEARCH CARD */}
+      <div className="available-cars-container cars-filter-bar-wrapper" ref={dropdownRef}>
+        <div className="cars-filter-card">
+          {/* Top Row: Search Input + Frequency Toggle + Date Range */}
+          <div className="cars-filter-row-top">
             {/* Search Input */}
-            <div style={{ flex: '1 1 300px', position: 'relative' }}>
-              <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: '#9CA3AF' }} />
+            <div className="cars-search-input-box">
+              <Search size={18} className="cars-search-icon" />
               <input
                 type="text"
-                placeholder="Search for your dream car by make or model..."
+                className="cars-search-input"
+                placeholder="Search for your dream car..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '11px 16px 11px 40px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  fontSize: '14px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
                 }}
               />
+              {search && (
+                <button
+                  type="button"
+                  className="cars-search-clear-btn"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
-            {/* Period selector */}
-            <div style={{ display: 'inline-flex', backgroundColor: '#F3F4F6', borderRadius: '12px', padding: '4px' }}>
-              {(['Daily', 'Weekly', 'Monthly'] as const).map((p) => (
+            {/* Rental Duration Frequency Segmented Tabs */}
+            <div className="cars-frequency-pill-group" role="tablist" aria-label="Rental frequency">
+              {(['Daily', 'Weekly', 'Monthly'] as const).map((freq) => (
                 <button
-                  key={p}
+                  key={freq}
                   type="button"
-                  onClick={() => setPeriod(p)}
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '10px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: 'pointer',
-                    backgroundColor: period === p ? '#1E0426' : 'transparent',
-                    color: period === p ? '#FAB826' : '#4B5563',
-                    transition: 'all 0.2s',
-                  }}
+                  role="tab"
+                  aria-selected={period === freq}
+                  className={`cars-frequency-btn ${period === freq ? 'active' : ''}`}
+                  onClick={() => setPeriod(freq)}
                 >
-                  {p}
+                  {period === freq && <Sparkles size={13} color="#FAB826" />}
+                  <span>{freq}</span>
                 </button>
               ))}
             </div>
+
+            {/* Date Range Quick Selector */}
+            <div
+              className="cars-date-picker-box"
+              onClick={() => setDateModalOpen(true)}
+              role="button"
+              tabIndex={0}
+              aria-label="Select rental dates"
+            >
+              <Calendar size={18} className="cars-date-picker-icon" />
+              <div className="cars-date-picker-info">
+                <span className="cars-date-picker-label">Date Range</span>
+                <span className="cars-date-picker-value">{dateDisplay}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Bottom row: Dropdown filters */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+          {/* Bottom Row: Dropdown Filters & Action Buttons */}
+          <div className="cars-filter-row-bottom">
             {/* Brand Dropdown */}
-            <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#6B7280', marginBottom: '4px' }}>BRAND</label>
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '13px', outline: 'none' }}
-              >
-                <option>All Brands</option>
-                <option>BMW</option>
-                <option>Lamborghini</option>
-                <option>Mercedes-Benz</option>
-                <option>Porsche</option>
-                <option>Audi</option>
-              </select>
-            </div>
-
-            {/* Vehicle Type */}
-            <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#6B7280', marginBottom: '4px' }}>VEHICLE TYPE</label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '13px', outline: 'none' }}
-              >
-                <option>All Types</option>
-                <option>Sedan</option>
-                <option>SUV</option>
-                <option>Sports</option>
-                <option>Hatchback</option>
-              </select>
-            </div>
-
-            {/* Price Range */}
-            <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#6B7280', marginBottom: '4px' }}>PRICE RANGE</label>
-              <select
-                value={priceRange}
-                onChange={(e) => setPriceRange(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '13px', outline: 'none' }}
-              >
-                <option>Any Price</option>
-                <option>SAR 500 or less</option>
-                <option>SAR 500–1,000</option>
-                <option>Above SAR 1,000</option>
-              </select>
-            </div>
-
-            {/* Reset Filters */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', paddingTop: '18px' }}>
+            <div className="cars-dropdown-container">
               <button
                 type="button"
-                onClick={() => {
-                  setSearch('');
-                  setSelectedBrand('All Brands');
-                  setSelectedType('All Types');
-                  setPriceRange('Any Price');
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#6B7280',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  padding: '10px',
-                }}
+                className={`cars-dropdown-trigger ${openDropdown === 'brand' ? 'open' : ''}`}
+                onClick={() => setOpenDropdown(openDropdown === 'brand' ? null : 'brand')}
               >
-                {t('common.actions.reset')}
+                <div>
+                  <span className="cars-dropdown-label">Brand</span>
+                  <span className="cars-dropdown-value">{selectedBrand}</span>
+                </div>
+                <ChevronDown size={14} className="cars-dropdown-arrow" />
               </button>
+
+              {openDropdown === 'brand' && (
+                <div className="cars-dropdown-menu">
+                  {brandOptions.map((brand) => (
+                    <button
+                      key={brand}
+                      type="button"
+                      className={`cars-dropdown-item ${selectedBrand === brand ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedBrand(brand);
+                        setOpenDropdown(null);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <span>{brand}</span>
+                      {selectedBrand === brand && <Check size={14} color="#FAB826" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Catalog Grid Section */}
-      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 24px' }}>
-        {/* Results Count & View Toggles */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#1E0426', margin: 0 }}>
-              {filteredCars.length} Cars Available
-            </h2>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: '4px 0 0' }}>
-              Select a vehicle to inspect complete specifications, options, and instant checkout.
-            </p>
-          </div>
+            {/* Vehicle Type Dropdown */}
+            <div className="cars-dropdown-container">
+              <button
+                type="button"
+                className={`cars-dropdown-trigger ${openDropdown === 'type' ? 'open' : ''}`}
+                onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
+              >
+                <div>
+                  <span className="cars-dropdown-label">Vehicle Type</span>
+                  <span className="cars-dropdown-value">{selectedType}</span>
+                </div>
+                <ChevronDown size={14} className="cars-dropdown-arrow" />
+              </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* Sort Dropdown */}
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '10px',
-                border: '1px solid #E5E7EB',
-                fontSize: '12px',
-                outline: 'none',
-                backgroundColor: '#FFFFFF',
+              {openDropdown === 'type' && (
+                <div className="cars-dropdown-menu">
+                  {typeOptions.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`cars-dropdown-item ${selectedType === type ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedType(type);
+                        setOpenDropdown(null);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <span>{type}</span>
+                      {selectedType === type && <Check size={14} color="#FAB826" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Price Range Dropdown */}
+            <div className="cars-dropdown-container">
+              <button
+                type="button"
+                className={`cars-dropdown-trigger ${openDropdown === 'price' ? 'open' : ''}`}
+                onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
+              >
+                <div>
+                  <span className="cars-dropdown-label">Price Range</span>
+                  <span className="cars-dropdown-value">{selectedPriceRange}</span>
+                </div>
+                <ChevronDown size={14} className="cars-dropdown-arrow" />
+              </button>
+
+              {openDropdown === 'price' && (
+                <div className="cars-dropdown-menu">
+                  {priceOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      className={`cars-dropdown-item ${selectedPriceRange === opt ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedPriceRange(opt);
+                        setOpenDropdown(null);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <span>{opt}</span>
+                      {selectedPriceRange === opt && <Check size={14} color="#FAB826" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Transmission Dropdown */}
+            <div className="cars-dropdown-container">
+              <button
+                type="button"
+                className={`cars-dropdown-trigger ${openDropdown === 'transmission' ? 'open' : ''}`}
+                onClick={() => setOpenDropdown(openDropdown === 'transmission' ? null : 'transmission')}
+              >
+                <div>
+                  <span className="cars-dropdown-label">Transmission</span>
+                  <span className="cars-dropdown-value">{selectedTransmission}</span>
+                </div>
+                <ChevronDown size={14} className="cars-dropdown-arrow" />
+              </button>
+
+              {openDropdown === 'transmission' && (
+                <div className="cars-dropdown-menu">
+                  {transmissionOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      className={`cars-dropdown-item ${selectedTransmission === opt ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedTransmission(opt);
+                        setOpenDropdown(null);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <span>{opt}</span>
+                      {selectedTransmission === opt && <Check size={14} color="#FAB826" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Fuel Type Dropdown */}
+            <div className="cars-dropdown-container">
+              <button
+                type="button"
+                className={`cars-dropdown-trigger ${openDropdown === 'fuel' ? 'open' : ''}`}
+                onClick={() => setOpenDropdown(openDropdown === 'fuel' ? null : 'fuel')}
+              >
+                <div>
+                  <span className="cars-dropdown-label">Fuel Type</span>
+                  <span className="cars-dropdown-value">{selectedFuel}</span>
+                </div>
+                <ChevronDown size={14} className="cars-dropdown-arrow" />
+              </button>
+
+              {openDropdown === 'fuel' && (
+                <div className="cars-dropdown-menu">
+                  {fuelOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      className={`cars-dropdown-item ${selectedFuel === opt ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedFuel(opt);
+                        setOpenDropdown(null);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <span>{opt}</span>
+                      {selectedFuel === opt && <Check size={14} color="#FAB826" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* More Filters Button */}
+            <button
+              type="button"
+              className="cars-more-filters-btn"
+              onClick={() => setMoreFiltersOpen(true)}
+            >
+              <SlidersHorizontal size={15} />
+              <span>More Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="cars-active-filter-badge">{activeFiltersCount}</span>
+              )}
+            </button>
+
+            {/* Apply / Reset Action Button */}
+            <button
+              type="button"
+              className="cars-apply-filters-btn"
+              onClick={() => {
+                setOpenDropdown(null);
+                setCurrentPage(1);
               }}
             >
-              <option>Newest First</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-            </select>
+              <span>Apply Filters</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
 
-            {/* Grid / List Toggles */}
-            <div style={{ display: 'flex', backgroundColor: '#E5E7EB', borderRadius: '8px', padding: '2px' }}>
+      {/* 3. MAIN CATALOG SECTION */}
+      <main className="available-cars-container">
+        {/* Header Row: Results Count, Sort, Grid/List Toggles */}
+        <div className="cars-catalog-header">
+          <div className="cars-catalog-count-box">
+            <h2>{filteredCars.length} Cars Available</h2>
+            <p>Premium vehicles for every journey</p>
+          </div>
+
+          <div className="cars-catalog-controls">
+            {/* Sort Dropdown */}
+            <div className="cars-sort-selector-box">
+              <span className="cars-sort-label">Sort by:</span>
+              <select
+                className="cars-sort-dropdown"
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+              >
+                <option>Newest First</option>
+                <option>Price: Low to High</option>
+                <option>Price: High to Low</option>
+                <option>Most Popular</option>
+              </select>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="cars-view-toggle-group" role="group" aria-label="View layout switch">
               <button
                 type="button"
+                className={`cars-view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
                 onClick={() => setViewMode('grid')}
-                style={{
-                  padding: '6px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: viewMode === 'grid' ? '#FFFFFF' : 'transparent',
-                  cursor: 'pointer',
-                }}
-                aria-label="Grid view"
+                aria-label="Grid layout view"
               >
                 <Grid2X2 size={16} />
               </button>
               <button
                 type="button"
+                className={`cars-view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
                 onClick={() => setViewMode('list')}
-                style={{
-                  padding: '6px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: viewMode === 'list' ? '#FFFFFF' : 'transparent',
-                  cursor: 'pointer',
-                }}
-                aria-label="List view"
+                aria-label="List layout view"
               >
                 <List size={16} />
               </button>
@@ -484,164 +919,493 @@ export function AvailableCarsPage() {
           </div>
         </div>
 
-        {/* Cars List */}
+        {/* 4. CARS CATALOG: ASYMMETRIC GRID OR LIST */}
         {filteredCars.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px', backgroundColor: '#FFFFFF', borderRadius: '20px' }}>
-            <CarFront size={48} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#1E0426' }}>No vehicles match your criteria</h3>
-            <p style={{ fontSize: '14px', color: '#6B7280', marginTop: '6px' }}>
-              Try loosening your search terms or clearing the selected filters.
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '70px 20px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '26px',
+              border: '1px solid #ECE7F2',
+            }}
+          >
+            <CarFront size={54} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1C0324', margin: '0 0 6px 0' }}>
+              No vehicles found
+            </h3>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 20px 0' }}>
+              Try relaxing your filters or searching for another vehicle model.
             </p>
             <button
-              onClick={() => {
-                setSearch('');
-                setSelectedBrand('All Brands');
-                setSelectedType('All Types');
-                setPriceRange('Any Price');
-              }}
+              type="button"
+              onClick={handleResetFilters}
               style={{
-                marginTop: '20px',
-                padding: '10px 20px',
-                borderRadius: '10px',
-                backgroundColor: '#1E0426',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                backgroundColor: '#1C0324',
                 color: '#FAB826',
                 border: 'none',
-                fontWeight: 700,
+                fontWeight: 800,
                 cursor: 'pointer',
               }}
             >
-              Clear All Filters
+              <RotateCcw size={16} />
+              <span>Reset All Filters</span>
             </button>
           </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(340px, 1fr))' : '1fr',
-              gap: '24px',
-            }}
-          >
-            {filteredCars.map((car) => {
-              const displayPrice = car.pricePerDay * multiplier;
-              return (
-                <article
-                  key={car.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '24px',
-                    padding: '24px',
-                    border: '1px solid #ECEAEF',
-                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.05)',
-                    display: 'flex',
-                    flexDirection: viewMode === 'list' ? 'row' : 'column',
-                    justifyContent: 'space-between',
-                    gap: '20px',
-                    position: 'relative',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                  }}
-                  className="car-card-hover"
-                >
-                  {/* Top info & Brand logo */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          backgroundColor: '#ECFDF5',
-                          color: '#065F46',
-                          padding: '4px 10px',
-                          borderRadius: '20px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }} />
-                        Available
-                      </span>
-                      <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1E0426', margin: '8px 0 2px' }}>
-                        {car.name}
-                      </h3>
-                      <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
-                        {car.year} · {car.type} · {car.transmission} · {car.fuel}
-                      </p>
+        ) : viewMode === 'grid' ? (
+          /* Signature 3-Column Asymmetric Grid */
+          <div className="available-cars-grid">
+            {paginatedCars.map((car, idx) => {
+              const displayRate = (car.pricePerDay * rateMultiplier).toFixed(2);
+
+              // Strict visual alignment to master reference:
+              // Indices 0, 6, 7 on page 1 are Hero Wide Cards
+              const isHeroWideCard = car.isWideHero || idx === 0 || idx === 6 || idx === 7;
+
+              if (isHeroWideCard) {
+                return (
+                  <article key={car.id} className="car-card-hero-wide">
+                    {/* Left Concave Plum Shield */}
+                    <div className="car-card-hero-left">
+                      <div className="car-card-hero-brand-header">
+                        <h3 className="car-card-hero-brand-name">{car.brand}</h3>
+                        <div className="car-card-hero-year">{car.year}</div>
+                        <p className="car-card-hero-tagline">
+                          {car.tagline || 'Unleash extraordinary performance.'}
+                        </p>
+                      </div>
+
+                      {/* Golden Emblem Badge */}
+                      <div className="car-card-hero-emblem-wrap">
+                        <img
+                          src={car.logo}
+                          alt={`${car.brand} Crest`}
+                          className="car-card-hero-emblem-img"
+                        />
+                      </div>
+
+                      {/* Bottom Specs & Arrow Button */}
+                      <div className="car-card-hero-bottom-bar">
+                        <div className="car-card-spec-item">
+                          <Gauge size={16} className="car-card-spec-icon" />
+                          <div className="car-card-spec-info">
+                            <h5>{car.mileageLimit}</h5>
+                            <p>Mileage</p>
+                          </div>
+                        </div>
+
+                        <div className="car-card-spec-item">
+                          <Tag size={16} className="car-card-spec-icon" />
+                          <div className="car-card-spec-info">
+                            <h5>SAR {displayRate}</h5>
+                            <p>{periodLabel}</p>
+                          </div>
+                        </div>
+
+                        <Link
+                          to={`/cars/${car.id}`}
+                          className="car-card-circle-arrow-btn"
+                          aria-label={`View details for ${car.name}`}
+                        >
+                          <ChevronRight size={18} />
+                        </Link>
+                      </div>
                     </div>
 
-                    <img src={car.logo} alt={car.brand} style={{ height: '36px', objectFit: 'contain' }} />
-                  </div>
+                    {/* Right Architectural Showcase Area */}
+                    <div className="car-card-hero-right">
+                      {/* Watermark Building Silhouette */}
+                      <img
+                        src={buildingBackdrop}
+                        alt="Finovo Urban Architecture"
+                        className="car-card-building-backdrop"
+                      />
 
-                  {/* Car Image with smooth container */}
-                  <div
-                    style={{
-                      height: '180px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#F8F7FA',
-                      borderRadius: '16px',
-                      overflow: 'hidden',
-                      padding: '10px',
-                    }}
-                  >
+                      {/* Available Pill */}
+                      <div className="car-card-available-badge">
+                        <span>Available</span>
+                      </div>
+
+                      {/* Vehicle Cutout with Shadow */}
+                      <img
+                        src={car.image}
+                        alt={car.name}
+                        className="car-card-hero-vehicle-img"
+                        loading="lazy"
+                      />
+                    </div>
+                  </article>
+                );
+              }
+
+              // Standard Luxury Card (spans 1 col)
+              return (
+                <article key={car.id} className="car-card-standard">
+                  {/* Top Area: Building Backdrop & Centered Vehicle */}
+                  <div className="car-card-standard-top">
+                    <img
+                      src={buildingBackdrop}
+                      alt="Finovo Urban Architecture"
+                      className="car-card-building-backdrop"
+                    />
+
+                    <div className="car-card-available-badge">
+                      <span>Available</span>
+                    </div>
+
                     <img
                       src={car.image}
                       alt={car.name}
-                      style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                      className="car-card-standard-vehicle-img"
                       loading="lazy"
                     />
                   </div>
 
-                  {/* Specs row */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingTop: '16px',
-                      borderTop: '1px solid #F3F4F6',
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontSize: '11px', color: '#6B7280', display: 'block' }}>Mileage</span>
-                      <strong style={{ fontSize: '13px', color: '#1E0426' }}>{car.mileageLimit}</strong>
+                  {/* Bottom Area: Brand info, Specs, and Arrow */}
+                  <div className="car-card-standard-bottom">
+                    <div className="car-card-standard-brand-box">
+                      <img
+                        src={car.logo}
+                        alt={car.brand}
+                        className="car-card-standard-logo-img"
+                      />
+                      <div className="car-card-standard-brand-text">
+                        <h4 className="car-card-standard-name">{car.name}</h4>
+                        <div className="car-card-standard-year">{car.year}</div>
+                      </div>
                     </div>
 
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '11px', color: '#6B7280', display: 'block' }}>{period} Rate</span>
-                      <strong style={{ fontSize: '18px', color: '#1E0426', fontWeight: 800 }}>
-                        SAR {displayPrice.toLocaleString()}
-                      </strong>
+                    <div className="car-card-standard-spec-box">
+                      <div className="car-card-standard-spec-item">
+                        <Gauge size={14} className="car-card-spec-icon" />
+                        <div>
+                          <h5>{car.mileageLimit}</h5>
+                          <p>Mileage</p>
+                        </div>
+                      </div>
+
+                      <div className="car-card-standard-spec-item">
+                        <Tag size={14} className="car-card-spec-icon" />
+                        <div>
+                          <h5>SAR {displayRate}</h5>
+                          <p>{periodLabel}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      to={`/cars/${car.id}`}
+                      className="car-card-circle-arrow-btn"
+                      aria-label={`View details for ${car.name}`}
+                    >
+                      <ChevronRight size={18} />
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          /* List Mode View */
+          <div className="available-cars-list">
+            {paginatedCars.map((car) => {
+              const displayRate = (car.pricePerDay * rateMultiplier).toFixed(2);
+              return (
+                <article key={car.id} className="car-card-list-item">
+                  <div className="car-card-list-left">
+                    <div className="car-card-list-img-box">
+                      <img
+                        src={car.image}
+                        alt={car.name}
+                        className="car-card-list-img"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="car-card-list-details">
+                      <div className="car-card-available-badge" style={{ position: 'static', marginBottom: '6px' }}>
+                        <span>Available</span>
+                      </div>
+                      <h3>{car.name}</h3>
+                      <p>{car.year} · {car.type} · {car.transmission} · {car.fuel}</p>
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <Link
-                    to={`/cars/${car.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      backgroundColor: '#1E0426',
-                      color: '#FAB826',
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      textDecoration: 'none',
-                      transition: 'background-color 0.2s',
-                    }}
-                  >
-                    <span>View Details & Book</span>
-                    <ChevronRight size={16} />
-                  </Link>
+                  <div className="car-card-list-specs">
+                    <div className="car-card-spec-item">
+                      <Gauge size={16} color="#22052C" />
+                      <div className="car-card-spec-info">
+                        <h5 style={{ color: '#1C0324' }}>{car.mileageLimit}</h5>
+                        <p style={{ color: '#6B7280' }}>Mileage</p>
+                      </div>
+                    </div>
+                    <div className="car-card-spec-item">
+                      <Users size={16} color="#22052C" />
+                      <div className="car-card-spec-info">
+                        <h5 style={{ color: '#1C0324' }}>{car.seats} Seats</h5>
+                        <p style={{ color: '#6B7280' }}>Capacity</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="car-card-list-right">
+                    <div className="car-card-list-price">
+                      <h4>SAR {displayRate}</h4>
+                      <p>{periodLabel}</p>
+                    </div>
+
+                    <Link
+                      to={`/cars/${car.id}`}
+                      className="car-card-circle-arrow-btn"
+                      aria-label={`Book ${car.name}`}
+                    >
+                      <ChevronRight size={18} />
+                    </Link>
+                  </div>
                 </article>
               );
             })}
           </div>
         )}
-      </section>
+
+        {/* 5. BOTTOM ECO BANNER & PAGINATION BAR */}
+        <footer className="cars-bottom-bar" aria-label="Pagination and sustainability footer">
+          {/* Left: Eco Sustainability Callout */}
+          <div className="cars-eco-badge">
+            <div className="cars-eco-icon-wrap">
+              <Leaf size={18} />
+            </div>
+            <div className="cars-eco-text">
+              <h4>Drive a Better Tomorrow</h4>
+              <p>Sustainable journeys for a brighter future.</p>
+            </div>
+          </div>
+
+          {/* Center: Interactive Luxury Pagination */}
+          <nav className="cars-pagination" aria-label="Catalog pages">
+            <button
+              type="button"
+              className="cars-page-btn"
+              disabled={currentPage === 1}
+              onClick={() => {
+                setCurrentPage((p) => Math.max(1, p - 1));
+                window.scrollTo({ top: 380, behavior: 'smooth' });
+              }}
+              aria-label="Previous page"
+            >
+              &lt;
+            </button>
+
+            {Array.from({ length: totalPages }).map((_, i) => {
+              const pageNum = i + 1;
+              return (
+                <button
+                  key={pageNum}
+                  type="button"
+                  className={`cars-page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                  onClick={() => {
+                    setCurrentPage(pageNum);
+                    window.scrollTo({ top: 380, behavior: 'smooth' });
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            {totalPages > 6 && <span className="cars-page-ellipsis">...</span>}
+            {totalPages > 6 && (
+              <button
+                type="button"
+                className={`cars-page-btn ${currentPage === 10 ? 'active' : ''}`}
+                onClick={() => setCurrentPage(10)}
+              >
+                10
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="cars-page-btn"
+              disabled={currentPage === totalPages}
+              onClick={() => {
+                setCurrentPage((p) => Math.min(totalPages, p + 1));
+                window.scrollTo({ top: 380, behavior: 'smooth' });
+              }}
+              aria-label="Next page"
+            >
+              &gt;
+            </button>
+          </nav>
+
+          {/* Right: Found count & Luxury Motto */}
+          <div className="cars-footer-tagline">
+            <h5>{filteredCars.length} cars found</h5>
+            <p>LUXURY MOVES PEOPLE FORWARD</p>
+          </div>
+        </footer>
+      </main>
+
+      {/* 6. ADVANCED "MORE FILTERS" MODAL */}
+      {moreFiltersOpen && (
+        <div className="cars-modal-overlay" onClick={() => setMoreFiltersOpen(false)}>
+          <div className="cars-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="cars-modal-header">
+              <h3>Advanced Fleet Filters</h3>
+              <button
+                type="button"
+                className="cars-modal-close-btn"
+                onClick={() => setMoreFiltersOpen(false)}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Passenger Capacity */}
+            <div className="cars-modal-section">
+              <label>Passenger Capacity</label>
+              <div className="cars-chip-options">
+                {['Any', '2 Seats', '4-5 Seats', '7+ Seats'].map((seats) => (
+                  <button
+                    key={seats}
+                    type="button"
+                    className={`cars-chip-btn ${selectedSeats === seats ? 'active' : ''}`}
+                    onClick={() => setSelectedSeats(seats)}
+                  >
+                    {seats}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Special Rental Features */}
+            <div className="cars-modal-section">
+              <label>Special Rental Privileges</label>
+              <div className="cars-chip-options">
+                <button
+                  type="button"
+                  className={`cars-chip-btn ${zeroDepositOnly ? 'active' : ''}`}
+                  onClick={() => setZeroDepositOnly(!zeroDepositOnly)}
+                >
+                  Zero Deposit Required
+                </button>
+                <button
+                  type="button"
+                  className={`cars-chip-btn ${unlimitedMileageOnly ? 'active' : ''}`}
+                  onClick={() => setUnlimitedMileageOnly(!unlimitedMileageOnly)}
+                >
+                  Unlimited Mileage
+                </button>
+              </div>
+            </div>
+
+            <div className="cars-modal-footer">
+              <button
+                type="button"
+                className="cars-modal-reset-btn"
+                onClick={handleResetFilters}
+              >
+                Reset All
+              </button>
+              <button
+                type="button"
+                className="cars-modal-apply-btn"
+                onClick={() => setMoreFiltersOpen(false)}
+              >
+                Show {filteredCars.length} Cars
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. DATE RANGE SELECTOR MODAL */}
+      {dateModalOpen && (
+        <div className="cars-modal-overlay" onClick={() => setDateModalOpen(false)}>
+          <div className="cars-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="cars-modal-header">
+              <h3>Select Rental Dates</h3>
+              <button
+                type="button"
+                className="cars-modal-close-btn"
+                onClick={() => setDateModalOpen(false)}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#7D7388', marginBottom: '6px' }}>
+                  Pick-up Date
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid #ECE7F2',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#7D7388', marginBottom: '6px' }}>
+                  Drop-off Date
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid #ECE7F2',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="cars-modal-footer">
+              <button
+                type="button"
+                className="cars-modal-reset-btn"
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setDateDisplay('MM/DD/YYYY - MM/DD/YYYY');
+                  setDateModalOpen(false);
+                }}
+              >
+                Clear Dates
+              </button>
+              <button
+                type="button"
+                className="cars-modal-apply-btn"
+                onClick={handleApplyDates}
+              >
+                Apply Dates
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

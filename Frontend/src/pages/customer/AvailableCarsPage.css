@@ -1,0 +1,1545 @@
+/* ==========================================================================
+   FINOVO LUXURY FLEET — AVAILABLE CARS CATALOG DESIGN SYSTEM
+   Pixel-perfect match to Figma Master Showcase specification
+   ========================================================================== */
+
+:root {
+  --finovo-plum-dark: #1A0322;
+  --finovo-plum-deep: #22052C;
+  --finovo-plum-medium: #2F0A3C;
+  --finovo-plum-gradient: linear-gradient(135deg, #180220 0%, #250630 50%, #350A43 100%);
+  --finovo-gold: #FAB826;
+  --finovo-gold-hover: #E5A315;
+  --finovo-gold-glow: rgba(250, 184, 38, 0.28);
+  --finovo-bg: #F7F5FA;
+  --finovo-card-bg: #FFFFFF;
+  --finovo-border: #E8E3EE;
+  --finovo-border-light: #F0EDF5;
+  --finovo-text-primary: #1C0324;
+  --finovo-text-secondary: #6B7280;
+  --finovo-text-muted: #9CA3AF;
+  --finovo-green-badge-bg: #E8F9F0;
+  --finovo-green-badge-text: #057A55;
+  --finovo-green-dot: #10B981;
+  --finovo-font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --finovo-font-display: 'Archivo', 'Manrope', sans-serif;
+  --finovo-font-script: 'Caveat', 'Great Vibes', cursive;
+  --finovo-shadow-soft: 0 10px 30px rgba(28, 3, 36, 0.06);
+  --finovo-shadow-hover: 0 18px 45px rgba(28, 3, 36, 0.12);
+  --finovo-radius-card: 26px;
+  --finovo-radius-pill: 9999px;
+}
+
+/* Page Wrapper */
+.available-cars-page {
+  background-color: var(--finovo-bg);
+  min-height: 100vh;
+  color: var(--finovo-text-primary);
+  font-family: var(--finovo-font-sans);
+  padding-bottom: 70px;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.available-cars-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   1. HERO SECTION
+   ========================================================================== */
+.cars-hero-wrapper {
+  padding: 24px 24px 0;
+  max-width: 1328px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.cars-hero-card {
+  position: relative;
+  background: var(--finovo-plum-gradient);
+  border-radius: 32px;
+  min-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(26, 3, 34, 0.22);
+}
+
+.cars-hero-content {
+  position: relative;
+  z-index: 3;
+  max-width: 580px;
+  padding: 48px 36px 48px 52px;
+  color: #FFFFFF;
+}
+
+.cars-hero-tagline {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.2px;
+  color: #D6A8FF;
+  text-transform: uppercase;
+  margin: 0 0 10px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cars-hero-tagline::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--finovo-gold);
+}
+
+.cars-hero-title {
+  font-family: var(--finovo-font-display);
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.12;
+  margin: 0 0 14px 0;
+  color: #FFFFFF;
+  letter-spacing: -0.8px;
+}
+
+.cars-hero-subtitle {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #E2D7ED;
+  margin: 0 0 32px 0;
+  font-weight: 400;
+  max-width: 480px;
+}
+
+/* Hero 3 Feature Badges */
+.cars-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+}
+
+.cars-hero-badge-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cars-hero-badge-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+}
+
+.cars-hero-badge-text h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.25;
+}
+
+.cars-hero-badge-text p {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: #CDBEDC;
+  line-height: 1.2;
+}
+
+/* Hero Car Visual (Right Side) */
+.cars-hero-visual {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 58%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.cars-hero-car-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% center;
+  display: block;
+}
+
+.cars-hero-handwritten-tag {
+  position: absolute;
+  bottom: 24px;
+  right: 42px;
+  font-family: var(--finovo-font-script);
+  font-size: 38px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.3);
+  transform: rotate(-6deg);
+  letter-spacing: 0.5px;
+  z-index: 4;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   2. FLOATING SEARCH & FILTER BAR
+   ========================================================================== */
+.cars-filter-bar-wrapper {
+  position: relative;
+  z-index: 10;
+  margin: -36px auto 38px;
+}
+
+.cars-filter-card {
+  background: var(--finovo-card-bg);
+  border-radius: 24px;
+  padding: 22px 26px;
+  box-shadow: 0 14px 40px rgba(32, 5, 42, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--finovo-border);
+}
+
+/* Row 1: Search, Frequency, Date */
+.cars-filter-row-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.cars-search-input-box {
+  flex: 1 1 320px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cars-search-icon {
+  position: absolute;
+  left: 16px;
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+.cars-search-input {
+  width: 100%;
+  height: 48px;
+  background: #F7F5FA;
+  border: 1px solid #ECE7F2;
+  border-radius: 14px;
+  padding: 0 42px 0 46px;
+  font-size: 13.5px;
+  color: var(--finovo-text-primary);
+  font-family: var(--finovo-font-sans);
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.cars-search-input:focus {
+  background: #FFFFFF;
+  border-color: var(--finovo-plum-deep);
+  box-shadow: 0 0 0 3px rgba(34, 5, 44, 0.08);
+}
+
+.cars-search-clear-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.cars-search-clear-btn:hover {
+  color: var(--finovo-text-primary);
+  background: #ECE7F2;
+}
+
+/* Frequency Pills */
+.cars-frequency-pill-group {
+  display: inline-flex;
+  align-items: center;
+  background: #F2EEF6;
+  border-radius: 14px;
+  padding: 4px;
+  border: 1px solid #ECE6F2;
+}
+
+.cars-frequency-btn {
+  border: none;
+  background: transparent;
+  padding: 8px 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 10px;
+  color: #584A63;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--finovo-font-sans);
+}
+
+.cars-frequency-btn.active {
+  background: var(--finovo-plum-dark);
+  color: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(26, 3, 34, 0.2);
+}
+
+/* Date Range Button Box */
+.cars-date-picker-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #F7F5FA;
+  border: 1px solid #ECE7F2;
+  border-radius: 14px;
+  padding: 8px 16px;
+  height: 48px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.cars-date-picker-box:hover {
+  border-color: var(--finovo-plum-deep);
+  background: #FFFFFF;
+}
+
+.cars-date-picker-icon {
+  color: #6B7280;
+}
+
+.cars-date-picker-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.cars-date-picker-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #8C8299;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.cars-date-picker-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--finovo-text-primary);
+  margin-top: 3px;
+  line-height: 1;
+}
+
+/* Row 2: Dropdowns and Action Buttons */
+.cars-filter-row-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.cars-dropdown-container {
+  flex: 1 1 150px;
+  position: relative;
+}
+
+.cars-dropdown-trigger {
+  width: 100%;
+  background: #F7F5FA;
+  border: 1px solid #ECE7F2;
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.cars-dropdown-trigger:hover,
+.cars-dropdown-trigger.open {
+  background: #FFFFFF;
+  border-color: var(--finovo-plum-deep);
+}
+
+.cars-dropdown-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #8C8299;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.cars-dropdown-value {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--finovo-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.cars-dropdown-arrow {
+  color: #8C8299;
+  transition: transform 0.2s ease;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.cars-dropdown-trigger.open .cars-dropdown-arrow {
+  transform: rotate(180deg);
+  color: var(--finovo-plum-dark);
+}
+
+/* Custom Dropdown Menu */
+.cars-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 190px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border-radius: 14px;
+  border: 1px solid #ECE7F2;
+  box-shadow: 0 12px 36px rgba(28, 3, 36, 0.14);
+  padding: 6px;
+  z-index: 100;
+  animation: dropdownSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cars-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3C2E47;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.cars-dropdown-item:hover {
+  background: #F4EBF9;
+  color: var(--finovo-plum-dark);
+}
+
+.cars-dropdown-item.active {
+  background: #EFE4F8;
+  color: var(--finovo-plum-dark);
+  font-weight: 700;
+}
+
+/* More Filters Button */
+.cars-more-filters-btn {
+  background: var(--finovo-plum-dark);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  height: 46px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cars-more-filters-btn:hover {
+  background: var(--finovo-plum-medium);
+  box-shadow: 0 4px 14px rgba(26, 3, 34, 0.25);
+}
+
+.cars-active-filter-badge {
+  background: var(--finovo-gold);
+  color: var(--finovo-plum-dark);
+  font-size: 11px;
+  font-weight: 800;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Apply Filters Button */
+.cars-apply-filters-btn {
+  background: var(--finovo-gold);
+  color: #1A0322;
+  border: none;
+  border-radius: 12px;
+  height: 46px;
+  padding: 0 22px;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px var(--finovo-gold-glow);
+}
+
+.cars-apply-filters-btn:hover {
+  background: var(--finovo-gold-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(250, 184, 38, 0.4);
+}
+
+.cars-apply-filters-btn:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   3. CATALOG SECTION HEADER (Count, Sort, Grid/List Toggles)
+   ========================================================================== */
+.cars-catalog-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.cars-catalog-count-box h2 {
+  font-family: var(--finovo-font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--finovo-text-primary);
+  margin: 0;
+  letter-spacing: -0.4px;
+}
+
+.cars-catalog-count-box p {
+  font-size: 13.5px;
+  color: var(--finovo-text-secondary);
+  margin: 3px 0 0 0;
+}
+
+.cars-catalog-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cars-sort-selector-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cars-sort-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--finovo-text-secondary);
+}
+
+.cars-sort-dropdown {
+  background: #FFFFFF;
+  border: 1px solid var(--finovo-border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--finovo-text-primary);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cars-sort-dropdown:focus {
+  border-color: var(--finovo-plum-deep);
+}
+
+.cars-view-toggle-group {
+  display: flex;
+  background: #EFEBF4;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.cars-view-toggle-btn {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7D7388;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cars-view-toggle-btn.active {
+  background: #FFFFFF;
+  color: var(--finovo-plum-dark);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================================================
+   4. LUXURY ASYMMETRIC GRID
+   Pattern:
+   Row 1: [Hero Wide (2 cols)] + [Standard (1 col)]
+   Row 2: [Standard (1 col)] + [Standard (1 col)] + [Standard (1 col)]
+   Row 3: [Standard (1 col)] + [Hero Wide (2 cols)]
+   Row 4: [Hero Wide (2 cols)] + [Standard (1 col)]
+   ========================================================================== */
+.available-cars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 50px;
+}
+
+/* --------------------------------------------------------------------------
+   CARD TYPE A: HERO WIDE CARD (spans 2 columns)
+   -------------------------------------------------------------------------- */
+.car-card-hero-wide {
+  grid-column: span 2;
+  background: #FFFFFF;
+  border-radius: var(--finovo-radius-card);
+  border: 1px solid var(--finovo-border);
+  box-shadow: var(--finovo-shadow-soft);
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  min-height: 270px;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  color: inherit;
+}
+
+.car-card-hero-wide:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--finovo-shadow-hover);
+  border-color: #DDD4E5;
+}
+
+/* Left Section: Deep Plum Concave Shield */
+.car-card-hero-left {
+  flex: 0 0 46%;
+  background: var(--finovo-plum-gradient);
+  color: #FFFFFF;
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+  border-top-left-radius: var(--finovo-radius-card);
+  border-bottom-left-radius: var(--finovo-radius-card);
+  border-top-right-radius: 90px 50%;
+  border-bottom-right-radius: 90px 50%;
+  box-shadow: 4px 0 16px rgba(18, 1, 24, 0.2);
+}
+
+.car-card-hero-brand-header {
+  position: relative;
+}
+
+.car-card-hero-brand-name {
+  font-family: var(--finovo-font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.3px;
+}
+
+.car-card-hero-year {
+  font-size: 13.5px;
+  color: #D6A8FF;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.car-card-hero-tagline {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #D3C5DF;
+  margin: 8px 0 0 0;
+  max-width: 220px;
+}
+
+/* Emblem Badge */
+.car-card-hero-emblem-wrap {
+  margin: 12px 0 8px 0;
+}
+
+.car-card-hero-emblem-img {
+  height: 48px;
+  max-width: 60px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+/* Specs & CTA Bar at Bottom of Left Panel */
+.car-card-hero-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.car-card-spec-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.car-card-spec-icon {
+  color: #D6A8FF;
+}
+
+.car-card-spec-info h5 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.car-card-spec-info p {
+  margin: 2px 0 0 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: #BCAEC9;
+  line-height: 1;
+}
+
+.car-card-circle-arrow-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: var(--finovo-plum-dark);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.car-card-hero-wide:hover .car-card-circle-arrow-btn,
+.car-card-standard:hover .car-card-circle-arrow-btn {
+  background: var(--finovo-gold);
+  color: #1A0322;
+  transform: translateX(3px) scale(1.05);
+  box-shadow: 0 4px 14px var(--finovo-gold-glow);
+}
+
+/* Right Section: Architectural Background & High-Definition Floating Vehicle */
+.car-card-hero-right {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+  background: #FAF8FC;
+}
+
+.car-card-building-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.14;
+  pointer-events: none;
+  filter: grayscale(80%) contrast(110%);
+}
+
+.car-card-available-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+  background: var(--finovo-green-badge-bg);
+  color: var(--finovo-green-badge-text);
+  border: 1px solid #B8EBD2;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1;
+}
+
+.car-card-available-badge::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--finovo-green-dot);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.car-card-hero-vehicle-img {
+  position: relative;
+  z-index: 3;
+  max-width: 96%;
+  max-height: 175px;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.16));
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.car-card-hero-wide:hover .car-card-hero-vehicle-img {
+  transform: scale(1.04) translateY(-3px);
+}
+
+/* --------------------------------------------------------------------------
+   CARD TYPE B: STANDARD LUXURY CARD (spans 1 column)
+   -------------------------------------------------------------------------- */
+.car-card-standard {
+  grid-column: span 1;
+  background: #FFFFFF;
+  border-radius: var(--finovo-radius-card);
+  border: 1px solid var(--finovo-border);
+  box-shadow: var(--finovo-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  min-height: 270px;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  color: inherit;
+}
+
+.car-card-standard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--finovo-shadow-hover);
+  border-color: #DDD4E5;
+}
+
+/* Top Area: Architectural Backdrop & Centered Floating Car */
+.car-card-standard-top {
+  position: relative;
+  height: 185px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FAF8FC;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.car-card-standard-vehicle-img {
+  position: relative;
+  z-index: 3;
+  max-width: 90%;
+  max-height: 140px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.14));
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.car-card-standard:hover .car-card-standard-vehicle-img {
+  transform: scale(1.05) translateY(-2px);
+}
+
+/* Bottom Area: Brand info, Specs, and Arrow */
+.car-card-standard-bottom {
+  padding: 18px 20px 20px;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #F3EEF8;
+}
+
+.car-card-standard-brand-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.car-card-standard-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.car-card-standard-brand-text {
+  min-width: 0;
+}
+
+.car-card-standard-name {
+  font-family: var(--finovo-font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--finovo-text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.car-card-standard-year {
+  font-size: 11px;
+  color: var(--finovo-text-secondary);
+  margin: 2px 0 0 0;
+  line-height: 1;
+}
+
+.car-card-standard-spec-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.car-card-standard-spec-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.car-card-standard-spec-item .car-card-spec-icon {
+  color: var(--finovo-plum-dark);
+}
+
+.car-card-standard-spec-item h5 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--finovo-text-primary);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.car-card-standard-spec-item p {
+  margin: 2px 0 0 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #7D7388;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   5. LIST VIEW (When List toggle is clicked)
+   ========================================================================== */
+.available-cars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 50px;
+}
+
+.car-card-list-item {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid var(--finovo-border);
+  box-shadow: var(--finovo-shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  gap: 20px;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.car-card-list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--finovo-shadow-hover);
+  border-color: #DDD4E5;
+}
+
+.car-card-list-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1 1 40%;
+}
+
+.car-card-list-img-box {
+  width: 140px;
+  height: 90px;
+  background: #FAF8FC;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.car-card-list-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.car-card-list-details h3 {
+  font-family: var(--finovo-font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--finovo-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.car-card-list-details p {
+  font-size: 12.5px;
+  color: var(--finovo-text-secondary);
+  margin: 0;
+}
+
+.car-card-list-specs {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1 1 35%;
+}
+
+.car-card-list-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.car-card-list-price {
+  text-align: right;
+}
+
+.car-card-list-price h4 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--finovo-text-primary);
+  margin: 0;
+}
+
+.car-card-list-price p {
+  font-size: 11px;
+  color: var(--finovo-text-secondary);
+  margin: 2px 0 0 0;
+}
+
+/* ==========================================================================
+   6. BOTTOM PAGINATION & BRAND CALLOUT BAR
+   ========================================================================== */
+.cars-bottom-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 30px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid var(--finovo-border);
+  box-shadow: 0 8px 24px rgba(32, 5, 42, 0.04);
+}
+
+.cars-eco-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cars-eco-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #F4EBF9;
+  color: var(--finovo-plum-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cars-eco-text h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--finovo-text-primary);
+  line-height: 1.2;
+}
+
+.cars-eco-text p {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: var(--finovo-text-secondary);
+  line-height: 1.2;
+}
+
+/* Pagination Control */
+.cars-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cars-page-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #554860;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cars-page-btn:hover:not(:disabled) {
+  background: #F3EEF8;
+  color: var(--finovo-plum-dark);
+}
+
+.cars-page-btn.active {
+  background: var(--finovo-plum-dark);
+  color: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(26, 3, 34, 0.25);
+}
+
+.cars-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cars-page-ellipsis {
+  padding: 0 4px;
+  color: #9CA3AF;
+  font-weight: 700;
+}
+
+/* Right Tagline */
+.cars-footer-tagline {
+  text-align: right;
+}
+
+.cars-footer-tagline h5 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--finovo-text-primary);
+}
+
+.cars-footer-tagline p {
+  margin: 2px 0 0 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #8C8299;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   7. MORE FILTERS MODAL (ADVANCED CRITERIA)
+   ========================================================================== */
+.cars-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 1, 24, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cars-modal-content {
+  background: #FFFFFF;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  padding: 28px 32px;
+  box-sizing: border-box;
+}
+
+.cars-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ECE7F2;
+}
+
+.cars-modal-header h3 {
+  font-family: var(--finovo-font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--finovo-text-primary);
+  margin: 0;
+}
+
+.cars-modal-close-btn {
+  background: none;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cars-modal-close-btn:hover {
+  background: #F4EEF8;
+  color: var(--finovo-plum-dark);
+}
+
+.cars-modal-section {
+  margin-bottom: 20px;
+}
+
+.cars-modal-section label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #7D7388;
+  letter-spacing: 0.6px;
+  margin-bottom: 8px;
+}
+
+.cars-chip-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cars-chip-btn {
+  background: #F7F5FA;
+  border: 1px solid #ECE7F2;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #493B55;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cars-chip-btn:hover {
+  border-color: var(--finovo-plum-deep);
+}
+
+.cars-chip-btn.active {
+  background: var(--finovo-plum-dark);
+  color: #FFFFFF;
+  border-color: var(--finovo-plum-dark);
+}
+
+.cars-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid #ECE7F2;
+}
+
+.cars-modal-reset-btn {
+  background: transparent;
+  border: none;
+  color: #6B7280;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 16px;
+}
+
+.cars-modal-reset-btn:hover {
+  color: var(--finovo-plum-dark);
+}
+
+.cars-modal-apply-btn {
+  background: var(--finovo-plum-dark);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cars-modal-apply-btn:hover {
+  background: var(--finovo-plum-medium);
+}
+
+/* ==========================================================================
+   8. RESPONSIVE DESIGN FOR TABLET & MOBILE
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .available-cars-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .car-card-hero-wide {
+    grid-column: span 2;
+  }
+
+  .car-card-standard {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .available-cars-page {
+    padding-bottom: 40px;
+  }
+
+  .cars-hero-wrapper {
+    padding: 14px 14px 0;
+  }
+
+  .cars-hero-card {
+    flex-direction: column;
+    min-height: auto;
+    border-radius: 24px;
+  }
+
+  .cars-hero-content {
+    max-width: 100%;
+    padding: 32px 20px 24px;
+  }
+
+  .cars-hero-title {
+    font-size: 32px;
+  }
+
+  .cars-hero-visual {
+    position: relative;
+    width: 100%;
+    height: 220px;
+  }
+
+  .cars-hero-car-img {
+    object-position: center;
+  }
+
+  .cars-hero-handwritten-tag {
+    font-size: 28px;
+    bottom: 14px;
+    right: 20px;
+  }
+
+  .cars-hero-badges {
+    gap: 14px;
+  }
+
+  .cars-filter-bar-wrapper {
+    margin: -16px 14px 28px;
+    padding: 0;
+  }
+
+  .cars-filter-card {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .cars-filter-row-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .cars-search-input-box {
+    width: 100%;
+  }
+
+  .cars-frequency-pill-group {
+    width: 100%;
+    display: flex;
+    justify-content: stretch;
+  }
+
+  .cars-frequency-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .cars-filter-row-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .cars-dropdown-container {
+    width: 100%;
+  }
+
+  .cars-more-filters-btn,
+  .cars-apply-filters-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Strict Single Column on Mobile */
+  .available-cars-grid {
+    grid-template-columns: 1fr !important;
+    gap: 18px;
+  }
+
+  .car-card-hero-wide {
+    grid-column: span 1 !important;
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .car-card-hero-left {
+    flex: none;
+    width: 100%;
+    border-radius: var(--finovo-radius-card) var(--finovo-radius-card) 0 0;
+    box-sizing: border-box;
+    padding: 22px 20px;
+  }
+
+  .car-card-hero-right {
+    min-height: 180px;
+    padding: 16px;
+  }
+
+  .car-card-standard {
+    grid-column: span 1 !important;
+  }
+
+  .car-card-standard-bottom {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .cars-bottom-bar {
+    flex-direction: column;
+    text-align: center;
+    gap: 18px;
+    padding: 20px;
+  }
+
+  .cars-eco-badge {
+    justify-content: center;
+    text-align: left;
+  }
+
+  .cars-footer-tagline {
+    text-align: center;
+  }
+
+  .car-card-list-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .car-card-list-left {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .car-card-list-specs {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .car-card-list-right {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
