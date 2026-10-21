@@ -13,3 +13,5 @@ export { LoadingState, SkeletonRow } from './LoadingState';
 export { Modal } from './Modal';
 export * from './ConfirmModal';
 export * from './CustomSelect';
+export * from './LanguageSelector';
+export * from './TextTranslator';

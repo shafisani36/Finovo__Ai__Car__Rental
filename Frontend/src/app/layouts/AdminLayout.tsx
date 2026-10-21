@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageSelector } from '../../components/common/LanguageSelector';
+import { Modal } from '../../components/common/Modal';
+import { TextTranslator } from '../../components/common/TextTranslator';
 import { useAuth } from '../../features/auth/context';
 import { BrandLogo } from '../../components/common/BrandLogo';
 import {
@@ -26,9 +30,12 @@ import {
   Tag,
   MessageSquare,
   UserCog,
+  Languages,
 } from 'lucide-react';
 
 export function AdminLayout() {
+  const { t } = useTranslation();
+  const [translatorOpen, setTranslatorOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -134,21 +141,21 @@ export function AdminLayout() {
             }}
           >
             {[
-              { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-              { to: '/admin/cars', icon: Car, label: 'Fleet' },
-              { to: '/admin/brands', icon: Globe, label: 'Brands' },
-              { to: '/admin/models', icon: Layers, label: 'Models' },
-              { to: '/admin/categories', icon: Tag, label: 'Categories' },
-              { to: '/admin/bookings', icon: CalendarCheck, label: 'Bookings' },
-              { to: '/admin/calendar', icon: Calendar, label: 'Schedule' },
-              { to: '/admin/rentals', icon: KeyRound, label: 'Rentals' },
-              { to: '/admin/inspections', icon: ShieldAlert, label: 'AI Inspections' },
-              { to: '/admin/inquiries', icon: MessageSquare, label: 'Inquiries' },
-              { to: '/admin/users', icon: UserCog, label: 'Manage Users' },
-              { to: '/admin/customers', icon: Users, label: 'Customers' },
-              { to: '/admin/employees', icon: Briefcase, label: 'Staff' },
-              { to: '/admin/branches', icon: Building2, label: 'Branches' },
-              { to: '/admin/audit-logs', icon: ShieldCheck, label: 'Audit Trail' },
+              { to: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+              { to: '/admin/cars', icon: Car, label: t('nav.fleet') },
+              { to: '/admin/brands', icon: Globe, label: t('nav.brands') },
+              { to: '/admin/models', icon: Layers, label: t('nav.models') },
+              { to: '/admin/categories', icon: Tag, label: t('nav.categories') },
+              { to: '/admin/bookings', icon: CalendarCheck, label: t('nav.bookings') },
+              { to: '/admin/calendar', icon: Calendar, label: t('nav.schedule') },
+              { to: '/admin/rentals', icon: KeyRound, label: t('nav.rentals') },
+              { to: '/admin/inspections', icon: ShieldAlert, label: t('nav.aiInspection') },
+              { to: '/admin/inquiries', icon: MessageSquare, label: t('nav.inquiries') },
+              { to: '/admin/users', icon: UserCog, label: t('nav.manageUsers') },
+              { to: '/admin/customers', icon: Users, label: t('nav.customers') },
+              { to: '/admin/employees', icon: Briefcase, label: t('nav.staff') },
+              { to: '/admin/branches', icon: Building2, label: t('nav.branches') },
+              { to: '/admin/audit-logs', icon: ShieldCheck, label: t('nav.auditLogs') },
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -175,6 +182,33 @@ export function AdminLayout() {
                 </NavLink>
               );
             })}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileSidebarOpen(false);
+                setTranslatorOpen(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                color: '#FAB826',
+                backgroundColor: 'rgba(250, 184, 38, 0.12)',
+                border: 'none',
+                cursor: 'pointer',
+                marginTop: '10px',
+                textAlign: 'start',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              <Languages size={18} />
+              <span>{t('nav.translator')}</span>
+            </button>
           </nav>
         </div>
 
@@ -309,6 +343,20 @@ export function AdminLayout() {
 
           {/* Right Controls: Bell, Help, Avatar */}
           <div className="admin-header-right">
+            {/* Live Text Translator */}
+            <button
+              type="button"
+              className="admin-header-icon-btn"
+              onClick={() => setTranslatorOpen(true)}
+              aria-label={t('nav.translator')}
+              title={t('nav.translator')}
+              style={{ color: '#6C1E84' }}
+            >
+              <Languages size={19} />
+            </button>
+
+            {/* Language Selector */}
+            <LanguageSelector variant="admin" />
             {/* Notification Bell */}
             <button
               type="button"
@@ -352,6 +400,16 @@ export function AdminLayout() {
           aria-label="Close menu backdrop"
         />
       )}
+
+      {/* Live Text Translator Modal */}
+      <Modal
+        isOpen={translatorOpen}
+        onClose={() => setTranslatorOpen(false)}
+        title={t('translator.modalTitle')}
+        maxWidth="840px"
+      >
+        <TextTranslator onClose={() => setTranslatorOpen(false)} />
+      </Modal>
 
       {/* Responsive Breakpoint Styles */}
       <style>{`

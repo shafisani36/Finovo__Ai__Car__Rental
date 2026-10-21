@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -137,6 +138,7 @@ const DEFAULT_FLEET: CatalogCar[] = [
 ];
 
 export function AvailableCarsPage() {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
   const [search, setSearch] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('All Brands');
@@ -409,7 +411,7 @@ export function AvailableCarsPage() {
                   padding: '10px',
                 }}
               >
-                Reset filters
+                {t('common.actions.reset')}
               </button>
             </div>
           </div>

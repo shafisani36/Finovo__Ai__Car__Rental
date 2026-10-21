@@ -1,10 +1,12 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { WHY_CHOOSE_US_ITEMS } from '../data/homepageData';
 import { WhyChooseUsCard } from '../components/WhyChooseUsCard';
 
 export function WhyChooseUsSection() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -82,7 +84,7 @@ export function WhyChooseUsSection() {
                 margin: 0,
               }}
             >
-              Why Choose Us
+              {t('home.whyChooseUs.title')}
             </h2>
           </div>
 
@@ -116,9 +118,7 @@ export function WhyChooseUsSection() {
                 fontWeight: 500,
               }}
             >
-              Enjoy a seamless rental experience with insured cars,
-              <br />
-              transparent pricing, and support whenever you need it.
+              {t('home.whyChooseUs.subtitle')}
             </p>
           </div>
         </div>

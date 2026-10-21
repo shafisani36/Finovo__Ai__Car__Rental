@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthSplitLayout } from '../layouts/AuthSplitLayout';
 import { AuthInput } from '../components/AuthInput';
@@ -8,6 +9,7 @@ import { getDirectDashboardRoute } from '../utils/roleRouting';
 import { Mail, Lock } from 'lucide-react';
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -59,7 +61,7 @@ export function LoginPage() {
     <AuthSplitLayout
       variant="login"
       topRightPrompt={{
-        text: "Don't have an account?",
+        text: t('auth.dontHaveAccount'),
         linkText: 'Sign up →',
         linkTo: '/register',
       }}
@@ -75,7 +77,7 @@ export function LoginPage() {
             margin: '0 0 8px 0',
           }}
         >
-          Welcome Back
+          {t('auth.welcomeBack')}
         </h2>
         <p
           style={{
@@ -84,7 +86,7 @@ export function LoginPage() {
             margin: '0 0 24px 0',
           }}
         >
-          Login into your account
+          {t('auth.signInDescription')}
         </p>
 
         {successMessage && (
@@ -123,7 +125,7 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <AuthInput
-            label="Email"
+            label={t('auth.email')}
             type="email"
             icon={<Mail size={18} />}
             placeholder="Robin@gmail.com"
@@ -137,7 +139,7 @@ export function LoginPage() {
           />
 
           <AuthInput
-            label="Password"
+            label={t('auth.password')}
             isPassword
             icon={<Lock size={18} />}
             placeholder="Password"
@@ -251,7 +253,7 @@ export function LoginPage() {
               e.currentTarget.style.boxShadow = '0 4px 14px rgba(250, 184, 38, 0.35)';
             }}
           >
-            <span>{isSubmitting ? 'Logging in...' : 'Log In'}</span>
+            <span>{isSubmitting ? t('common.loading') : t('auth.signInBtn')}</span>
           </button>
 
           <SocialAuthRow label="or continue with" />

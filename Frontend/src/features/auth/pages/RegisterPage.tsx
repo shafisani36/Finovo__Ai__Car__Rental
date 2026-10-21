@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthSplitLayout } from '../layouts/AuthSplitLayout';
 import { AuthInput } from '../components/AuthInput';
@@ -7,6 +8,7 @@ import { useAuth } from '../context';
 import { User, Mail, Lock, CheckCircle2 } from 'lucide-react';
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register } = useAuth();
 
@@ -72,7 +74,7 @@ export function RegisterPage() {
     <AuthSplitLayout
       variant="register"
       topRightPrompt={{
-        text: 'Already have an account?',
+        text: t('auth.alreadyHaveAccount'),
         linkText: 'Sign in! →',
         linkTo: '/login',
       }}
@@ -139,7 +141,7 @@ export function RegisterPage() {
         ) : (
           <form onSubmit={handleSubmit} noValidate>
             <AuthInput
-              label="Full Name"
+              label={t('auth.fullName')}
               icon={<User size={18} />}
               placeholder="Robin"
               value={fullName}
@@ -166,7 +168,7 @@ export function RegisterPage() {
             />
 
             <AuthInput
-              label="Password"
+              label={t('auth.password')}
               isPassword
               icon={<Lock size={18} />}
               placeholder="Password"
@@ -180,7 +182,7 @@ export function RegisterPage() {
             />
 
             <AuthInput
-              label="Confirm Password"
+              label={t('auth.confirmPassword')}
               isPassword
               icon={<Lock size={18} />}
               placeholder="Confirm Password"

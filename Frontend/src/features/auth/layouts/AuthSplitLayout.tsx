@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../../../components/common/BrandLogo';
+import { LanguageSelector } from '../../../components/common/LanguageSelector';
 import { Car, Zap, Headphones } from 'lucide-react';
 
 interface AuthSplitLayoutProps {
@@ -539,7 +540,8 @@ export function AuthSplitLayout({
             </Link>
           </div>
 
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <LanguageSelector variant="admin" />
             {topRightPrompt && (
               <>
                 <span>{topRightPrompt.text}&nbsp;</span>

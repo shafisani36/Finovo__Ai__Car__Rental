@@ -19,6 +19,7 @@ model User {
   branchId            String?              @db.VarChar(64)
   avatarUrl           String?              @db.VarChar(512)
   phone               String?              @db.VarChar(32)
+  preferredLanguage   String?              @default("en") @db.VarChar(10)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   customerProfile     Customer?
@@ -794,4 +795,21 @@ model Inquiry {
   @@index([createdAt])
   @@map("inquiries")
 }
+
+model TranslationCache {
+  id             String   @id @default(cuid())
+  sourceHash     String   @db.VarChar(64)
+  sourceLang     String   @db.VarChar(10)
+  targetLang     String   @db.VarChar(10)
+  sourceText     String   @db.MediumText
+  translatedText String   @db.MediumText
+  provider       String   @default("google") @db.VarChar(32)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([sourceHash, sourceLang, targetLang])
+  @@index([sourceHash])
+  @@map("translation_cache")
+}
+
 

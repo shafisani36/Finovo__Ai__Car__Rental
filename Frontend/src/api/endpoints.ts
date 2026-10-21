@@ -110,4 +110,11 @@ export const API_ENDPOINTS = {
     INQUIRY_STATUS: (id: string) => `/admin/inquiries/${id}/status`,
     INQUIRY_REPLY: (id: string) => `/admin/inquiries/${id}/reply`,
   },
+
+  // Multilingual & Translation Service
+  TRANSLATIONS: {
+    TRANSLATE: '/translations/translate',
+    LANGUAGES: '/translations/languages',
+    PREFERENCE: '/auth/profile/language',
+  },
 } as const;

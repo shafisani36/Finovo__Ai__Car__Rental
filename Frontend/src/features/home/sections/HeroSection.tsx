@@ -1,9 +1,11 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { SearchWidget } from '../components/SearchWidget';
 
 export function HeroSection() {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -104,8 +106,7 @@ export function HeroSection() {
                 marginBottom: '10px',
               }}
             >
-              Find your <br />
-              Perfect Ride.
+              {t('home.hero.title')}
             </h1>
 
             <p
@@ -118,7 +119,7 @@ export function HeroSection() {
                 maxWidth: '480px',
               }}
             >
-              Finovo - Inspection &amp; Rent Service on Your Hand. Discover seamless mobility with verified luxury vehicles.
+              {t('home.hero.subtitle')}
             </p>
           </div>
 

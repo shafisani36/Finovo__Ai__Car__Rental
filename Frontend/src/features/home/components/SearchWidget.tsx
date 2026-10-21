@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { RentalType, SearchFormData } from '../../../types';
 import { Button } from '../../../components/common/Button';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { MapPin, Calendar, Car, Search, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export function SearchWidget() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<SearchFormData>({
     rentalType: 'daily',
     pickupLocation: 'San Francisco Int Airport (SFO)',
@@ -104,7 +106,7 @@ export function SearchWidget() {
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-        {/* Row 1: Pick-up Location */}
+        {/* Row 1: {t('home.searchWidget.pickupLocation')} */}
         <div>
           <label
             htmlFor="pickup-location"
@@ -166,7 +168,7 @@ export function SearchWidget() {
                 marginBottom: '4px',
               }}
             >
-              Drop-off Location
+              {t('home.searchWidget.returnLocation')}
             </label>
             <div
               style={{
@@ -216,7 +218,7 @@ export function SearchWidget() {
                 marginBottom: '4px',
               }}
             >
-              Pick-up Date
+              {t('home.searchWidget.pickupDate')}
             </label>
             <div
               style={{
@@ -296,7 +298,7 @@ export function SearchWidget() {
           </div>
         </div>
 
-        {/* Row 3: Car Category Dropdown */}
+        {/* Row 3: {t('home.searchWidget.vehicleType')} Dropdown */}
         <div>
           <label
             htmlFor="car-category-select"

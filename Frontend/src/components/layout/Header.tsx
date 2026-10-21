@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BrandLogo } from '../common/BrandLogo';
 import { Button } from '../common/Button';
-import { User, X, Sun, Moon, Globe, ChevronDown } from 'lucide-react';
+import { LanguageSelector } from '../common/LanguageSelector';
+import { Modal } from '../common/Modal';
+import { TextTranslator } from '../common/TextTranslator';
+import { User, X, Sun, Moon, Languages } from 'lucide-react';
 import { useAuth } from '../../features/auth/context';
 
 interface HeaderProps {
@@ -10,9 +14,11 @@ interface HeaderProps {
 }
 
 export function Header({ onSignInClick }: HeaderProps) {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [translatorOpen, setTranslatorOpen] = useState(false);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -34,12 +40,12 @@ export function Header({ onSignInClick }: HeaderProps) {
   // 5. AI Inspection
   // 6. Contact
   const navLinks = [
-    { label: 'Home', to: '/' },
-    { label: 'Cars', to: '/cars' },
-    { label: 'Insurance', to: '/insurance' },
-    { label: 'About Us', to: '/about' },
-    { label: 'AI Inspection', to: '/ai-inspection' },
-    { label: 'Contact', to: '/contact' },
+    { label: t('nav.home'), to: '/' },
+    { label: t('nav.cars'), to: '/cars' },
+    { label: t('nav.insurance'), to: '/insurance' },
+    { label: t('nav.aboutUs'), to: '/about' },
+    { label: t('nav.aiInspection'), to: '/ai-inspection' },
+    { label: t('nav.contact'), to: '/contact' },
   ];
 
   return (
@@ -113,7 +119,7 @@ export function Header({ onSignInClick }: HeaderProps) {
         >
           {navLinks.map((link) => (
             <NavLink
-              key={link.label}
+              key={link.to}
               to={link.to}
               style={({ isActive }) => ({
                 fontSize: '0.925rem',
@@ -132,26 +138,36 @@ export function Header({ onSignInClick }: HeaderProps) {
         </nav>
 
         {/* Right side controls */}
-        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Language selector pill */}
-          <div
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Multilingual Text Translator Quick Launcher */}
+          <button
+            type="button"
+            className="translator-toggle-btn"
+            onClick={() => setTranslatorOpen(true)}
+            aria-label="Open Multilingual Text Translator"
+            title={t('nav.translator')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
+              justifyContent: 'center',
+              gap: '6px',
               padding: '6px 10px',
               borderRadius: '20px',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              color: 'rgba(255, 255, 255, 0.85)',
+              backgroundColor: 'rgba(250, 184, 38, 0.12)',
+              border: '1px solid rgba(250, 184, 38, 0.3)',
+              color: '#FAB826',
+              cursor: 'pointer',
               fontSize: '0.8rem',
               fontWeight: 600,
-              cursor: 'pointer',
+              transition: 'all var(--transition-fast)',
             }}
           >
-            <Globe size={14} />
-            <span>EN</span>
-            <ChevronDown size={12} />
-          </div>
+            <Languages size={15} />
+            <span className="desktop-only-inline">{t('nav.translator')}</span>
+          </button>
+
+          {/* Real Language selector */}
+          <LanguageSelector variant="customer" />
 
           {/* Dark / Light Pill Switch */}
           <button
@@ -195,7 +211,7 @@ export function Header({ onSignInClick }: HeaderProps) {
                 : undefined
             }
           >
-            {isAuthenticated ? user?.fullName?.split(' ')[0] || 'My Booking' : 'Login / My Booking'}
+            {isAuthenticated ? user?.fullName?.split(' ')[0] || t('nav.myAccount') : t('nav.login')}
           </Button>
 
           {/* Mobile Profile Avatar Button */}
@@ -245,7 +261,7 @@ export function Header({ onSignInClick }: HeaderProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {navLinks.map((link) => (
               <NavLink
-                key={link.label}
+                key={link.to}
                 to={link.to}
                 onClick={() => setMobileMenuOpen(false)}
                 style={({ isActive }) => ({
@@ -263,12 +279,44 @@ export function Header({ onSignInClick }: HeaderProps) {
                 })}
               >
                 <span>{link.label}</span>
-                <span style={{ color: '#FAB826', fontSize: '1rem' }}>→</span>
+                <span style={{ color: '#FAB826', fontSize: '1rem' }}>›</span>
               </NavLink>
             ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setTranslatorOpen(true);
+              }}
+              style={{
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                color: '#FAB826',
+                padding: '14px 12px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                backgroundColor: 'rgba(250, 184, 38, 0.08)',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Languages size={18} />
+                <span>{t('nav.translator')}</span>
+              </div>
+              <span style={{ color: '#FAB826', fontSize: '1rem' }}>›</span>
+            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+              <LanguageSelector variant="customer" />
+            </div>
+
             <Button
               variant="primary"
               size="lg"
@@ -283,11 +331,22 @@ export function Header({ onSignInClick }: HeaderProps) {
                 fontWeight: 700,
               }}
             >
-              {isAuthenticated ? 'Go to Dashboard' : 'Login / My Booking'}
+              {isAuthenticated ? t('nav.dashboard') : t('nav.login')}
             </Button>
           </div>
         </div>
       )}
+
+      {/* Live Text Translator Modal */}
+      <Modal
+        isOpen={translatorOpen}
+        onClose={() => setTranslatorOpen(false)}
+        title={t('translator.modalTitle')}
+        maxWidth="840px"
+      >
+        <TextTranslator onClose={() => setTranslatorOpen(false)} />
+      </Modal>
     </header>
   );
 }
+

@@ -1,8 +1,10 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { BrandLogo } from '../common/BrandLogo';
+import { LanguageSelector } from '../common/LanguageSelector';
 import { Mail, Phone, MapPin, Smartphone } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -36,6 +38,7 @@ const LinkedinIcon = () => (
 );
 
 export function Footer() {
+  const { t } = useTranslation();
   const footerRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -100,7 +103,7 @@ export function Footer() {
                 marginBottom: '24px',
               }}
             >
-              Next-generation AI-powered car rentals. Transparent pricing, instantaneous vehicle inspection, and effortless nationwide bookings.
+              {t('footer.description')}
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               {[
@@ -125,16 +128,6 @@ export function Footer() {
                     transition: 'all var(--transition-fast)',
                     border: '1px solid rgba(255, 255, 255, 0.12)',
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-accent-500)';
-                    e.currentTarget.style.color = 'var(--color-primary-950)';
-                    e.currentTarget.style.borderColor = 'var(--color-accent-500)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-                    e.currentTarget.style.color = 'var(--text-white-secondary)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
-                  }}
                 >
                   {s.icon}
                 </a>
@@ -154,40 +147,35 @@ export function Footer() {
                 letterSpacing: '-0.01em',
               }}
             >
-              Quick Links
+              {t('footer.quickLinks')}
             </h4>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
-                { label: 'Available Cars', href: '/cars' },
-                { label: 'Insurance Protection', href: '/insurance' },
-                { label: 'AI Inspection Tech', href: '/ai-inspection' },
-                { label: 'About Us', href: '/about' },
-                { label: 'Contact Support', href: '/contact' },
-                { label: 'Frequently Asked Questions', href: '#faq' },
-              ].map((link) => (
-                <li key={link.label}>
+                { label: t('nav.home'), to: '/' },
+                { label: t('nav.cars'), to: '/cars' },
+                { label: t('nav.insurance'), to: '/insurance' },
+                { label: t('nav.aboutUs'), to: '/about' },
+                { label: t('nav.aiInspection'), to: '/ai-inspection' },
+                { label: t('nav.contact'), to: '/contact' },
+              ].map((item) => (
+                <li key={item.to}>
                   <a
-                    href={link.href}
+                    href={item.to}
                     style={{
-                      fontSize: '0.9rem',
                       color: 'var(--text-white-secondary)',
+                      fontSize: '0.9rem',
+                      textDecoration: 'none',
                       transition: 'color var(--transition-fast)',
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--color-accent-500)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--text-white-secondary)';
-                    }}
                   >
-                    {link.label}
+                    {item.label}
                   </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Contact Details Column */}
+          {/* Contact Column */}
           <div className="footer-col-anim">
             <h4
               style={{
@@ -199,7 +187,7 @@ export function Footer() {
                 letterSpacing: '-0.01em',
               }}
             >
-              Contact Us
+              {t('footer.contactInfo')}
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -210,8 +198,8 @@ export function Footer() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <Phone size={17} color="var(--color-accent-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)' }}>
-                  +1 (800) 555-FINOVO (24/7)
+                <span className="phone-number" style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)' }}>
+                  +1 (800) 555-FINOVO
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -235,7 +223,7 @@ export function Footer() {
                 letterSpacing: '-0.01em',
               }}
             >
-              Get Mobile App
+              {t('home.appDownload.title')}
             </h4>
             <p
               style={{
@@ -245,7 +233,7 @@ export function Footer() {
                 marginBottom: '18px',
               }}
             >
-              Scan cars, unlock keylessly, and track rentals on the go.
+              {t('home.appDownload.subtitle')}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <a
@@ -262,15 +250,9 @@ export function Footer() {
                   textDecoration: 'none',
                   transition: 'background-color var(--transition-fast)',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.16)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                }}
               >
                 <Smartphone size={20} color="var(--color-accent-500)" />
-                <div style={{ textAlign: 'left' }}>
+                <div style={{ textAlign: 'start' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-white-muted)', textTransform: 'uppercase' }}>
                     Download on
                   </div>
@@ -295,12 +277,15 @@ export function Footer() {
             color: 'var(--text-white-muted)',
           }}
         >
-          <div>© 2026 Finovo AI Car Rental. All rights reserved.</div>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <a href="#" style={{ color: 'inherit' }}>Privacy Policy</a>
-            <a href="#" style={{ color: 'inherit' }}>Terms of Service</a>
-            <a href="#" style={{ color: 'inherit' }}>Security Compliance</a>
-            <a href="#" style={{ color: 'inherit' }}>Cookie Preferences</a>
+          <div>© 2026 {t('common.appName')}. {t('footer.rightsReserved')}</div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <a href="#" style={{ color: 'inherit' }}>{t('footer.privacyPolicy')}</a>
+              <a href="#" style={{ color: 'inherit' }}>{t('footer.termsOfService')}</a>
+              <a href="#" style={{ color: 'inherit' }}>{t('footer.cookiePolicy')}</a>
+            </div>
+            <LanguageSelector variant="customer" />
           </div>
         </div>
       </div>
@@ -319,3 +304,4 @@ export function Footer() {
     </footer>
   );
 }
+

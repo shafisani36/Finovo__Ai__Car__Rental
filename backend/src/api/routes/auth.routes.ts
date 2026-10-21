@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthController } from '../../modules/auth/auth.controller';
+import { TranslationController } from '../../modules/translations/translation.controller';
 import { authenticate } from '../../middleware/authenticate';
 import { authRateLimiter } from '../../middleware/rate-limiter';
 
@@ -15,3 +16,4 @@ authRouter.post('/verify-code', authRateLimiter, AuthController.verifyResetCode)
 authRouter.post('/reset-password', authRateLimiter, AuthController.resetPassword);
 
 authRouter.get('/me', authenticate, AuthController.getMe);
+authRouter.put('/profile/language', authenticate, TranslationController.updateLanguagePreference);
