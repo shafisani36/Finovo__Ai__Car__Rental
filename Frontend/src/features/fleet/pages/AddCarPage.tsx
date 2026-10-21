@@ -31,6 +31,9 @@ import {
   Car,
   Trash2,
   ExternalLink,
+  Flame,
+  Zap,
+  BatteryCharging,
 } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { useConfirm } from '../../../components/common/ConfirmModal';
@@ -45,6 +48,20 @@ const POPULAR_COLORS = [
   { name: 'Red', hex: '#DC2626', border: '#B91C1C' },
   { name: 'Green', hex: '#059669', border: '#047857' },
   { name: 'Gold / Champagne', hex: '#D97706', border: '#B45309' },
+];
+
+const POPULAR_MAKES = [
+  'Toyota',
+  'Honda',
+  'Hyundai',
+  'KIA',
+  'BMW',
+  'Mercedes-Benz',
+  'Audi',
+  'Porsche',
+  'Tesla',
+  'Land Rover',
+  'Other',
 ];
 
 const AVAILABLE_FEATURES = [
@@ -67,6 +84,35 @@ const AVAILABLE_FEATURES = [
   'Parking Distance Sensors (F/R)',
   'Tow Hitch Installed',
 ];
+
+const FEATURE_CATEGORIES = [
+  { id: 'all', label: 'All Equipment' },
+  { id: 'safety', label: 'Safety & ADAS' },
+  { id: 'comfort', label: 'Cabin & Comfort' },
+  { id: 'tech', label: 'Audio & Connectivity' },
+  { id: 'utility', label: 'Exterior & Utility' },
+];
+
+const FEATURE_META: Record<string, 'safety' | 'comfort' | 'tech' | 'utility'> = {
+  'GPS Navigation System': 'tech',
+  'Apple CarPlay & Android Auto': 'tech',
+  '360° Surround Camera': 'safety',
+  'Panoramic Sunroof': 'comfort',
+  'Heated Front Seats': 'comfort',
+  'Ventilated Seats': 'comfort',
+  'Adaptive Cruise Control': 'safety',
+  'Autonomous Emergency Braking': 'safety',
+  'Lane Departure Warning & Keep Assist': 'safety',
+  'Blind Spot Monitoring': 'safety',
+  'Smart Keyless Entry & Start': 'comfort',
+  'Premium Surround Audio': 'tech',
+  'Dashcam Telematics Unit': 'tech',
+  'Full Leather Upholstery': 'comfort',
+  'ISOFIX Child Seat Mounts': 'safety',
+  'Wireless Smartphone Charger': 'tech',
+  'Parking Distance Sensors (F/R)': 'safety',
+  'Tow Hitch Installed': 'utility',
+};
 
 export const DEFAULT_FALLBACK_CATEGORIES: VehicleCategory[] = [
   { id: 'cat-sedan', name: 'Sedan', slug: 'sedan', baseRate: 8000, description: 'Standard & Executive Sedans (up to 5 passengers)' },
@@ -94,8 +140,14 @@ export function AddCarPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Active section for sticky navigation ribbon
+  const [activeSection, setActiveSection] = useState<'sec-identity' | 'sec-specs' | 'sec-features' | 'sec-pricing' | 'sec-photos' | 'sec-records'>('sec-identity');
+
   // Mobile tab switcher: 'form' | 'preview'
   const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form');
+
+  // Feature filter tab
+  const [activeFeatureTab, setActiveFeatureTab] = useState('all');
 
   // 1. Identity & Classification
   const [brand, setBrand] = useState('');
@@ -103,7 +155,7 @@ export function AddCarPage() {
   const [model, setModel] = useState('');
   const [customModelMode, setCustomModelMode] = useState(false);
   const [customModelName, setCustomModelName] = useState('');
-  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [year, setYear] = useState<number>(2025);
   const [trim, setTrim] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [vin, setVin] = useState('');
@@ -170,10 +222,54 @@ export function AddCarPage() {
   // Live preview image carousel state
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
 
+  // Smooth scroll helper for sticky navigation ribbon
+  const scrollToSection = (sectionId: 'sec-identity' | 'sec-specs' | 'sec-features' | 'sec-pricing' | 'sec-photos' | 'sec-records') => {
+    setActiveSection(sectionId);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const navOffset = 140;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // Observer for active section highlighting on scroll
+  useEffect(() => {
+    const sectionIds: Array<'sec-identity' | 'sec-specs' | 'sec-features' | 'sec-pricing' | 'sec-photos' | 'sec-records'> = [
+      'sec-identity',
+      'sec-specs',
+      'sec-features',
+      'sec-pricing',
+      'sec-photos',
+      'sec-records',
+    ];
+
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 180;
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPos >= top && scrollPos < top + height) {
+            setActiveSection(id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Load initial data (Categories, Branches, Brands, and if Edit mode: existing Vehicle)
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(isEdit);
 
     const initialCalls: [
       Promise<{ categories: VehicleCategory[] }>,
@@ -426,6 +522,14 @@ export function AddCarPage() {
     setSelectedFeatures((prev) => (prev.includes(feature) ? prev.filter((f) => f !== feature) : [...prev, feature]));
   };
 
+  const selectAllFeatures = () => {
+    setSelectedFeatures(AVAILABLE_FEATURES);
+  };
+
+  const clearAllFeatures = () => {
+    setSelectedFeatures([]);
+  };
+
   // Form compliance calculations
   const effectiveModel = customModelMode ? customModelName.trim() : model.trim();
   const effectiveBrand = brand === 'Other' ? customBrand.trim() : brand.trim();
@@ -441,7 +545,6 @@ export function AddCarPage() {
     const modelLower = effectiveModel.toLowerCase();
     const combined = `${catName} ${catSlug} ${modelLower}`;
 
-    // 1. Van, Minibus, Commercial Passenger Shuttle (1 to 20 passengers)
     if (
       combined.includes('van') ||
       combined.includes('minibus') ||
@@ -467,7 +570,6 @@ export function AddCarPage() {
       };
     }
 
-    // 2. SUV, Crossover, 4x4 (1 to 8 passengers)
     if (
       combined.includes('suv') ||
       combined.includes('crossover') ||
@@ -493,7 +595,6 @@ export function AddCarPage() {
       };
     }
 
-    // 3. Pickup Truck (1 to 6 passengers)
     if (
       combined.includes('pickup') ||
       combined.includes('truck') ||
@@ -516,7 +617,6 @@ export function AddCarPage() {
       };
     }
 
-    // 4. Coupe / Sports Car / Convertible (1 to 4 passengers)
     if (
       combined.includes('coupe') ||
       combined.includes('sports') ||
@@ -539,7 +639,6 @@ export function AddCarPage() {
       };
     }
 
-    // 5. Hatchback / Compact (1 to 5 passengers)
     if (
       combined.includes('hatchback') ||
       combined.includes('compact') ||
@@ -562,7 +661,6 @@ export function AddCarPage() {
       };
     }
 
-    // 6. Default Sedan / Saloon (1 to 5 passengers)
     return {
       type: 'SEDAN',
       label: selectedCategory?.name || 'Sedan',
@@ -592,6 +690,19 @@ export function AddCarPage() {
     }
   }, [isEdit, vehicleTypeInfo]);
 
+  // Section completion checks for navigation ribbon
+  const isSec1Complete = Boolean(effectiveBrand && effectiveModel && registrationNumber.trim() && categoryId);
+  const isSec2Complete = Boolean(transmission && fuelType && drivetrain);
+  const isSec3Complete = Boolean(selectedFeatures.length > 0);
+  const isSec4Complete = Boolean(
+    parseFloat(pricingState.dailyRate) > 0 ||
+    parseFloat(pricingState.perKmRate) > 0 ||
+    parseFloat(pricingState.hourlyRate) > 0 ||
+    parseFloat(pricingState.monthlyRate) > 0
+  );
+  const isSec5Complete = Boolean(photos.length >= 4 && photos.length <= 6);
+  const isSec6Complete = Boolean(insurancePolicyNumber.trim() || insuranceExpiry);
+
   const complianceScore = useMemo(() => {
     let score = 0;
     if (effectiveBrand && effectiveModel) score += 25;
@@ -606,54 +717,68 @@ export function AddCarPage() {
     return score;
   }, [effectiveBrand, effectiveModel, registrationNumber, categoryId, photos, pricingState]);
 
+  // Filtered features list based on active tab
+  const filteredFeatures = useMemo(() => {
+    if (activeFeatureTab === 'all') return AVAILABLE_FEATURES;
+    return AVAILABLE_FEATURES.filter((f) => FEATURE_META[f] === activeFeatureTab);
+  }, [activeFeatureTab]);
+
   // Form Submission (Create or Edit)
   const handleSubmit = async () => {
     setError(null);
 
     if (!effectiveBrand) {
       setError('Please select or specify a vehicle manufacturer / make.');
+      scrollToSection('sec-identity');
       return;
     }
     if (!effectiveModel) {
       setError('Please select or specify a vehicle model name.');
+      scrollToSection('sec-identity');
       return;
     }
     if (!registrationNumber.trim()) {
       setError('License registration plate is required.');
+      scrollToSection('sec-identity');
       return;
     }
     if (!categoryId) {
       setError('Please assign the vehicle to a fleet category.');
+      scrollToSection('sec-identity');
       return;
     }
     if (photos.length < 4) {
       setError(`Enterprise compliance requires at least 4 inspection photos. Currently ${photos.length} attached.`);
+      scrollToSection('sec-photos');
       return;
     }
 
-    // Pricing validation
     if (pricingState.pricingMethod === 'daily' || pricingState.pricingMethod === 'daily_extra_km') {
       const daily = parseFloat(pricingState.dailyRate);
       if (isNaN(daily) || daily <= 0) {
         setError('Please enter a valid positive daily rate for daily rental.');
+        scrollToSection('sec-pricing');
         return;
       }
     } else if (pricingState.pricingMethod === 'per_km') {
       const perKm = parseFloat(pricingState.perKmRate);
       if (isNaN(perKm) || perKm <= 0) {
         setError('Please enter a valid per-kilometer rate.');
+        scrollToSection('sec-pricing');
         return;
       }
     } else if (pricingState.pricingMethod === 'hourly') {
       const hourly = parseFloat(pricingState.hourlyRate);
       if (isNaN(hourly) || hourly <= 0) {
         setError('Please enter a valid hourly rate.');
+        scrollToSection('sec-pricing');
         return;
       }
     } else if (pricingState.pricingMethod === 'monthly') {
       const monthly = parseFloat(pricingState.monthlyRate);
       if (isNaN(monthly) || monthly <= 0) {
         setError('Please enter a valid monthly subscription rate.');
+        scrollToSection('sec-pricing');
         return;
       }
     }
@@ -782,7 +907,7 @@ export function AddCarPage() {
 
   return (
     <div className="add-car-page-root">
-      {/* ================= BREADCRUMB & HEADER ================= */}
+      {/* ================= BREADCRUMB & EXECUTIVE HEADER ================= */}
       <div className="add-car-header-wrapper">
         <div className="add-car-breadcrumb">
           <Link to="/admin/cars" className="add-car-breadcrumb-back">
@@ -815,7 +940,7 @@ export function AddCarPage() {
                 ● {status}
               </span>
               {activeCategory?.name && (
-                <span className="preview-badge-category" style={{ fontSize: '0.75rem', padding: '3px 10px' }}>
+                <span className="preview-badge-category">
                   {activeCategory.name}
                 </span>
               )}
@@ -921,7 +1046,7 @@ export function AddCarPage() {
               color: status === 'AVAILABLE' ? '#059669' : '#D97706',
             }}
           >
-            <CheckCircle2 size={22} />
+            <CheckCircle2 size={24} />
           </div>
         </div>
 
@@ -931,7 +1056,7 @@ export function AddCarPage() {
             <div className="car-kpi-label">Activation Readiness</div>
             <div className="car-kpi-value">{complianceScore}%</div>
             <div className="car-kpi-meta" style={{ color: complianceScore === 100 ? '#059669' : '#6C1E84' }}>
-              {complianceScore === 100 ? '● Ready for rental' : 'Fill mandatory fields'}
+              {complianceScore === 100 ? '● Ready for rental' : 'Complete mandatory fields'}
             </div>
           </div>
           <div
@@ -941,7 +1066,7 @@ export function AddCarPage() {
               color: complianceScore === 100 ? '#059669' : '#6C1E84',
             }}
           >
-            <Sparkles size={22} />
+            <Sparkles size={24} />
           </div>
         </div>
 
@@ -955,14 +1080,14 @@ export function AddCarPage() {
             </div>
           </div>
           <div className="car-kpi-icon" style={{ backgroundColor: '#FEF8E7', color: '#B45309' }}>
-            <DollarSign size={22} />
+            <DollarSign size={24} />
           </div>
         </div>
 
         {/* Inspection Photos */}
         <div className="car-kpi-card">
           <div>
-            <div className="car-kpi-label">Mandatory Photos</div>
+            <div className="car-kpi-label">Inspection Photos</div>
             <div className="car-kpi-value">{photos.length} / 6</div>
             <div
               className="car-kpi-meta"
@@ -978,12 +1103,119 @@ export function AddCarPage() {
               color: photos.length >= 4 ? '#059669' : '#DC2626',
             }}
           >
-            <Camera size={22} />
+            <Camera size={24} />
           </div>
         </div>
       </div>
 
-      {/* VIN Decode Success Alert */}
+      {/* ================= STICKY INTERACTIVE SECTION NAVIGATION BAR (Strict Single-Row Grid, 0 X-Scroll) ================= */}
+      <div className="car-section-navbar-wrap">
+        <div className="car-section-nav-grid" role="tablist" aria-label="Vehicle onboarding sections">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'sec-identity'}
+            onClick={() => scrollToSection('sec-identity')}
+            className={`car-section-nav-item ${activeSection === 'sec-identity' ? 'active' : ''}`}
+            title="1. Identity & Registration"
+          >
+            <span className="car-nav-num">1</span>
+            <span className="car-nav-label-box">
+              <span className="car-nav-label-full">Identity & Reg</span>
+              <span className="car-nav-label-short">Identity</span>
+              <span className="car-nav-label-micro">Info</span>
+            </span>
+            {isSec1Complete && <span className="car-nav-check" title="Section Complete" />}
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'sec-specs'}
+            onClick={() => scrollToSection('sec-specs')}
+            className={`car-section-nav-item ${activeSection === 'sec-specs' ? 'active' : ''}`}
+            title="2. Engineering & Specs"
+          >
+            <span className="car-nav-num">2</span>
+            <span className="car-nav-label-box">
+              <span className="car-nav-label-full">Specs & Power</span>
+              <span className="car-nav-label-short">Specs</span>
+              <span className="car-nav-label-micro">Specs</span>
+            </span>
+            {isSec2Complete && <span className="car-nav-check" title="Section Complete" />}
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'sec-features'}
+            onClick={() => scrollToSection('sec-features')}
+            className={`car-section-nav-item ${activeSection === 'sec-features' ? 'active' : ''}`}
+            title="3. Equipment & ADAS"
+          >
+            <span className="car-nav-num">3</span>
+            <span className="car-nav-label-box">
+              <span className="car-nav-label-full">Equipment & ADAS</span>
+              <span className="car-nav-label-short">Features</span>
+              <span className="car-nav-label-micro">ADAS</span>
+            </span>
+            {isSec3Complete && <span className="car-nav-check" title="Section Complete" />}
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'sec-pricing'}
+            onClick={() => scrollToSection('sec-pricing')}
+            className={`car-section-nav-item ${activeSection === 'sec-pricing' ? 'active' : ''}`}
+            title="4. Rates & Policies"
+          >
+            <span className="car-nav-num">4</span>
+            <span className="car-nav-label-box">
+              <span className="car-nav-label-full">Rates & Policies</span>
+              <span className="car-nav-label-short">Pricing</span>
+              <span className="car-nav-label-micro">Rates</span>
+            </span>
+            {isSec4Complete && <span className="car-nav-check" title="Section Complete" />}
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'sec-photos'}
+            onClick={() => scrollToSection('sec-photos')}
+            className={`car-section-nav-item ${activeSection === 'sec-photos' ? 'active' : ''}`}
+            title="5. Inspection Photos"
+          >
+            <span className="car-nav-num">5</span>
+            <span className="car-nav-label-box">
+              <span className="car-nav-label-full">Inspection Photos</span>
+              <span className="car-nav-label-short">Photos</span>
+              <span className="car-nav-label-micro">Photos</span>
+            </span>
+            {isSec5Complete && <span className="car-nav-check" title="Section Complete" />}
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeSection === 'sec-records'}
+            onClick={() => scrollToSection('sec-records')}
+            className={`car-section-nav-item ${activeSection === 'sec-records' ? 'active' : ''}`}
+            title="6. Insurance & Records"
+          >
+            <span className="car-nav-num">6</span>
+            <span className="car-nav-label-box">
+              <span className="car-nav-label-full">Insurance & Records</span>
+              <span className="car-nav-label-short">Records</span>
+              <span className="car-nav-label-micro">Admin</span>
+            </span>
+            {isSec6Complete && <span className="car-nav-check" title="Section Complete" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Alerts */}
       {vinDecodeSuccess && (
         <div className="add-car-alert add-car-alert-success">
           <div className="add-car-alert-inner">
@@ -999,7 +1231,6 @@ export function AddCarPage() {
         </div>
       )}
 
-      {/* Error Alert */}
       {error && (
         <div className="add-car-alert add-car-alert-error">
           <div className="add-car-alert-inner">
@@ -1012,7 +1243,7 @@ export function AddCarPage() {
         </div>
       )}
 
-      {/* Mobile Tab Segment Switcher (For Small Tablet & Phone) */}
+      {/* Mobile Tab Segment Switcher */}
       <div className="car-mobile-segment">
         <button
           type="button"
@@ -1027,7 +1258,7 @@ export function AddCarPage() {
           className={`car-mobile-seg-btn ${mobileTab === 'preview' ? 'active' : ''}`}
         >
           <Eye size={15} />
-          <span>Card Preview ({complianceScore}%)</span>
+          <span>Live Card Preview ({complianceScore}%)</span>
         </button>
       </div>
 
@@ -1036,29 +1267,49 @@ export function AddCarPage() {
         {/* ================= LEFT PANE: FORM SECTIONS ================= */}
         <div className={`car-form-pane${mobileTab === 'preview' ? ' pane-hidden' : ''}`}>
           {/* SECTION 1: IDENTITY & CLASSIFICATION */}
-          <div className="car-card-section">
+          <div id="sec-identity" className="car-card-section">
             <div className="car-card-header">
               <div className="car-card-header-left">
                 <div className="car-card-icon-badge">
                   <Tag size={20} />
                 </div>
                 <div>
-                  <h2 className="car-card-title">1. Vehicle Identification & Registration</h2>
-                  <p className="car-card-subtitle">Manufacturer details, VIN specification, and legal classification</p>
+                  <h2 className="car-card-title">1. Vehicle Identification & Legal Registration</h2>
+                  <p className="car-card-subtitle">Manufacturer details, legal plate, official VIN scanner, and category classification</p>
                 </div>
               </div>
               <span
                 style={{
                   fontSize: '0.78rem',
                   fontWeight: 800,
-                  color: effectiveBrand && effectiveModel ? '#059669' : '#6C1E84',
-                  backgroundColor: effectiveBrand && effectiveModel ? '#DEF7EC' : '#F5EEF8',
-                  padding: '4px 10px',
-                  borderRadius: '10px',
+                  color: isSec1Complete ? '#059669' : '#6C1E84',
+                  backgroundColor: isSec1Complete ? '#DEF7EC' : '#F5EEF8',
+                  padding: '4px 12px',
+                  borderRadius: '12px',
                 }}
               >
-                {effectiveBrand && effectiveModel ? '✓ Identified' : 'Required'}
+                {isSec1Complete ? '✓ Identified & Ready' : 'Mandatory Section'}
               </span>
+            </div>
+
+            {/* Popular Make Quick Chips */}
+            <div>
+              <div className="popular-brands-row">
+                <span className="popular-brands-label">Popular Makes:</span>
+                {POPULAR_MAKES.map((m) => {
+                  const isActive = brand.toLowerCase() === m.toLowerCase();
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => handleBrandChange(m)}
+                      className={`popular-brand-chip ${isActive ? 'active' : ''}`}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Row 1: Brand & Model Selection */}
@@ -1186,7 +1437,7 @@ export function AddCarPage() {
               </div>
             </div>
 
-            {/* Row 2: Year, Trim & Plate */}
+            {/* Row 2: Year, Trim & Embossed License Plate */}
             <div className="car-row-3">
               <div className="fleet-form-group">
                 <label className="fleet-form-label fleet-form-label-required">Model Year</label>
@@ -1197,7 +1448,7 @@ export function AddCarPage() {
                     const val = e.target.value;
                     setYear(val === '' ? 0 : parseInt(val, 10));
                   }}
-                  placeholder="e.g. 2024"
+                  placeholder="e.g. 2025"
                   min={1970}
                   max={2035}
                   className="fleet-form-input"
@@ -1205,7 +1456,7 @@ export function AddCarPage() {
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Trim / Grade</label>
+                <label className="fleet-form-label">Trim / Grade Specification</label>
                 <input
                   type="text"
                   value={trim}
@@ -1215,107 +1466,125 @@ export function AddCarPage() {
                 />
               </div>
 
+              {/* Embossed License Plate Input */}
               <div className="fleet-form-group">
-                <label className="fleet-form-label fleet-form-label-required">License Plate / Reg #</label>
+                <label className="fleet-form-label fleet-form-label-required">License Plate Registration</label>
+                <div className="car-plate-input-container">
+                  <div className="car-plate-flag">
+                    <span>FIN</span>
+                    PK
+                  </div>
+                  <input
+                    type="text"
+                    value={registrationNumber}
+                    onChange={(e) => setRegistrationNumber(e.target.value.toUpperCase())}
+                    placeholder="ABC-1234"
+                    maxLength={10}
+                    className="car-plate-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: NHTSA vPIC Intelligent VIN Decoder Hub */}
+            <div className="vpic-scanner-hub">
+              <div className="vpic-scanner-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="vpic-badge">
+                    <Sparkles size={12} />
+                    NHTSA vPIC Cloud AI Decoder
+                  </span>
+                  <span style={{ fontSize: '0.78rem', color: '#6C1E84', fontWeight: 600 }}>
+                    Official Vehicle Specification Database
+                  </span>
+                </div>
+                <span className="vpic-char-count">{vin.length} / 17 chars</span>
+              </div>
+
+              <div className="vpic-input-row">
                 <input
                   type="text"
-                  value={registrationNumber}
-                  onChange={(e) => setRegistrationNumber(e.target.value.toUpperCase())}
-                  placeholder="e.g. ABC-1234"
-                  className="fleet-form-input"
-                  style={{ textTransform: 'uppercase', fontFamily: 'monospace', fontWeight: 700 }}
+                  value={vin}
+                  onChange={(e) => setVin(e.target.value.toUpperCase())}
+                  placeholder="Enter 17-character VIN (e.g. 1HGCR2F83HA...)"
+                  maxLength={17}
+                  className="fleet-form-input vpic-vin-input"
+                />
+                <button
+                  type="button"
+                  onClick={handleDecodeVin}
+                  disabled={isDecodingVin || vin.trim().length < 11}
+                  className="fleet-header-action-btn fleet-btn-secondary"
+                  style={{ padding: '0 18px', gap: '6px' }}
+                >
+                  <Sparkles size={15} color="#6C1E84" />
+                  <span>{isDecodingVin ? 'Scanning...' : 'Decode & Autofill'}</span>
+                </button>
+              </div>
+              <span className="fleet-form-hint" style={{ marginTop: '6px' }}>
+                Instant verification autofills manufacturer specs, engine architecture, safety rating, and drivetrain.
+              </span>
+            </div>
+
+            {/* Row 4: Fleet Category & Home Base Station */}
+            <div className="car-row-2">
+              <div className="fleet-form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="fleet-form-label" style={{ margin: 0 }}>
+                    Fleet Category Assignment <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <Link
+                    to="/admin/categories"
+                    title="Manage Vehicle Categories Directory"
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#6C1E84',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                    }}
+                  >
+                    <Plus size={12} />
+                    <span>Manage Categories</span>
+                  </Link>
+                </div>
+                <CustomSelect
+                  value={categoryId}
+                  onChange={(val) => setCategoryId(val)}
+                  placeholder="Assign Fleet Category..."
+                  options={categories.map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                    sublabel: `Standard Base: PKR ${c.baseRate || 0}/day`,
+                  }))}
+                />
+              </div>
+
+              <div className="fleet-form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="fleet-form-label" style={{ margin: 0 }}>
+                    Assigned Home Branch Station
+                  </label>
+                  <span style={{ fontSize: '0.74rem', color: '#8A7090' }}>Physical Inventory Hub</span>
+                </div>
+                <CustomSelect
+                  value={branchId}
+                  onChange={(val) => setBranchId(val)}
+                  placeholder="Select Operational Base Station..."
+                  options={branches.map((b) => ({
+                    value: b.id,
+                    label: b.name,
+                    sublabel: b.city,
+                  }))}
                 />
               </div>
             </div>
 
-            {/* Row 3: VIN & Decoder */}
-            <div className="car-row-2">
-              <div className="fleet-form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="fleet-form-label">Vehicle Identification Number (VIN)</label>
-                  <span style={{ fontSize: '0.74rem', color: '#8A7090' }}>17 Characters</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={vin}
-                    onChange={(e) => setVin(e.target.value.toUpperCase())}
-                    placeholder="17-character VIN number"
-                    maxLength={17}
-                    className="fleet-form-input"
-                    style={{ textTransform: 'uppercase', fontFamily: 'monospace' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleDecodeVin}
-                    disabled={isDecodingVin || vin.trim().length < 11}
-                    className="fleet-header-action-btn fleet-btn-secondary"
-                    style={{ padding: '0 16px', gap: '6px' }}
-                  >
-                    <Sparkles size={15} color="#6C1E84" />
-                    <span>{isDecodingVin ? 'Decoding...' : 'vPIC Decode'}</span>
-                  </button>
-                </div>
-                <span className="fleet-form-hint">
-                  Autofills manufacturer specs and safety classifications from official NHTSA databases.
-                </span>
-              </div>
-
-              {/* Category & Branch */}
-              <div className="car-row-2" style={{ marginBottom: 0 }}>
-                <div className="fleet-form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <label className="fleet-form-label" style={{ margin: 0 }}>
-                      Fleet Category <span style={{ color: '#EF4444' }}>*</span>
-                    </label>
-                    <Link
-                      to="/admin/categories"
-                      title="Manage Vehicle Categories Directory"
-                      style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        color: '#6C1E84',
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '3px',
-                      }}
-                    >
-                      <Plus size={12} />
-                      <span>Manage Categories</span>
-                    </Link>
-                  </div>
-                  <CustomSelect
-                    value={categoryId}
-                    onChange={(val) => setCategoryId(val)}
-                    placeholder="Assign Category..."
-                    options={categories.map((c) => ({
-                      value: c.id,
-                      label: c.name,
-                      sublabel: `Base Rate: PKR ${c.baseRate || 0}/day`,
-                    }))}
-                  />
-                </div>
-
-                <div className="fleet-form-group">
-                  <label className="fleet-form-label">Home Branch / Station</label>
-                  <CustomSelect
-                    value={branchId}
-                    onChange={(val) => setBranchId(val)}
-                    placeholder="Select Base Station..."
-                    options={branches.map((b) => ({
-                      value: b.id,
-                      label: b.name,
-                      sublabel: b.city,
-                    }))}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Row 4: Exterior Color Palette & Custom Hex */}
-            <div className="fleet-form-group car-row-last" style={{ marginTop: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            {/* Row 5: Exterior Color Finish & Swatches */}
+            <div className="fleet-form-group car-row-last" style={{ marginTop: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <label className="fleet-form-label" style={{ margin: 0 }}>
                   Exterior Paint & Finish: <strong style={{ color: '#1E0432' }}>{color}</strong>
                 </label>
@@ -1326,7 +1595,7 @@ export function AddCarPage() {
                     background: 'none',
                     border: 'none',
                     color: '#6C1E84',
-                    fontSize: '0.76rem',
+                    fontSize: '0.78rem',
                     fontWeight: 700,
                     cursor: 'pointer',
                     display: 'flex',
@@ -1335,7 +1604,7 @@ export function AddCarPage() {
                   }}
                 >
                   <Palette size={14} />
-                  <span>{isCustomColor ? 'Preset Palette' : 'Custom Hex'}</span>
+                  <span>{isCustomColor ? 'Use Standard Palette' : 'Custom Hex Finish'}</span>
                 </button>
               </div>
 
@@ -1354,7 +1623,7 @@ export function AddCarPage() {
                     type="text"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    placeholder="Color Name (e.g. Midnight Metallic)"
+                    placeholder="Color Finish Name (e.g. Midnight Pearl, Metallic Obsidian)"
                     className="fleet-form-input"
                     style={{ flex: 1 }}
                   />
@@ -1365,7 +1634,7 @@ export function AddCarPage() {
                     placeholder="#HEX"
                     maxLength={7}
                     className="fleet-form-input"
-                    style={{ width: '100px', fontFamily: 'monospace' }}
+                    style={{ width: '110px', fontFamily: 'monospace', fontWeight: 700 }}
                   />
                 </div>
               ) : (
@@ -1387,7 +1656,7 @@ export function AddCarPage() {
                           border: `1.5px solid ${c.border}`,
                         }}
                       >
-                        {isSelected && <Check size={14} color={c.name === 'White' || c.name === 'Silver' ? '#111827' : '#FFFFFF'} />}
+                        {isSelected && <Check size={16} color={c.name === 'White' || c.name === 'Silver' ? '#111827' : '#FFFFFF'} strokeWidth={3} />}
                       </button>
                     );
                   })}
@@ -1397,7 +1666,7 @@ export function AddCarPage() {
           </div>
 
           {/* SECTION 2: TECHNICAL SPECIFICATIONS & POWERTRAIN */}
-          <div className="car-card-section">
+          <div id="sec-specs" className="car-card-section">
             <div className="car-card-header">
               <div className="car-card-header-left">
                 <div className="car-card-icon-badge">
@@ -1405,41 +1674,108 @@ export function AddCarPage() {
                 </div>
                 <div>
                   <h2 className="car-card-title">2. Engineering & Mechanical Specifications</h2>
-                  <p className="car-card-subtitle">Powertrain architecture, fuel economy, cabin geometry, and telematics</p>
+                  <p className="car-card-subtitle">Powertrain architecture, transmission, fuel delivery, cabin geometry, and telemetry</p>
+                </div>
+              </div>
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  color: isSec2Complete ? '#059669' : '#6C1E84',
+                  backgroundColor: isSec2Complete ? '#DEF7EC' : '#F5EEF8',
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                }}
+              >
+                {isSec2Complete ? '✓ Configured' : 'Specs Required'}
+              </span>
+            </div>
+
+            {/* Row 1: Powertrain Segmented Switches */}
+            <div className="car-row-2">
+              {/* Transmission Segmented Switch */}
+              <div className="fleet-form-group">
+                <label className="fleet-form-label">Transmission System</label>
+                <div className="car-segment-switch">
+                  <button
+                    type="button"
+                    onClick={() => setTransmission('AUTOMATIC')}
+                    className={`car-segment-option ${transmission === 'AUTOMATIC' ? 'active' : ''}`}
+                  >
+                    <Sliders size={14} />
+                    <span>Automatic (AT/CVT)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTransmission('MANUAL')}
+                    className={`car-segment-option ${transmission === 'MANUAL' ? 'active' : ''}`}
+                  >
+                    <Sliders size={14} />
+                    <span>Manual (MT)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Drivetrain Segmented Switch */}
+              <div className="fleet-form-group">
+                <label className="fleet-form-label">Drivetrain Configuration</label>
+                <div className="car-drivetrain-grid">
+                  {(['AWD', 'FWD', 'RWD', '4WD'] as const).map((dt) => (
+                    <button
+                      key={dt}
+                      type="button"
+                      onClick={() => setDrivetrain(dt)}
+                      className={`car-drivetrain-btn ${drivetrain === dt ? 'active' : ''}`}
+                    >
+                      {dt}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Row 1: Transmission, Fuel, Engine, Horsepower */}
-            <div className="car-row-4">
-              <div className="fleet-form-group">
-                <label className="fleet-form-label">Transmission</label>
-                <CustomSelect
-                  value={transmission}
-                  onChange={(val) => setTransmission(val as any)}
-                  options={[
-                    { value: 'AUTOMATIC', label: 'Automatic (AT/CVT)' },
-                    { value: 'MANUAL', label: 'Manual (MT)' },
-                  ]}
-                />
-              </div>
+            {/* Fuel Type 4-Way Visual Cards */}
+            <div className="fleet-form-group" style={{ marginBottom: '18px' }}>
+              <label className="fleet-form-label">Fuel & Propulsion Technology</label>
+              <div className="car-fuel-grid">
+                <div
+                  onClick={() => setFuelType('PETROL')}
+                  className={`car-fuel-card ${fuelType === 'PETROL' ? 'active' : ''}`}
+                >
+                  <Flame size={16} color={fuelType === 'PETROL' ? '#DC2626' : '#8A7090'} />
+                  <span className="car-fuel-name">Petrol</span>
+                </div>
 
-              <div className="fleet-form-group">
-                <label className="fleet-form-label">Fuel Type</label>
-                <CustomSelect
-                  value={fuelType}
-                  onChange={(val) => setFuelType(val as any)}
-                  options={[
-                    { value: 'PETROL', label: 'Petrol (Gasoline)' },
-                    { value: 'DIESEL', label: 'Diesel Turbo' },
-                    { value: 'HYBRID', label: 'Hybrid (HEV/PHEV)' },
-                    { value: 'ELECTRIC', label: 'Full Electric (BEV)' },
-                  ]}
-                />
-              </div>
+                <div
+                  onClick={() => setFuelType('DIESEL')}
+                  className={`car-fuel-card ${fuelType === 'DIESEL' ? 'active' : ''}`}
+                >
+                  <Fuel size={16} color={fuelType === 'DIESEL' ? '#D97706' : '#8A7090'} />
+                  <span className="car-fuel-name">Diesel Turbo</span>
+                </div>
 
+                <div
+                  onClick={() => setFuelType('HYBRID')}
+                  className={`car-fuel-card ${fuelType === 'HYBRID' ? 'active' : ''}`}
+                >
+                  <BatteryCharging size={16} color={fuelType === 'HYBRID' ? '#059669' : '#8A7090'} />
+                  <span className="car-fuel-name">Hybrid (HEV)</span>
+                </div>
+
+                <div
+                  onClick={() => setFuelType('ELECTRIC')}
+                  className={`car-fuel-card ${fuelType === 'ELECTRIC' ? 'active' : ''}`}
+                >
+                  <Zap size={16} color={fuelType === 'ELECTRIC' ? '#2563EB' : '#8A7090'} />
+                  <span className="car-fuel-name">Electric (BEV)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Performance Specs & Tank Capacity */}
+            <div className="car-row-3">
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Engine Displacement</label>
+                <label className="fleet-form-label">Engine / Motor Displacement</label>
                 <input
                   type="text"
                   value={engineSize}
@@ -1450,7 +1786,7 @@ export function AddCarPage() {
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Horsepower (HP)</label>
+                <label className="fleet-form-label">Horsepower Output (HP)</label>
                 <input
                   type="number"
                   value={horsePower}
@@ -1459,35 +1795,21 @@ export function AddCarPage() {
                   className="fleet-form-input"
                 />
               </div>
-            </div>
-
-            {/* Row 2: Drivetrain, Fuel Tank, Seats, Doors */}
-            <div className="car-row-4">
-              <div className="fleet-form-group">
-                <label className="fleet-form-label">Drivetrain</label>
-                <CustomSelect
-                  value={drivetrain}
-                  onChange={(val) => setDrivetrain(val as any)}
-                  options={[
-                    { value: 'AWD', label: 'All-Wheel Drive (AWD)' },
-                    { value: 'FWD', label: 'Front-Wheel Drive (FWD)' },
-                    { value: 'RWD', label: 'Rear-Wheel Drive (RWD)' },
-                    { value: '4WD', label: 'Four-Wheel Drive (4WD)' },
-                  ]}
-                />
-              </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Fuel Tank / Battery</label>
+                <label className="fleet-form-label">Fuel Tank / Battery Capacity</label>
                 <input
                   type="text"
                   value={fuelTankCapacity}
                   onChange={(e) => setFuelTankCapacity(e.target.value)}
-                  placeholder="e.g. 55L, 77.4 kWh"
+                  placeholder="e.g. 55 Liters, 77.4 kWh"
                   className="fleet-form-input"
                 />
               </div>
+            </div>
 
+            {/* Row 3: Cabin Geometry (Seating & Doors Steppers) */}
+            <div className="car-row-2">
               <div className="fleet-form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label className="fleet-form-label" style={{ margin: 0 }}>Seating Capacity</label>
@@ -1507,6 +1829,7 @@ export function AddCarPage() {
                     className="car-stepper-center"
                     onClick={() => document.getElementById('car-seats-input')?.focus()}
                   >
+                    <Users size={16} color="#6C1E84" />
                     <input
                       id="car-seats-input"
                       type="text"
@@ -1530,7 +1853,7 @@ export function AddCarPage() {
                       style={{ width: `${Math.max(20, String(seats || 1).length * 11 + 4)}px` }}
                     />
                     <span className="car-stepper-unit">
-                      {Number(seats) === 1 ? 'Passenger' : 'Passengers'}
+                      {Number(seats) === 1 ? 'Seat' : 'Seats'}
                     </span>
                   </div>
                   <button
@@ -1564,6 +1887,7 @@ export function AddCarPage() {
                     className="car-stepper-center"
                     onClick={() => document.getElementById('car-doors-input')?.focus()}
                   >
+                    <DoorOpen size={16} color="#6C1E84" />
                     <input
                       id="car-doors-input"
                       type="text"
@@ -1603,7 +1927,7 @@ export function AddCarPage() {
               </div>
             </div>
 
-            {/* Row 3: Odometer, Service, Parking Spot, Telematics */}
+            {/* Row 4: Telematics, Mileage & Bay Tracking */}
             <div className="car-row-4 car-row-last">
               <div className="fleet-form-group">
                 <label className="fleet-form-label">Current Odometer (km)</label>
@@ -1617,7 +1941,7 @@ export function AddCarPage() {
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Next Service Mileage (km)</label>
+                <label className="fleet-form-label">Next Service Target (km)</label>
                 <input
                   type="number"
                   value={nextServiceMileage}
@@ -1639,12 +1963,12 @@ export function AddCarPage() {
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Telematics Device ID</label>
+                <label className="fleet-form-label">IoT Telematics Tracker ID</label>
                 <input
                   type="text"
                   value={telematicsDeviceId}
                   onChange={(e) => setTelematicsDeviceId(e.target.value)}
-                  placeholder="e.g. TEL-GPS-492"
+                  placeholder="TEL-GPS-492"
                   className="fleet-form-input"
                   style={{ fontFamily: 'monospace' }}
                 />
@@ -1653,26 +1977,62 @@ export function AddCarPage() {
           </div>
 
           {/* SECTION 3: FEATURES & EQUIPMENT */}
-          <div className="car-card-section">
+          <div id="sec-features" className="car-card-section">
             <div className="car-card-header">
               <div className="car-card-header-left">
                 <div className="car-card-icon-badge">
                   <Shield size={20} />
                 </div>
                 <div>
-                  <h2 className="car-card-title">3. Equipment, ADAS & Comfort Features</h2>
+                  <h2 className="car-card-title">3. Equipment, ADAS & Smart Features</h2>
                   <p className="car-card-subtitle">
-                    Driver assistance packages, infotainment, and premium luxury equipment
+                    Autonomous safety systems, premium comfort packages, and infotainment equipment
                   </p>
                 </div>
               </div>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6C1E84' }}>
-                {selectedFeatures.length} Selected
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#6C1E84', backgroundColor: '#F5EEF8', padding: '4px 12px', borderRadius: '12px' }}>
+                {selectedFeatures.length} of {AVAILABLE_FEATURES.length} Selected
               </span>
             </div>
 
+            {/* Filter Tabs & Quick Actions */}
+            <div className="feature-filter-header">
+              <div className="feature-tabs-wrap">
+                {FEATURE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setActiveFeatureTab(cat.id)}
+                    className={`feature-tab-btn ${activeFeatureTab === cat.id ? 'active' : ''}`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="feature-actions-bar">
+                <button
+                  type="button"
+                  onClick={selectAllFeatures}
+                  className="feature-action-text-btn"
+                >
+                  Select All
+                </button>
+                <span style={{ color: '#D4C9D9' }}>|</span>
+                <button
+                  type="button"
+                  onClick={clearAllFeatures}
+                  className="feature-action-text-btn"
+                  style={{ color: '#8A7090' }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {/* Features Chips Grid */}
             <div className="car-features-grid">
-              {AVAILABLE_FEATURES.map((feat) => {
+              {filteredFeatures.map((feat) => {
                 const isSelected = selectedFeatures.includes(feat);
                 return (
                   <button
@@ -1681,7 +2041,12 @@ export function AddCarPage() {
                     onClick={() => toggleFeature(feat)}
                     className={`car-feature-chip ${isSelected ? 'selected' : ''}`}
                   >
-                    <CheckCircle2 size={15} color={isSelected ? '#6C1E84' : '#C7B9CC'} />
+                    <CheckCircle2
+                      size={17}
+                      color={isSelected ? '#6C1E84' : '#C7B9CC'}
+                      strokeWidth={isSelected ? 2.5 : 1.5}
+                      style={{ flexShrink: 0 }}
+                    />
                     <span>{feat}</span>
                   </button>
                 );
@@ -1690,21 +2055,25 @@ export function AddCarPage() {
           </div>
 
           {/* SECTION 4: COMMERCIAL PRICING & RENTAL RULES */}
-          <VehiclePricingSection
-            state={pricingState}
-            onChange={handlePricingChange}
-            status={status}
-            onStatusChange={setStatus}
-            isPublicCatalog={isPublicCatalog}
-            onCatalogChange={setIsPublicCatalog}
-            isEditMode={isEdit}
-          />
+          <div id="sec-pricing">
+            <VehiclePricingSection
+              state={pricingState}
+              onChange={handlePricingChange}
+              status={status}
+              onStatusChange={setStatus}
+              isPublicCatalog={isPublicCatalog}
+              onCatalogChange={setIsPublicCatalog}
+              isEditMode={isEdit}
+            />
+          </div>
 
           {/* SECTION 5: VEHICLE PHOTO PIPELINE (MANDATORY 4-6) */}
-          <VehiclePhotoPipeline photos={photos} onChange={setPhotos} minPhotos={4} maxPhotos={6} />
+          <div id="sec-photos">
+            <VehiclePhotoPipeline photos={photos} onChange={setPhotos} minPhotos={4} maxPhotos={6} />
+          </div>
 
           {/* SECTION 6: ADDITIONAL INFORMATION & COMPLIANCE */}
-          <div className="car-card-section">
+          <div id="sec-records" className="car-card-section">
             <div className="car-card-header">
               <div className="car-card-header-left">
                 <div className="car-card-icon-badge">
@@ -1715,6 +2084,18 @@ export function AddCarPage() {
                   <p className="car-card-subtitle">Policy binding numbers, expiration reminders, and internal notes</p>
                 </div>
               </div>
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  color: isSec6Complete ? '#059669' : '#8A7090',
+                  backgroundColor: isSec6Complete ? '#DEF7EC' : '#FAF7FA',
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                }}
+              >
+                {isSec6Complete ? '✓ Policy Bound' : 'Optional Records'}
+              </span>
             </div>
 
             <div className="car-row-3">
@@ -1750,12 +2131,35 @@ export function AddCarPage() {
               </div>
             </div>
 
-            <div className="fleet-form-group car-row-last">
-              <label className="fleet-form-label">Internal Fleet Management Notes</label>
+            <div className="car-row-2">
+              <div className="fleet-form-group">
+                <label className="fleet-form-label">Last Maintenance Service Date</label>
+                <input
+                  type="date"
+                  value={lastServiceDate}
+                  onChange={(e) => setLastServiceDate(e.target.value)}
+                  className="fleet-form-input"
+                />
+              </div>
+
+              <div className="fleet-form-group">
+                <label className="fleet-form-label">Last Service Odometer (km)</label>
+                <input
+                  type="number"
+                  value={lastServiceMileage}
+                  onChange={(e) => setLastServiceMileage(e.target.value)}
+                  placeholder="e.g. 10000"
+                  className="fleet-form-input"
+                />
+              </div>
+            </div>
+
+            <div className="fleet-form-group car-row-last" style={{ marginTop: '6px' }}>
+              <label className="fleet-form-label">Internal Fleet Operations & Handover Notes</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add condition reports, VIP rental guidelines, or maintenance advisories..."
+                placeholder="Add special handover procedures, minor exterior cosmetic condition reports, VIP rental guidelines..."
                 className="fleet-form-textarea"
                 rows={3}
               />
@@ -1771,7 +2175,7 @@ export function AddCarPage() {
             <div className="catalog-preview-header">
               <div className="catalog-preview-header-title">
                 <Eye size={18} color="#6C1E84" />
-                <span>Live Catalog Card Preview</span>
+                <span>Live Customer Preview</span>
               </div>
               <span
                 className={`status-badge ${
@@ -1850,7 +2254,6 @@ export function AddCarPage() {
                     justifyContent: 'center',
                     height: '100%',
                     width: '100%',
-                    backgroundColor: '#1E0432',
                     color: '#FFFFFF',
                     padding: '24px',
                     textAlign: 'center',
@@ -1859,8 +2262,8 @@ export function AddCarPage() {
                 >
                   <div
                     style={{
-                      width: '50px',
-                      height: '50px',
+                      width: '52px',
+                      height: '52px',
                       borderRadius: '50%',
                       backgroundColor: 'rgba(255, 255, 255, 0.08)',
                       display: 'flex',
@@ -1869,10 +2272,10 @@ export function AddCarPage() {
                       marginBottom: '10px',
                     }}
                   >
-                    <Camera size={24} color="#FAB826" />
+                    <Camera size={26} color="#FAB826" />
                   </div>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 800 }}>No Photos Uploaded Yet</span>
-                  <span style={{ fontSize: '0.74rem', color: '#BCA8C4', marginTop: '4px', maxWidth: '240px', lineHeight: 1.4 }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>No Photos Uploaded Yet</span>
+                  <span style={{ fontSize: '0.76rem', color: '#BCA8C4', marginTop: '4px', maxWidth: '240px', lineHeight: 1.4 }}>
                     Upload 4–6 photos in Section 5 to preview your live vehicle card here.
                   </span>
                 </div>
@@ -1953,7 +2356,7 @@ export function AddCarPage() {
                         fontWeight: 800,
                         textTransform: 'uppercase',
                         backgroundColor: '#F5EEF8',
-                        padding: '2px 6px',
+                        padding: '2px 8px',
                         borderRadius: '4px',
                       }}
                     >
@@ -1985,7 +2388,7 @@ export function AddCarPage() {
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#8A7090' }}>
+                  <div style={{ fontSize: '0.76rem', color: '#8A7090', fontWeight: 600 }}>
                     Deposit: {pricingState.currency} {pricingState.securityDeposit || '0'}
                   </div>
                   {pricingState.pricingMethod === 'daily_extra_km' && (
@@ -2155,4 +2558,5 @@ export function AddCarPage() {
     </div>
   );
 }
+
 export default AddCarPage;
