@@ -14,7 +14,6 @@ import {
   List,
   Leaf,
   Gauge,
-  Tag,
   Check,
   RotateCcw,
   Users,
@@ -23,11 +22,10 @@ import {
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import type { Vehicle } from '../../features/fleet/types/fleet.types';
 import './AvailableCarsPage.css';
+import { CarCard } from '../../components/common/CarCard';
 
 // Master Visual Assets matching Figma Design Specification
 import heroCarImg from '../../assets/cars/finovo-available-hero-car.png';
-import buildingBackdrop from '../../assets/cars/finovo-building.png';
-import cityBackdrop from '../../assets/cars/finovo-city.png';
 import redCar from '../../assets/cars/finovo-red-car.png';
 import grayCar from '../../assets/cars/finovo-gray-car.png';
 import blueCar from '../../assets/cars/finovo-blue-car.png';
@@ -955,164 +953,29 @@ export function AvailableCarsPage() {
             </button>
           </div>
         ) : viewMode === 'grid' ? (
-          /* Signature 3-Column Asymmetric Grid */
+          /* Master Unified Card Component Grid (Exact Match to Figma Image) */
           <div className="available-cars-grid">
-            {paginatedCars.map((car, idx) => {
-              const displayRate = (car.pricePerDay * rateMultiplier).toFixed(2);
-
-              // Strict visual alignment to master Figma reference:
-              // Indices 0, 6, 7 on page 1 are Hero Wide Cards
-              const isHeroWideCard = car.isWideHero || idx === 0 || idx === 6 || idx === 7;
-
-              if (isHeroWideCard) {
-                return (
-                  <article key={car.id} className="car-card-hero-wide">
-                    {/* Upper Body: Plum left & Beige Building Capsule on right */}
-                    <div className="car-card-hero-body">
-                      {/* Left Plum Content Area */}
-                      <div className="car-card-hero-left-content">
-                        <div>
-                          <h3 className="car-card-hero-brand-name">{car.brand}</h3>
-                          <div className="car-card-hero-year">{car.year}</div>
-                          <p className="car-card-hero-tagline">
-                            {car.tagline || 'Unleash extraordinary performance.'}
-                          </p>
-                        </div>
-
-                        {/* Golden Emblem Badge */}
-                        <div className="car-card-hero-emblem-wrap">
-                          <img
-                            src={car.logo}
-                            alt={`${car.brand} Crest`}
-                            className="car-card-hero-emblem-img"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Right Capsule: Beige Stage with Building Silhouette & Car */}
-                      <div className="car-card-hero-capsule-stage">
-                        {/* Watermark Building Silhouette */}
-                        <img
-                          src={buildingBackdrop}
-                          alt="Finovo Urban Architecture"
-                          className="car-card-hero-capsule-backdrop"
-                        />
-
-                        {/* Available Pill Badge */}
-                        <div className="car-available-pill-badge">
-                          <span>Available</span>
-                        </div>
-
-                        {/* Centered Vehicle Cutout */}
-                        <img
-                          src={car.image}
-                          alt={car.name}
-                          className="car-card-hero-capsule-car"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Wide Card White Footer Bar */}
-                    <div className="car-card-hero-footer-bar">
-                      <div className="car-spec-unit">
-                        <Gauge size={16} className="car-spec-unit-icon" />
-                        <div className="car-spec-unit-text">
-                          <h5>{car.mileageLimit}</h5>
-                          <p>Mileage</p>
-                        </div>
-                      </div>
-
-                      <div className="car-spec-unit">
-                        <Tag size={16} className="car-spec-unit-icon" />
-                        <div className="car-spec-unit-text">
-                          <h5>SAR {displayRate}</h5>
-                          <p>{periodLabel}</p>
-                        </div>
-                      </div>
-
-                      <Link
-                        to={`/cars/${car.id}`}
-                        className="car-card-circle-arrow-btn"
-                        aria-label={`View details for ${car.name}`}
-                      >
-                        <ChevronRight size={18} />
-                      </Link>
-                    </div>
-                  </article>
-                );
-              }
-
-              // Standard Luxury Card (spans 1 col)
-              // Exact Figma match: Twilight City Skyline Header + Organic White Wave Scoop + White Footer
-              return (
-                <article key={car.id} className="car-card-standard">
-                  {/* Top Area: Twilight City Skyline Stage */}
-                  <div className="car-card-standard-skyline-stage">
-                    <img
-                      src={cityBackdrop}
-                      alt="Twilight City Skyline"
-                      className="car-card-standard-skyline-img"
-                    />
-
-                    {/* Organic White Wave Scoop rising from bottom */}
-                    <div className="car-card-standard-wave-scoop" />
-
-                    {/* Available Pill Badge */}
-                    <div className="car-available-pill-badge">
-                      <span>Available</span>
-                    </div>
-
-                    {/* Vehicle Cutout with Shadow */}
-                    <img
-                      src={car.image}
-                      alt={car.name}
-                      className="car-card-standard-vehicle-img"
-                      loading="lazy"
-                    />
-                  </div>
-
-                  {/* Bottom Area: White Info Bar */}
-                  <div className="car-card-standard-footer-bar">
-                    <div className="car-card-brand-box">
-                      <img
-                        src={car.logo}
-                        alt={car.brand}
-                        className="car-card-brand-logo"
-                      />
-                      <div className="car-card-brand-info">
-                        <h4>{car.name}</h4>
-                        <p>{car.year}</p>
-                      </div>
-                    </div>
-
-                    <div className="car-spec-unit">
-                      <Gauge size={14} className="car-spec-unit-icon" />
-                      <div className="car-spec-unit-text">
-                        <h5>{car.mileageLimit}</h5>
-                        <p>Mileage</p>
-                      </div>
-                    </div>
-
-                    <div className="car-spec-unit">
-                      <Tag size={14} className="car-spec-unit-icon" />
-                      <div className="car-spec-unit-text">
-                        <h5>SAR {displayRate}</h5>
-                        <p>{periodLabel}</p>
-                      </div>
-                    </div>
-
-                    <Link
-                      to={`/cars/${car.id}`}
-                      className="car-card-circle-arrow-btn"
-                      aria-label={`View details for ${car.name}`}
-                    >
-                      <ChevronRight size={18} />
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
+            {paginatedCars.map((car) => (
+              <CarCard
+                key={car.id}
+                id={car.id}
+                name={car.name}
+                brand={car.brand}
+                model={car.model}
+                year={car.year}
+                type={car.type}
+                fuel={car.fuel}
+                transmission={car.transmission}
+                seats={car.seats}
+                pricePerDay={car.pricePerDay}
+                rateMultiplier={rateMultiplier}
+                periodLabel={periodLabel}
+                mileageLimit={car.mileageLimit}
+                image={car.image}
+                logo={car.logo}
+                available={car.available}
+              />
+            ))}
           </div>
         ) : (
           /* List Mode View */
