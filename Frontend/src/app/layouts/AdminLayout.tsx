@@ -13,7 +13,6 @@ import {
   Calendar,
   KeyRound,
   ShieldAlert,
-  Users,
   Briefcase,
   Building2,
   ShieldCheck,
@@ -89,9 +88,12 @@ export function AdminLayout() {
           justifyContent: 'space-between',
           padding: '24px 16px',
           boxSizing: 'border-box',
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
+          left: 0,
+          bottom: 0,
           height: '100vh',
+          overflowY: 'auto',
           zIndex: 50,
           transition: 'transform 0.3s ease',
         }}
@@ -152,7 +154,6 @@ export function AdminLayout() {
               { to: '/admin/inspections', icon: ShieldAlert, label: t('nav.aiInspection') },
               { to: '/admin/inquiries', icon: MessageSquare, label: t('nav.inquiries') },
               { to: '/admin/users', icon: UserCog, label: t('nav.manageUsers') },
-              { to: '/admin/customers', icon: Users, label: t('nav.customers') },
               { to: '/admin/employees', icon: Briefcase, label: t('nav.staff') },
               { to: '/admin/branches', icon: Building2, label: t('nav.branches') },
               { to: '/admin/audit-logs', icon: ShieldCheck, label: t('nav.auditLogs') },
@@ -303,7 +304,18 @@ export function AdminLayout() {
       </aside>
 
       {/* ================= RIGHT MAIN WRAPPER ================= */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div
+        className="admin-main-wrapper"
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          marginLeft: '240px',
+          width: 'calc(100% - 240px)',
+          boxSizing: 'border-box',
+        }}
+      >
         {/* Top Header Bar */}
         <header className="admin-header">
           {/* Mobile Hamburger toggle + Search Input */}
@@ -325,7 +337,7 @@ export function AdminLayout() {
               />
               <input
                 type="text"
-                placeholder={isMobile ? 'Search...' : 'Search car, customers, items...'}
+                placeholder={isMobile ? 'Search...' : 'Search cars, bookings, items...'}
                 className="admin-header-search-input"
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = '#6C1E84';
@@ -569,6 +581,10 @@ export function AdminLayout() {
           }
           .admin-sidebar.mobile-open {
             transform: translateX(0) !important;
+          }
+          .admin-main-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
           }
           .admin-sidebar-close-btn {
             display: inline-flex !important;

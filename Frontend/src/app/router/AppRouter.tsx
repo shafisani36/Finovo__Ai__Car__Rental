@@ -19,7 +19,23 @@ import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
 import { VerifyCodePage } from '../../features/auth/pages/VerifyCodePage';
 import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
-import { CustomerDashboardPage } from '../../features/customers/pages/CustomerDashboardPage';
+import { CustomerLayout } from '../layouts/CustomerLayout';
+import { CustomerDashboardOverviewPage } from '../../features/customers/pages/CustomerDashboardOverviewPage';
+import { CustomerCarsPage } from '../../features/customers/pages/CustomerCarsPage';
+import { CustomerVehicleDetailPage } from '../../features/customers/pages/CustomerVehicleDetailPage';
+import { CustomerCheckoutPage } from '../../features/customers/pages/CustomerCheckoutPage';
+import { CustomerBookingsPage } from '../../features/customers/pages/CustomerBookingsPage';
+import { CustomerBookingDetailPage } from '../../features/customers/pages/CustomerBookingDetailPage';
+import { CustomerInspectionPage } from '../../features/customers/pages/CustomerInspectionPage';
+import { CustomerPaymentsPage } from '../../features/customers/pages/CustomerPaymentsPage';
+import { CustomerProfilePage } from '../../features/customers/pages/CustomerProfilePage';
+import { CustomerDocumentsPage } from '../../features/customers/pages/CustomerDocumentsPage';
+import { CustomerNotificationsPage } from '../../features/customers/pages/CustomerNotificationsPage';
+import { CustomerSupportPage } from '../../features/customers/pages/CustomerSupportPage';
+import { CustomerAssistantPage } from '../../features/customers/pages/CustomerAssistantPage';
+import { CustomerRewardsPage } from '../../features/customers/pages/CustomerRewardsPage';
+import { CustomerLocationsPage } from '../../features/customers/pages/CustomerLocationsPage';
+import { CustomerHistoryPage } from '../../features/customers/pages/CustomerHistoryPage';
 import { UnauthorizedPage } from '../../features/auth/pages/UnauthorizedPage';
 import { NotFoundPage } from '../../pages/NotFoundPage';
 
@@ -48,8 +64,7 @@ import { InspectionsListPage } from '../../features/inspections/pages/Inspection
 import { NewInspectionPage } from '../../features/inspections/pages/NewInspectionPage';
 import { InspectionDetailPage } from '../../features/inspections/pages/InspectionDetailPage';
 
-// CRM, Administration, Branches, & Audit Trail
-import { CustomersListPage } from '../../features/customers/pages/CustomersListPage';
+// Staff, Administration, Branches, & Audit Trail
 import { EmployeesListPage } from '../../features/employees/pages/EmployeesListPage';
 import { BranchesListPage } from '../../features/branches/pages/BranchesListPage';
 import { AuditLogsPage } from '../../features/audit-logs/pages/AuditLogsPage';
@@ -119,13 +134,32 @@ export function AppRouter() {
 
           {/* Customer Portal (Direct Route: /customer/dashboard) */}
           <Route
-            path="/customer/dashboard"
+            path="/customer"
             element={
               <RoleMiddlewareRoute allowedSection="customer">
-                <CustomerDashboardPage />
+                <CustomerLayout />
               </RoleMiddlewareRoute>
             }
-          />
+          >
+            <Route index element={<Navigate to="/customer/dashboard" replace />} />
+            <Route path="dashboard" element={<CustomerDashboardOverviewPage />} />
+            <Route path="cars" element={<CustomerCarsPage />} />
+            <Route path="cars/:vehicleId" element={<CustomerVehicleDetailPage />} />
+            <Route path="bookings" element={<CustomerBookingsPage />} />
+            <Route path="bookings/new" element={<CustomerCheckoutPage />} />
+            <Route path="bookings/:bookingId" element={<CustomerBookingDetailPage />} />
+            <Route path="bookings/:bookingId/inspection" element={<CustomerInspectionPage />} />
+            <Route path="payments" element={<CustomerPaymentsPage />} />
+            <Route path="profile" element={<CustomerProfilePage />} />
+            <Route path="settings" element={<CustomerProfilePage />} />
+            <Route path="documents" element={<CustomerDocumentsPage />} />
+            <Route path="notifications" element={<CustomerNotificationsPage />} />
+            <Route path="support" element={<CustomerSupportPage />} />
+            <Route path="assistant" element={<CustomerAssistantPage />} />
+            <Route path="rewards" element={<CustomerRewardsPage />} />
+            <Route path="locations" element={<CustomerLocationsPage />} />
+            <Route path="history" element={<CustomerHistoryPage />} />
+          </Route>
 
           {/* Admin Platform & Operations (Direct Route: /admin/dashboard with Role Guard) */}
           <Route
@@ -166,7 +200,6 @@ export function AppRouter() {
             {/* Administration & Directory */}
             <Route path="inquiries" element={<InquiriesListPage />} />
             <Route path="users" element={<UsersManagementPage />} />
-            <Route path="customers" element={<CustomersListPage />} />
             <Route path="employees" element={<EmployeesListPage />} />
             <Route path="branches" element={<BranchesListPage />} />
             <Route path="audit-logs" element={<AuditLogsPage />} />

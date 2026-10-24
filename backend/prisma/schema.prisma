@@ -19,9 +19,9 @@ model User {
   branchId            String?              @db.VarChar(64)
   avatarUrl           String?              @db.VarChar(512)
   phone               String?              @db.VarChar(32)
-  preferredLanguage   String?              @default("en") @db.VarChar(10)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  preferredLanguage   String?              @default("en") @db.VarChar(10)
   customerProfile     Customer?
   inspections         Inspection[]
   passwordResetTokens PasswordResetToken[]
@@ -218,61 +218,62 @@ model Vehicle {
   brand                   String                @db.VarChar(64)
   model                   String                @db.VarChar(64)
   year                    Int
-  trim                    String?               @db.VarChar(64)
   registrationNumber      String                @unique @db.VarChar(32)
   vin                     String?               @unique @db.VarChar(64)
   categoryId              String
   branchId                String?
   transmission            TransmissionType      @default(AUTOMATIC)
   fuelType                FuelType              @default(PETROL)
-  engineSize              String?               @db.VarChar(64)
-  horsePower              Int?
-  drivetrain              String?               @db.VarChar(16)
-  fuelTankCapacity        String?               @db.VarChar(32)
-  fuelLevelPercent        Int?                  @default(100)
   seats                   Int                   @default(5)
   doors                   Int                   @default(4)
   color                   String?               @db.VarChar(32)
-  colorHex                String?               @db.VarChar(16)
   mileage                 Int                   @default(0)
   dailyRate               Decimal               @db.Decimal(10, 2)
   weeklyRate              Decimal?              @db.Decimal(10, 2)
   monthlyRate             Decimal?              @db.Decimal(10, 2)
-  securityDeposit         Decimal?              @db.Decimal(10, 2)
-  excessMileageFee        Decimal?              @db.Decimal(10, 2)
-  mileageLimitPerDay      Int?                  @default(250)
-  pricingMethod           PricingMethod         @default(daily)
-  perKmRate               Decimal?              @db.Decimal(10, 2)
-  hourlyRate              Decimal?              @db.Decimal(10, 2)
-  minimumTripCharge       Decimal?              @db.Decimal(10, 2)
-  minimumBillableHours    Int?                  @default(1)
-  billingIncrementMinutes Int?                  @default(60)
-  gracePeriodMinutes      Int?                  @default(0)
-  partialMonthPolicy      String?               @default("prorated_daily") @db.VarChar(32)
-  currency                String                @default("PKR") @db.VarChar(8)
   status                  VehicleStatus         @default(AVAILABLE)
   isPublicCatalog         Boolean               @default(true)
-  vehicleCode             String?               @db.VarChar(64)
-  ownershipType           String?               @default("OWNED") @db.VarChar(32)
-  acquisitionDate         DateTime?
-  acquisitionCost         Decimal?              @db.Decimal(10, 2)
-  isListed                Boolean               @default(true)
-  isBookable              Boolean               @default(true)
-  deletedAt               DateTime?
-  features                String?               @db.Text
   notes                   String?               @db.Text
-  parkingSpot             String?               @db.VarChar(64)
-  telematicsDeviceId      String?               @db.VarChar(64)
-  insurancePolicyNumber   String?               @db.VarChar(128)
-  insuranceExpiry         DateTime?
-  registrationExpiry      DateTime?
-  lastServiceDate         DateTime?
-  lastServiceMileage      Int?
-  nextServiceMileage      Int?
   primaryImageUrl         String?               @db.VarChar(512)
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
+  colorHex                String?               @db.VarChar(16)
+  drivetrain              String?               @db.VarChar(16)
+  engineSize              String?               @db.VarChar(64)
+  excessMileageFee        Decimal?              @db.Decimal(10, 2)
+  features                String?               @db.Text
+  fuelLevelPercent        Int?                  @default(100)
+  fuelTankCapacity        String?               @db.VarChar(32)
+  horsePower              Int?
+  insuranceExpiry         DateTime?
+  insurancePolicyNumber   String?               @db.VarChar(128)
+  lastServiceDate         DateTime?
+  lastServiceMileage      Int?
+  mileageLimitPerDay      Int?                  @default(250)
+  nextServiceMileage      Int?
+  parkingSpot             String?               @db.VarChar(64)
+  registrationExpiry      DateTime?
+  securityDeposit         Decimal?              @db.Decimal(10, 2)
+  telematicsDeviceId      String?               @db.VarChar(64)
+  trim                    String?               @db.VarChar(64)
+  acquisitionCost         Decimal?              @db.Decimal(10, 2)
+  acquisitionDate         DateTime?
+  deletedAt               DateTime?
+  isBookable              Boolean               @default(true)
+  isListed                Boolean               @default(true)
+  ownershipType           String?               @default("OWNED") @db.VarChar(32)
+  vehicleCode             String?               @db.VarChar(64)
+  billingIncrementMinutes Int?                  @default(60)
+  currency                String                @default("PKR") @db.VarChar(8)
+  gracePeriodMinutes      Int?                  @default(0)
+  hourlyRate              Decimal?              @db.Decimal(10, 2)
+  minimumBillableHours    Int?                  @default(1)
+  minimumTripCharge       Decimal?              @db.Decimal(10, 2)
+  partialMonthPolicy      String?               @default("prorated_daily") @db.VarChar(32)
+  perKmRate               Decimal?              @db.Decimal(10, 2)
+  pricingMethod           PricingMethod         @default(daily)
   bookings                Booking[]
+  damage_comparisons      damage_comparisons[]
   inspections             Inspection[]
   rentals                 Rental[]
   auditLogs               VehicleAuditLog[]
@@ -283,6 +284,7 @@ model Vehicle {
   odometerLogs            VehicleOdometerLog[]
   photos                  VehiclePhoto[]
   pricingTiers            VehiclePricingTier[]
+  reviews                 VehicleReview[]
   branch                  Branch?               @relation(fields: [branchId], references: [id])
   category                VehicleCategory       @relation(fields: [categoryId], references: [id])
 
@@ -299,10 +301,10 @@ model VehiclePhoto {
   id        String   @id @default(cuid())
   vehicleId String
   url       String   @db.VarChar(512)
-  caption   String?  @db.VarChar(128)
   isPrimary Boolean  @default(false)
   order     Int      @default(0)
   createdAt DateTime @default(now())
+  caption   String?  @db.VarChar(128)
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId])
@@ -428,18 +430,8 @@ model VehiclePricingTier {
   vehicleId               String
   rateName                String        @db.VarChar(64)
   billingUnit             String        @default("DAY") @db.VarChar(16)
-  pricingMethod           PricingMethod @default(daily)
   baseRate                Decimal       @db.Decimal(10, 2)
   currency                String        @default("PKR") @db.VarChar(8)
-  hourlyRate              Decimal?      @db.Decimal(10, 2)
-  perKmRate               Decimal?      @db.Decimal(10, 2)
-  monthlyRate             Decimal?      @db.Decimal(10, 2)
-  minimumTripCharge       Decimal?      @db.Decimal(10, 2)
-  minimumBillableHours    Int?          @default(1)
-  billingIncrementMinutes Int?          @default(60)
-  gracePeriodMinutes      Int?          @default(0)
-  partialMonthPolicy      String?       @default("prorated_daily") @db.VarChar(32)
-  depositPolicy           String?       @db.VarChar(64)
   securityDeposit         Decimal?      @db.Decimal(10, 2)
   includedKmPerDay        Int?          @default(250)
   extraKmRate             Decimal?      @db.Decimal(10, 2)
@@ -450,6 +442,16 @@ model VehiclePricingTier {
   isActive                Boolean       @default(true)
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
+  billingIncrementMinutes Int?          @default(60)
+  depositPolicy           String?       @db.VarChar(64)
+  gracePeriodMinutes      Int?          @default(0)
+  hourlyRate              Decimal?      @db.Decimal(10, 2)
+  minimumBillableHours    Int?          @default(1)
+  minimumTripCharge       Decimal?      @db.Decimal(10, 2)
+  monthlyRate             Decimal?      @db.Decimal(10, 2)
+  partialMonthPolicy      String?       @default("prorated_daily") @db.VarChar(32)
+  perKmRate               Decimal?      @db.Decimal(10, 2)
+  pricingMethod           PricingMethod @default(daily)
   vehicle                 Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId])
@@ -476,18 +478,22 @@ model VehicleAuditLog {
 }
 
 model Customer {
-  id                  String    @id @default(cuid())
-  userId              String?   @unique
-  fullName            String    @db.VarChar(128)
-  email               String    @unique @db.VarChar(128)
-  phone               String?   @db.VarChar(32)
-  driverLicenseNumber String?   @db.VarChar(64)
+  id                  String                 @id @default(cuid())
+  userId              String?                @unique
+  fullName            String                 @db.VarChar(128)
+  email               String                 @unique @db.VarChar(128)
+  phone               String?                @db.VarChar(32)
+  driverLicenseNumber String?                @db.VarChar(64)
   licenseExpiryDate   DateTime?
-  isLicenseVerified   Boolean   @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  isLicenseVerified   Boolean                @default(false)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
   bookings            Booking[]
-  user                User?     @relation(fields: [userId], references: [id])
+  user                User?                  @relation(fields: [userId], references: [id])
+  documents           CustomerDocument[]
+  notifications       CustomerNotification[]
+  supportTickets      SupportTicket[]
+  reviews             VehicleReview[]
 
   @@index([email])
   @@index([fullName])
@@ -495,35 +501,39 @@ model Customer {
 }
 
 model Booking {
-  id               String                    @id @default(cuid())
-  bookingNumber    String                    @unique @db.VarChar(64)
-  customerId       String
-  vehicleId        String
-  pickupBranchId   String
-  returnBranchId   String
-  pickupDateTime   DateTime
-  returnDateTime   DateTime
-  status           BookingStatus             @default(PENDING)
-  pricingMethod    PricingMethod             @default(daily)
-  dailyRate        Decimal                   @db.Decimal(10, 2)
-  totalDays        Int
-  subtotal         Decimal                   @db.Decimal(10, 2)
-  taxAmount        Decimal                   @default(0.00) @db.Decimal(10, 2)
-  depositAmount    Decimal                   @default(0.00) @db.Decimal(10, 2)
-  totalAmount      Decimal                   @db.Decimal(10, 2)
-  finalTotal       Decimal?                  @db.Decimal(10, 2)
-  settlementStatus String?                   @default("PENDING") @db.VarChar(32)
-  currency         String                    @default("PKR") @db.VarChar(8)
-  notes            String?                   @db.Text
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
-  breakdownItems   BookingPricingBreakdown[]
-  pricingSnapshot  BookingPricingSnapshot?
-  customer         Customer                  @relation(fields: [customerId], references: [id])
-  pickupBranch     Branch                    @relation("PickupBranch", fields: [pickupBranchId], references: [id])
-  returnBranch     Branch                    @relation("ReturnBranch", fields: [returnBranchId], references: [id])
-  vehicle          Vehicle                   @relation(fields: [vehicleId], references: [id])
-  rental           Rental?
+  id                 String                    @id @default(cuid())
+  bookingNumber      String                    @unique @db.VarChar(64)
+  customerId         String
+  vehicleId          String
+  pickupBranchId     String
+  returnBranchId     String
+  pickupDateTime     DateTime
+  returnDateTime     DateTime
+  status             bookings_status           @default(PENDING)
+  dailyRate          Decimal                   @db.Decimal(10, 2)
+  totalDays          Int
+  subtotal           Decimal                   @db.Decimal(10, 2)
+  taxAmount          Decimal                   @default(0.00) @db.Decimal(10, 2)
+  depositAmount      Decimal                   @default(0.00) @db.Decimal(10, 2)
+  totalAmount        Decimal                   @db.Decimal(10, 2)
+  currency           String                    @default("PKR") @db.VarChar(8)
+  notes              String?                   @db.Text
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  finalTotal         Decimal?                  @db.Decimal(10, 2)
+  pricingMethod      PricingMethod             @default(daily)
+  settlementStatus   String?                   @default("PENDING") @db.VarChar(32)
+  breakdownItems     BookingPricingBreakdown[]
+  pricingSnapshot    BookingPricingSnapshot?
+  customer           Customer                  @relation(fields: [customerId], references: [id])
+  pickupBranch       Branch                    @relation("PickupBranch", fields: [pickupBranchId], references: [id])
+  returnBranch       Branch                    @relation("ReturnBranch", fields: [returnBranchId], references: [id])
+  vehicle            Vehicle                   @relation(fields: [vehicleId], references: [id])
+  damage_charges     damage_charges[]
+  damage_comparisons damage_comparisons[]
+  payments           payments[]
+  rental             Rental?
+  report_documents   report_documents[]
 
   @@index([bookingNumber])
   @@index([customerId])
@@ -594,24 +604,24 @@ model Rental {
   endMileage             Int?
   startFuelLevel         String       @default("100%") @db.VarChar(16)
   endFuelLevel           String?      @db.VarChar(16)
-  verifiedBillableKm     Int?
-  extraKm                Int?         @default(0)
-  extraKmCharge          Decimal?     @default(0.00) @db.Decimal(10, 2)
-  lateReturnHours        Decimal?     @default(0.00) @db.Decimal(10, 2)
-  lateReturnFee          Decimal?     @default(0.00) @db.Decimal(10, 2)
-  damageCharges          Decimal?     @default(0.00) @db.Decimal(10, 2)
-  fuelCharges            Decimal?     @default(0.00) @db.Decimal(10, 2)
-  depositRefundAmount    Decimal?     @default(0.00) @db.Decimal(10, 2)
-  depositDeductionAmount Decimal?     @default(0.00) @db.Decimal(10, 2)
-  netPayableOrRefund     Decimal?     @default(0.00) @db.Decimal(10, 2)
-  settlementNotes        String?      @db.Text
-  settledAt              DateTime?
-  settledBy              String?      @db.VarChar(128)
   pickedUpAt             DateTime     @default(now())
   returnedAt             DateTime?
   status                 String       @default("ACTIVE") @db.VarChar(32)
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
+  damageCharges          Decimal?     @default(0.00) @db.Decimal(10, 2)
+  depositDeductionAmount Decimal?     @default(0.00) @db.Decimal(10, 2)
+  depositRefundAmount    Decimal?     @default(0.00) @db.Decimal(10, 2)
+  extraKm                Int?         @default(0)
+  extraKmCharge          Decimal?     @default(0.00) @db.Decimal(10, 2)
+  fuelCharges            Decimal?     @default(0.00) @db.Decimal(10, 2)
+  lateReturnFee          Decimal?     @default(0.00) @db.Decimal(10, 2)
+  lateReturnHours        Decimal?     @default(0.00) @db.Decimal(10, 2)
+  netPayableOrRefund     Decimal?     @default(0.00) @db.Decimal(10, 2)
+  settledAt              DateTime?
+  settledBy              String?      @db.VarChar(128)
+  settlementNotes        String?      @db.Text
+  verifiedBillableKm     Int?
   inspections            Inspection[]
   booking                Booking      @relation(fields: [bookingId], references: [id])
   vehicle                Vehicle      @relation(fields: [vehicleId], references: [id])
@@ -621,58 +631,281 @@ model Rental {
 }
 
 model Inspection {
-  id                String            @id @default(cuid())
-  rentalId          String?
-  vehicleId         String
-  type              InspectionType
-  performedById     String?
-  overallScore      Float?
-  summary           String?           @db.Text
-  hasDamageDetected Boolean           @default(false)
-  createdAt         DateTime          @default(now())
-  findings          DamageFinding[]
-  photos            InspectionPhoto[]
-  performedBy       User?             @relation(fields: [performedById], references: [id])
-  rental            Rental?           @relation(fields: [rentalId], references: [id])
-  vehicle           Vehicle           @relation(fields: [vehicleId], references: [id])
+  id                                                                    String               @id @default(cuid())
+  rentalId                                                              String?
+  vehicleId                                                             String
+  type                                                                  InspectionType
+  performedById                                                         String?
+  overallScore                                                          Float?
+  summary                                                               String?              @db.Text
+  hasDamageDetected                                                     Boolean              @default(false)
+  createdAt                                                             DateTime             @default(now())
+  capturePlanVersion                                                    String?              @default("v1.0") @db.VarChar(16)
+  coverageScore                                                         Float?               @default(100)
+  status                                                                inspections_status   @default(FINALIZED)
+  updatedAt                                                             DateTime             @default(now())
+  damage_comparisons_damage_comparisons_pickupInspectionIdToinspections damage_comparisons[] @relation("damage_comparisons_pickupInspectionIdToinspections")
+  damage_comparisons_damage_comparisons_returnInspectionIdToinspections damage_comparisons[] @relation("damage_comparisons_returnInspectionIdToinspections")
+  findings                                                              DamageFinding[]
+  photos                                                                InspectionPhoto[]
+  performedBy                                                           User?                @relation(fields: [performedById], references: [id])
+  rental                                                                Rental?              @relation(fields: [rentalId], references: [id])
+  vehicle                                                               Vehicle              @relation(fields: [vehicleId], references: [id])
+  report_documents                                                      report_documents[]
 
   @@index([vehicleId])
   @@index([rentalId])
   @@index([type])
   @@index([performedById], map: "inspections_performedById_fkey")
+  @@index([status])
   @@map("inspections")
 }
 
 model InspectionPhoto {
-  id           String     @id @default(cuid())
-  inspectionId String
-  view         String     @db.VarChar(32)
-  imageUrl     String     @db.VarChar(512)
-  processedUrl String?    @db.VarChar(512)
-  qualityScore Float?
-  createdAt    DateTime   @default(now())
-  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  id             String     @id @default(cuid())
+  inspectionId   String
+  view           String     @db.VarChar(32)
+  imageUrl       String     @db.VarChar(512)
+  processedUrl   String?    @db.VarChar(512)
+  qualityScore   Float?
+  createdAt      DateTime   @default(now())
+  dimensions     String?    @db.VarChar(32)
+  fileSizeBytes  Int?
+  qualityDetails String?    @db.Text
+  sha256Hash     String?    @db.VarChar(64)
+  inspection     Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
 
   @@index([inspectionId])
   @@map("inspection_photos")
 }
 
 model DamageFinding {
-  id                  String     @id @default(cuid())
+  id                  String           @id @default(cuid())
   inspectionId        String
-  damageType          String     @db.VarChar(64)
-  severity            String     @db.VarChar(32)
-  location            String     @db.VarChar(64)
+  damageType          String           @db.VarChar(64)
+  severity            String           @db.VarChar(32)
+  location            String           @db.VarChar(64)
   confidence          Float
-  boundingBox         String?    @db.Text
-  estimatedRepairCost Decimal?   @db.Decimal(10, 2)
-  isHumanVerified     Boolean    @default(false)
-  humanDecision       String?    @db.VarChar(64)
-  createdAt           DateTime   @default(now())
-  inspection          Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  boundingBox         String?          @db.Text
+  isHumanVerified     Boolean          @default(false)
+  humanDecision       String?          @db.VarChar(64)
+  createdAt           DateTime         @default(now())
+  estimatedRepairCost Decimal?         @db.Decimal(10, 2)
+  cropUrl             String?          @db.VarChar(512)
+  region              String?          @db.VarChar(64)
+  damage_charges      damage_charges[]
+  inspection          Inspection       @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
 
   @@index([inspectionId])
   @@map("damage_findings")
+}
+
+model Inquiry {
+  id           String        @id @default(cuid())
+  name         String        @db.VarChar(128)
+  email        String        @db.VarChar(128)
+  phone        String?       @db.VarChar(32)
+  subject      String        @db.VarChar(255)
+  message      String        @db.Text
+  status       InquiryStatus @default(NEW)
+  replyMessage String?       @db.Text
+  repliedAt    DateTime?
+  repliedBy    String?       @db.VarChar(128)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+  @@map("inquiries")
+}
+
+model TranslationCache {
+  id             String   @id @default(cuid())
+  sourceHash     String   @db.VarChar(64)
+  sourceLang     String   @db.VarChar(10)
+  targetLang     String   @db.VarChar(10)
+  sourceText     String   @db.MediumText
+  translatedText String   @db.MediumText
+  provider       String   @default("google") @db.VarChar(32)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([sourceHash, sourceLang, targetLang])
+  @@index([sourceHash])
+  @@map("translation_cache")
+}
+
+model damage_charges {
+  id                 String                @id
+  bookingId          String
+  comparisonId       String?
+  damageFindingId    String?
+  description        String                @db.VarChar(255)
+  proposedAmount     Decimal               @db.Decimal(10, 2)
+  approvedAmount     Decimal               @default(0.00) @db.Decimal(10, 2)
+  currency           String                @default("PKR") @db.VarChar(8)
+  status             damage_charges_status @default(PROPOSED)
+  approvedById       String?               @db.VarChar(64)
+  approvedAt         DateTime?
+  disputeNotes       String?               @db.Text
+  disputeOpenedAt    DateTime?
+  disputeResolvedAt  DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime
+  bookings           Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  damage_comparisons damage_comparisons?   @relation(fields: [comparisonId], references: [id])
+  damage_findings    DamageFinding?        @relation(fields: [damageFindingId], references: [id])
+
+  @@index([bookingId])
+  @@index([comparisonId])
+  @@index([damageFindingId], map: "damage_charges_damageFindingId_fkey")
+  @@index([status])
+}
+
+model damage_comparison_matches {
+  id                 String                                   @id
+  comparisonId       String
+  findingId          String?                                  @db.VarChar(64)
+  baselineFindingId  String?                                  @db.VarChar(64)
+  region             String                                   @db.VarChar(64)
+  classification     damage_comparison_matches_classification
+  confidence         Float
+  proposedCost       Decimal?                                 @default(0.00) @db.Decimal(10, 2)
+  evidencePair       String?                                  @db.MediumText
+  reviewerDecision   String?                                  @db.VarChar(64)
+  reviewerNotes      String?                                  @db.Text
+  createdAt          DateTime                                 @default(now())
+  damage_comparisons damage_comparisons                       @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
+
+  @@index([classification])
+  @@index([comparisonId])
+}
+
+model damage_comparisons {
+  id                                                             String                      @id
+  bookingId                                                      String
+  vehicleId                                                      String
+  pickupInspectionId                                             String
+  returnInspectionId                                             String
+  status                                                         damage_comparisons_status   @default(PENDING_REVIEW)
+  summary                                                        String?                     @db.Text
+  coverageParityScore                                            Float                       @default(100)
+  preExistingCount                                               Int                         @default(0)
+  newDamageCount                                                 Int                         @default(0)
+  inconclusiveCount                                              Int                         @default(0)
+  totalProposedCharges                                           Decimal                     @default(0.00) @db.Decimal(10, 2)
+  totalApprovedCharges                                           Decimal                     @default(0.00) @db.Decimal(10, 2)
+  reviewerId                                                     String?                     @db.VarChar(64)
+  reviewedAt                                                     DateTime?
+  reviewNotes                                                    String?                     @db.Text
+  createdAt                                                      DateTime                    @default(now())
+  updatedAt                                                      DateTime
+  damage_charges                                                 damage_charges[]
+  damage_comparison_matches                                      damage_comparison_matches[]
+  bookings                                                       Booking                     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  inspections_damage_comparisons_pickupInspectionIdToinspections Inspection                  @relation("damage_comparisons_pickupInspectionIdToinspections", fields: [pickupInspectionId], references: [id], onDelete: Cascade)
+  inspections_damage_comparisons_returnInspectionIdToinspections Inspection                  @relation("damage_comparisons_returnInspectionIdToinspections", fields: [returnInspectionId], references: [id], onDelete: Cascade)
+  vehicles                                                       Vehicle                     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  report_documents                                               report_documents[]
+
+  @@index([bookingId])
+  @@index([pickupInspectionId])
+  @@index([returnInspectionId])
+  @@index([status])
+  @@index([vehicleId])
+}
+
+model idempotency_records {
+  id             String   @id
+  key            String   @unique @db.VarChar(128)
+  handler        String   @db.VarChar(64)
+  responseStatus Int
+  responseBody   String   @db.MediumText
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([key])
+}
+
+model payments {
+  id              String          @id
+  bookingId       String
+  amount          Decimal         @db.Decimal(10, 2)
+  currency        String          @default("PKR") @db.VarChar(8)
+  status          payments_status @default(PENDING)
+  provider        String          @default("stripe") @db.VarChar(32)
+  paymentIntentId String?         @unique @db.VarChar(128)
+  clientSecret    String?         @db.VarChar(255)
+  receiptUrl      String?         @db.VarChar(512)
+  metadata        String?         @db.Text
+  errorMessage    String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  bookings        Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  refunds         refunds[]
+
+  @@index([bookingId])
+  @@index([paymentIntentId])
+  @@index([status])
+}
+
+model price_quotes {
+  id             String                     @id
+  vehicleId      String
+  customerId     String?
+  pickupDateTime DateTime
+  returnDateTime DateTime
+  pricingMethod  price_quotes_pricingMethod @default(daily)
+  currency       String                     @default("PKR") @db.VarChar(8)
+  totalAmount    Decimal                    @db.Decimal(10, 2)
+  depositAmount  Decimal                    @default(0.00) @db.Decimal(10, 2)
+  quoteSnapshot  String                     @db.MediumText
+  signature      String                     @db.VarChar(128)
+  expiresAt      DateTime
+  createdAt      DateTime                   @default(now())
+
+  @@index([expiresAt])
+  @@index([vehicleId])
+}
+
+model refunds {
+  id               String         @id
+  paymentId        String
+  amount           Decimal        @db.Decimal(10, 2)
+  reason           String?        @db.VarChar(255)
+  status           refunds_status @default(PENDING)
+  providerRefundId String?        @unique @db.VarChar(128)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime
+  payments         payments       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([status])
+}
+
+model report_documents {
+  id                 String                      @id
+  bookingId          String
+  inspectionId       String?
+  comparisonId       String?
+  reportType         report_documents_reportType
+  version            Int                         @default(1)
+  title              String                      @db.VarChar(255)
+  pdfUrl             String                      @db.VarChar(512)
+  fileSizeBytes      Int                         @default(0)
+  sha256Hash         String                      @db.VarChar(64)
+  metadata           String?                     @db.Text
+  generatedAt        DateTime                    @default(now())
+  bookings           Booking                     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  damage_comparisons damage_comparisons?         @relation(fields: [comparisonId], references: [id])
+  inspections        Inspection?                 @relation(fields: [inspectionId], references: [id])
+
+  @@index([bookingId])
+  @@index([comparisonId])
+  @@index([inspectionId])
+  @@index([reportType])
 }
 
 enum UserStatus {
@@ -754,15 +987,6 @@ enum DamageStatus {
   RESOLVED
 }
 
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  ACTIVE
-  COMPLETED
-  CANCELLED
-  REJECTED
-}
-
 enum InspectionType {
   PICKUP
   RETURN
@@ -776,40 +1000,178 @@ enum InquiryStatus {
   CLOSED
 }
 
-model Inquiry {
-  id           String        @id @default(cuid())
-  name         String        @db.VarChar(128)
-  email        String        @db.VarChar(128)
-  phone        String?       @db.VarChar(32)
-  subject      String        @db.VarChar(255)
-  message      String        @db.Text
-  status       InquiryStatus @default(NEW)
-  replyMessage String?       @db.Text
-  repliedAt    DateTime?
-  repliedBy    String?       @db.VarChar(128)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+enum payments_status {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
 
-  @@index([status])
-  @@index([email])
+enum refunds_status {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum report_documents_reportType {
+  PICKUP_INSPECTION
+  RETURN_INSPECTION
+  DAMAGE_COMPARISON
+  FINAL_SETTLEMENT
+}
+
+enum damage_comparisons_status {
+  PENDING_REVIEW
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  DISPUTED
+}
+
+enum damage_comparison_matches_classification {
+  PRE_EXISTING_UNCHANGED
+  PRE_EXISTING_WORSENED
+  POSSIBLY_NEW_DAMAGE
+  POSSIBLY_REPAIRED
+  NOT_VISIBLE_IN_RETURN
+  INCONCLUSIVE
+  CONFIRMED_NEW_DAMAGE
+}
+
+enum price_quotes_pricingMethod {
+  daily
+  per_km
+  daily_extra_km
+  hourly
+  monthly
+}
+
+enum bookings_status {
+  DRAFT
+  QUOTED
+  RESERVED
+  PENDING
+  CONFIRMED
+  READY_FOR_PICKUP
+  ACTIVE
+  RETURN_INSPECTION
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  REJECTED
+  REQUIRES_REVIEW
+}
+
+enum damage_charges_status {
+  PROPOSED
+  EVIDENCE_REVIEW
+  APPROVED
+  REJECTED
+  CUSTOMER_NOTIFIED
+  SETTLED
+  DISPUTED
+}
+
+enum inspections_status {
+  DRAFT
+  IN_PROGRESS
+  CAPTURE_COMPLETE
+  AI_ANALYZED
+  REVIEWED
+  FINALIZED
+}
+
+model CustomerDocument {
+  id                 String    @id @default(cuid())
+  customerId         String
+  documentType       String    @db.VarChar(64)
+  title              String    @db.VarChar(128)
+  documentNumber     String?   @db.VarChar(128)
+  fileUrl            String    @db.VarChar(512)
+  fileName           String?   @db.VarChar(255)
+  fileSize           Int?
+  verificationStatus String    @default("PENDING_VERIFICATION") @db.VarChar(32)
+  rejectionReason    String?   @db.VarChar(255)
+  issuedAt           DateTime?
+  expiresAt          DateTime?
+  verifiedAt         DateTime?
+  verifiedBy         String?   @db.VarChar(128)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  customer           Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([documentType])
+  @@index([verificationStatus])
+  @@map("customer_documents")
+}
+
+model CustomerNotification {
+  id         String    @id @default(cuid())
+  customerId String
+  category   String    @db.VarChar(32)
+  title      String    @db.VarChar(128)
+  message    String    @db.Text
+  actionUrl  String?   @db.VarChar(255)
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([isRead])
   @@index([createdAt])
-  @@map("inquiries")
+  @@map("customer_notifications")
 }
 
-model TranslationCache {
-  id             String   @id @default(cuid())
-  sourceHash     String   @db.VarChar(64)
-  sourceLang     String   @db.VarChar(10)
-  targetLang     String   @db.VarChar(10)
-  sourceText     String   @db.MediumText
-  translatedText String   @db.MediumText
-  provider       String   @default("google") @db.VarChar(32)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+model SupportTicket {
+  id           String          @id @default(cuid())
+  ticketNumber String          @unique @db.VarChar(64)
+  customerId   String
+  bookingId    String?
+  subject      String          @db.VarChar(255)
+  category     String          @default("GENERAL") @db.VarChar(48)
+  priority     String          @default("NORMAL") @db.VarChar(24)
+  status       String          @default("OPEN") @db.VarChar(24)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  customer     Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  messages     TicketMessage[]
 
-  @@unique([sourceHash, sourceLang, targetLang])
-  @@index([sourceHash])
-  @@map("translation_cache")
+  @@index([customerId])
+  @@index([status])
+  @@index([ticketNumber])
+  @@map("support_tickets")
 }
 
+model TicketMessage {
+  id            String        @id @default(cuid())
+  ticketId      String
+  senderType    String        @db.VarChar(24)
+  senderName    String        @db.VarChar(128)
+  message       String        @db.Text
+  attachmentUrl String?       @db.VarChar(512)
+  createdAt     DateTime      @default(now())
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+model VehicleReview {
+  id         String   @id @default(cuid())
+  vehicleId  String
+  customerId String
+  bookingId  String   @unique
+  rating     Int      @default(5)
+  comment    String?  @db.Text
+  isApproved Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([customerId])
+  @@map("vehicle_reviews")
+}

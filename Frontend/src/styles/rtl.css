@@ -88,6 +88,11 @@ html[lang='ur'] .finovo-page-title {
   border-right: none !important;
 }
 
+[dir='rtl'] .admin-main-wrapper {
+  margin-left: 0 !important;
+  margin-right: 240px !important;
+}
+
 [dir='rtl'] .admin-sidebar-nav-item {
   flex-direction: row;
   text-align: right;
@@ -132,6 +137,10 @@ html[lang='ur'] .finovo-page-title {
 
   [dir='rtl'] .admin-sidebar.mobile-open {
     transform: translateX(0) !important;
+  }
+
+  [dir='rtl'] .admin-main-wrapper {
+    margin-right: 0 !important;
   }
 }
 

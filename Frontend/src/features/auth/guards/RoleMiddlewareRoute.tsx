@@ -66,11 +66,6 @@ export function RoleMiddlewareRoute({ children, allowedSection }: RoleMiddleware
     return <Navigate to="/customer/dashboard" replace />;
   }
 
-  if (allowedSection === 'customer' && isStaff && location.pathname === '/customer/dashboard') {
-    // Admin accessing primary dashboard: redirect directly to Admin Dashboard
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-
   return <>{children}</>;
 }
 
