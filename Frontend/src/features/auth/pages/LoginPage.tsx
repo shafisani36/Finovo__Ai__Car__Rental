@@ -5,7 +5,7 @@ import { AuthSplitLayout } from '../layouts/AuthSplitLayout';
 import { AuthInput } from '../components/AuthInput';
 import { SocialAuthRow } from '../components/SocialAuthRow';
 import { useAuth } from '../context';
-import { getDirectDashboardRoute } from '../utils/roleRouting';
+import { getDirectDashboardRoute, isStaffOrAdmin } from '../utils/roleRouting';
 import { Mail, Lock } from 'lucide-react';
 
 export function LoginPage() {
@@ -45,9 +45,19 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       const res = await login(email.trim(), password, rememberMe);
+      const isStaff = isStaffOrAdmin(res?.user?.roles);
       const roleDestination = getDirectDashboardRoute(res?.user?.roles);
       const from = (location.state as { from?: { pathname?: string } })?.from?.pathname;
-      const target = from && from !== '/dashboard' ? from : roleDestination;
+
+      let target = roleDestination;
+      if (from && from !== '/dashboard') {
+        if (isStaff && !from.startsWith('/customer')) {
+          target = from;
+        } else if (!isStaff && !from.startsWith('/admin')) {
+          target = from;
+        }
+      }
+
       navigate(target, { replace: true });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid email or password';
