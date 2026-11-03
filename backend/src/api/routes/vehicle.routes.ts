@@ -3,8 +3,11 @@ import { VehicleController } from '../../modules/fleet/vehicle.controller';
 import { BrandController } from '../../modules/fleet/brand.controller';
 import { authenticate } from '../../middleware/authenticate';
 import { requireRole } from '../../middleware/authorize';
+<<<<<<< HEAD
 import { CarFeatureController } from '@/modules/fleet/car-feature.controller';
 
+=======
+>>>>>>> origin/main
 
 export const vehicleRouter = Router();
 
@@ -272,6 +275,7 @@ vehicleRouter.get('/:id/bookings', VehicleController.listBookings);
 vehicleRouter.get('/:id/availability', VehicleController.checkAvailability);
 
 
+<<<<<<< HEAD
 // ==========================================
 // 1.2 CARS FEATURES CRUD
 // ==========================================
@@ -305,3 +309,5 @@ vehicleRouter.delete(
   requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
   CarFeatureController.delete
 );
+=======
+>>>>>>> origin/main

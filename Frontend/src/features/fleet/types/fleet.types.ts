@@ -26,6 +26,7 @@ export interface VehiclePhotoInput {
 
 export type PricingMethod = 'daily' | 'per_km' | 'daily_extra_km' | 'hourly' | 'monthly';
 
+<<<<<<< HEAD
 export interface CarFeature {
   id: string;
   name: string;
@@ -39,6 +40,8 @@ export interface VehicleFeature {
   feature: CarFeature;
 }
 
+=======
+>>>>>>> origin/main
 export interface Vehicle {
   id: string;
   brand: string;
@@ -88,7 +91,10 @@ export interface Vehicle {
   status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RESERVED' | 'ARCHIVED';
   isPublicCatalog: boolean;
   features?: string | string[] | null;
+<<<<<<< HEAD
   vehicleFeatures?: VehicleFeature[];
+=======
+>>>>>>> origin/main
   notes?: string | null;
   parkingSpot?: string | null;
   telematicsDeviceId?: string | null;
@@ -359,7 +365,10 @@ export interface VehicleFormData {
   status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RESERVED' | 'ARCHIVED';
   isPublicCatalog: boolean;
   features?: string[];
+<<<<<<< HEAD
   featureIds?: string[];
+=======
+>>>>>>> origin/main
   notes?: string;
   parkingSpot?: string;
   telematicsDeviceId?: string;

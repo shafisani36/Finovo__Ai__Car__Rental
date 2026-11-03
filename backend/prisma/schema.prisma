@@ -214,6 +214,7 @@ model VehicleCategory {
 }
 
 model Vehicle {
+<<<<<<< HEAD
   id                 String           @id @default(cuid())
   brand              String           @db.VarChar(64)
   model              String           @db.VarChar(64)
@@ -244,6 +245,36 @@ model Vehicle {
   features           String?          @db.Text
   vehicleFeatures    VehicleFeature[]
 
+=======
+  id                      String                @id @default(cuid())
+  brand                   String                @db.VarChar(64)
+  model                   String                @db.VarChar(64)
+  year                    Int
+  registrationNumber      String                @unique @db.VarChar(32)
+  vin                     String?               @unique @db.VarChar(64)
+  categoryId              String
+  branchId                String?
+  transmission            TransmissionType      @default(AUTOMATIC)
+  fuelType                FuelType              @default(PETROL)
+  seats                   Int                   @default(5)
+  doors                   Int                   @default(4)
+  color                   String?               @db.VarChar(32)
+  mileage                 Int                   @default(0)
+  dailyRate               Decimal               @db.Decimal(10, 2)
+  weeklyRate              Decimal?              @db.Decimal(10, 2)
+  monthlyRate             Decimal?              @db.Decimal(10, 2)
+  status                  VehicleStatus         @default(AVAILABLE)
+  isPublicCatalog         Boolean               @default(true)
+  notes                   String?               @db.Text
+  primaryImageUrl         String?               @db.VarChar(512)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  colorHex                String?               @db.VarChar(16)
+  drivetrain              String?               @db.VarChar(16)
+  engineSize              String?               @db.VarChar(64)
+  excessMileageFee        Decimal?              @db.Decimal(10, 2)
+  features                String?               @db.Text
+>>>>>>> origin/main
   fuelLevelPercent        Int?                  @default(100)
   fuelTankCapacity        String?               @db.VarChar(32)
   horsePower              Int?
@@ -1177,6 +1208,7 @@ model VehicleReview {
   @@index([customerId])
   @@map("vehicle_reviews")
 }
+<<<<<<< HEAD
 
 model CarFeature {
   id        String           @id @default(cuid())
@@ -1204,3 +1236,5 @@ model VehicleFeature {
   @@index([featureId])
   @@map("vehicle_features")
 }
+=======
+>>>>>>> origin/main

@@ -2,7 +2,11 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fleetApi } from '../api/fleetApi';
 import { branchApi, type Branch } from '../../branches/api/branchApi';
+<<<<<<< HEAD
 import type { VehicleCategory, VehicleFormData, VehiclePhotoInput, VehicleBrandItem, Vehicle,  CarFeature } from '../types/fleet.types';
+=======
+import type { VehicleCategory, VehicleFormData, VehiclePhotoInput, VehicleBrandItem, Vehicle } from '../types/fleet.types';
+>>>>>>> origin/main
 import { VehiclePhotoPipeline } from '../components/VehiclePhotoPipeline';
 import { VehiclePricingSection, type VehiclePricingState } from '../components/VehiclePricingSection';
 import {
@@ -50,8 +54,47 @@ const POPULAR_COLORS = [
   { name: 'Gold / Champagne', hex: '#D97706', border: '#B45309' },
 ];
 
+<<<<<<< HEAD
 
  const FEATURE_CATEGORIES = [
+=======
+const POPULAR_MAKES = [
+  'Toyota',
+  'Honda',
+  'Hyundai',
+  'KIA',
+  'BMW',
+  'Mercedes-Benz',
+  'Audi',
+  'Porsche',
+  'Tesla',
+  'Land Rover',
+  'Other',
+];
+
+const AVAILABLE_FEATURES = [
+  'GPS Navigation System',
+  'Apple CarPlay & Android Auto',
+  '360° Surround Camera',
+  'Panoramic Sunroof',
+  'Heated Front Seats',
+  'Ventilated Seats',
+  'Adaptive Cruise Control',
+  'Autonomous Emergency Braking',
+  'Lane Departure Warning & Keep Assist',
+  'Blind Spot Monitoring',
+  'Smart Keyless Entry & Start',
+  'Premium Surround Audio',
+  'Dashcam Telematics Unit',
+  'Full Leather Upholstery',
+  'ISOFIX Child Seat Mounts',
+  'Wireless Smartphone Charger',
+  'Parking Distance Sensors (F/R)',
+  'Tow Hitch Installed',
+];
+
+const FEATURE_CATEGORIES = [
+>>>>>>> origin/main
   { id: 'all', label: 'All Equipment' },
   { id: 'safety', label: 'Safety & ADAS' },
   { id: 'comfort', label: 'Cabin & Comfort' },
@@ -59,6 +102,30 @@ const POPULAR_COLORS = [
   { id: 'utility', label: 'Exterior & Utility' },
 ];
 
+<<<<<<< HEAD
+=======
+const FEATURE_META: Record<string, 'safety' | 'comfort' | 'tech' | 'utility'> = {
+  'GPS Navigation System': 'tech',
+  'Apple CarPlay & Android Auto': 'tech',
+  '360° Surround Camera': 'safety',
+  'Panoramic Sunroof': 'comfort',
+  'Heated Front Seats': 'comfort',
+  'Ventilated Seats': 'comfort',
+  'Adaptive Cruise Control': 'safety',
+  'Autonomous Emergency Braking': 'safety',
+  'Lane Departure Warning & Keep Assist': 'safety',
+  'Blind Spot Monitoring': 'safety',
+  'Smart Keyless Entry & Start': 'comfort',
+  'Premium Surround Audio': 'tech',
+  'Dashcam Telematics Unit': 'tech',
+  'Full Leather Upholstery': 'comfort',
+  'ISOFIX Child Seat Mounts': 'safety',
+  'Wireless Smartphone Charger': 'tech',
+  'Parking Distance Sensors (F/R)': 'safety',
+  'Tow Hitch Installed': 'utility',
+};
+
+>>>>>>> origin/main
 export const DEFAULT_FALLBACK_CATEGORIES: VehicleCategory[] = [
   { id: 'cat-sedan', name: 'Sedan', slug: 'sedan', baseRate: 8000, description: 'Standard & Executive Sedans (up to 5 passengers)' },
   { id: 'cat-suv', name: 'SUV', slug: 'suv', baseRate: 15000, description: 'Compact, Mid-Size & Full-Size SUVs (5 to 8 passengers)' },
@@ -75,7 +142,11 @@ export function AddCarPage() {
   const navigate = useNavigate();
   const { confirm } = useConfirm();
 
+<<<<<<< HEAD
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
+=======
+  const [categories, setCategories] = useState<VehicleCategory[]>(DEFAULT_FALLBACK_CATEGORIES);
+>>>>>>> origin/main
   const [branches, setBranches] = useState<Branch[]>([]);
   const [dbBrands, setDbBrands] = useState<VehicleBrandItem[]>([]);
   const [isDecodingVin, setIsDecodingVin] = useState(false);
@@ -85,9 +156,12 @@ export function AddCarPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+<<<<<<< HEAD
   const currentYear = new Date().getFullYear();
 const maxAllowedYear = currentYear + 1;
 
+=======
+>>>>>>> origin/main
   // Active section for sticky navigation ribbon
   const [activeSection, setActiveSection] = useState<'sec-identity' | 'sec-specs' | 'sec-features' | 'sec-pricing' | 'sec-photos' | 'sec-records'>('sec-identity');
 
@@ -128,10 +202,14 @@ const maxAllowedYear = currentYear + 1;
   const [telematicsDeviceId, setTelematicsDeviceId] = useState('');
 
   // 3. Equipment & Smart Features
+<<<<<<< HEAD
   // 3. Equipment & Smart Features
 const [carFeatures, setCarFeatures] = useState<CarFeature[]>([]);
 const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
+=======
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+>>>>>>> origin/main
 
   // 4. Commercial Rates & Rental Calculation Rules
   const [pricingState, setPricingState] = useState<VehiclePricingState>({
@@ -218,6 +296,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+<<<<<<< HEAD
   useEffect(() => {
   let isMounted = true;
 
@@ -248,6 +327,8 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   };
 }, []);
 
+=======
+>>>>>>> origin/main
   // Load initial data (Categories, Branches, Brands, and if Edit mode: existing Vehicle)
   useEffect(() => {
     let isMounted = true;
@@ -258,6 +339,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
       Promise<{ brands: VehicleBrandItem[] }>,
       Promise<{ vehicle: Vehicle } | null>
     ] = [
+<<<<<<< HEAD
         fleetApi.getCategories(),
         branchApi.getBranches(),
         fleetApi.getBrands({ isActive: true }),
@@ -265,6 +347,13 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
       ];
 
 
+=======
+      fleetApi.getCategories(),
+      branchApi.getBranches(),
+      fleetApi.getBrands(),
+      id ? fleetApi.getVehicleById(id) : Promise.resolve(null),
+    ];
+>>>>>>> origin/main
 
     Promise.all(initialCalls)
       .then(([catRes, branchRes, brandRes, vehRes]) => {
@@ -346,9 +435,22 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
 
           setStatus((v.status as any) || 'AVAILABLE');
           setIsPublicCatalog(v.isPublicCatalog ?? true);
+<<<<<<< HEAD
           setSelectedFeatures(
   v.vehicleFeatures?.map((vehicleFeature) => vehicleFeature.featureId) ?? []
 );
+=======
+          if (v.features) {
+            const feats: string[] = Array.isArray(v.features)
+              ? (v.features as string[])
+              : typeof v.features === 'string'
+              ? JSON.parse(v.features)
+              : [];
+            setSelectedFeatures(feats);
+          } else {
+            setSelectedFeatures([]);
+          }
+>>>>>>> origin/main
 
           setInsurancePolicyNumber(v.insurancePolicyNumber || '');
           setInsuranceExpiry(v.insuranceExpiry ? v.insuranceExpiry.slice(0, 10) : '');
@@ -393,6 +495,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
     return selectedBrandObj?.models || [];
   }, [selectedBrandObj]);
 
+<<<<<<< HEAD
 
   const handleBrandChange = (newBrand: string) => {
     setBrand(newBrand);
@@ -421,6 +524,24 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
       }
     } else {
       // Allow entering a model if the selected brand has no registered models
+=======
+  const handleBrandChange = (newBrand: string) => {
+    setBrand(newBrand);
+    if (newBrand === 'Other') {
+      setCustomModelMode(true);
+      return;
+    }
+    const targetBrand = dbBrands.find((b) => b.name.toLowerCase() === newBrand.toLowerCase());
+    const models = targetBrand?.models;
+    if (models && models.length > 0) {
+      const firstModel = models[0];
+      setCustomModelMode(false);
+      setModel(firstModel.name);
+      if (firstModel.defaultCategoryId && categories.some((c) => c.id === firstModel.defaultCategoryId)) {
+        setCategoryId(firstModel.defaultCategoryId);
+      }
+    } else {
+>>>>>>> origin/main
       setCustomModelMode(true);
     }
   };
@@ -506,6 +627,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
     }
   };
 
+<<<<<<< HEAD
  const toggleFeature = (featureId: string) => {
   setSelectedFeatures((prev) =>
     prev.includes(featureId)
@@ -529,6 +651,23 @@ const clearAllFeatures = () => {
   // Form compliance calculations
   const effectiveModel = customModelMode ? customModelName.trim() : model.trim();
   const effectiveBrand = brand.trim();
+=======
+  const toggleFeature = (feature: string) => {
+    setSelectedFeatures((prev) => (prev.includes(feature) ? prev.filter((f) => f !== feature) : [...prev, feature]));
+  };
+
+  const selectAllFeatures = () => {
+    setSelectedFeatures(AVAILABLE_FEATURES);
+  };
+
+  const clearAllFeatures = () => {
+    setSelectedFeatures([]);
+  };
+
+  // Form compliance calculations
+  const effectiveModel = customModelMode ? customModelName.trim() : model.trim();
+  const effectiveBrand = brand === 'Other' ? customBrand.trim() : brand.trim();
+>>>>>>> origin/main
 
   // Dynamic vehicle category & seating capacity boundaries
   const selectedCategory = useMemo(() => {
@@ -629,7 +768,10 @@ const clearAllFeatures = () => {
         minSeats: 1,
         maxSeats: 4,
         defaultSeats: 2,
+<<<<<<< HEAD
          defaultDoors: 2,
+=======
+>>>>>>> origin/main
         minDoors: 2,
         maxDoors: 3,
         hint: '1 to 4 Passengers',
@@ -715,6 +857,7 @@ const clearAllFeatures = () => {
   }, [effectiveBrand, effectiveModel, registrationNumber, categoryId, photos, pricingState]);
 
   // Filtered features list based on active tab
+<<<<<<< HEAD
  const filteredFeatures = useMemo(() => {
   const activeFeatures = carFeatures.filter((feature) => feature.isActive);
 
@@ -726,16 +869,25 @@ const clearAllFeatures = () => {
     (feature) => feature.category.toLowerCase() === activeFeatureTab
   );
 }, [carFeatures, activeFeatureTab]);
+=======
+  const filteredFeatures = useMemo(() => {
+    if (activeFeatureTab === 'all') return AVAILABLE_FEATURES;
+    return AVAILABLE_FEATURES.filter((f) => FEATURE_META[f] === activeFeatureTab);
+  }, [activeFeatureTab]);
+>>>>>>> origin/main
 
   // Form Submission (Create or Edit)
   const handleSubmit = async () => {
     setError(null);
 
+<<<<<<< HEAD
     if (!year || year < 1970 || year > maxAllowedYear) {
   setError(`Model year must be between 1970 and ${maxAllowedYear}.`);
   scrollToSection('sec-identity');
   return;
 }
+=======
+>>>>>>> origin/main
     if (!effectiveBrand) {
       setError('Please select or specify a vehicle manufacturer / make.');
       scrollToSection('sec-identity');
@@ -751,11 +903,16 @@ const clearAllFeatures = () => {
       scrollToSection('sec-identity');
       return;
     }
+<<<<<<< HEAD
     if (!categoryId || !categories.some((category) => category.id === categoryId)) {
+=======
+    if (!categoryId) {
+>>>>>>> origin/main
       setError('Please assign the vehicle to a fleet category.');
       scrollToSection('sec-identity');
       return;
     }
+<<<<<<< HEAD
     // Seating Capacity Validation
 if (
   !Number.isInteger(seats) ||
@@ -782,6 +939,8 @@ if (
   return;
 }
 
+=======
+>>>>>>> origin/main
     if (photos.length < 4) {
       setError(`Enterprise compliance requires at least 4 inspection photos. Currently ${photos.length} attached.`);
       scrollToSection('sec-photos');
@@ -856,10 +1015,14 @@ if (
       excessMileageFee: pricingState.excessMileageFee ? parseFloat(pricingState.excessMileageFee) : 50,
       status: status as any,
       isPublicCatalog,
+<<<<<<< HEAD
       featureIds: selectedFeatures,
 features: carFeatures
   .filter((feature) => selectedFeatures.includes(feature.id))
   .map((feature) => feature.name),
+=======
+      features: selectedFeatures,
+>>>>>>> origin/main
       notes: notes.trim() || undefined,
       parkingSpot: parkingSpot.trim() || undefined,
       telematicsDeviceId: telematicsDeviceId.trim() || undefined,
@@ -931,8 +1094,11 @@ features: carFeatures
     return `${cur} ${pricingState.dailyRate || 0}/day`;
   }, [pricingState]);
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> origin/main
   if (isLoading) {
     return (
       <div className="add-car-page-root">
@@ -967,6 +1133,7 @@ features: carFeatures
                 {isEdit ? `Edit Vehicle: ${effectiveBrand} ${effectiveModel || ''}` : 'Register New Vehicle'}
               </h1>
               <span
+<<<<<<< HEAD
                 className={`status-badge ${status === 'AVAILABLE'
                     ? 'badge-available'
                     : status === 'RENTED'
@@ -975,6 +1142,17 @@ features: carFeatures
                         ? 'badge-maintenance'
                         : 'badge-reserved'
                   }`}
+=======
+                className={`status-badge ${
+                  status === 'AVAILABLE'
+                    ? 'badge-available'
+                    : status === 'RENTED'
+                    ? 'badge-rented'
+                    : status === 'MAINTENANCE'
+                    ? 'badge-maintenance'
+                    : 'badge-reserved'
+                }`}
+>>>>>>> origin/main
               >
                 ● {status}
               </span>
@@ -1057,8 +1235,13 @@ features: carFeatures
                       ? 'Saving Changes...'
                       : 'Registering...'
                     : isEdit
+<<<<<<< HEAD
                       ? 'Save Changes'
                       : 'Register Vehicle'}
+=======
+                    ? 'Save Changes'
+                    : 'Register Vehicle'}
+>>>>>>> origin/main
                 </span>
                 <span className="label-short">{isSubmitting ? 'Saving...' : 'Save'}</span>
               </span>
@@ -1331,6 +1514,7 @@ features: carFeatures
               </span>
             </div>
 
+<<<<<<< HEAD
 
             {/* Popular Make Quick Chips - Dynamic from Database */}
             <div>
@@ -1358,6 +1542,25 @@ features: carFeatures
                     No active brands available. Add brands from Manage Brands.
                   </span>
                 )}
+=======
+            {/* Popular Make Quick Chips */}
+            <div>
+              <div className="popular-brands-row">
+                <span className="popular-brands-label">Popular Makes:</span>
+                {POPULAR_MAKES.map((m) => {
+                  const isActive = brand.toLowerCase() === m.toLowerCase();
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => handleBrandChange(m)}
+                      className={`popular-brand-chip ${isActive ? 'active' : ''}`}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
+>>>>>>> origin/main
               </div>
             </div>
 
@@ -1398,11 +1601,30 @@ features: carFeatures
                       sublabel: b.country
                         ? `${b.country}${b.models?.length ? ` • ${b.models.length} models` : ''}`
                         : b.models?.length
+<<<<<<< HEAD
                           ? `${b.models.length} models`
                           : undefined,
                     })),
                   ]}
                 />
+=======
+                        ? `${b.models.length} models`
+                        : undefined,
+                    })),
+                    { value: 'Other', label: '+ Other (Custom Make)' },
+                  ]}
+                />
+                {brand === 'Other' && (
+                  <input
+                    type="text"
+                    value={customBrand}
+                    onChange={(e) => setCustomBrand(e.target.value)}
+                    placeholder="Enter Custom Make (e.g. Lucid, Rivian)..."
+                    className="fleet-form-input"
+                    style={{ marginTop: '8px' }}
+                  />
+                )}
+>>>>>>> origin/main
               </div>
 
               {/* Model */}
@@ -1488,7 +1710,11 @@ features: carFeatures
                   }}
                   placeholder="e.g. 2025"
                   min={1970}
+<<<<<<< HEAD
                   max={maxAllowedYear}
+=======
+                  max={2035}
+>>>>>>> origin/main
                   className="fleet-form-input"
                 />
               </div>
@@ -1524,6 +1750,48 @@ features: carFeatures
               </div>
             </div>
 
+<<<<<<< HEAD
+=======
+            {/* Row 3: NHTSA vPIC Intelligent VIN Decoder Hub */}
+            <div className="vpic-scanner-hub">
+              <div className="vpic-scanner-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="vpic-badge">
+                    <Sparkles size={12} />
+                    NHTSA vPIC Cloud AI Decoder
+                  </span>
+                  <span style={{ fontSize: '0.78rem', color: '#6C1E84', fontWeight: 600 }}>
+                    Official Vehicle Specification Database
+                  </span>
+                </div>
+                <span className="vpic-char-count">{vin.length} / 17 chars</span>
+              </div>
+
+              <div className="vpic-input-row">
+                <input
+                  type="text"
+                  value={vin}
+                  onChange={(e) => setVin(e.target.value.toUpperCase())}
+                  placeholder="Enter 17-character VIN (e.g. 1HGCR2F83HA...)"
+                  maxLength={17}
+                  className="fleet-form-input vpic-vin-input"
+                />
+                <button
+                  type="button"
+                  onClick={handleDecodeVin}
+                  disabled={isDecodingVin || vin.trim().length < 11}
+                  className="fleet-header-action-btn fleet-btn-secondary"
+                  style={{ padding: '0 18px', gap: '6px' }}
+                >
+                  <Sparkles size={15} color="#6C1E84" />
+                  <span>{isDecodingVin ? 'Scanning...' : 'Decode & Autofill'}</span>
+                </button>
+              </div>
+              <span className="fleet-form-hint" style={{ marginTop: '6px' }}>
+                Instant verification autofills manufacturer specs, engine architecture, safety rating, and drivetrain.
+              </span>
+            </div>
+>>>>>>> origin/main
 
             {/* Row 4: Fleet Category & Home Base Station */}
             <div className="car-row-2">
@@ -1811,7 +2079,11 @@ features: carFeatures
             <div className="car-row-2">
               <div className="fleet-form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+<<<<<<< HEAD
                   <label className="fleet-form-label" style={{ margin: 0 }}>Seating Capacity <span style={{ color: '#EF4444' }}>*</span></label>
+=======
+                  <label className="fleet-form-label" style={{ margin: 0 }}>Seating Capacity</label>
+>>>>>>> origin/main
                   <span className="car-stepper-type-tag">Max {vehicleTypeInfo.maxSeats} ({vehicleTypeInfo.label})</span>
                 </div>
                 <div className="car-stepper">
@@ -1869,7 +2141,11 @@ features: carFeatures
 
               <div className="fleet-form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+<<<<<<< HEAD
                   <label className="fleet-form-label" style={{ margin: 0 }}>Number of Doors <span style={{ color: '#EF4444' }}>*</span></label>
+=======
+                  <label className="fleet-form-label" style={{ margin: 0 }}>Number of Doors</label>
+>>>>>>> origin/main
                   <span className="car-stepper-type-tag">Max {vehicleTypeInfo.maxDoors} Doors</span>
                 </div>
                 <div className="car-stepper">
@@ -1990,7 +2266,11 @@ features: carFeatures
                 </div>
               </div>
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#6C1E84', backgroundColor: '#F5EEF8', padding: '4px 12px', borderRadius: '12px' }}>
+<<<<<<< HEAD
                 {selectedFeatures.length} of {carFeatures.filter((feature) => feature.isActive).length} Selected
+=======
+                {selectedFeatures.length} of {AVAILABLE_FEATURES.length} Selected
+>>>>>>> origin/main
               </span>
             </div>
 
@@ -2031,6 +2311,7 @@ features: carFeatures
 
             {/* Features Chips Grid */}
             <div className="car-features-grid">
+<<<<<<< HEAD
               {isLoadingFeatures ? (
   <p>Loading car features...</p>
 ) : filteredFeatures.length === 0 ? (
@@ -2057,6 +2338,27 @@ features: carFeatures
     );
   })
 )}
+=======
+              {filteredFeatures.map((feat) => {
+                const isSelected = selectedFeatures.includes(feat);
+                return (
+                  <button
+                    key={feat}
+                    type="button"
+                    onClick={() => toggleFeature(feat)}
+                    className={`car-feature-chip ${isSelected ? 'selected' : ''}`}
+                  >
+                    <CheckCircle2
+                      size={17}
+                      color={isSelected ? '#6C1E84' : '#C7B9CC'}
+                      strokeWidth={isSelected ? 2.5 : 1.5}
+                      style={{ flexShrink: 0 }}
+                    />
+                    <span>{feat}</span>
+                  </button>
+                );
+              })}
+>>>>>>> origin/main
             </div>
           </div>
 
@@ -2184,6 +2486,7 @@ features: carFeatures
                 <span>Live Customer Preview</span>
               </div>
               <span
+<<<<<<< HEAD
                 className={`status-badge ${status === 'AVAILABLE'
                     ? 'badge-available'
                     : status === 'RENTED'
@@ -2192,6 +2495,17 @@ features: carFeatures
                         ? 'badge-maintenance'
                         : 'badge-reserved'
                   }`}
+=======
+                className={`status-badge ${
+                  status === 'AVAILABLE'
+                    ? 'badge-available'
+                    : status === 'RENTED'
+                    ? 'badge-rented'
+                    : status === 'MAINTENANCE'
+                    ? 'badge-maintenance'
+                    : 'badge-reserved'
+                }`}
+>>>>>>> origin/main
               >
                 ● {status}
               </span>
@@ -2374,20 +2688,34 @@ features: carFeatures
                       {pricingState.pricingMethod === 'per_km'
                         ? pricingState.perKmRate || '0'
                         : pricingState.pricingMethod === 'hourly'
+<<<<<<< HEAD
                           ? pricingState.hourlyRate || '0'
                           : pricingState.pricingMethod === 'monthly'
                             ? pricingState.monthlyRate || '0'
                             : pricingState.dailyRate || '0'}
+=======
+                        ? pricingState.hourlyRate || '0'
+                        : pricingState.pricingMethod === 'monthly'
+                        ? pricingState.monthlyRate || '0'
+                        : pricingState.dailyRate || '0'}
+>>>>>>> origin/main
                     </span>
                     <span className="preview-rate-unit">
                       /{' '}
                       {pricingState.pricingMethod === 'per_km'
                         ? 'km'
                         : pricingState.pricingMethod === 'hourly'
+<<<<<<< HEAD
                           ? 'hr'
                           : pricingState.pricingMethod === 'monthly'
                             ? 'month'
                             : 'day'}
+=======
+                        ? 'hr'
+                        : pricingState.pricingMethod === 'monthly'
+                        ? 'month'
+                        : 'day'}
+>>>>>>> origin/main
                     </span>
                   </div>
                 </div>
@@ -2474,9 +2802,15 @@ features: carFeatures
                   size={16}
                   color={
                     parseFloat(pricingState.dailyRate) > 0 ||
+<<<<<<< HEAD
                       parseFloat(pricingState.perKmRate) > 0 ||
                       parseFloat(pricingState.hourlyRate) > 0 ||
                       parseFloat(pricingState.monthlyRate) > 0
+=======
+                    parseFloat(pricingState.perKmRate) > 0 ||
+                    parseFloat(pricingState.hourlyRate) > 0 ||
+                    parseFloat(pricingState.monthlyRate) > 0
+>>>>>>> origin/main
                       ? '#059669'
                       : '#D1D5DB'
                   }
@@ -2485,9 +2819,15 @@ features: carFeatures
                   style={{
                     color:
                       parseFloat(pricingState.dailyRate) > 0 ||
+<<<<<<< HEAD
                         parseFloat(pricingState.perKmRate) > 0 ||
                         parseFloat(pricingState.hourlyRate) > 0 ||
                         parseFloat(pricingState.monthlyRate) > 0
+=======
+                      parseFloat(pricingState.perKmRate) > 0 ||
+                      parseFloat(pricingState.hourlyRate) > 0 ||
+                      parseFloat(pricingState.monthlyRate) > 0
+>>>>>>> origin/main
                         ? '#1E0432'
                         : '#8A7090',
                   }}
@@ -2513,8 +2853,13 @@ features: carFeatures
                       ? 'Saving Changes...'
                       : 'Registering...'
                     : isEdit
+<<<<<<< HEAD
                       ? 'Save Vehicle Changes'
                       : 'Register Vehicle Now'}
+=======
+                    ? 'Save Vehicle Changes'
+                    : 'Register Vehicle Now'}
+>>>>>>> origin/main
                 </span>
               </button>
             </div>

@@ -18,7 +18,10 @@ import type {
   VehicleBookingItem,
   VehicleBrandItem,
   VehicleModelItem,
+<<<<<<< HEAD
   CarFeature,
+=======
+>>>>>>> origin/main
   DecodedVinSpecs,
 } from '../types/fleet.types';
 
@@ -26,6 +29,7 @@ export const fleetApi = {
   /**
    * Lists vehicles with filtering, search, and pagination
    */
+<<<<<<< HEAD
 
     // ==========================================
   // CAR FEATURES API
@@ -89,6 +93,8 @@ export const fleetApi = {
       }
     );
   },
+=======
+>>>>>>> origin/main
   async getVehicles(params: {
     page?: number;
     limit?: number;
