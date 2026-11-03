@@ -1,0 +1,403 @@
+/* Finovo About Us Page Styles */
+.finovo-about-page {
+  --brand-soft: #8E3B68;
+  --brand-purple: #4A0E4E;
+  --primary: #1E0426;
+  --primary-foreground: #FFFFFF;
+  --card: #FFFFFF;
+  --card-foreground: #1E0426;
+  --muted-foreground: #6B7280;
+  --sand: #E6D2B5;
+  --sand-light: #F7EFE3;
+  --tape: #F4D35E;
+  --accent: #FAB826;
+  --intro-gradient: linear-gradient(90deg, #1E0426, #4A0E4E);
+  --mission-gradient: linear-gradient(110deg, #F9F5FB, #F7EFE3 80%);
+  --benefit-shadow: 0 10px 25px -5px rgba(30, 4, 38, 0.08), 0 8px 10px -6px rgba(30, 4, 38, 0.04);
+  --photo-shadow: 0 15px 30px rgba(30, 4, 38, 0.12);
+
+  max-width: 1440px;
+  margin: 0 auto;
+  overflow: hidden;
+  font-family: var(--font-family-sans, "Manrope", sans-serif);
+  color: #1E0426;
+  background-color: #FAFAFA;
+}
+
+.finovo-about-page .intro-band {
+  min-height: 580px;
+  background: var(--intro-gradient);
+  position: relative;
+  overflow: hidden;
+  padding: 60px 6% 40px;
+}
+
+.finovo-about-page .hero-photo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 58%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.92;
+  clip-path: polygon(18% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+
+.finovo-about-page .intro-copy {
+  position: relative;
+  z-index: 2;
+  color: #FFFFFF;
+  max-width: 520px;
+}
+
+.finovo-about-page .eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  color: #FAB826;
+  text-transform: uppercase;
+}
+
+.finovo-about-page .intro-copy h1 {
+  font-size: 42px;
+  line-height: 1.25;
+  font-weight: 800;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+
+.finovo-about-page .intro-description {
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+
+.finovo-about-page .stats {
+  display: flex;
+  margin-top: 32px;
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.finovo-about-page .stats > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.finovo-about-page .stats strong {
+  font-size: 26px;
+  font-weight: 800;
+  color: #FAB826;
+}
+
+.finovo-about-page .stats span {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+/* Story Section */
+.finovo-about-page .story-section {
+  padding: 80px 6%;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.finovo-about-page .story-copy h2 {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #1E0426;
+  margin-bottom: 20px;
+}
+
+.finovo-about-page .story-copy p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #4B5563;
+  margin-bottom: 16px;
+}
+
+.finovo-about-page .story-imagery {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.finovo-about-page .steering-photo {
+  width: 82%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 24px;
+  box-shadow: var(--photo-shadow);
+}
+
+.finovo-about-page .experience-badge {
+  position: absolute;
+  bottom: -24px;
+  right: 12px;
+  background: #1E0426;
+  color: #FFFFFF;
+  border-radius: 20px;
+  padding: 22px 26px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  border: 2px solid #FAB826;
+}
+
+.finovo-about-page .experience-badge strong {
+  font-size: 36px;
+  font-weight: 800;
+  display: block;
+  color: #FAB826;
+  line-height: 1;
+}
+
+.finovo-about-page .experience-badge span {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Mission & Vision */
+.finovo-about-page .mission-section {
+  position: relative;
+  padding: 80px 6%;
+  background: var(--mission-gradient);
+  border-radius: 40px;
+  margin: 0 4% 60px;
+}
+
+.finovo-about-page .section-heading {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 48px;
+}
+
+.finovo-about-page .section-heading h2 {
+  font-size: 34px;
+  font-weight: 800;
+  color: #1E0426;
+  margin-bottom: 8px;
+}
+
+.finovo-about-page .section-heading p {
+  font-size: 15px;
+  color: #6B7280;
+}
+
+.finovo-about-page .purpose-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.finovo-about-page .purpose-panel {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 32px;
+  border-radius: 24px;
+  box-shadow: var(--benefit-shadow);
+}
+
+.finovo-about-page .mission-panel {
+  background: #1E0426;
+  color: #FFFFFF;
+}
+
+.finovo-about-page .mission-panel h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #FAB826;
+}
+
+.finovo-about-page .mission-panel p {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.88;
+}
+
+.finovo-about-page .vision-panel {
+  background: #FFFFFF;
+  color: #1E0426;
+}
+
+.finovo-about-page .vision-panel h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1E0426;
+}
+
+.finovo-about-page .vision-panel p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4B5563;
+}
+
+.finovo-about-page .purpose-panel img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Benefits Section */
+.finovo-about-page .why-section {
+  padding: 40px 6% 80px;
+}
+
+.finovo-about-page .benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.finovo-about-page .benefit {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: var(--benefit-shadow);
+  border: 1px solid #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  justifyContent: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.finovo-about-page .benefit:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 30px rgba(30, 4, 38, 0.1);
+}
+
+.finovo-about-page .benefit img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  margin-bottom: 16px;
+}
+
+.finovo-about-page .benefit h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1E0426;
+}
+
+.finovo-about-page .benefit p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6B7280;
+}
+
+/* Team Section */
+.finovo-about-page .team-section {
+  padding: 60px 6% 80px;
+  background: #F8F6F9;
+}
+
+.finovo-about-page .polaroid-row {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+
+.finovo-about-page .polaroid {
+  width: 220px;
+  background: #FFFFFF;
+  padding: 12px 12px 18px;
+  border-radius: 6px;
+  box-shadow: var(--photo-shadow);
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.finovo-about-page .polaroid:hover {
+  transform: scale(1.03) rotate(0deg) !important;
+}
+
+.finovo-about-page .polaroid-0 { transform: rotate(-3deg); }
+.finovo-about-page .polaroid-1 { transform: rotate(2deg); }
+.finovo-about-page .polaroid-2 { transform: rotate(-2deg); }
+
+.finovo-about-page .polaroid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.finovo-about-page .polaroid strong {
+  display: block;
+  font-size: 15px;
+  color: #1E0426;
+}
+
+.finovo-about-page .polaroid span {
+  display: block;
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 2px;
+}
+
+/* CTA Band */
+.finovo-about-page .journey-section {
+  position: relative;
+  background: #1E0426;
+  color: #FFFFFF;
+  padding: 80px 6%;
+  overflow: hidden;
+  border-radius: 36px 36px 0 0;
+}
+
+.finovo-about-page .journey-copy {
+  max-width: 560px;
+  position: relative;
+  z-index: 2;
+}
+
+.finovo-about-page .journey-copy h2 {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 24px;
+}
+
+.finovo-about-page .journey-photo {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .finovo-about-page .hero-photo {
+    display: none;
+  }
+  .finovo-about-page .story-section {
+    grid-template-columns: 1fr;
+  }
+  .finovo-about-page .purpose-panels {
+    grid-template-columns: 1fr;
+  }
+  .finovo-about-page .journey-photo {
+    display: none;
+  }
+}

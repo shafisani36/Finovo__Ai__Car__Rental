@@ -1,0 +1,261 @@
+/* ==========================================================================
+   FINOVO LUXURY FLEET — MASTER CAR CARD COMPONENT
+   Pixel-perfect match to master Figma card specification
+   ========================================================================== */
+
+.finovo-car-card {
+  position: relative;
+  background: #FFFFFF;
+  border: 2px solid #581878;
+  border-radius: 34px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(88, 24, 120, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease;
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+  min-height: 295px;
+}
+
+.finovo-car-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 36px rgba(88, 24, 120, 0.18);
+  border-color: #7A26A4;
+}
+
+/* --------------------------------------------------------------------------
+   1. TOP ARTWORK STAGE (Twilight City Skyline + Purple Glow + Wave)
+   -------------------------------------------------------------------------- */
+.finovo-car-card-stage {
+  position: relative;
+  height: 200px;
+  background: linear-gradient(135deg, #2B073B 0%, #4A1264 45%, #6A1D8C 100%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Twilight City Skyline on the Left */
+.finovo-car-card-skyline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 58%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+  opacity: 0.55;
+  mix-blend-mode: luminosity;
+  pointer-events: none;
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
+}
+
+/* Available Status Pill Badge */
+.finovo-car-card-status-pill {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 5;
+  background: #D4F4E4;
+  color: #067647;
+  border-radius: 9999px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+  box-shadow: 0 2px 6px rgba(6, 118, 71, 0.12);
+}
+
+/* Organic Sweeping White S-Wave SVG Overlay */
+.finovo-car-card-wave-svg {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 95px;
+  z-index: 2;
+  pointer-events: none;
+  display: block;
+}
+
+/* Vehicle Cutout with Realistic Shadow */
+.finovo-car-card-vehicle-wrap {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.finovo-car-card-vehicle-img {
+  max-width: 82%;
+  max-height: 145px;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.28));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: block;
+}
+
+.finovo-car-card:hover .finovo-car-card-vehicle-img {
+  transform: scale(1.05) translateY(-3px);
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.35));
+}
+
+/* --------------------------------------------------------------------------
+   2. BOTTOM INFO BAR (Logo, Model, Mileage, Rate, Arrow)
+   -------------------------------------------------------------------------- */
+.finovo-car-card-info-bar {
+  background: #FFFFFF;
+  padding: 12px 18px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 4;
+  box-sizing: border-box;
+}
+
+/* Brand Logo & Name */
+.finovo-car-card-brand-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.finovo-car-card-logo-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.15));
+}
+
+.finovo-car-card-text-box {
+  min-width: 0;
+}
+
+.finovo-car-card-title {
+  margin: 0;
+  font-family: var(--finovo-font-display, 'Manrope', sans-serif);
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #1E1B24;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+}
+
+.finovo-car-card-year {
+  margin: 3px 0 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8F8799;
+  line-height: 1;
+}
+
+/* Stats (Mileage & Rate) */
+.finovo-car-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.finovo-car-card-stat-unit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.finovo-car-card-stat-icon {
+  color: #581878;
+  flex-shrink: 0;
+}
+
+.finovo-car-card-stat-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.finovo-car-card-stat-value {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #1E1B24;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.finovo-car-card-stat-label {
+  margin: 2px 0 0 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #8F8799;
+  line-height: 1;
+}
+
+/* Circular Arrow Action Button */
+.finovo-car-card-action-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: #581878;
+  border: 1.5px solid #581878;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(88, 24, 120, 0.08);
+}
+
+.finovo-car-card:hover .finovo-car-card-action-btn {
+  background: #581878;
+  color: #FFFFFF;
+  border-color: #581878;
+  transform: translateX(3px) scale(1.06);
+  box-shadow: 0 4px 12px rgba(88, 24, 120, 0.28);
+}
+
+/* --------------------------------------------------------------------------
+   3. RESPONSIVE BREAKPOINTS
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .finovo-car-card {
+    border-radius: 28px;
+  }
+
+  .finovo-car-card-stage {
+    height: 180px;
+  }
+
+  .finovo-car-card-info-bar {
+    padding: 10px 14px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .finovo-car-card-stats {
+    gap: 10px;
+  }
+
+  .finovo-car-card-title {
+    font-size: 13.5px;
+  }
+}

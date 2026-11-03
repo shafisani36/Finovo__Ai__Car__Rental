@@ -1,0 +1,563 @@
+/* ==========================================================================
+   FINOVO ENTERPRISE GLOBAL LAYOUT & DESIGN SYSTEM STYLES
+   Authoritative Layout Framework across Customer & Admin Interfaces
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. PAGE CONTAINER FOUNDATIONS
+-------------------------------------------------------------------------- */
+.finovo-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: var(--container-admin-max-width, 1400px);
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  animation: finovoFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes finovoFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. PAGE HEADER & BREADCRUMBS
+-------------------------------------------------------------------------- */
+.finovo-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.finovo-page-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.finovo-page-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.finovo-page-title {
+  font-family: var(--font-family-display, 'Archivo', sans-serif);
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 800;
+  color: var(--finovo-text-main, #1E0432);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.finovo-page-subtitle {
+  font-size: clamp(0.85rem, 1.2vw, 0.925rem);
+  color: var(--finovo-text-muted, #8A7090);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 780px;
+}
+
+.finovo-page-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Breadcrumb Bar */
+.finovo-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--finovo-text-muted, #8A7090);
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.finovo-breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--finovo-text-muted, #8A7090);
+  text-decoration: none;
+  transition: color var(--transition-fast, 160ms ease);
+}
+
+.finovo-breadcrumb-item:hover {
+  color: var(--finovo-purple-600, #6C1E84);
+}
+
+.finovo-breadcrumb-current {
+  color: var(--finovo-text-main, #1E0432);
+  font-weight: 700;
+}
+
+.finovo-breadcrumb-sep {
+  color: #C0B4C6;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. STAT / KPI METRIC CARDS
+-------------------------------------------------------------------------- */
+.finovo-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.finovo-stat-card {
+  background-color: var(--finovo-bg-surface, #FFFFFF);
+  border: 1px solid var(--finovo-border-subtle, #EFEAEF);
+  border-radius: var(--radius-md, 16px);
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  min-width: 0;
+}
+
+.finovo-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(30, 4, 50, 0.08);
+  border-color: rgba(108, 30, 132, 0.2);
+}
+
+.finovo-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.finovo-stat-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--finovo-text-muted, #8A7090);
+}
+
+.finovo-stat-value {
+  font-family: var(--font-family-display, 'Archivo', sans-serif);
+  font-size: clamp(1.5rem, 2.2vw, 1.85rem);
+  font-weight: 800;
+  color: var(--finovo-text-main, #1E0432);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.finovo-stat-subtext {
+  font-size: 0.75rem;
+  color: var(--finovo-text-body, #4A315A);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.finovo-stat-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. FILTER & SEARCH TOOLBAR
+-------------------------------------------------------------------------- */
+.finovo-filter-toolbar {
+  background-color: var(--finovo-bg-surface, #FFFFFF);
+  border: 1px solid var(--finovo-border-subtle, #EFEAEF);
+  border-radius: var(--radius-md, 16px);
+  padding: 14px 18px;
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.finovo-filter-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.finovo-filter-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.finovo-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  min-width: 180px;
+}
+
+.finovo-search-icon {
+  position: absolute;
+  left: 14px;
+  color: #8A7090;
+  pointer-events: none;
+}
+
+.finovo-search-input {
+  width: 100%;
+  height: 40px;
+  padding-left: 38px;
+  padding-right: 32px;
+  font-size: 0.875rem;
+  background-color: #FAF8FB;
+  border: 1px solid #ECE7ED;
+  border-radius: 10px;
+  color: #1C0324;
+  outline: none;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.finovo-search-input:focus {
+  background-color: #FFFFFF;
+  border-color: #6C1E84;
+  box-shadow: 0 0 0 3px rgba(108, 30, 132, 0.1);
+}
+
+.finovo-search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #9C89A2;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+
+.finovo-search-clear:hover {
+  color: #1C0324;
+}
+
+/* --------------------------------------------------------------------------
+   5. LUXURY RESPONSIVE TABLE WRAPPER
+-------------------------------------------------------------------------- */
+.finovo-table-card {
+  background-color: var(--finovo-bg-surface, #FFFFFF);
+  border: 1px solid var(--finovo-border-subtle, #EFEAEF);
+  border-radius: var(--radius-md, 16px);
+  box-shadow: 0 2px 10px rgba(30, 4, 50, 0.04);
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.finovo-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.finovo-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.finovo-table th {
+  background-color: #FAF8FB;
+  color: #66566A;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 14px 18px;
+  border-bottom: 1px solid #ECE7ED;
+  white-space: nowrap;
+}
+
+.finovo-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #F3EFF4;
+  color: #1C0324;
+  vertical-align: middle;
+}
+
+.finovo-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.finovo-table tbody tr:hover {
+  background-color: #FAF7FB;
+}
+
+.finovo-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. PAGINATION BAR
+-------------------------------------------------------------------------- */
+.finovo-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+  background-color: #FAF8FB;
+  border-top: 1px solid #ECE7ED;
+  font-size: 0.85rem;
+  color: #66566A;
+}
+
+.finovo-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.finovo-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #E5DFE7;
+  background-color: #FFFFFF;
+  color: #1C0324;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.finovo-pagination-btn:hover:not(:disabled) {
+  border-color: #6C1E84;
+  color: #6C1E84;
+  background-color: #FAF6FB;
+}
+
+.finovo-pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   7. UNIFIED MODAL DIALOG
+-------------------------------------------------------------------------- */
+.finovo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(18, 2, 28, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 24px);
+  box-sizing: border-box;
+  animation: finovoFadeIn 0.2s ease;
+}
+
+.finovo-modal-panel {
+  background-color: #FFFFFF;
+  border-radius: var(--radius-lg, 20px);
+  box-shadow: 0 20px 45px rgba(20, 2, 32, 0.28);
+  max-width: 600px;
+  width: 100%;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  animation: finovoModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes finovoModalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.finovo-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #EFEAEF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.finovo-modal-title {
+  margin: 0;
+  font-family: var(--font-family-display, 'Archivo', sans-serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1E0426;
+  line-height: 1.2;
+}
+
+.finovo-modal-close-btn {
+  background: none;
+  border: none;
+  color: #8A7090;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.finovo-modal-close-btn:hover {
+  background-color: #F5EEF8;
+  color: #1E0426;
+}
+
+.finovo-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.finovo-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #EFEAEF;
+  background-color: #FAF8FB;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   8. RESPONSIVE BREAKPOINT ADAPTATIONS
+-------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .finovo-page-container {
+    gap: 18px;
+  }
+  .finovo-page-header {
+    gap: 12px;
+  }
+  .finovo-page-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .finovo-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .finovo-stat-card {
+    padding: 14px 16px;
+  }
+  .finovo-filter-toolbar {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .finovo-filter-left {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .finovo-filter-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .finovo-stat-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .finovo-page-title {
+    font-size: 1.4rem;
+  }
+  .finovo-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .finovo-pagination-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .finovo-modal-panel {
+    max-height: calc(100vh - 20px);
+  }
+  .finovo-modal-header,
+  .finovo-modal-body,
+  .finovo-modal-footer {
+    padding: 16px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. RESPONSIVE TWO-COLUMN FORMS & LAYOUTS
+-------------------------------------------------------------------------- */
+.finovo-two-col-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 960px) {
+  .finovo-two-col-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+

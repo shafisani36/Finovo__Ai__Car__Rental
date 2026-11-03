@@ -1,0 +1,2556 @@
+1:import { useState, useEffect, useMemo, useRef } from 'react';
+2:import { useParams, useNavigate, Link } from 'react-router-dom';
+3:import { fleetApi } from '../api/fleetApi';
+4:import { branchApi, type Branch } from '../../branches/api/branchApi';
+5:import type { VehicleCategory, VehicleFormData, VehiclePhotoInput, VehicleBrandItem, Vehicle } from '../types/fleet.types';
+6:import { VehiclePhotoPipeline } from '../components/VehiclePhotoPipeline';
+7:import { VehiclePricingSection, type VehiclePricingState } from '../components/VehiclePricingSection';
+8:import {
+9:  Tag,
+10:  Check,
+11:  Minus,
+12:  Plus,
+13:  Eye,
+14:  CheckCircle2,
+15:  Users,
+16:  DoorOpen,
+17:  Fuel,
+18:  Sliders,
+19:  Shield,
+20:  Sparkles,
+21:  MapPin,
+22:  Cpu,
+23:  ChevronRight,
+24:  ArrowLeft,
+25:  AlertCircle,
+26:  DollarSign,
+27:  Layers,
+28:  Camera,
+29:  Palette,
+30:  ChevronLeft,
+31:  Car,
+32:  Trash2,
+33:  ExternalLink,
+34:  Flame,
+35:  Zap,
+36:  BatteryCharging,
+37:} from 'lucide-react';
+38:import { CustomSelect } from '../../../components/common/CustomSelect';
+39:import { useConfirm } from '../../../components/common/ConfirmModal';
+40:import './AddCarPage.css';
+41:
+42:const POPULAR_COLORS = [
+43:  { name: 'White', hex: '#FFFFFF', border: '#D1D5DB' },
+44:  { name: 'Black', hex: '#111827', border: '#111827' },
+45:  { name: 'Silver', hex: '#E5E7EB', border: '#9CA3AF' },
+46:  { name: 'Gray', hex: '#6B7280', border: '#4B5563' },
+47:  { name: 'Blue', hex: '#2563EB', border: '#1D4ED8' },
+48:  { name: 'Red', hex: '#DC2626', border: '#B91C1C' },
+49:  { name: 'Green', hex: '#059669', border: '#047857' },
+50:  { name: 'Gold / Champagne', hex: '#D97706', border: '#B45309' },
+51:];
+52:
+53:
+54:const AVAILABLE_FEATURES = [
+55:  'GPS Navigation System',
+56:  'Apple CarPlay & Android Auto',
+57:  '360° Surround Camera',
+58:  'Panoramic Sunroof',
+59:  'Heated Front Seats',
+60:  'Ventilated Seats',
+61:  'Adaptive Cruise Control',
+62:  'Autonomous Emergency Braking',
+63:  'Lane Departure Warning & Keep Assist',
+64:  'Blind Spot Monitoring',
+65:  'Smart Keyless Entry & Start',
+66:  'Premium Surround Audio',
+67:  'Dashcam Telematics Unit',
+68:  'Full Leather Upholstery',
+69:  'ISOFIX Child Seat Mounts',
+70:  'Wireless Smartphone Charger',
+71:  'Parking Distance Sensors (F/R)',
+72:  'Tow Hitch Installed',
+73:];
+74:
+75:const FEATURE_CATEGORIES = [
+76:  { id: 'all', label: 'All Equipment' },
+77:  { id: 'safety', label: 'Safety & ADAS' },
+78:  { id: 'comfort', label: 'Cabin & Comfort' },
+79:  { id: 'tech', label: 'Audio & Connectivity' },
+80:  { id: 'utility', label: 'Exterior & Utility' },
+81:];
+82:
+83:const FEATURE_META: Record<string, 'safety' | 'comfort' | 'tech' | 'utility'> = {
+84:  'GPS Navigation System': 'tech',
+85:  'Apple CarPlay & Android Auto': 'tech',
+86:  '360° Surround Camera': 'safety',
+87:  'Panoramic Sunroof': 'comfort',
+88:  'Heated Front Seats': 'comfort',
+89:  'Ventilated Seats': 'comfort',
+90:  'Adaptive Cruise Control': 'safety',
+91:  'Autonomous Emergency Braking': 'safety',
+92:  'Lane Departure Warning & Keep Assist': 'safety',
+93:  'Blind Spot Monitoring': 'safety',
+94:  'Smart Keyless Entry & Start': 'comfort',
+95:  'Premium Surround Audio': 'tech',
+96:  'Dashcam Telematics Unit': 'tech',
+97:  'Full Leather Upholstery': 'comfort',
+98:  'ISOFIX Child Seat Mounts': 'safety',
+99:  'Wireless Smartphone Charger': 'tech',
+100:  'Parking Distance Sensors (F/R)': 'safety',
+101:  'Tow Hitch Installed': 'utility',
+102:};
+103:
+104:export const DEFAULT_FALLBACK_CATEGORIES: VehicleCategory[] = [
+105:  { id: 'cat-sedan', name: 'Sedan', slug: 'sedan', baseRate: 8000, description: 'Standard & Executive Sedans (up to 5 passengers)' },
+106:  { id: 'cat-suv', name: 'SUV', slug: 'suv', baseRate: 15000, description: 'Compact, Mid-Size & Full-Size SUVs (5 to 8 passengers)' },
+107:  { id: 'cat-pickup', name: 'Pickup Truck', slug: 'pickup', baseRate: 14000, description: 'Single & Double Cab Utility Pickups (up to 6 passengers)' },
+108:  { id: 'cat-van', name: 'Van / Minibus', slug: 'van-minibus', baseRate: 22000, description: 'High-Capacity Passenger Vans (10 to 20 passengers)' },
+109:  { id: 'cat-hatchback', name: 'Hatchback', slug: 'hatchback', baseRate: 6000, description: 'Urban Compact & Commuter' },
+110:  { id: 'cat-sports', name: 'Coupe / Sports', slug: 'coupe-sports', baseRate: 25000, description: 'High Performance & Grand Tourers' },
+111:  { id: 'cat-luxury', name: 'Luxury / Executive', slug: 'luxury-executive', baseRate: 35000, description: 'Flagship Premium & Chauffeur Fleet' },
+112:];
+113:
+114:export function AddCarPage() {
+115:  const { id } = useParams<{ id: string }>();
+116:  const isEdit = Boolean(id);
+117:  const navigate = useNavigate();
+118:  const { confirm } = useConfirm();
+119:
+120:  const [categories, setCategories] = useState<VehicleCategory[]>([]);
+121:  const [branches, setBranches] = useState<Branch[]>([]);
+122:  const [dbBrands, setDbBrands] = useState<VehicleBrandItem[]>([]);
+123:  const [isDecodingVin, setIsDecodingVin] = useState(false);
+124:  const [vinDecodeSuccess, setVinDecodeSuccess] = useState<string | null>(null);
+125:  const [isLoading, setIsLoading] = useState(isEdit);
+126:  const [isSubmitting, setIsSubmitting] = useState(false);
+127:  const [isDeleting, setIsDeleting] = useState(false);
+128:  const [error, setError] = useState<string | null>(null);
+129:
+130:  // Active section for sticky navigation ribbon
+131:  const [activeSection, setActiveSection] = useState<'sec-identity' | 'sec-specs' | 'sec-features' | 'sec-pricing' | 'sec-photos' | 'sec-records'>('sec-identity');
+132:
+133:  // Mobile tab switcher: 'form' | 'preview'
+134:  const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form');
+135:
+136:  // Feature filter tab
+137:  const [activeFeatureTab, setActiveFeatureTab] = useState('all');
+138:
+139:  // 1. Identity & Classification
+140:  const [brand, setBrand] = useState('');
+141:  const [customBrand, setCustomBrand] = useState('');
+142:  const [model, setModel] = useState('');
+143:  const [customModelMode, setCustomModelMode] = useState(false);
+144:  const [customModelName, setCustomModelName] = useState('');
+145:  const [year, setYear] = useState<number>(2025);
+146:  const [trim, setTrim] = useState('');
+147:  const [registrationNumber, setRegistrationNumber] = useState('');
+148:  const [vin, setVin] = useState('');
+149:  const [categoryId, setCategoryId] = useState('');
+150:  const [branchId, setBranchId] = useState('');
+151:  const [color, setColor] = useState('White');
+152:  const [colorHex, setColorHex] = useState('#FFFFFF');
+153:  const [isCustomColor, setIsCustomColor] = useState(false);
+154:
+155:  // 2. Mechanical, Powertrain & Telematics
+156:  const [transmission, setTransmission] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
+157:  const [fuelType, setFuelType] = useState<'PETROL' | 'DIESEL' | 'HYBRID' | 'ELECTRIC'>('PETROL');
+158:  const [engineSize, setEngineSize] = useState('');
+159:  const [horsePower, setHorsePower] = useState('');
+160:  const [drivetrain, setDrivetrain] = useState<'AWD' | 'FWD' | 'RWD' | '4WD'>('AWD');
+161:  const [fuelTankCapacity, setFuelTankCapacity] = useState('');
+162:  const [fuelLevelPercent, setFuelLevelPercent] = useState<number>(100);
+163:  const [seats, setSeats] = useState(5);
+164:  const [doors, setDoors] = useState(4);
+165:  const [mileage, setMileage] = useState<string>('0');
+166:  const [parkingSpot, setParkingSpot] = useState('');
+167:  const [telematicsDeviceId, setTelematicsDeviceId] = useState('');
+168:
+169:  // 3. Equipment & Smart Features
+170:  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+171:
+172:  // 4. Commercial Rates & Rental Calculation Rules
+173:  const [pricingState, setPricingState] = useState<VehiclePricingState>({
+174:    pricingMethod: 'daily',
+175:    currency: 'PKR',
+176:    dailyRate: '8000',
+177:    weeklyRate: '48000',
+178:    monthlyRate: '180000',
+179:    perKmRate: '60',
+180:    hourlyRate: '1500',
+181:    minimumTripCharge: '5000',
+182:    minimumBillableHours: '1',
+183:    billingIncrementMinutes: '60',
+184:    gracePeriodMinutes: '30',
+185:    partialMonthPolicy: 'prorated_daily',
+186:    securityDeposit: '20000',
+187:    mileageLimitPerDay: '200',
+188:    excessMileageFee: '50',
+189:  });
+190:  const [status, setStatus] = useState<'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RESERVED'>('AVAILABLE');
+191:  const [isPublicCatalog, setIsPublicCatalog] = useState(true);
+192:
+193:  const handlePricingChange = (field: keyof VehiclePricingState, value: string) => {
+194:    setPricingState((prev) => ({ ...prev, [field]: value }));
+195:  };
+196:
+197:  // 5. Compliance, Insurance & Maintenance
+198:  const [insurancePolicyNumber, setInsurancePolicyNumber] = useState('');
+199:  const [insuranceExpiry, setInsuranceExpiry] = useState('');
+200:  const [registrationExpiry, setRegistrationExpiry] = useState('');
+201:  const [lastServiceDate, setLastServiceDate] = useState('');
+202:  const [lastServiceMileage, setLastServiceMileage] = useState('');
+203:  const [nextServiceMileage, setNextServiceMileage] = useState('');
+204:  const [notes, setNotes] = useState('');
+205:
+206:  // 6. Inspection & Catalog Photos (Strict 4-6 Photos)
+207:  const [photos, setPhotos] = useState<VehiclePhotoInput[]>([]);
+208:
+209:  // Live preview image carousel state
+210:  const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
+211:
+212:  // Smooth scroll helper for sticky navigation ribbon
+213:  const scrollToSection = (sectionId: 'sec-identity' | 'sec-specs' | 'sec-features' | 'sec-pricing' | 'sec-photos' | 'sec-records') => {
+214:    setActiveSection(sectionId);
+215:    const element = document.getElementById(sectionId);
+216:    if (element) {
+217:      const navOffset = 140;
+218:      const elementPosition = element.getBoundingClientRect().top;
+219:      const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+220:      window.scrollTo({
+221:        top: offsetPosition,
+222:        behavior: 'smooth',
+223:      });
+224:    }
+225:  };
+226:
+227:  // Observer for active section highlighting on scroll
+228:  useEffect(() => {
+229:    const sectionIds: Array<'sec-identity' | 'sec-specs' | 'sec-features' | 'sec-pricing' | 'sec-photos' | 'sec-records'> = [
+230:      'sec-identity',
+231:      'sec-specs',
+232:      'sec-features',
+233:      'sec-pricing',
+234:      'sec-photos',
+235:      'sec-records',
+236:    ];
+237:
+238:    const handleScroll = () => {
+239:      const scrollPos = window.scrollY + 180;
+240:      for (const id of sectionIds) {
+241:        const el = document.getElementById(id);
+242:        if (el) {
+243:          const top = el.offsetTop;
+244:          const height = el.offsetHeight;
+245:          if (scrollPos >= top && scrollPos < top + height) {
+246:            setActiveSection(id);
+247:            break;
+248:          }
+249:        }
+250:      }
+251:    };
+252:
+253:    window.addEventListener('scroll', handleScroll, { passive: true });
+254:    return () => window.removeEventListener('scroll', handleScroll);
+255:  }, []);
+256:
+257:  // Load initial data (Categories, Branches, Brands, and if Edit mode: existing Vehicle)
+258:  useEffect(() => {
+259:    let isMounted = true;
+260:
+261:    const initialCalls: [
+262:      Promise<{ categories: VehicleCategory[] }>,
+263:      Promise<{ branches: Branch[] }>,
+264:      Promise<{ brands: VehicleBrandItem[] }>,
+265:      Promise<{ vehicle: Vehicle } | null>
+266:    ] = [
+267:      fleetApi.getCategories(),
+268:      branchApi.getBranches(),
+269:      fleetApi.getBrands(),
+270:      id ? fleetApi.getVehicleById(id) : Promise.resolve(null),
+271:    ];
+272:
+273:
+274:
+275:    Promise.all(initialCalls)
+276:      .then(([catRes, branchRes, brandRes, vehRes]) => {
+277:        if (!isMounted) return;
+278:
+279:        if (catRes?.categories && catRes.categories.length > 0) {
+280:          setCategories(catRes.categories);
+281:          if (!isEdit) setCategoryId(catRes.categories[0].id);
+282:        }
+283:        if (branchRes?.branches && branchRes.branches.length > 0) {
+284:          setBranches(branchRes.branches);
+285:          if (!isEdit) setBranchId(branchRes.branches[0].id);
+286:        }
+287:        if (brandRes?.brands && brandRes.brands.length > 0) {
+288:          setDbBrands(brandRes.brands);
+289:          if (!isEdit) {
+290:            setBrand(brandRes.brands[0].name);
+291:            const models = brandRes.brands[0].models;
+292:            if (models && models.length > 0) {
+293:              setModel(models[0].name);
+294:            }
+295:          }
+296:        }
+297:
+298:        // If in Edit Mode, prefill with saved vehicle details
+299:        if (vehRes && vehRes.vehicle) {
+300:          const v = vehRes.vehicle;
+301:          const matchedBrand = brandRes.brands?.find((b) => b.name.toLowerCase() === v.brand.toLowerCase());
+302:          if (matchedBrand) {
+303:            setBrand(matchedBrand.name);
+304:            setCustomBrand('');
+305:          } else {
+306:            setBrand('Other');
+307:            setCustomBrand(v.brand);
+308:          }
+309:
+310:          setModel(v.model || '');
+311:          setCustomModelMode(false);
+312:          setYear(v.year || 2024);
+313:          setTrim(v.trim || '');
+314:          setRegistrationNumber(v.registrationNumber || '');
+315:          setVin(v.vin || '');
+316:          setCategoryId(v.categoryId || '');
+317:          setBranchId(v.branchId || '');
+318:          setColor(v.color || 'White');
+319:          setColorHex(v.colorHex || '#FFFFFF');
+320:          setIsCustomColor(!POPULAR_COLORS.some((c) => c.hex.toLowerCase() === (v.colorHex || '').toLowerCase()));
+321:
+322:          setTransmission(v.transmission || 'AUTOMATIC');
+323:          setFuelType(v.fuelType || 'PETROL');
+324:          setEngineSize(v.engineSize || '');
+325:          setHorsePower(v.horsePower ? String(v.horsePower) : '');
+326:          setDrivetrain((v.drivetrain as any) || 'AWD');
+327:          setFuelTankCapacity(v.fuelTankCapacity || '');
+328:          setFuelLevelPercent(v.fuelLevelPercent ?? 100);
+329:          setSeats(v.seats || 5);
+330:          setDoors(v.doors || 4);
+331:          setMileage(String(v.mileage || 0));
+332:          setParkingSpot(v.parkingSpot || '');
+333:          setTelematicsDeviceId(v.telematicsDeviceId || '');
+334:
+335:          setPricingState({
+336:            pricingMethod: (v.pricingMethod as any) || 'daily',
+337:            currency: v.currency || 'PKR',
+338:            dailyRate: String(v.dailyRate || 8000),
+339:            weeklyRate: v.weeklyRate ? String(v.weeklyRate) : '',
+340:            monthlyRate: v.monthlyRate ? String(v.monthlyRate) : '',
+341:            perKmRate: v.perKmRate ? String(v.perKmRate) : '60',
+342:            hourlyRate: v.hourlyRate ? String(v.hourlyRate) : '1500',
+343:            minimumTripCharge: v.minimumTripCharge ? String(v.minimumTripCharge) : '5000',
+344:            minimumBillableHours: String(v.minimumBillableHours || 1),
+345:            billingIncrementMinutes: String(v.billingIncrementMinutes || 60),
+346:            gracePeriodMinutes: String(v.gracePeriodMinutes ?? 30),
+347:            partialMonthPolicy: v.partialMonthPolicy || 'prorated_daily',
+348:            securityDeposit: v.securityDeposit ? String(v.securityDeposit) : '20000',
+349:            mileageLimitPerDay: String(v.mileageLimitPerDay || 200),
+350:            excessMileageFee: String(v.excessMileageFee || 50),
+351:          });
+352:
+353:          setStatus((v.status as any) || 'AVAILABLE');
+354:          setIsPublicCatalog(v.isPublicCatalog ?? true);
+355:          if (v.features) {
+356:            const feats: string[] = Array.isArray(v.features)
+357:              ? (v.features as string[])
+358:              : typeof v.features === 'string'
+359:              ? JSON.parse(v.features)
+360:              : [];
+361:            setSelectedFeatures(feats);
+362:          } else {
+363:            setSelectedFeatures([]);
+364:          }
+365:
+366:          setInsurancePolicyNumber(v.insurancePolicyNumber || '');
+367:          setInsuranceExpiry(v.insuranceExpiry ? v.insuranceExpiry.slice(0, 10) : '');
+368:          setRegistrationExpiry(v.registrationExpiry ? v.registrationExpiry.slice(0, 10) : '');
+369:          setLastServiceDate(v.lastServiceDate ? v.lastServiceDate.slice(0, 10) : '');
+370:          setLastServiceMileage(v.lastServiceMileage ? String(v.lastServiceMileage) : '');
+371:          setNextServiceMileage(v.nextServiceMileage ? String(v.nextServiceMileage) : '');
+372:          setNotes(v.notes || '');
+373:
+374:          if (v.photos && v.photos.length > 0) {
+375:            setPhotos(
+376:              v.photos.map((p) => ({
+377:                url: p.url,
+378:                caption: p.caption || '',
+379:                isPrimary: p.isPrimary || false,
+380:                order: p.order || 0,
+381:              }))
+382:            );
+383:          }
+384:        }
+385:      })
+386:      .catch((err) => {
+387:        console.error('Failed to load fleet data:', err);
+388:        if (isMounted) setError(err instanceof Error ? err.message : 'Failed to load vehicle details.');
+389:      })
+390:      .finally(() => {
+391:        if (isMounted) setIsLoading(false);
+392:      });
+393:
+394:    return () => {
+395:      isMounted = false;
+396:    };
+397:  }, [id, isEdit]);
+398:
+399:  // Brand and model synchronization
+400:  const selectedBrandObj = useMemo(() => {
+401:    const currentName = brand === 'Other' ? customBrand : brand;
+402:    return dbBrands.find((b) => b.name.toLowerCase() === currentName.trim().toLowerCase());
+403:  }, [dbBrands, brand, customBrand]);
+404:
+405:  const currentBrandModels = useMemo(() => {
+406:    return selectedBrandObj?.models || [];
+407:  }, [selectedBrandObj]);
+408:
+409:  const handleBrandChange = (newBrand: string) => {
+410:    setBrand(newBrand);
+411:    if (newBrand === 'Other') {
+412:      setCustomModelMode(true);
+413:      return;
+414:    }
+415:    const targetBrand = dbBrands.find((b) => b.name.toLowerCase() === newBrand.toLowerCase());
+416:    const models = targetBrand?.models;
+417:    if (models && models.length > 0) {
+418:      const firstModel = models[0];
+419:      setCustomModelMode(false);
+420:      setModel(firstModel.name);
+421:      if (firstModel.defaultCategoryId && categories.some((c) => c.id === firstModel.defaultCategoryId)) {
+422:        setCategoryId(firstModel.defaultCategoryId);
+423:      }
+424:    } else {
+425:      setCustomModelMode(true);
+426:    }
+427:  };
+428:
+429:  const handleModelSelectChange = (val: string) => {
+430:    if (val === '__CUSTOM__') {
+431:      setCustomModelMode(true);
+432:      setCustomModelName('');
+433:    } else {
+434:      setCustomModelMode(false);
+435:      setModel(val);
+436:      const matched = currentBrandModels.find((m) => m.name === val);
+437:      if (matched?.defaultCategoryId && categories.some((c) => c.id === matched.defaultCategoryId)) {
+438:        setCategoryId(matched.defaultCategoryId);
+439:      }
+440:    }
+441:  };
+442:
+443:  // NHTSA VIN Decoding
+444:  const handleDecodeVin = async () => {
+445:    if (!vin || vin.trim().length < 11) {
+446:      setError('Please enter a valid 11-17 character VIN before decoding.');
+447:      return;
+448:    }
+449:    setIsDecodingVin(true);
+450:    setError(null);
+451:    setVinDecodeSuccess(null);
+452:    try {
+453:      const res = await fleetApi.decodeVin(vin.trim());
+454:      if (res?.specs) {
+455:        const s = res.specs;
+456:        const matchedBrand = dbBrands.find((b) => b.name.toLowerCase() === s.brand.toLowerCase());
+457:        if (matchedBrand) {
+458:          setBrand(matchedBrand.name);
+459:          const matchedModel = matchedBrand.models?.find((m) => m.name.toLowerCase() === s.model.toLowerCase());
+460:          if (matchedModel) {
+461:            setModel(matchedModel.name);
+462:            setCustomModelMode(false);
+463:          } else {
+464:            setModel(s.model);
+465:            setCustomModelMode(true);
+466:            setCustomModelName(s.model);
+467:          }
+468:        } else {
+469:          setBrand('Other');
+470:          setCustomBrand(s.brand);
+471:          setModel(s.model);
+472:          setCustomModelMode(true);
+473:          setCustomModelName(s.model);
+474:        }
+475:
+476:        if (s.year) setYear(s.year);
+477:        if (s.trim) setTrim(s.trim);
+478:        if (s.fuelType) setFuelType(s.fuelType);
+479:        if (s.transmission) setTransmission(s.transmission);
+480:        if (s.engineSize) setEngineSize(s.engineSize);
+481:        if (s.horsePower) setHorsePower(String(s.horsePower));
+482:        if (s.doors) setDoors(s.doors);
+483:        if (s.drivetrain) {
+484:          const dt = s.drivetrain.toUpperCase();
+485:          if (dt.includes('AWD') || dt.includes('ALL')) setDrivetrain('AWD');
+486:          else if (dt.includes('4WD') || dt.includes('FOUR')) setDrivetrain('4WD');
+487:          else if (dt.includes('RWD') || dt.includes('REAR')) setDrivetrain('RWD');
+488:          else setDrivetrain('FWD');
+489:        }
+490:
+491:        if (s.suggestedCategory && categories.length > 0) {
+492:          const matchCat = categories.find(
+493:            (c) =>
+494:              c.name.toLowerCase().includes(s.suggestedCategory!.toLowerCase()) ||
+495:              s.suggestedCategory!.toLowerCase().includes(c.name.toLowerCase())
+496:          );
+497:          if (matchCat) setCategoryId(matchCat.id);
+498:        }
+499:
+500:        setVinDecodeSuccess(`Verified & Autofilled: ${s.year} ${s.brand} ${s.model} (${s.engineSize || ''} ${s.fuelType || ''}) via NHTSA vPIC.`);
+501:      }
+502:    } catch (err) {
+503:      console.error('VIN decode error:', err);
+504:      setError('Could not decode VIN with NHTSA service. Please verify the VIN number or fill specs manually.');
+505:    } finally {
+506:      setIsDecodingVin(false);
+507:    }
+508:  };
+509:
+510:  const toggleFeature = (feature: string) => {
+511:    setSelectedFeatures((prev) => (prev.includes(feature) ? prev.filter((f) => f !== feature) : [...prev, feature]));
+512:  };
+513:
+514:  const selectAllFeatures = () => {
+515:    setSelectedFeatures(AVAILABLE_FEATURES);
+516:  };
+517:
+518:  const clearAllFeatures = () => {
+519:    setSelectedFeatures([]);
+520:  };
+521:
+522:  // Form compliance calculations
+523:  const effectiveModel = customModelMode ? customModelName.trim() : model.trim();
+524:  const effectiveBrand = brand === 'Other' ? customBrand.trim() : brand.trim();
+525:
+526:  // Dynamic vehicle category & seating capacity boundaries
+527:  const selectedCategory = useMemo(() => {
+528:    return categories.find((c) => c.id === categoryId);
+529:  }, [categories, categoryId]);
+530:
+531:  const vehicleTypeInfo = useMemo(() => {
+532:    const catName = (selectedCategory?.name || '').toLowerCase();
+533:    const catSlug = (selectedCategory?.slug || '').toLowerCase();
+534:    const modelLower = effectiveModel.toLowerCase();
+535:    const combined = `${catName} ${catSlug} ${modelLower}`;
+536:
+537:    if (
+538:      combined.includes('van') ||
+539:      combined.includes('minibus') ||
+540:      combined.includes('bus') ||
+541:      combined.includes('hiace') ||
+542:      combined.includes('transit') ||
+543:      combined.includes('sprinter') ||
+544:      combined.includes('urvan') ||
+545:      combined.includes('commuter') ||
+546:      combined.includes('shuttle') ||
+547:      combined.includes('coaster')
+548:    ) {
+549:      return {
+550:        type: 'VAN',
+551:        label: 'Van / Minibus',
+552:        minSeats: 1,
+553:        maxSeats: 20,
+554:        defaultSeats: 15,
+555:        defaultDoors: 4,
+556:        minDoors: 2,
+557:        maxDoors: 5,
+558:        hint: '1 to 20 Passengers',
+559:      };
+560:    }
+561:
+562:    if (
+563:      combined.includes('suv') ||
+564:      combined.includes('crossover') ||
+565:      combined.includes('prado') ||
+566:      combined.includes('land cruiser') ||
+567:      combined.includes('fortuner') ||
+568:      combined.includes('tahoe') ||
+569:      combined.includes('suburban') ||
+570:      combined.includes('patrol') ||
+571:      combined.includes('sportage') ||
+572:      combined.includes('tucson')
+573:    ) {
+574:      return {
+575:        type: 'SUV',
+576:        label: 'SUV / Crossover',
+577:        minSeats: 1,
+578:        maxSeats: 8,
+579:        defaultSeats: 7,
+580:        defaultDoors: 4,
+581:        minDoors: 4,
+582:        maxDoors: 5,
+583:        hint: '1 to 8 Passengers',
+584:      };
+585:    }
+586:
+587:    if (
+588:      combined.includes('pickup') ||
+589:      combined.includes('truck') ||
+590:      combined.includes('hilux') ||
+591:      combined.includes('d-max') ||
+592:      combined.includes('f-150') ||
+593:      combined.includes('tacoma') ||
+594:      combined.includes('ranger')
+595:    ) {
+596:      return {
+597:        type: 'PICKUP',
+598:        label: 'Pickup Truck',
+599:        minSeats: 1,
+600:        maxSeats: 6,
+601:        defaultSeats: 5,
+602:        defaultDoors: 4,
+603:        minDoors: 2,
+604:        maxDoors: 4,
+605:        hint: '1 to 6 Passengers',
+606:      };
+607:    }
+608:
+609:    if (
+610:      combined.includes('coupe') ||
+611:      combined.includes('sports') ||
+612:      combined.includes('convertible') ||
+613:      combined.includes('roadster') ||
+614:      combined.includes('mustang') ||
+615:      combined.includes('911') ||
+616:      combined.includes('corvette') ||
+617:      combined.includes('supra')
+618:    ) {
+619:      return {
+620:        type: 'SPORTS',
+621:        label: 'Coupe / Sports',
+622:        minSeats: 1,
+623:        maxSeats: 4,
+624:        defaultSeats: 2,
+625:        minDoors: 2,
+626:        maxDoors: 3,
+627:        hint: '1 to 4 Passengers',
+628:      };
+629:    }
+630:
+631:    if (
+632:      combined.includes('hatchback') ||
+633:      combined.includes('compact') ||
+634:      combined.includes('swift') ||
+635:      combined.includes('vitz') ||
+636:      combined.includes('yaris') ||
+637:      combined.includes('fit') ||
+638:      combined.includes('golf') ||
+639:      combined.includes('polo')
+640:    ) {
+641:      return {
+642:        type: 'HATCHBACK',
+643:        label: 'Hatchback',
+644:        minSeats: 1,
+645:        maxSeats: 5,
+646:        defaultSeats: 5,
+647:        minDoors: 4,
+648:        maxDoors: 5,
+649:        hint: '1 to 5 Passengers',
+650:      };
+651:    }
+652:
+653:    return {
+654:      type: 'SEDAN',
+655:      label: selectedCategory?.name || 'Sedan',
+656:      minSeats: 1,
+657:      maxSeats: 5,
+658:      defaultSeats: 5,
+659:      minDoors: 4,
+660:      maxDoors: 5,
+661:      hint: '1 to 5 Passengers',
+662:    };
+663:  }, [selectedCategory, effectiveModel]);
+664:
+665:  // Clamp seats if they exceed the new category limit
+666:  useEffect(() => {
+667:    if (seats > vehicleTypeInfo.maxSeats) {
+668:      setSeats(vehicleTypeInfo.maxSeats);
+669:    }
+670:  }, [vehicleTypeInfo.maxSeats, seats]);
+671:
+672:  // In creation mode, automatically suggest standard seating when category changes
+673:  const prevVehicleTypeRef = useRef<string>(vehicleTypeInfo.type);
+674:  useEffect(() => {
+675:    if (!isEdit && prevVehicleTypeRef.current !== vehicleTypeInfo.type) {
+676:      prevVehicleTypeRef.current = vehicleTypeInfo.type;
+677:      setSeats(vehicleTypeInfo.defaultSeats || 5);
+678:      setDoors(vehicleTypeInfo.defaultDoors || 4);
+679:    }
+680:  }, [isEdit, vehicleTypeInfo]);
+681:
+682:  // Section completion checks for navigation ribbon
+683:  const isSec1Complete = Boolean(effectiveBrand && effectiveModel && registrationNumber.trim() && categoryId);
+684:  const isSec2Complete = Boolean(transmission && fuelType && drivetrain);
+685:  const isSec3Complete = Boolean(selectedFeatures.length > 0);
+686:  const isSec4Complete = Boolean(
+687:    parseFloat(pricingState.dailyRate) > 0 ||
+688:    parseFloat(pricingState.perKmRate) > 0 ||
+689:    parseFloat(pricingState.hourlyRate) > 0 ||
+690:    parseFloat(pricingState.monthlyRate) > 0
+691:  );
+692:  const isSec5Complete = Boolean(photos.length >= 4 && photos.length <= 6);
+693:  const isSec6Complete = Boolean(insurancePolicyNumber.trim() || insuranceExpiry);
+694:
+695:  const complianceScore = useMemo(() => {
+696:    let score = 0;
+697:    if (effectiveBrand && effectiveModel) score += 25;
+698:    if (registrationNumber.trim()) score += 20;
+699:    if (categoryId) score += 15;
+700:    if (photos.length >= 4 && photos.length <= 6) score += 20;
+701:    const daily = parseFloat(pricingState.dailyRate);
+702:    const perKm = parseFloat(pricingState.perKmRate);
+703:    const hourly = parseFloat(pricingState.hourlyRate);
+704:    const monthly = parseFloat(pricingState.monthlyRate);
+705:    if (daily > 0 || perKm > 0 || hourly > 0 || monthly > 0) score += 20;
+706:    return score;
+707:  }, [effectiveBrand, effectiveModel, registrationNumber, categoryId, photos, pricingState]);
+708:
+709:  // Filtered features list based on active tab
+710:  const filteredFeatures = useMemo(() => {
+711:    if (activeFeatureTab === 'all') return AVAILABLE_FEATURES;
+712:    return AVAILABLE_FEATURES.filter((f) => FEATURE_META[f] === activeFeatureTab);
+713:  }, [activeFeatureTab]);
+714:
+715:  // Form Submission (Create or Edit)
+716:  const handleSubmit = async () => {
+717:    setError(null);
+718:
+719:    if (!effectiveBrand) {
+720:      setError('Please select or specify a vehicle manufacturer / make.');
+721:      scrollToSection('sec-identity');
+722:      return;
+723:    }
+724:    if (!effectiveModel) {
+725:      setError('Please select or specify a vehicle model name.');
+726:      scrollToSection('sec-identity');
+727:      return;
+728:    }
+729:    if (!registrationNumber.trim()) {
+730:      setError('License registration plate is required.');
+731:      scrollToSection('sec-identity');
+732:      return;
+733:    }
+734:    if (!categoryId || !categories.some((category) => category.id === categoryId)) {
+735:      setError('Please assign the vehicle to a fleet category.');
+736:      scrollToSection('sec-identity');
+737:      return;
+738:    }
+739:    if (photos.length < 4) {
+740:      setError(`Enterprise compliance requires at least 4 inspection photos. Currently ${photos.length} attached.`);
+741:      scrollToSection('sec-photos');
+742:      return;
+743:    }
+744:
+745:    if (pricingState.pricingMethod === 'daily' || pricingState.pricingMethod === 'daily_extra_km') {
+746:      const daily = parseFloat(pricingState.dailyRate);
+747:      if (isNaN(daily) || daily <= 0) {
+748:        setError('Please enter a valid positive daily rate for daily rental.');
+749:        scrollToSection('sec-pricing');
+750:        return;
+751:      }
+752:    } else if (pricingState.pricingMethod === 'per_km') {
+753:      const perKm = parseFloat(pricingState.perKmRate);
+754:      if (isNaN(perKm) || perKm <= 0) {
+755:        setError('Please enter a valid per-kilometer rate.');
+756:        scrollToSection('sec-pricing');
+757:        return;
+758:      }
+759:    } else if (pricingState.pricingMethod === 'hourly') {
+760:      const hourly = parseFloat(pricingState.hourlyRate);
+761:      if (isNaN(hourly) || hourly <= 0) {
+762:        setError('Please enter a valid hourly rate.');
+763:        scrollToSection('sec-pricing');
+764:        return;
+765:      }
+766:    } else if (pricingState.pricingMethod === 'monthly') {
+767:      const monthly = parseFloat(pricingState.monthlyRate);
+768:      if (isNaN(monthly) || monthly <= 0) {
+769:        setError('Please enter a valid monthly subscription rate.');
+770:        scrollToSection('sec-pricing');
+771:        return;
+772:      }
+773:    }
+774:
+775:    const payload: VehicleFormData = {
+776:      brand: effectiveBrand,
+777:      model: effectiveModel,
+778:      year: Number(year),
+779:      trim: trim.trim() || undefined,
+780:      registrationNumber: registrationNumber.trim().toUpperCase(),
+781:      vin: vin.trim().toUpperCase() || undefined,
+782:      categoryId,
+783:      branchId: branchId || undefined,
+784:      transmission,
+785:      fuelType,
+786:      engineSize: engineSize.trim() || undefined,
+787:      horsePower: horsePower ? parseInt(horsePower, 10) : undefined,
+788:      drivetrain,
+789:      fuelTankCapacity: fuelTankCapacity.trim() || undefined,
+790:      fuelLevelPercent: Number(fuelLevelPercent) || 100,
+791:      seats,
+792:      doors,
+793:      color,
+794:      colorHex,
+795:      mileage: Number(mileage) || 0,
+796:      pricingMethod: pricingState.pricingMethod,
+797:      currency: pricingState.currency,
+798:      dailyRate: parseFloat(pricingState.dailyRate) || 0,
+799:      weeklyRate: pricingState.weeklyRate ? parseFloat(pricingState.weeklyRate) : undefined,
+800:      monthlyRate: pricingState.monthlyRate ? parseFloat(pricingState.monthlyRate) : undefined,
+801:      perKmRate: pricingState.perKmRate ? parseFloat(pricingState.perKmRate) : undefined,
+802:      hourlyRate: pricingState.hourlyRate ? parseFloat(pricingState.hourlyRate) : undefined,
+803:      minimumTripCharge: pricingState.minimumTripCharge ? parseFloat(pricingState.minimumTripCharge) : undefined,
+804:      minimumBillableHours: pricingState.minimumBillableHours ? parseInt(pricingState.minimumBillableHours, 10) : undefined,
+805:      billingIncrementMinutes: pricingState.billingIncrementMinutes ? parseInt(pricingState.billingIncrementMinutes, 10) : undefined,
+806:      gracePeriodMinutes: pricingState.gracePeriodMinutes ? parseInt(pricingState.gracePeriodMinutes, 10) : undefined,
+807:      partialMonthPolicy: pricingState.partialMonthPolicy,
+808:      securityDeposit: pricingState.securityDeposit ? parseFloat(pricingState.securityDeposit) : undefined,
+809:      mileageLimitPerDay: pricingState.mileageLimitPerDay ? parseInt(pricingState.mileageLimitPerDay, 10) : 200,
+810:      excessMileageFee: pricingState.excessMileageFee ? parseFloat(pricingState.excessMileageFee) : 50,
+811:      status: status as any,
+812:      isPublicCatalog,
+813:      features: selectedFeatures,
+814:      notes: notes.trim() || undefined,
+815:      parkingSpot: parkingSpot.trim() || undefined,
+816:      telematicsDeviceId: telematicsDeviceId.trim() || undefined,
+817:      insurancePolicyNumber: insurancePolicyNumber.trim() || undefined,
+818:      insuranceExpiry: insuranceExpiry ? new Date(insuranceExpiry).toISOString() : undefined,
+819:      registrationExpiry: registrationExpiry ? new Date(registrationExpiry).toISOString() : undefined,
+820:      lastServiceDate: lastServiceDate ? new Date(lastServiceDate).toISOString() : undefined,
+821:      lastServiceMileage: lastServiceMileage ? parseInt(lastServiceMileage, 10) : undefined,
+822:      nextServiceMileage: nextServiceMileage ? parseInt(nextServiceMileage, 10) : undefined,
+823:      photos,
+824:    };
+825:
+826:    setIsSubmitting(true);
+827:    try {
+828:      if (isEdit && id) {
+829:        await fleetApi.updateVehicle(id, payload);
+830:        navigate(`/admin/cars/${id}`);
+831:      } else {
+832:        const res = await fleetApi.createVehicle(payload);
+833:        if (res?.vehicle?.id) {
+834:          navigate(`/admin/cars/${res.vehicle.id}`);
+835:        } else {
+836:          navigate('/admin/cars');
+837:        }
+838:      }
+839:    } catch (err: unknown) {
+840:      console.error('Failed to save vehicle:', err);
+841:      const msg = err instanceof Error ? err.message : isEdit ? 'Failed to update fleet vehicle.' : 'Failed to register fleet vehicle.';
+842:      setError(msg);
+843:    } finally {
+844:      setIsSubmitting(false);
+845:    }
+846:  };
+847:
+848:  // Delete vehicle handler with confirmation modal
+849:  const handleDelete = async () => {
+850:    if (!id) return;
+851:    const ok = await confirm({
+852:      title: `Remove ${effectiveBrand} ${effectiveModel} from Fleet?`,
+853:      message:
+854:        'Are you sure you want to remove or archive this vehicle? Historical rental contracts will be preserved, while hiding the car from active customer listings.',
+855:      confirmText: 'Remove Vehicle',
+856:      cancelText: 'Cancel',
+857:      variant: 'danger',
+858:    });
+859:    if (!ok) return;
+860:
+861:    setIsDeleting(true);
+862:    try {
+863:      await fleetApi.deleteVehicle(id);
+864:      navigate('/admin/cars');
+865:    } catch (err: unknown) {
+866:      const msg = err instanceof Error ? err.message : 'Failed to delete vehicle.';
+867:      setError(msg);
+868:      setIsDeleting(false);
+869:    }
+870:  };
+871:
+872:  const activeCategory = categories.find((c) => c.id === categoryId);
+873:  const activeBranch = branches.find((b) => b.id === branchId);
+874:  const primaryPhoto = photos.find((p) => p.isPrimary) || photos[0];
+875:  const activePreviewPhoto = photos[previewPhotoIndex] || primaryPhoto;
+876:
+877:  const activeRateDisplay = useMemo(() => {
+878:    const cur = pricingState.currency;
+879:    if (pricingState.pricingMethod === 'per_km') return `${cur} ${pricingState.perKmRate || 0}/km`;
+880:    if (pricingState.pricingMethod === 'hourly') return `${cur} ${pricingState.hourlyRate || 0}/hr`;
+881:    if (pricingState.pricingMethod === 'monthly') return `${cur} ${pricingState.monthlyRate || 0}/mo`;
+882:    return `${cur} ${pricingState.dailyRate || 0}/day`;
+883:  }, [pricingState]);
+884:
+885:  if (isLoading) {
+886:    return (
+887:      <div className="add-car-page-root">
+888:        <div className="loading-state">
+889:          <div className="loading-spinner" />
+890:          <h3 style={{ margin: '0 0 6px', color: '#1E0432', fontWeight: 800 }}>Loading Vehicle Details...</h3>
+891:          <p style={{ margin: 0, color: '#8A7090', fontSize: '0.88rem' }}>Fetching fleet specifications and commercial pricing rules.</p>
+892:        </div>
+893:      </div>
+894:    );
+895:  }
+896:
+897:  return (
+898:    <div className="add-car-page-root">
+899:      {/* ================= BREADCRUMB & EXECUTIVE HEADER ================= */}
+900:      <div className="add-car-header-wrapper">
+901:        <div className="add-car-breadcrumb">
+902:          <Link to="/admin/cars" className="add-car-breadcrumb-back">
+903:            <ArrowLeft size={14} />
+904:            <span>Fleet Inventory</span>
+905:          </Link>
+906:          <span className="breadcrumb-separator">/</span>
+907:          <span className="active-crumb">
+908:            {isEdit ? `Edit ${effectiveBrand} ${effectiveModel || 'Vehicle'}` : 'Register New Vehicle'}
+909:          </span>
+910:        </div>
+911:
+912:        <div className="add-car-page-header">
+913:          <div className="header-text-block">
+914:            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+915:              <h1 className="add-car-page-title">
+916:                {isEdit ? `Edit Vehicle: ${effectiveBrand} ${effectiveModel || ''}` : 'Register New Vehicle'}
+917:              </h1>
+918:              <span
+919:                className={`status-badge ${
+920:                  status === 'AVAILABLE'
+921:                    ? 'badge-available'
+922:                    : status === 'RENTED'
+923:                    ? 'badge-rented'
+924:                    : status === 'MAINTENANCE'
+925:                    ? 'badge-maintenance'
+926:                    : 'badge-reserved'
+927:                }`}
+928:              >
+929:                ● {status}
+930:              </span>
+931:              {activeCategory?.name && (
+932:                <span className="preview-badge-category">
+933:                  {activeCategory.name}
+934:                </span>
+935:              )}
+936:            </div>
+937:            <p className="add-car-page-subtitle">
+938:              {isEdit
+939:                ? 'Update fleet specifications, commercial rates, inspection photos, and compliance records.'
+940:                : 'Complete the 6-step fleet onboarding wizard to activate this vehicle for bookings.'}
+941:            </p>
+942:
+943:            {/* Quick Catalog Links */}
+944:            <div className="add-car-quick-links">
+945:              <span className="quick-links-label">Quick Catalog:</span>
+946:              <Link to="/admin/brands" className="quick-link-pill">
+947:                <Car size={13} />
+948:                <span>Brands</span>
+949:              </Link>
+950:              <Link to="/admin/models" className="quick-link-pill">
+951:                <Layers size={13} />
+952:                <span>Models</span>
+953:              </Link>
+954:              <Link to="/admin/categories" className="quick-link-pill">
+955:                <Tag size={13} />
+956:                <span>Categories</span>
+957:              </Link>
+958:            </div>
+959:          </div>
+960:
+961:          {/* Action Buttons */}
+962:          <div className="fleet-header-actions">
+963:            {isEdit && id && (
+964:              <>
+965:                <Link to={`/admin/cars/${id}`} className="fleet-header-action-btn fleet-btn-secondary">
+966:                  <ExternalLink size={15} />
+967:                  <span className="fleet-btn-label">
+968:                    <span className="label-full">View Details</span>
+969:                    <span className="label-short">View</span>
+970:                  </span>
+971:                </Link>
+972:
+973:                <button
+974:                  type="button"
+975:                  onClick={handleDelete}
+976:                  disabled={isDeleting || isSubmitting}
+977:                  className="fleet-header-action-btn fleet-btn-danger"
+978:                >
+979:                  <Trash2 size={15} />
+980:                  <span className="fleet-btn-label">
+981:                    <span className="label-full">{isDeleting ? 'Removing...' : 'Delete'}</span>
+982:                    <span className="label-short">Delete</span>
+983:                  </span>
+984:                </button>
+985:              </>
+986:            )}
+987:
+988:            <Link to="/admin/cars" className="fleet-header-action-btn fleet-btn-neutral">
+989:              <ArrowLeft size={15} />
+990:              <span className="fleet-btn-label">
+991:                <span className="label-full">Cancel</span>
+992:                <span className="label-short">Back</span>
+993:              </span>
+994:            </Link>
+995:
+996:            <button
+997:              type="button"
+998:              onClick={handleSubmit}
+999:              disabled={isSubmitting || isDeleting}
+1000:              className="fleet-header-action-btn fleet-btn-gold"
+1001:            >
+1002:              <Check size={16} strokeWidth={2.5} />
+1003:              <span className="fleet-btn-label">
+1004:                <span className="label-full">
+1005:                  {isSubmitting
+1006:                    ? isEdit
+1007:                      ? 'Saving Changes...'
+1008:                      : 'Registering...'
+1009:                    : isEdit
+1010:                    ? 'Save Changes'
+1011:                    : 'Register Vehicle'}
+1012:                </span>
+1013:                <span className="label-short">{isSubmitting ? 'Saving...' : 'Save'}</span>
+1014:              </span>
+1015:            </button>
+1016:          </div>
+1017:        </div>
+1018:      </div>
+1019:
+1020:      {/* ================= KPI QUICK METRICS ROW ================= */}
+1021:      <div className="car-kpi-grid">
+1022:        {/* Status Card */}
+1023:        <div className="car-kpi-card">
+1024:          <div>
+1025:            <div className="car-kpi-label">Inventory Status</div>
+1026:            <div className="car-kpi-value">{status}</div>
+1027:            <div className="car-kpi-meta" style={{ color: isPublicCatalog ? '#059669' : '#D97706' }}>
+1028:              {isPublicCatalog ? '● Public Catalog' : '○ Internal Only'}
+1029:            </div>
+1030:          </div>
+1031:          <div
+1032:            className="car-kpi-icon"
+1033:            style={{
+1034:              backgroundColor: status === 'AVAILABLE' ? '#DEF7EC' : '#FEF3C7',
+1035:              color: status === 'AVAILABLE' ? '#059669' : '#D97706',
+1036:            }}
+1037:          >
+1038:            <CheckCircle2 size={24} />
+1039:          </div>
+1040:        </div>
+1041:
+1042:        {/* Readiness Card */}
+1043:        <div className="car-kpi-card">
+1044:          <div>
+1045:            <div className="car-kpi-label">Activation Readiness</div>
+1046:            <div className="car-kpi-value">{complianceScore}%</div>
+1047:            <div className="car-kpi-meta" style={{ color: complianceScore === 100 ? '#059669' : '#6C1E84' }}>
+1048:              {complianceScore === 100 ? '● Ready for rental' : 'Complete mandatory fields'}
+1049:            </div>
+1050:          </div>
+1051:          <div
+1052:            className="car-kpi-icon"
+1053:            style={{
+1054:              backgroundColor: complianceScore === 100 ? '#DEF7EC' : '#F5EEF8',
+1055:              color: complianceScore === 100 ? '#059669' : '#6C1E84',
+1056:            }}
+1057:          >
+1058:            <Sparkles size={24} />
+1059:          </div>
+1060:        </div>
+1061:
+1062:        {/* Commercial Rate */}
+1063:        <div className="car-kpi-card">
+1064:          <div>
+1065:            <div className="car-kpi-label">Commercial Rate</div>
+1066:            <div className="car-kpi-value">{activeRateDisplay}</div>
+1067:            <div className="car-kpi-meta" style={{ color: '#8A7090' }}>
+1068:              Deposit: {pricingState.currency} {pricingState.securityDeposit || '0'}
+1069:            </div>
+1070:          </div>
+1071:          <div className="car-kpi-icon" style={{ backgroundColor: '#FEF8E7', color: '#B45309' }}>
+1072:            <DollarSign size={24} />
+1073:          </div>
+1074:        </div>
+1075:
+1076:        {/* Inspection Photos */}
+1077:        <div className="car-kpi-card">
+1078:          <div>
+1079:            <div className="car-kpi-label">Inspection Photos</div>
+1080:            <div className="car-kpi-value">{photos.length} / 6</div>
+1081:            <div
+1082:              className="car-kpi-meta"
+1083:              style={{ color: photos.length >= 4 && photos.length <= 6 ? '#059669' : '#DC2626' }}
+1084:            >
+1085:              {photos.length >= 4 ? '✓ Standard Met' : `Need ${4 - photos.length} more`}
+1086:            </div>
+1087:          </div>
+1088:          <div
+1089:            className="car-kpi-icon"
+1090:            style={{
+1091:              backgroundColor: photos.length >= 4 ? '#DEF7EC' : '#FEE2E2',
+1092:              color: photos.length >= 4 ? '#059669' : '#DC2626',
+1093:            }}
+1094:          >
+1095:            <Camera size={24} />
+1096:          </div>
+1097:        </div>
+1098:      </div>
+1099:
+1100:      {/* ================= STICKY INTERACTIVE SECTION NAVIGATION BAR (Strict Single-Row Grid, 0 X-Scroll) ================= */}
+1101:      <div className="car-section-navbar-wrap">
+1102:        <div className="car-section-nav-grid" role="tablist" aria-label="Vehicle onboarding sections">
+1103:          <button
+1104:            type="button"
+1105:            role="tab"
+1106:            aria-selected={activeSection === 'sec-identity'}
+1107:            onClick={() => scrollToSection('sec-identity')}
+1108:            className={`car-section-nav-item ${activeSection === 'sec-identity' ? 'active' : ''}`}
+1109:            title="1. Identity & Registration"
+1110:          >
+1111:            <span className="car-nav-num">1</span>
+1112:            <span className="car-nav-label-box">
+1113:              <span className="car-nav-label-full">Identity & Reg</span>
+1114:              <span className="car-nav-label-short">Identity</span>
+1115:              <span className="car-nav-label-micro">Info</span>
+1116:            </span>
+1117:            {isSec1Complete && <span className="car-nav-check" title="Section Complete" />}
+1118:          </button>
+1119:
+1120:          <button
+1121:            type="button"
+1122:            role="tab"
+1123:            aria-selected={activeSection === 'sec-specs'}
+1124:            onClick={() => scrollToSection('sec-specs')}
+1125:            className={`car-section-nav-item ${activeSection === 'sec-specs' ? 'active' : ''}`}
+1126:            title="2. Engineering & Specs"
+1127:          >
+1128:            <span className="car-nav-num">2</span>
+1129:            <span className="car-nav-label-box">
+1130:              <span className="car-nav-label-full">Specs & Power</span>
+1131:              <span className="car-nav-label-short">Specs</span>
+1132:              <span className="car-nav-label-micro">Specs</span>
+1133:            </span>
+1134:            {isSec2Complete && <span className="car-nav-check" title="Section Complete" />}
+1135:          </button>
+1136:
+1137:          <button
+1138:            type="button"
+1139:            role="tab"
+1140:            aria-selected={activeSection === 'sec-features'}
+1141:            onClick={() => scrollToSection('sec-features')}
+1142:            className={`car-section-nav-item ${activeSection === 'sec-features' ? 'active' : ''}`}
+1143:            title="3. Equipment & ADAS"
+1144:          >
+1145:            <span className="car-nav-num">3</span>
+1146:            <span className="car-nav-label-box">
+1147:              <span className="car-nav-label-full">Equipment & ADAS</span>
+1148:              <span className="car-nav-label-short">Features</span>
+1149:              <span className="car-nav-label-micro">ADAS</span>
+1150:            </span>
+1151:            {isSec3Complete && <span className="car-nav-check" title="Section Complete" />}
+1152:          </button>
+1153:
+1154:          <button
+1155:            type="button"
+1156:            role="tab"
+1157:            aria-selected={activeSection === 'sec-pricing'}
+1158:            onClick={() => scrollToSection('sec-pricing')}
+1159:            className={`car-section-nav-item ${activeSection === 'sec-pricing' ? 'active' : ''}`}
+1160:            title="4. Rates & Policies"
+1161:          >
+1162:            <span className="car-nav-num">4</span>
+1163:            <span className="car-nav-label-box">
+1164:              <span className="car-nav-label-full">Rates & Policies</span>
+1165:              <span className="car-nav-label-short">Pricing</span>
+1166:              <span className="car-nav-label-micro">Rates</span>
+1167:            </span>
+1168:            {isSec4Complete && <span className="car-nav-check" title="Section Complete" />}
+1169:          </button>
+1170:
+1171:          <button
+1172:            type="button"
+1173:            role="tab"
+1174:            aria-selected={activeSection === 'sec-photos'}
+1175:            onClick={() => scrollToSection('sec-photos')}
+1176:            className={`car-section-nav-item ${activeSection === 'sec-photos' ? 'active' : ''}`}
+1177:            title="5. Inspection Photos"
+1178:          >
+1179:            <span className="car-nav-num">5</span>
+1180:            <span className="car-nav-label-box">
+1181:              <span className="car-nav-label-full">Inspection Photos</span>
+1182:              <span className="car-nav-label-short">Photos</span>
+1183:              <span className="car-nav-label-micro">Photos</span>
+1184:            </span>
+1185:            {isSec5Complete && <span className="car-nav-check" title="Section Complete" />}
+1186:          </button>
+1187:
+1188:          <button
+1189:            type="button"
+1190:            role="tab"
+1191:            aria-selected={activeSection === 'sec-records'}
+1192:            onClick={() => scrollToSection('sec-records')}
+1193:            className={`car-section-nav-item ${activeSection === 'sec-records' ? 'active' : ''}`}
+1194:            title="6. Insurance & Records"
+1195:          >
+1196:            <span className="car-nav-num">6</span>
+1197:            <span className="car-nav-label-box">
+1198:              <span className="car-nav-label-full">Insurance & Records</span>
+1199:              <span className="car-nav-label-short">Records</span>
+1200:              <span className="car-nav-label-micro">Admin</span>
+1201:            </span>
+1202:            {isSec6Complete && <span className="car-nav-check" title="Section Complete" />}
+1203:          </button>
+1204:        </div>
+1205:      </div>
+1206:
+1207:      {/* Alerts */}
+1208:      {vinDecodeSuccess && (
+1209:        <div className="add-car-alert add-car-alert-success">
+1210:          <div className="add-car-alert-inner">
+1211:            <Sparkles size={18} color="#10B981" />
+1212:            <div>
+1213:              <strong style={{ display: 'block', fontSize: '0.92rem' }}>NHTSA vPIC Autofill Complete</strong>
+1214:              <span>{vinDecodeSuccess}</span>
+1215:            </div>
+1216:          </div>
+1217:          <button type="button" onClick={() => setVinDecodeSuccess(null)} className="add-car-alert-dismiss">
+1218:            Dismiss
+1219:          </button>
+1220:        </div>
+1221:      )}
+1222:
+1223:      {error && (
+1224:        <div className="add-car-alert add-car-alert-error">
+1225:          <div className="add-car-alert-inner">
+1226:            <AlertCircle size={18} color="#DC2626" />
+1227:            <span>{error}</span>
+1228:          </div>
+1229:          <button type="button" onClick={() => setError(null)} className="add-car-alert-dismiss">
+1230:            Dismiss
+1231:          </button>
+1232:        </div>
+1233:      )}
+1234:
+1235:      {/* Mobile Tab Segment Switcher */}
+1236:      <div className="car-mobile-segment">
+1237:        <button
+1238:          type="button"
+1239:          onClick={() => setMobileTab('form')}
+1240:          className={`car-mobile-seg-btn ${mobileTab === 'form' ? 'active' : ''}`}
+1241:        >
+1242:          <span>Vehicle Details Form</span>
+1243:        </button>
+1244:        <button
+1245:          type="button"
+1246:          onClick={() => setMobileTab('preview')}
+1247:          className={`car-mobile-seg-btn ${mobileTab === 'preview' ? 'active' : ''}`}
+1248:        >
+1249:          <Eye size={15} />
+1250:          <span>Live Card Preview ({complianceScore}%)</span>
+1251:        </button>
+1252:      </div>
+1253:
+1254:      {/* ================= 2-COLUMN WORKSPACE GRID ================= */}
+1255:      <div className="car-workspace-grid">
+1256:        {/* ================= LEFT PANE: FORM SECTIONS ================= */}
+1257:        <div className={`car-form-pane${mobileTab === 'preview' ? ' pane-hidden' : ''}`}>
+1258:          {/* SECTION 1: IDENTITY & CLASSIFICATION */}
+1259:          <div id="sec-identity" className="car-card-section">
+1260:            <div className="car-card-header">
+1261:              <div className="car-card-header-left">
+1262:                <div className="car-card-icon-badge">
+1263:                  <Tag size={20} />
+1264:                </div>
+1265:                <div>
+1266:                  <h2 className="car-card-title">1. Vehicle Identification & Legal Registration</h2>
+1267:                  <p className="car-card-subtitle">Manufacturer details, legal plate, official VIN scanner, and category classification</p>
+1268:                </div>
+1269:              </div>
+1270:              <span
+1271:                style={{
+1272:                  fontSize: '0.78rem',
+1273:                  fontWeight: 800,
+1274:                  color: isSec1Complete ? '#059669' : '#6C1E84',
+1275:                  backgroundColor: isSec1Complete ? '#DEF7EC' : '#F5EEF8',
+1276:                  padding: '4px 12px',
+1277:                  borderRadius: '12px',
+1278:                }}
+1279:              >
+1280:                {isSec1Complete ? '✓ Identified & Ready' : 'Mandatory Section'}
+1281:              </span>
+1282:            </div>
+1283:
+1284:          
+1285:            {/* Popular Make Quick Chips - Dynamic from Database */}
+1286:<div>
+1287:  <div className="popular-brands-row">
+1288:    <span className="popular-brands-label">Popular Makes:</span>
+1289:
+1290:    {dbBrands.map((b) => {
+1291:      const isActive =
+1292:        brand.toLowerCase() === b.name.toLowerCase();
+1293:
+1294:      return (
+1295:        <button
+1296:  key={b.name}
+1297:  type="button"
+1298:  onClick={() => handleBrandChange(b.name)}
+1299:  className={`popular-brand-chip ${isActive ? 'active' : ''}`}
+1300:>
+1301:  {b.name}
+1302:</button>
+1303:      );
+1304:    })}
+1305:
+1306:   
+1307:  </div>
+1308:</div>
+1309:
+1310:            {/* Row 1: Brand & Model Selection */}
+1311:            <div className="car-row-2">
+1312:              {/* Make / Brand */}
+1313:              <div>
+1314:                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+1315:                  <label className="fleet-form-label" style={{ margin: 0 }}>
+1316:                    Manufacturer / Make <span style={{ color: '#EF4444' }}>*</span>
+1317:                  </label>
+1318:                  <Link
+1319:                    to="/admin/brands"
+1320:                    title="Manage Brands Directory"
+1321:                    style={{
+1322:                      fontSize: '0.75rem',
+1323:                      fontWeight: 700,
+1324:                      color: '#6C1E84',
+1325:                      textDecoration: 'none',
+1326:                      display: 'inline-flex',
+1327:                      alignItems: 'center',
+1328:                      gap: '3px',
+1329:                    }}
+1330:                  >
+1331:                    <Plus size={12} />
+1332:                    <span>Manage Brands</span>
+1333:                  </Link>
+1334:                </div>
+1335:                <CustomSelect
+1336:                  value={brand}
+1337:                  onChange={(val) => handleBrandChange(val)}
+1338:                  searchable
+1339:                  placeholder={dbBrands.length === 0 ? 'Loading registered brands...' : 'Select Make / Brand...'}
+1340:                  options={[
+1341:                    ...dbBrands.map((b) => ({
+1342:                      value: b.name,
+1343:                      label: b.name,
+1344:                      sublabel: b.country
+1345:                        ? `${b.country}${b.models?.length ? ` • ${b.models.length} models` : ''}`
+1346:                        : b.models?.length
+1347:                        ? `${b.models.length} models`
+1348:                        : undefined,
+1349:                    })),
+1350:                  ]}
+1351:                />
+1352:                {brand === 'Other' && (
+1353:                  <input
+1354:                    type="text"
+1355:                    value={customBrand}
+1356:                    onChange={(e) => setCustomBrand(e.target.value)}
+1357:                    placeholder="Enter Custom Make (e.g. Lucid, Rivian)..."
+1358:                    className="fleet-form-input"
+1359:                    style={{ marginTop: '8px' }}
+1360:                  />
+1361:                )}
+1362:              </div>
+1363:
+1364:              {/* Model */}
+1365:              <div>
+1366:                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+1367:                  <label className="fleet-form-label" style={{ margin: 0 }}>
+1368:                    Vehicle Model <span style={{ color: '#EF4444' }}>*</span>
+1369:                  </label>
+1370:                  <Link
+1371:                    to="/admin/models"
+1372:                    title="Manage Models Directory"
+1373:                    style={{
+1374:                      fontSize: '0.75rem',
+1375:                      fontWeight: 700,
+1376:                      color: '#6C1E84',
+1377:                      textDecoration: 'none',
+1378:                      display: 'inline-flex',
+1379:                      alignItems: 'center',
+1380:                      gap: '3px',
+1381:                    }}
+1382:                  >
+1383:                    <Plus size={12} />
+1384:                    <span>Manage Models</span>
+1385:                  </Link>
+1386:                </div>
+1387:
+1388:                {!customModelMode && currentBrandModels.length > 0 ? (
+1389:                  <CustomSelect
+1390:                    value={model}
+1391:                    onChange={(val) => handleModelSelectChange(val)}
+1392:                    searchable
+1393:                    placeholder="Select Brand Model..."
+1394:                    options={[
+1395:                      ...currentBrandModels.map((m) => ({
+1396:                        value: m.name,
+1397:                        label: m.name,
+1398:                        sublabel: m.bodyType ? `${m.bodyType}` : undefined,
+1399:                      })),
+1400:                      { value: '__CUSTOM__', label: '+ Type Custom Model Name' },
+1401:                    ]}
+1402:                  />
+1403:                ) : (
+1404:                  <div style={{ display: 'flex', gap: '6px' }}>
+1405:                    <input
+1406:                      type="text"
+1407:                      value={customModelMode ? customModelName : model}
+1408:                      onChange={(e) => {
+1409:                        if (customModelMode) setCustomModelName(e.target.value);
+1410:                        else setModel(e.target.value);
+1411:                      }}
+1412:                      placeholder="e.g. Camry, Tucson, Model 3..."
+1413:                      className="fleet-form-input"
+1414:                    />
+1415:                    {currentBrandModels.length > 0 && (
+1416:                      <button
+1417:                        type="button"
+1418:                        onClick={() => {
+1419:                          setCustomModelMode(false);
+1420:                          setModel(currentBrandModels[0].name);
+1421:                        }}
+1422:                        className="fleet-header-action-btn fleet-btn-secondary"
+1423:                        style={{ padding: '0 12px', fontSize: '0.78rem' }}
+1424:                        title="Pick from registered catalog"
+1425:                      >
+1426:                        List
+1427:                      </button>
+1428:                    )}
+1429:                  </div>
+1430:                )}
+1431:              </div>
+1432:            </div>
+1433:
+1434:            {/* Row 2: Year, Trim & Embossed License Plate */}
+1435:            <div className="car-row-3">
+1436:              <div className="fleet-form-group">
+1437:                <label className="fleet-form-label fleet-form-label-required">Model Year</label>
+1438:                <input
+1439:                  type="number"
+1440:                  value={year || ''}
+1441:                  onChange={(e) => {
+1442:                    const val = e.target.value;
+1443:                    setYear(val === '' ? 0 : parseInt(val, 10));
+1444:                  }}
+1445:                  placeholder="e.g. 2025"
+1446:                  min={1970}
+1447:                  max={2035}
+1448:                  className="fleet-form-input"
+1449:                />
+1450:              </div>
+1451:
+1452:              <div className="fleet-form-group">
+1453:                <label className="fleet-form-label">Trim / Grade Specification</label>
+1454:                <input
+1455:                  type="text"
+1456:                  value={trim}
+1457:                  onChange={(e) => setTrim(e.target.value)}
+1458:                  placeholder="e.g. XLE, GT-Line, Long Range"
+1459:                  className="fleet-form-input"
+1460:                />
+1461:              </div>
+1462:
+1463:              {/* Embossed License Plate Input */}
+1464:              <div className="fleet-form-group">
+1465:                <label className="fleet-form-label fleet-form-label-required">License Plate Registration</label>
+1466:                <div className="car-plate-input-container">
+1467:                  <div className="car-plate-flag">
+1468:                    <span>FIN</span>
+1469:                    PK
+1470:                  </div>
+1471:                  <input
+1472:                    type="text"
+1473:                    value={registrationNumber}
+1474:                    onChange={(e) => setRegistrationNumber(e.target.value.toUpperCase())}
+1475:                    placeholder="ABC-1234"
+1476:                    maxLength={10}
+1477:                    className="car-plate-input"
+1478:                  />
+1479:                </div>
+1480:              </div>
+1481:            </div>
+1482:
+1483:            {/* Row 3: NHTSA vPIC Intelligent VIN Decoder Hub */}
+1484:            <div className="vpic-scanner-hub">
+1485:              <div className="vpic-scanner-header">
+1486:                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+1487:                  <span className="vpic-badge">
+1488:                    <Sparkles size={12} />
+1489:                    NHTSA vPIC Cloud AI Decoder
+1490:                  </span>
+1491:                  <span style={{ fontSize: '0.78rem', color: '#6C1E84', fontWeight: 600 }}>
+1492:                    Official Vehicle Specification Database
+1493:                  </span>
+1494:                </div>
+1495:                <span className="vpic-char-count">{vin.length} / 17 chars</span>
+1496:              </div>
+1497:
+1498:              <div className="vpic-input-row">
+1499:                <input
+1500:                  type="text"
+1501:                  value={vin}
+1502:                  onChange={(e) => setVin(e.target.value.toUpperCase())}
+1503:                  placeholder="Enter 17-character VIN (e.g. 1HGCR2F83HA...)"
+1504:                  maxLength={17}
+1505:                  className="fleet-form-input vpic-vin-input"
+1506:                />
+1507:                <button
+1508:                  type="button"
+1509:                  onClick={handleDecodeVin}
+1510:                  disabled={isDecodingVin || vin.trim().length < 11}
+1511:                  className="fleet-header-action-btn fleet-btn-secondary"
+1512:                  style={{ padding: '0 18px', gap: '6px' }}
+1513:                >
+1514:                  <Sparkles size={15} color="#6C1E84" />
+1515:                  <span>{isDecodingVin ? 'Scanning...' : 'Decode & Autofill'}</span>
+1516:                </button>
+1517:              </div>
+1518:              <span className="fleet-form-hint" style={{ marginTop: '6px' }}>
+1519:                Instant verification autofills manufacturer specs, engine architecture, safety rating, and drivetrain.
+1520:              </span>
+1521:            </div>
+1522:
+1523:            {/* Row 4: Fleet Category & Home Base Station */}
+1524:            <div className="car-row-2">
+1525:              <div className="fleet-form-group">
+1526:                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+1527:                  <label className="fleet-form-label" style={{ margin: 0 }}>
+1528:                    Fleet Category Assignment <span style={{ color: '#EF4444' }}>*</span>
+1529:                  </label>
+1530:                  <Link
+1531:                    to="/admin/categories"
+1532:                    title="Manage Vehicle Categories Directory"
+1533:                    style={{
+1534:                      fontSize: '0.75rem',
+1535:                      fontWeight: 700,
+1536:                      color: '#6C1E84',
+1537:                      textDecoration: 'none',
+1538:                      display: 'inline-flex',
+1539:                      alignItems: 'center',
+1540:                      gap: '3px',
+1541:                    }}
+1542:                  >
+1543:                    <Plus size={12} />
+1544:                    <span>Manage Categories</span>
+1545:                  </Link>
+1546:                </div>
+1547:                <CustomSelect
+1548:                  value={categoryId}
+1549:                  onChange={(val) => setCategoryId(val)}
+1550:                  placeholder="Assign Fleet Category..."
+1551:                  options={categories.map((c) => ({
+1552:                    value: c.id,
+1553:                    label: c.name,
+1554:                    sublabel: `Standard Base: PKR ${c.baseRate || 0}/day`,
+1555:                  }))}
+1556:                />
+1557:              </div>
+1558:
+1559:              <div className="fleet-form-group">
+1560:                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+1561:                  <label className="fleet-form-label" style={{ margin: 0 }}>
+1562:                    Assigned Home Branch Station
+1563:                  </label>
+1564:                  <span style={{ fontSize: '0.74rem', color: '#8A7090' }}>Physical Inventory Hub</span>
+1565:                </div>
+1566:                <CustomSelect
+1567:                  value={branchId}
+1568:                  onChange={(val) => setBranchId(val)}
+1569:                  placeholder="Select Operational Base Station..."
+1570:                  options={branches.map((b) => ({
+1571:                    value: b.id,
+1572:                    label: b.name,
+1573:                    sublabel: b.city,
+1574:                  }))}
+1575:                />
+1576:              </div>
+1577:            </div>
+1578:
+1579:            {/* Row 5: Exterior Color Finish & Swatches */}
+1580:            <div className="fleet-form-group car-row-last" style={{ marginTop: '16px' }}>
+1581:              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+1582:                <label className="fleet-form-label" style={{ margin: 0 }}>
+1583:                  Exterior Paint & Finish: <strong style={{ color: '#1E0432' }}>{color}</strong>
+1584:                </label>
+1585:                <button
+1586:                  type="button"
+1587:                  onClick={() => setIsCustomColor(!isCustomColor)}
+1588:                  style={{
+1589:                    background: 'none',
+1590:                    border: 'none',
+1591:                    color: '#6C1E84',
+1592:                    fontSize: '0.78rem',
+1593:                    fontWeight: 700,
+1594:                    cursor: 'pointer',
+1595:                    display: 'flex',
+1596:                    alignItems: 'center',
+1597:                    gap: '4px',
+1598:                  }}
+1599:                >
+1600:                  <Palette size={14} />
+1601:                  <span>{isCustomColor ? 'Use Standard Palette' : 'Custom Hex Finish'}</span>
+1602:                </button>
+1603:              </div>
+1604:
+1605:              {isCustomColor ? (
+1606:                <div className="car-custom-color-wrap">
+1607:                  <input
+1608:                    type="color"
+1609:                    value={colorHex}
+1610:                    onChange={(e) => {
+1611:                      setColorHex(e.target.value);
+1612:                      setColor(`Custom (${e.target.value.toUpperCase()})`);
+1613:                    }}
+1614:                    className="car-color-picker-input"
+1615:                  />
+1616:                  <input
+1617:                    type="text"
+1618:                    value={color}
+1619:                    onChange={(e) => setColor(e.target.value)}
+1620:                    placeholder="Color Finish Name (e.g. Midnight Pearl, Metallic Obsidian)"
+1621:                    className="fleet-form-input"
+1622:                    style={{ flex: 1 }}
+1623:                  />
+1624:                  <input
+1625:                    type="text"
+1626:                    value={colorHex}
+1627:                    onChange={(e) => setColorHex(e.target.value)}
+1628:                    placeholder="#HEX"
+1629:                    maxLength={7}
+1630:                    className="fleet-form-input"
+1631:                    style={{ width: '110px', fontFamily: 'monospace', fontWeight: 700 }}
+1632:                  />
+1633:                </div>
+1634:              ) : (
+1635:                <div className="car-color-swatches">
+1636:                  {POPULAR_COLORS.map((c) => {
+1637:                    const isSelected = color === c.name || colorHex.toLowerCase() === c.hex.toLowerCase();
+1638:                    return (
+1639:                      <button
+1640:                        key={c.name}
+1641:                        type="button"
+1642:                        onClick={() => {
+1643:                          setColor(c.name);
+1644:                          setColorHex(c.hex);
+1645:                        }}
+1646:                        title={c.name}
+1647:                        className={`car-color-swatch-btn ${isSelected ? 'selected' : ''}`}
+1648:                        style={{
+1649:                          backgroundColor: c.hex,
+1650:                          border: `1.5px solid ${c.border}`,
+1651:                        }}
+1652:                      >
+1653:                        {isSelected && <Check size={16} color={c.name === 'White' || c.name === 'Silver' ? '#111827' : '#FFFFFF'} strokeWidth={3} />}
+1654:                      </button>
+1655:                    );
+1656:                  })}
+1657:                </div>
+1658:              )}
+1659:            </div>
+1660:          </div>
+1661:
+1662:          {/* SECTION 2: TECHNICAL SPECIFICATIONS & POWERTRAIN */}
+1663:          <div id="sec-specs" className="car-card-section">
+1664:            <div className="car-card-header">
+1665:              <div className="car-card-header-left">
+1666:                <div className="car-card-icon-badge">
+1667:                  <Sliders size={20} />
+1668:                </div>
+1669:                <div>
+1670:                  <h2 className="car-card-title">2. Engineering & Mechanical Specifications</h2>
+1671:                  <p className="car-card-subtitle">Powertrain architecture, transmission, fuel delivery, cabin geometry, and telemetry</p>
+1672:                </div>
+1673:              </div>
+1674:              <span
+1675:                style={{
+1676:                  fontSize: '0.78rem',
+1677:                  fontWeight: 800,
+1678:                  color: isSec2Complete ? '#059669' : '#6C1E84',
+1679:                  backgroundColor: isSec2Complete ? '#DEF7EC' : '#F5EEF8',
+1680:                  padding: '4px 12px',
+1681:                  borderRadius: '12px',
+1682:                }}
+1683:              >
+1684:                {isSec2Complete ? '✓ Configured' : 'Specs Required'}
+1685:              </span>
+1686:            </div>
+1687:
+1688:            {/* Row 1: Powertrain Segmented Switches */}
+1689:            <div className="car-row-2">
+1690:              {/* Transmission Segmented Switch */}
+1691:              <div className="fleet-form-group">
+1692:                <label className="fleet-form-label">Transmission System</label>
+1693:                <div className="car-segment-switch">
+1694:                  <button
+1695:                    type="button"
+1696:                    onClick={() => setTransmission('AUTOMATIC')}
+1697:                    className={`car-segment-option ${transmission === 'AUTOMATIC' ? 'active' : ''}`}
+1698:                  >
+1699:                    <Sliders size={14} />
+1700:                    <span>Automatic (AT/CVT)</span>
+1701:                  </button>
+1702:                  <button
+1703:                    type="button"
+1704:                    onClick={() => setTransmission('MANUAL')}
+1705:                    className={`car-segment-option ${transmission === 'MANUAL' ? 'active' : ''}`}
+1706:                  >
+1707:                    <Sliders size={14} />
+1708:                    <span>Manual (MT)</span>
+1709:                  </button>
+1710:                </div>
+1711:              </div>
+1712:
+1713:              {/* Drivetrain Segmented Switch */}
+1714:              <div className="fleet-form-group">
+1715:                <label className="fleet-form-label">Drivetrain Configuration</label>
+1716:                <div className="car-drivetrain-grid">
+1717:                  {(['AWD', 'FWD', 'RWD', '4WD'] as const).map((dt) => (
+1718:                    <button
+1719:                      key={dt}
+1720:                      type="button"
+1721:                      onClick={() => setDrivetrain(dt)}
+1722:                      className={`car-drivetrain-btn ${drivetrain === dt ? 'active' : ''}`}
+1723:                    >
+1724:                      {dt}
+1725:                    </button>
+1726:                  ))}
+1727:                </div>
+1728:              </div>
+1729:            </div>
+1730:
+1731:            {/* Fuel Type 4-Way Visual Cards */}
+1732:            <div className="fleet-form-group" style={{ marginBottom: '18px' }}>
+1733:              <label className="fleet-form-label">Fuel & Propulsion Technology</label>
+1734:              <div className="car-fuel-grid">
+1735:                <div
+1736:                  onClick={() => setFuelType('PETROL')}
+1737:                  className={`car-fuel-card ${fuelType === 'PETROL' ? 'active' : ''}`}
+1738:                >
+1739:                  <Flame size={16} color={fuelType === 'PETROL' ? '#DC2626' : '#8A7090'} />
+1740:                  <span className="car-fuel-name">Petrol</span>
+1741:                </div>
+1742:
+1743:                <div
+1744:                  onClick={() => setFuelType('DIESEL')}
+1745:                  className={`car-fuel-card ${fuelType === 'DIESEL' ? 'active' : ''}`}
+1746:                >
+1747:                  <Fuel size={16} color={fuelType === 'DIESEL' ? '#D97706' : '#8A7090'} />
+1748:                  <span className="car-fuel-name">Diesel Turbo</span>
+1749:                </div>
+1750:
+1751:                <div
+1752:                  onClick={() => setFuelType('HYBRID')}
+1753:                  className={`car-fuel-card ${fuelType === 'HYBRID' ? 'active' : ''}`}
+1754:                >
+1755:                  <BatteryCharging size={16} color={fuelType === 'HYBRID' ? '#059669' : '#8A7090'} />
+1756:                  <span className="car-fuel-name">Hybrid (HEV)</span>
+1757:                </div>
+1758:
+1759:                <div
+1760:                  onClick={() => setFuelType('ELECTRIC')}
+1761:                  className={`car-fuel-card ${fuelType === 'ELECTRIC' ? 'active' : ''}`}
+1762:                >
+1763:                  <Zap size={16} color={fuelType === 'ELECTRIC' ? '#2563EB' : '#8A7090'} />
+1764:                  <span className="car-fuel-name">Electric (BEV)</span>
+1765:                </div>
+1766:              </div>
+1767:            </div>
+1768:
+1769:            {/* Row 2: Performance Specs & Tank Capacity */}
+1770:            <div className="car-row-3">
+1771:              <div className="fleet-form-group">
+1772:                <label className="fleet-form-label">Engine / Motor Displacement</label>
+1773:                <input
+1774:                  type="text"
+1775:                  value={engineSize}
+1776:                  onChange={(e) => setEngineSize(e.target.value)}
+1777:                  placeholder="e.g. 2.0L Turbo, 65 kWh"
+1778:                  className="fleet-form-input"
+1779:                />
+1780:              </div>
+1781:
+1782:              <div className="fleet-form-group">
+1783:                <label className="fleet-form-label">Horsepower Output (HP)</label>
+1784:                <input
+1785:                  type="number"
+1786:                  value={horsePower}
+1787:                  onChange={(e) => setHorsePower(e.target.value)}
+1788:                  placeholder="e.g. 203"
+1789:                  className="fleet-form-input"
+1790:                />
+1791:              </div>
+1792:
+1793:              <div className="fleet-form-group">
+1794:                <label className="fleet-form-label">Fuel Tank / Battery Capacity</label>
+1795:                <input
+1796:                  type="text"
+1797:                  value={fuelTankCapacity}
+1798:                  onChange={(e) => setFuelTankCapacity(e.target.value)}
+1799:                  placeholder="e.g. 55 Liters, 77.4 kWh"
+1800:                  className="fleet-form-input"
+1801:                />
+1802:              </div>
+1803:            </div>
+1804:
+1805:            {/* Row 3: Cabin Geometry (Seating & Doors Steppers) */}
+1806:            <div className="car-row-2">
+1807:              <div className="fleet-form-group">
+1808:                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+1809:                  <label className="fleet-form-label" style={{ margin: 0 }}>Seating Capacity</label>
+1810:                  <span className="car-stepper-type-tag">Max {vehicleTypeInfo.maxSeats} ({vehicleTypeInfo.label})</span>
+1811:                </div>
+1812:                <div className="car-stepper">
+1813:                  <button
+1814:                    type="button"
+1815:                    onClick={() => setSeats((prev) => Math.max(vehicleTypeInfo.minSeats, (Number(prev) || 1) - 1))}
+1816:                    disabled={Number(seats) <= vehicleTypeInfo.minSeats}
+1817:                    className="car-stepper-btn"
+1818:                    aria-label="Decrease seating capacity"
+1819:                  >
+1820:                    <Minus size={15} />
+1821:                  </button>
+1822:                  <div
+1823:                    className="car-stepper-center"
+1824:                    onClick={() => document.getElementById('car-seats-input')?.focus()}
+1825:                  >
+1826:                    <Users size={16} color="#6C1E84" />
+1827:                    <input
+1828:                      id="car-seats-input"
+1829:                      type="text"
+1830:                      inputMode="numeric"
+1831:                      pattern="[0-9]*"
+1832:                      value={seats || ''}
+1833:                      onChange={(e) => {
+1834:                        const raw = e.target.value.replace(/[^0-9]/g, '');
+1835:                        if (raw === '') {
+1836:                          setSeats(0);
+1837:                        } else {
+1838:                          const val = parseInt(raw, 10);
+1839:                          setSeats(Math.min(vehicleTypeInfo.maxSeats, Math.max(vehicleTypeInfo.minSeats, val)));
+1840:                        }
+1841:                      }}
+1842:                      onBlur={() => {
+1843:                        if (!seats || seats < vehicleTypeInfo.minSeats) setSeats(vehicleTypeInfo.minSeats);
+1844:                        if (seats > vehicleTypeInfo.maxSeats) setSeats(vehicleTypeInfo.maxSeats);
+1845:                      }}
+1846:                      className="car-stepper-input"
+1847:                      style={{ width: `${Math.max(20, String(seats || 1).length * 11 + 4)}px` }}
+1848:                    />
+1849:                    <span className="car-stepper-unit">
+1850:                      {Number(seats) === 1 ? 'Seat' : 'Seats'}
+1851:                    </span>
+1852:                  </div>
+1853:                  <button
+1854:                    type="button"
+1855:                    onClick={() => setSeats((prev) => Math.min(vehicleTypeInfo.maxSeats, (Number(prev) || 1) + 1))}
+1856:                    disabled={Number(seats) >= vehicleTypeInfo.maxSeats}
+1857:                    className="car-stepper-btn"
+1858:                    aria-label="Increase seating capacity"
+1859:                  >
+1860:                    <Plus size={15} />
+1861:                  </button>
+1862:                </div>
+1863:              </div>
+1864:
+1865:              <div className="fleet-form-group">
+1866:                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+1867:                  <label className="fleet-form-label" style={{ margin: 0 }}>Number of Doors</label>
+1868:                  <span className="car-stepper-type-tag">Max {vehicleTypeInfo.maxDoors} Doors</span>
+1869:                </div>
+1870:                <div className="car-stepper">
+1871:                  <button
+1872:                    type="button"
+1873:                    onClick={() => setDoors((prev) => Math.max(vehicleTypeInfo.minDoors, (Number(prev) || 2) - 1))}
+1874:                    disabled={Number(doors) <= vehicleTypeInfo.minDoors}
+1875:                    className="car-stepper-btn"
+1876:                    aria-label="Decrease number of doors"
+1877:                  >
+1878:                    <Minus size={15} />
+1879:                  </button>
+1880:                  <div
+1881:                    className="car-stepper-center"
+1882:                    onClick={() => document.getElementById('car-doors-input')?.focus()}
+1883:                  >
+1884:                    <DoorOpen size={16} color="#6C1E84" />
+1885:                    <input
+1886:                      id="car-doors-input"
+1887:                      type="text"
+1888:                      inputMode="numeric"
+1889:                      pattern="[0-9]*"
+1890:                      value={doors || ''}
+1891:                      onChange={(e) => {
+1892:                        const raw = e.target.value.replace(/[^0-9]/g, '');
+1893:                        if (raw === '') {
+1894:                          setDoors(0);
+1895:                        } else {
+1896:                          const val = parseInt(raw, 10);
+1897:                          setDoors(Math.min(vehicleTypeInfo.maxDoors, Math.max(vehicleTypeInfo.minDoors, val)));
+1898:                        }
+1899:                      }}
+1900:                      onBlur={() => {
+1901:                        if (!doors || doors < vehicleTypeInfo.minDoors) setDoors(vehicleTypeInfo.minDoors);
+1902:                        if (doors > vehicleTypeInfo.maxDoors) setDoors(vehicleTypeInfo.maxDoors);
+1903:                      }}
+1904:                      className="car-stepper-input"
+1905:                      style={{ width: `${Math.max(20, String(doors || 2).length * 11 + 4)}px` }}
+1906:                    />
+1907:                    <span className="car-stepper-unit">
+1908:                      {Number(doors) === 1 ? 'Door' : 'Doors'}
+1909:                    </span>
+1910:                  </div>
+1911:                  <button
+1912:                    type="button"
+1913:                    onClick={() => setDoors((prev) => Math.min(vehicleTypeInfo.maxDoors, (Number(prev) || 2) + 1))}
+1914:                    disabled={Number(doors) >= vehicleTypeInfo.maxDoors}
+1915:                    className="car-stepper-btn"
+1916:                    aria-label="Increase number of doors"
+1917:                  >
+1918:                    <Plus size={15} />
+1919:                  </button>
+1920:                </div>
+1921:              </div>
+1922:            </div>
+1923:
+1924:            {/* Row 4: Telematics, Mileage & Bay Tracking */}
+1925:            <div className="car-row-4 car-row-last">
+1926:              <div className="fleet-form-group">
+1927:                <label className="fleet-form-label">Current Odometer (km)</label>
+1928:                <input
+1929:                  type="number"
+1930:                  value={mileage}
+1931:                  onChange={(e) => setMileage(e.target.value)}
+1932:                  placeholder="0"
+1933:                  className="fleet-form-input"
+1934:                />
+1935:              </div>
+1936:
+1937:              <div className="fleet-form-group">
+1938:                <label className="fleet-form-label">Next Service Target (km)</label>
+1939:                <input
+1940:                  type="number"
+1941:                  value={nextServiceMileage}
+1942:                  onChange={(e) => setNextServiceMileage(e.target.value)}
+1943:                  placeholder="e.g. 20000"
+1944:                  className="fleet-form-input"
+1945:                />
+1946:              </div>
+1947:
+1948:              <div className="fleet-form-group">
+1949:                <label className="fleet-form-label">Parking Spot / Bay</label>
+1950:                <input
+1951:                  type="text"
+1952:                  value={parkingSpot}
+1953:                  onChange={(e) => setParkingSpot(e.target.value)}
+1954:                  placeholder="e.g. Bay A-12, Level 2"
+1955:                  className="fleet-form-input"
+1956:                />
+1957:              </div>
+1958:
+1959:              <div className="fleet-form-group">
+1960:                <label className="fleet-form-label">IoT Telematics Tracker ID</label>
+1961:                <input
+1962:                  type="text"
+1963:                  value={telematicsDeviceId}
+1964:                  onChange={(e) => setTelematicsDeviceId(e.target.value)}
+1965:                  placeholder="TEL-GPS-492"
+1966:                  className="fleet-form-input"
+1967:                  style={{ fontFamily: 'monospace' }}
+1968:                />
+1969:              </div>
+1970:            </div>
+1971:          </div>
+1972:
+1973:          {/* SECTION 3: FEATURES & EQUIPMENT */}
+1974:          <div id="sec-features" className="car-card-section">
+1975:            <div className="car-card-header">
+1976:              <div className="car-card-header-left">
+1977:                <div className="car-card-icon-badge">
+1978:                  <Shield size={20} />
+1979:                </div>
+1980:                <div>
+1981:                  <h2 className="car-card-title">3. Equipment, ADAS & Smart Features</h2>
+1982:                  <p className="car-card-subtitle">
+1983:                    Autonomous safety systems, premium comfort packages, and infotainment equipment
+1984:                  </p>
+1985:                </div>
+1986:              </div>
+1987:              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#6C1E84', backgroundColor: '#F5EEF8', padding: '4px 12px', borderRadius: '12px' }}>
+1988:                {selectedFeatures.length} of {AVAILABLE_FEATURES.length} Selected
+1989:              </span>
+1990:            </div>
+1991:
+1992:            {/* Filter Tabs & Quick Actions */}
+1993:            <div className="feature-filter-header">
+1994:              <div className="feature-tabs-wrap">
+1995:                {FEATURE_CATEGORIES.map((cat) => (
+1996:                  <button
+1997:                    key={cat.id}
+1998:                    type="button"
+1999:                    onClick={() => setActiveFeatureTab(cat.id)}
+2000:                    className={`feature-tab-btn ${activeFeatureTab === cat.id ? 'active' : ''}`}
+2001:                  >
+2002:                    {cat.label}
+2003:                  </button>
+2004:                ))}
+2005:              </div>
+2006:
+2007:              <div className="feature-actions-bar">
+2008:                <button
+2009:                  type="button"
+2010:                  onClick={selectAllFeatures}
+2011:                  className="feature-action-text-btn"
+2012:                >
+2013:                  Select All
+2014:                </button>
+2015:                <span style={{ color: '#D4C9D9' }}>|</span>
+2016:                <button
+2017:                  type="button"
+2018:                  onClick={clearAllFeatures}
+2019:                  className="feature-action-text-btn"
+2020:                  style={{ color: '#8A7090' }}
+2021:                >
+2022:                  Clear
+2023:                </button>
+2024:              </div>
+2025:            </div>
+2026:
+2027:            {/* Features Chips Grid */}
+2028:            <div className="car-features-grid">
+2029:              {filteredFeatures.map((feat) => {
+2030:                const isSelected = selectedFeatures.includes(feat);
+2031:                return (
+2032:                  <button
+2033:                    key={feat}
+2034:                    type="button"
+2035:                    onClick={() => toggleFeature(feat)}
+2036:                    className={`car-feature-chip ${isSelected ? 'selected' : ''}`}
+2037:                  >
+2038:                    <CheckCircle2
+2039:                      size={17}
+2040:                      color={isSelected ? '#6C1E84' : '#C7B9CC'}
+2041:                      strokeWidth={isSelected ? 2.5 : 1.5}
+2042:                      style={{ flexShrink: 0 }}
+2043:                    />
+2044:                    <span>{feat}</span>
+2045:                  </button>
+2046:                );
+2047:              })}
+2048:            </div>
+2049:          </div>
+2050:
+2051:          {/* SECTION 4: COMMERCIAL PRICING & RENTAL RULES */}
+2052:          <div id="sec-pricing">
+2053:            <VehiclePricingSection
+2054:              state={pricingState}
+2055:              onChange={handlePricingChange}
+2056:              status={status}
+2057:              onStatusChange={setStatus}
+2058:              isPublicCatalog={isPublicCatalog}
+2059:              onCatalogChange={setIsPublicCatalog}
+2060:              isEditMode={isEdit}
+2061:            />
+2062:          </div>
+2063:
+2064:          {/* SECTION 5: VEHICLE PHOTO PIPELINE (MANDATORY 4-6) */}
+2065:          <div id="sec-photos">
+2066:            <VehiclePhotoPipeline photos={photos} onChange={setPhotos} minPhotos={4} maxPhotos={6} />
+2067:          </div>
+2068:
+2069:          {/* SECTION 6: ADDITIONAL INFORMATION & COMPLIANCE */}
+2070:          <div id="sec-records" className="car-card-section">
+2071:            <div className="car-card-header">
+2072:              <div className="car-card-header-left">
+2073:                <div className="car-card-icon-badge">
+2074:                  <Cpu size={20} />
+2075:                </div>
+2076:                <div>
+2077:                  <h2 className="car-card-title">6. Insurance & Administrative Records</h2>
+2078:                  <p className="car-card-subtitle">Policy binding numbers, expiration reminders, and internal notes</p>
+2079:                </div>
+2080:              </div>
+2081:              <span
+2082:                style={{
+2083:                  fontSize: '0.78rem',
+2084:                  fontWeight: 800,
+2085:                  color: isSec6Complete ? '#059669' : '#8A7090',
+2086:                  backgroundColor: isSec6Complete ? '#DEF7EC' : '#FAF7FA',
+2087:                  padding: '4px 12px',
+2088:                  borderRadius: '12px',
+2089:                }}
+2090:              >
+2091:                {isSec6Complete ? '✓ Policy Bound' : 'Optional Records'}
+2092:              </span>
+2093:            </div>
+2094:
+2095:            <div className="car-row-3">
+2096:              <div className="fleet-form-group">
+2097:                <label className="fleet-form-label">Insurance Policy Number</label>
+2098:                <input
+2099:                  type="text"
+2100:                  value={insurancePolicyNumber}
+2101:                  onChange={(e) => setInsurancePolicyNumber(e.target.value)}
+2102:                  placeholder="e.g. POL-8912-PK"
+2103:                  className="fleet-form-input"
+2104:                />
+2105:              </div>
+2106:
+2107:              <div className="fleet-form-group">
+2108:                <label className="fleet-form-label">Insurance Expiry Date</label>
+2109:                <input
+2110:                  type="date"
+2111:                  value={insuranceExpiry}
+2112:                  onChange={(e) => setInsuranceExpiry(e.target.value)}
+2113:                  className="fleet-form-input"
+2114:                />
+2115:              </div>
+2116:
+2117:              <div className="fleet-form-group">
+2118:                <label className="fleet-form-label">Registration Expiry Date</label>
+2119:                <input
+2120:                  type="date"
+2121:                  value={registrationExpiry}
+2122:                  onChange={(e) => setRegistrationExpiry(e.target.value)}
+2123:                  className="fleet-form-input"
+2124:                />
+2125:              </div>
+2126:            </div>
+2127:
+2128:            <div className="car-row-2">
+2129:              <div className="fleet-form-group">
+2130:                <label className="fleet-form-label">Last Maintenance Service Date</label>
+2131:                <input
+2132:                  type="date"
+2133:                  value={lastServiceDate}
+2134:                  onChange={(e) => setLastServiceDate(e.target.value)}
+2135:                  className="fleet-form-input"
+2136:                />
+2137:              </div>
+2138:
+2139:              <div className="fleet-form-group">
+2140:                <label className="fleet-form-label">Last Service Odometer (km)</label>
+2141:                <input
+2142:                  type="number"
+2143:                  value={lastServiceMileage}
+2144:                  onChange={(e) => setLastServiceMileage(e.target.value)}
+2145:                  placeholder="e.g. 10000"
+2146:                  className="fleet-form-input"
+2147:                />
+2148:              </div>
+2149:            </div>
+2150:
+2151:            <div className="fleet-form-group car-row-last" style={{ marginTop: '6px' }}>
+2152:              <label className="fleet-form-label">Internal Fleet Operations & Handover Notes</label>
+2153:              <textarea
+2154:                value={notes}
+2155:                onChange={(e) => setNotes(e.target.value)}
+2156:                placeholder="Add special handover procedures, minor exterior cosmetic condition reports, VIP rental guidelines..."
+2157:                className="fleet-form-textarea"
+2158:                rows={3}
+2159:              />
+2160:            </div>
+2161:          </div>
+2162:        </div>
+2163:
+2164:        {/* ================= RIGHT PANE: STICKY LIVE VEHICLE CARD PREVIEW ================= */}
+2165:        <div className={`car-preview-pane${mobileTab === 'form' ? ' pane-hidden' : ''}`}>
+2166:          {/* Live Catalog Card */}
+2167:          <div className="catalog-preview-card">
+2168:            {/* Card Header */}
+2169:            <div className="catalog-preview-header">
+2170:              <div className="catalog-preview-header-title">
+2171:                <Eye size={18} color="#6C1E84" />
+2172:                <span>Live Customer Preview</span>
+2173:              </div>
+2174:              <span
+2175:                className={`status-badge ${
+2176:                  status === 'AVAILABLE'
+2177:                    ? 'badge-available'
+2178:                    : status === 'RENTED'
+2179:                    ? 'badge-rented'
+2180:                    : status === 'MAINTENANCE'
+2181:                    ? 'badge-maintenance'
+2182:                    : 'badge-reserved'
+2183:                }`}
+2184:              >
+2185:                ● {status}
+2186:              </span>
+2187:            </div>
+2188:
+2189:            {/* Vehicle Hero Image with Carousel */}
+2190:            <div className="preview-hero-wrap">
+2191:              {activePreviewPhoto ? (
+2192:                <>
+2193:                  <img
+2194:                    src={activePreviewPhoto.url || activePreviewPhoto.data}
+2195:                    alt="Live Preview"
+2196:                    className="preview-hero-img"
+2197:                  />
+2198:
+2199:                  {/* Caption Overlay */}
+2200:                  <div className="preview-hero-caption">
+2201:                    {activePreviewPhoto.caption || 'Vehicle Angle Photo'}
+2202:                  </div>
+2203:
+2204:                  {/* Navigation Arrows on Hero */}
+2205:                  {photos.length > 1 && (
+2206:                    <>
+2207:                      <button
+2208:                        type="button"
+2209:                        onClick={() => setPreviewPhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1))}
+2210:                        className="preview-arrow-btn arrow-left"
+2211:                        aria-label="Previous photo"
+2212:                      >
+2213:                        <ChevronLeft size={16} />
+2214:                      </button>
+2215:                      <button
+2216:                        type="button"
+2217:                        onClick={() => setPreviewPhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0))}
+2218:                        className="preview-arrow-btn arrow-right"
+2219:                        aria-label="Next photo"
+2220:                      >
+2221:                        <ChevronRight size={16} />
+2222:                      </button>
+2223:                    </>
+2224:                  )}
+2225:
+2226:                  {/* Dots */}
+2227:                  <div className="preview-dots-row">
+2228:                    {photos.map((_, idx) => (
+2229:                      <button
+2230:                        key={idx}
+2231:                        type="button"
+2232:                        onClick={() => setPreviewPhotoIndex(idx)}
+2233:                        className="preview-dot"
+2234:                        style={{
+2235:                          backgroundColor: previewPhotoIndex === idx ? '#FAB826' : 'rgba(255,255,255,0.6)',
+2236:                        }}
+2237:                        aria-label={`Photo ${idx + 1}`}
+2238:                      />
+2239:                    ))}
+2240:                  </div>
+2241:                </>
+2242:              ) : (
+2243:                <div
+2244:                  style={{
+2245:                    display: 'flex',
+2246:                    flexDirection: 'column',
+2247:                    alignItems: 'center',
+2248:                    justifyContent: 'center',
+2249:                    height: '100%',
+2250:                    width: '100%',
+2251:                    color: '#FFFFFF',
+2252:                    padding: '24px',
+2253:                    textAlign: 'center',
+2254:                    boxSizing: 'border-box',
+2255:                  }}
+2256:                >
+2257:                  <div
+2258:                    style={{
+2259:                      width: '52px',
+2260:                      height: '52px',
+2261:                      borderRadius: '50%',
+2262:                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+2263:                      display: 'flex',
+2264:                      alignItems: 'center',
+2265:                      justifyContent: 'center',
+2266:                      marginBottom: '10px',
+2267:                    }}
+2268:                  >
+2269:                    <Camera size={26} color="#FAB826" />
+2270:                  </div>
+2271:                  <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>No Photos Uploaded Yet</span>
+2272:                  <span style={{ fontSize: '0.76rem', color: '#BCA8C4', marginTop: '4px', maxWidth: '240px', lineHeight: 1.4 }}>
+2273:                    Upload 4–6 photos in Section 5 to preview your live vehicle card here.
+2274:                  </span>
+2275:                </div>
+2276:              )}
+2277:            </div>
+2278:
+2279:            {/* Thumbnail Strip */}
+2280:            {photos.length > 0 && (
+2281:              <div className="preview-thumb-strip">
+2282:                {photos.map((p, idx) => (
+2283:                  <button
+2284:                    key={idx}
+2285:                    type="button"
+2286:                    onClick={() => setPreviewPhotoIndex(idx)}
+2287:                    className={`preview-thumb-btn ${previewPhotoIndex === idx ? 'active' : ''}`}
+2288:                    title={p.caption || `Photo ${idx + 1}`}
+2289:                  >
+2290:                    <img src={p.url || p.data} alt={`Thumb ${idx}`} className="preview-thumb-img" />
+2291:                  </button>
+2292:                ))}
+2293:              </div>
+2294:            )}
+2295:
+2296:            {/* Card Body & Specs */}
+2297:            <div className="catalog-preview-body">
+2298:              <div className="preview-meta-row">
+2299:                <span className="preview-badge-category">
+2300:                  {activeCategory?.name || 'Category'}
+2301:                </span>
+2302:                <span className="preview-plate">
+2303:                  {registrationNumber ? registrationNumber.toUpperCase() : 'NO-PLATE'}
+2304:                </span>
+2305:              </div>
+2306:
+2307:              <h3 className="preview-car-name">
+2308:                {effectiveBrand || 'Make'} {effectiveModel || 'Model'}
+2309:              </h3>
+2310:              <p className="preview-car-trim">
+2311:                {year} • {trim || 'Standard Grade'} • {color}
+2312:              </p>
+2313:
+2314:              {/* Core Specs Pills */}
+2315:              <div className="preview-spec-grid">
+2316:                <div className="preview-spec-item">
+2317:                  <Sliders size={14} color="#6C1E84" />
+2318:                  <span>{transmission === 'AUTOMATIC' ? 'Auto' : 'Manual'}</span>
+2319:                </div>
+2320:                <div className="preview-spec-item">
+2321:                  <Users size={14} color="#6C1E84" />
+2322:                  <span>{seats ? `${seats} ${seats === 1 ? 'Seat' : 'Seats'}` : '5 Seats'}</span>
+2323:                </div>
+2324:                <div className="preview-spec-item">
+2325:                  <Fuel size={14} color="#6C1E84" />
+2326:                  <span>{fuelType}</span>
+2327:                </div>
+2328:                <div className="preview-spec-item">
+2329:                  <DoorOpen size={14} color="#6C1E84" />
+2330:                  <span>{doors ? `${doors} ${doors === 1 ? 'Door' : 'Doors'}` : '4 Doors'}</span>
+2331:                </div>
+2332:                <div className="preview-spec-item">
+2333:                  <MapPin size={14} color="#6C1E84" />
+2334:                  <span>{activeBranch?.city || 'Central Hub'}</span>
+2335:                </div>
+2336:                <div className="preview-spec-item">
+2337:                  <Shield size={14} color="#059669" />
+2338:                  <span>{photos.length} Photos</span>
+2339:                </div>
+2340:              </div>
+2341:
+2342:              {/* Pricing Breakdown */}
+2343:              <div className="preview-price-row">
+2344:                <div>
+2345:                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+2346:                    <span
+2347:                      style={{
+2348:                        fontSize: '0.68rem',
+2349:                        color: '#6C1E84',
+2350:                        fontWeight: 800,
+2351:                        textTransform: 'uppercase',
+2352:                        backgroundColor: '#F5EEF8',
+2353:                        padding: '2px 8px',
+2354:                        borderRadius: '4px',
+2355:                      }}
+2356:                    >
+2357:                      {pricingState.pricingMethod.toUpperCase().replace('_', ' ')}
+2358:                    </span>
+2359:                  </div>
+2360:                  <div style={{ display: 'flex', alignItems: 'baseline', marginTop: '4px' }}>
+2361:                    <span className="preview-rate-amount">
+2362:                      {pricingState.currency}{' '}
+2363:                      {pricingState.pricingMethod === 'per_km'
+2364:                        ? pricingState.perKmRate || '0'
+2365:                        : pricingState.pricingMethod === 'hourly'
+2366:                        ? pricingState.hourlyRate || '0'
+2367:                        : pricingState.pricingMethod === 'monthly'
+2368:                        ? pricingState.monthlyRate || '0'
+2369:                        : pricingState.dailyRate || '0'}
+2370:                    </span>
+2371:                    <span className="preview-rate-unit">
+2372:                      /{' '}
+2373:                      {pricingState.pricingMethod === 'per_km'
+2374:                        ? 'km'
+2375:                        : pricingState.pricingMethod === 'hourly'
+2376:                        ? 'hr'
+2377:                        : pricingState.pricingMethod === 'monthly'
+2378:                        ? 'month'
+2379:                        : 'day'}
+2380:                    </span>
+2381:                  </div>
+2382:                </div>
+2383:
+2384:                <div style={{ textAlign: 'right' }}>
+2385:                  <div style={{ fontSize: '0.76rem', color: '#8A7090', fontWeight: 600 }}>
+2386:                    Deposit: {pricingState.currency} {pricingState.securityDeposit || '0'}
+2387:                  </div>
+2388:                  {pricingState.pricingMethod === 'daily_extra_km' && (
+2389:                    <div style={{ fontSize: '0.72rem', color: '#8A7090', marginTop: '2px' }}>
+2390:                      Limit: {pricingState.mileageLimitPerDay} km/day
+2391:                    </div>
+2392:                  )}
+2393:                  {pricingState.pricingMethod === 'per_km' && (
+2394:                    <div style={{ fontSize: '0.72rem', color: '#8A7090', marginTop: '2px' }}>
+2395:                      Min Trip: {pricingState.currency} {pricingState.minimumTripCharge}
+2396:                    </div>
+2397:                  )}
+2398:                </div>
+2399:              </div>
+2400:            </div>
+2401:          </div>
+2402:
+2403:          {/* Compliance & Readiness Progress Card */}
+2404:          <div className="compliance-card">
+2405:            <div className="compliance-header">
+2406:              <h4 className="compliance-title">Fleet Activation Readiness</h4>
+2407:              <span
+2408:                className="compliance-pct"
+2409:                style={{
+2410:                  color: complianceScore === 100 ? '#059669' : '#6C1E84',
+2411:                }}
+2412:              >
+2413:                {complianceScore}% Complete
+2414:              </span>
+2415:            </div>
+2416:
+2417:            {/* Progress Bar */}
+2418:            <div className="compliance-progress-track">
+2419:              <div
+2420:                className="compliance-progress-fill"
+2421:                style={{
+2422:                  width: `${complianceScore}%`,
+2423:                  backgroundColor: complianceScore === 100 ? '#10B981' : '#6C1E84',
+2424:                }}
+2425:              />
+2426:            </div>
+2427:
+2428:            {/* Verification Checklist */}
+2429:            <div className="compliance-list">
+2430:              <div className="compliance-item">
+2431:                <CheckCircle2 size={16} color={effectiveBrand && effectiveModel ? '#059669' : '#D1D5DB'} />
+2432:                <span style={{ color: effectiveBrand && effectiveModel ? '#1E0432' : '#8A7090' }}>
+2433:                  Make & Model Selected ({effectiveBrand || 'Make'} {effectiveModel || 'Model'})
+2434:                </span>
+2435:              </div>
+2436:
+2437:              <div className="compliance-item">
+2438:                <CheckCircle2 size={16} color={registrationNumber.trim() ? '#059669' : '#D1D5DB'} />
+2439:                <span style={{ color: registrationNumber.trim() ? '#1E0432' : '#8A7090' }}>
+2440:                  License Plate Assigned {registrationNumber ? `(${registrationNumber})` : ''}
+2441:                </span>
+2442:              </div>
+2443:
+2444:              <div className="compliance-item">
+2445:                <CheckCircle2 size={16} color={categoryId ? '#059669' : '#D1D5DB'} />
+2446:                <span style={{ color: categoryId ? '#1E0432' : '#8A7090' }}>Category & Branch Assigned</span>
+2447:              </div>
+2448:
+2449:              <div className="compliance-item">
+2450:                <CheckCircle2 size={16} color={photos.length >= 4 && photos.length <= 6 ? '#059669' : '#F59E0B'} />
+2451:                <span
+2452:                  style={{
+2453:                    color: photos.length >= 4 && photos.length <= 6 ? '#059669' : '#B45309',
+2454:                    fontWeight: photos.length >= 4 ? 600 : 700,
+2455:                  }}
+2456:                >
+2457:                  Mandatory 4–6 Photos ({photos.length}/4 minimum)
+2458:                </span>
+2459:              </div>
+2460:
+2461:              <div className="compliance-item">
+2462:                <CheckCircle2
+2463:                  size={16}
+2464:                  color={
+2465:                    parseFloat(pricingState.dailyRate) > 0 ||
+2466:                    parseFloat(pricingState.perKmRate) > 0 ||
+2467:                    parseFloat(pricingState.hourlyRate) > 0 ||
+2468:                    parseFloat(pricingState.monthlyRate) > 0
+2469:                      ? '#059669'
+2470:                      : '#D1D5DB'
+2471:                  }
+2472:                />
+2473:                <span
+2474:                  style={{
+2475:                    color:
+2476:                      parseFloat(pricingState.dailyRate) > 0 ||
+2477:                      parseFloat(pricingState.perKmRate) > 0 ||
+2478:                      parseFloat(pricingState.hourlyRate) > 0 ||
+2479:                      parseFloat(pricingState.monthlyRate) > 0
+2480:                        ? '#1E0432'
+2481:                        : '#8A7090',
+2482:                  }}
+2483:                >
+2484:                  Commercial Pricing & Deposit Configured
+2485:                </span>
+2486:              </div>
+2487:            </div>
+2488:
+2489:            {/* Quick Action Button in Sidebar */}
+2490:            <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid #ECE7ED' }}>
+2491:              <button
+2492:                type="button"
+2493:                onClick={handleSubmit}
+2494:                disabled={isSubmitting || isDeleting}
+2495:                className="fleet-header-action-btn fleet-btn-gold"
+2496:                style={{ width: '100%', justifyContent: 'center', height: '44px' }}
+2497:              >
+2498:                <Check size={18} strokeWidth={2.5} />
+2499:                <span>
+2500:                  {isSubmitting
+2501:                    ? isEdit
+2502:                      ? 'Saving Changes...'
+2503:                      : 'Registering...'
+2504:                    : isEdit
+2505:                    ? 'Save Vehicle Changes'
+2506:                    : 'Register Vehicle Now'}
+2507:                </span>
+2508:              </button>
+2509:            </div>
+2510:          </div>
+2511:        </div>
+2512:      </div>
+2513:
+2514:      {/* ================= MOBILE FLOATING ACTION BAR ================= */}
+2515:      <div className="car-mobile-floating-bar">
+2516:        <div className="floating-bar-info">
+2517:          <div className="floating-bar-readiness">
+2518:            <span
+2519:              style={{
+2520:                width: '8px',
+2521:                height: '8px',
+2522:                borderRadius: '50%',
+2523:                backgroundColor: complianceScore === 100 ? '#10B981' : '#FAB826',
+2524:              }}
+2525:            />
+2526:            <span>{complianceScore}% Ready</span>
+2527:          </div>
+2528:          <div className="floating-bar-rate">{activeRateDisplay}</div>
+2529:        </div>
+2530:
+2531:        <div className="floating-bar-actions">
+2532:          <button
+2533:            type="button"
+2534:            onClick={() => setMobileTab(mobileTab === 'form' ? 'preview' : 'form')}
+2535:            className="floating-preview-btn"
+2536:          >
+2537:            <Eye size={15} />
+2538:            <span>{mobileTab === 'form' ? 'Preview' : 'Form'}</span>
+2539:          </button>
+2540:
+2541:          <button
+2542:            type="button"
+2543:            onClick={handleSubmit}
+2544:            disabled={isSubmitting || isDeleting}
+2545:            className="floating-submit-btn"
+2546:          >
+2547:            <Check size={16} strokeWidth={2.5} />
+2548:            <span>{isSubmitting ? 'Saving...' : isEdit ? 'Save' : 'Register'}</span>
+2549:          </button>
+2550:        </div>
+2551:      </div>
+2552:    </div>
+2553:  );
+2554:}
+2555:
+2556:export default AddCarPage;
