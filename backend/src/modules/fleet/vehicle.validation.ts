@@ -23,14 +23,10 @@ export const vehiclePhotoInputSchema = z.object({
 export const createVehicleSchema = z.object({
   brand: z.string().min(1, 'Brand is required').max(64),
   model: z.string().min(1, 'Model is required').max(64),
-<<<<<<< HEAD
   year: z.coerce.number()
   .int('Year must be a whole number')
   .min(1970, 'Year cannot be earlier than 1970')
   .max(new Date().getFullYear() + 1, `Year cannot exceed ${new Date().getFullYear() + 1}`),
-=======
-  year: z.coerce.number().min(1900).max(new Date().getFullYear() + 2),
->>>>>>> origin/main
   trim: z.string().max(64).optional().nullable(),
   registrationNumber: z.string().min(1, 'Registration number is required').max(32),
   vin: z.string().max(64).optional().nullable(),
@@ -72,10 +68,7 @@ export const createVehicleSchema = z.object({
   isListed: z.boolean().default(true),
   isBookable: z.boolean().default(true),
   features: z.union([z.string(), z.array(z.string())]).optional().nullable(),
-<<<<<<< HEAD
   featureIds: z.array(z.string().min(1)).optional().default([]),
-=======
->>>>>>> origin/main
   notes: z.string().optional().nullable(),
   parkingSpot: z.string().max(64).optional().nullable(),
   telematicsDeviceId: z.string().max(64).optional().nullable(),
@@ -131,15 +124,11 @@ export const createVehicleSchema = z.object({
 export const updateVehicleSchema = z.object({
   brand: z.string().min(1).max(64).optional(),
   model: z.string().min(1).max(64).optional(),
-<<<<<<< HEAD
- year: z.coerce.number()
-  .int('Year must be a whole number')
-  .min(1970, 'Year cannot be earlier than 1970')
-  .max(new Date().getFullYear() + 1, `Year cannot exceed ${new Date().getFullYear() + 1}`)
-  .optional(),
-=======
-  year: z.coerce.number().min(1900).max(new Date().getFullYear() + 2).optional(),
->>>>>>> origin/main
+  year: z.coerce.number()
+    .int('Year must be a whole number')
+    .min(1970, 'Year cannot be earlier than 1970')
+    .max(new Date().getFullYear() + 1, `Year cannot exceed ${new Date().getFullYear() + 1}`)
+    .optional(),
   trim: z.string().max(64).optional().nullable(),
   registrationNumber: z.string().min(1).max(32).optional(),
   vin: z.string().max(64).optional().nullable(),
@@ -181,10 +170,7 @@ export const updateVehicleSchema = z.object({
   isListed: z.boolean().optional(),
   isBookable: z.boolean().optional(),
   features: z.union([z.string(), z.array(z.string())]).optional().nullable(),
-<<<<<<< HEAD
   featureIds: z.array(z.string().min(1)).optional(),
-=======
->>>>>>> origin/main
   notes: z.string().optional().nullable(),
   parkingSpot: z.string().max(64).optional().nullable(),
   telematicsDeviceId: z.string().max(64).optional().nullable(),

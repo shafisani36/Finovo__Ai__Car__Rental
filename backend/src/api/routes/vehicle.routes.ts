@@ -3,11 +3,7 @@ import { VehicleController } from '../../modules/fleet/vehicle.controller';
 import { BrandController } from '../../modules/fleet/brand.controller';
 import { authenticate } from '../../middleware/authenticate';
 import { requireRole } from '../../middleware/authorize';
-<<<<<<< HEAD
-import { CarFeatureController } from '@/modules/fleet/car-feature.controller';
-
-=======
->>>>>>> origin/main
+import { CarFeatureController } from '../../modules/fleet/car-feature.controller';
 
 export const vehicleRouter = Router();
 
@@ -103,6 +99,35 @@ vehicleRouter.get(
   BrandController.decodeVin
 );
 
+
+// ==========================================
+// 1.2 CARS FEATURES CRUD
+// ==========================================
+vehicleRouter.get('/features', CarFeatureController.list);
+vehicleRouter.post(
+  '/features',
+  authenticate,
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
+  CarFeatureController.create
+);
+vehicleRouter.put(
+  '/features/:id',
+  authenticate,
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
+  CarFeatureController.update
+);
+vehicleRouter.patch(
+  '/features/:id/status',
+  authenticate,
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
+  CarFeatureController.updateStatus
+);
+vehicleRouter.delete(
+  '/features/:id',
+  authenticate,
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
+  CarFeatureController.delete
+);
 
 // ==========================================
 // 2. PROTECTED VEHICLE CREATION & MEDIA
@@ -274,40 +299,3 @@ vehicleRouter.get('/:id/audit-logs', VehicleController.listAuditLogs);
 vehicleRouter.get('/:id/bookings', VehicleController.listBookings);
 vehicleRouter.get('/:id/availability', VehicleController.checkAvailability);
 
-
-<<<<<<< HEAD
-// ==========================================
-// 1.2 CARS FEATURES CRUD
-// ==========================================
-
-vehicleRouter.get('/features', CarFeatureController.list);
-
-vehicleRouter.post(
-  '/features',
-  authenticate,
-  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
-  CarFeatureController.create
-);
-
-vehicleRouter.put(
-  '/features/:id',
-  authenticate,
-  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
-  CarFeatureController.update
-);
-
-vehicleRouter.patch(
-  '/features/:id/status',
-  authenticate,
-  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
-  CarFeatureController.updateStatus
-);
-
-vehicleRouter.delete(
-  '/features/:id',
-  authenticate,
-  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
-  CarFeatureController.delete
-);
-=======
->>>>>>> origin/main

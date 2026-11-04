@@ -164,7 +164,6 @@ export function CarsDirectoryPage() {
         await fleetApi.archiveVehicle(v.id, 'Archived from fleet directory');
       }
       await loadData();
-<<<<<<< HEAD
    } catch (err: any) {
   await confirm({
     title: 'Operation Failed',
@@ -174,11 +173,6 @@ export function CarsDirectoryPage() {
     variant: 'danger',
   });
 }
-=======
-    } catch (err: any) {
-      alert(err.message || 'Operation failed');
-    }
->>>>>>> origin/main
   };
 
   const handleDeleteWithConfirm = async (v: Vehicle) => {

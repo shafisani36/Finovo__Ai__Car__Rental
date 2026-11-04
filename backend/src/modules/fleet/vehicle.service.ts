@@ -1,10 +1,7 @@
-<<<<<<< HEAD
 
 
 
 
-=======
->>>>>>> origin/main
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { AuditService } from '../audit/audit.service';
@@ -33,7 +30,6 @@ import type {
   DamageStatus,
 } from '@prisma/client';
 
-<<<<<<< HEAD
 export class VehicleService {
   private static async validateFeatureIds(featureIds: string[] = []) {
     const uniqueIds = [...new Set(featureIds)];
@@ -61,10 +57,6 @@ export class VehicleService {
     return uniqueIds;
   }
 
-=======
-
-export class VehicleService {
->>>>>>> origin/main
   /**
    * Retrieves paginated vehicles with filtering and sorting
    */
@@ -115,7 +107,6 @@ export class VehicleService {
           photos: {
             orderBy: { order: 'asc' },
           },
-<<<<<<< HEAD
           vehicleFeatures: {
             include: {
               feature: true,
@@ -128,23 +119,15 @@ export class VehicleService {
               expiresAt: true,
               title: true,
             },
-=======
-          documents: {
-            select: { id: true, documentType: true, expiresAt: true, title: true },
->>>>>>> origin/main
           },
           maintenanceRecords: {
             where: { status: { in: ['SCHEDULED', 'IN_PROGRESS'] } },
             take: 1,
-<<<<<<< HEAD
             select: {
               id: true,
               status: true,
               scheduledDate: true,
             },
-=======
-            select: { id: true, status: true, scheduledDate: true },
->>>>>>> origin/main
           },
         },
       }),
@@ -162,11 +145,7 @@ export class VehicleService {
   }
 
   /**
-<<<<<<< HEAD
    * Returns aggregated fleet statistics
-=======
-   * Returns aggregated fleet statistics matching the Figma metric cards and dashboard
->>>>>>> origin/main
    */
   static async getMetrics() {
     const [total, available, rented, maintenance, archived] = await Promise.all([
@@ -187,11 +166,7 @@ export class VehicleService {
   }
 
   /**
-<<<<<<< HEAD
    * Comprehensive fleet dashboard statistics
-=======
-   * Comprehensive fleet dashboard statistics derived from real database records
->>>>>>> origin/main
    */
   static async getDashboardStats() {
     const now = new Date();
@@ -250,25 +225,17 @@ export class VehicleService {
         orderBy: { createdAt: 'desc' },
         include: {
           vehicle: {
-<<<<<<< HEAD
             select: {
               id: true,
               brand: true,
               model: true,
               registrationNumber: true,
             },
-=======
-            select: { id: true, brand: true, model: true, registrationNumber: true },
->>>>>>> origin/main
           },
         },
       }),
     ]);
 
-<<<<<<< HEAD
-=======
-    // Compute Brand Breakdown
->>>>>>> origin/main
     const brandCounts: Record<string, number> = {};
     const fuelCounts: Record<string, number> = {};
     let maintenanceDueMileageCount = 0;
@@ -276,10 +243,7 @@ export class VehicleService {
     for (const v of vehicles) {
       brandCounts[v.brand] = (brandCounts[v.brand] || 0) + 1;
       fuelCounts[v.fuelType] = (fuelCounts[v.fuelType] || 0) + 1;
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
       if (v.nextServiceMileage && v.nextServiceMileage - v.mileage <= 1000) {
         maintenanceDueMileageCount++;
       }
@@ -310,14 +274,10 @@ export class VehicleService {
         archived,
         expiredDocuments: expiredDocsCount,
         expiringSoonDocuments: expiringDocsCount,
-<<<<<<< HEAD
         maintenanceDue: Math.max(
           scheduledMaintenanceCount,
           maintenanceDueMileageCount
         ),
-=======
-        maintenanceDue: Math.max(scheduledMaintenanceCount, maintenanceDueMileageCount),
->>>>>>> origin/main
       },
       categoryBreakdown,
       brandBreakdown,
@@ -327,11 +287,7 @@ export class VehicleService {
   }
 
   /**
-<<<<<<< HEAD
    * Retrieves single vehicle details by ID
-=======
-   * Retrieves single vehicle details by ID with all related operational sub-records
->>>>>>> origin/main
    */
   static async getById(id: string) {
     const vehicle = await prisma.vehicle.findUnique({
@@ -342,14 +298,11 @@ export class VehicleService {
         photos: {
           orderBy: { order: 'asc' },
         },
-<<<<<<< HEAD
         vehicleFeatures: {
           include: {
             feature: true,
           },
         },
-=======
->>>>>>> origin/main
         documents: {
           orderBy: { expiresAt: 'asc' },
         },
@@ -379,16 +332,12 @@ export class VehicleService {
           orderBy: { pickupDateTime: 'desc' },
           include: {
             customer: {
-<<<<<<< HEAD
               select: {
                 id: true,
                 fullName: true,
                 email: true,
                 phone: true,
               },
-=======
-              select: { id: true, fullName: true, email: true, phone: true },
->>>>>>> origin/main
             },
           },
         },
@@ -408,11 +357,7 @@ export class VehicleService {
   }
 
   /**
-<<<<<<< HEAD
    * Creates a new vehicle
-=======
-   * Creates a new vehicle in the fleet with strict 4-6 photos validation
->>>>>>> origin/main
    */
   static async createVehicle(input: CreateVehicleInput, adminUserId?: string) {
     const existing = await prisma.vehicle.findUnique({
@@ -429,7 +374,6 @@ export class VehicleService {
       const existingVin = await prisma.vehicle.findUnique({
         where: { vin: input.vin },
       });
-<<<<<<< HEAD
 
       if (existingVin) {
         throw AppError.conflict(
@@ -443,29 +387,14 @@ export class VehicleService {
 
     const primaryPhoto =
       processedPhotos.find((p) => p.isPrimary) || processedPhotos[0];
-=======
-      if (existingVin) {
-        throw AppError.conflict(`A vehicle with VIN ${input.vin} already exists in fleet`);
-      }
-    }
-
-    // Process and validate 4-6 vehicle photos
-    const processedPhotos = await VehicleImageService.validateAndProcessPhotos(input.photos);
-    const primaryPhoto = processedPhotos.find((p) => p.isPrimary) || processedPhotos[0];
->>>>>>> origin/main
 
     const featuresJson = Array.isArray(input.features)
       ? JSON.stringify(input.features)
       : typeof input.features === 'string'
-<<<<<<< HEAD
         ? input.features
         : null;
 
     const featureIds = await this.validateFeatureIds(input.featureIds ?? []);
-=======
-      ? input.features
-      : null;
->>>>>>> origin/main
 
     const vehicle = await prisma.vehicle.create({
       data: {
@@ -473,18 +402,12 @@ export class VehicleService {
         model: input.model,
         year: input.year,
         trim: input.trim || null,
-<<<<<<< HEAD
         vehicleCode:
           input.vehicleCode || `FLT-${Math.floor(1000 + Math.random() * 9000)}`,
         ownershipType: input.ownershipType || 'OWNED',
         acquisitionDate: input.acquisitionDate
           ? new Date(input.acquisitionDate)
           : null,
-=======
-        vehicleCode: input.vehicleCode || `FLT-${Math.floor(1000 + Math.random() * 9000)}`,
-        ownershipType: input.ownershipType || 'OWNED',
-        acquisitionDate: input.acquisitionDate ? new Date(input.acquisitionDate) : null,
->>>>>>> origin/main
         acquisitionCost: input.acquisitionCost || null,
         isListed: input.isListed ?? true,
         isBookable: input.isBookable ?? true,
@@ -522,7 +445,6 @@ export class VehicleService {
         status: input.status,
         isPublicCatalog: input.isPublicCatalog,
         features: featuresJson,
-<<<<<<< HEAD
         vehicleFeatures: {
           create: featureIds.map((featureId) => ({
             feature: {
@@ -530,13 +452,10 @@ export class VehicleService {
             },
           })),
         },
-=======
->>>>>>> origin/main
         notes: input.notes || null,
         parkingSpot: input.parkingSpot || null,
         telematicsDeviceId: input.telematicsDeviceId || null,
         insurancePolicyNumber: input.insurancePolicyNumber || null,
-<<<<<<< HEAD
         insuranceExpiry: input.insuranceExpiry
           ? new Date(input.insuranceExpiry)
           : null,
@@ -546,11 +465,6 @@ export class VehicleService {
         lastServiceDate: input.lastServiceDate
           ? new Date(input.lastServiceDate)
           : null,
-=======
-        insuranceExpiry: input.insuranceExpiry ? new Date(input.insuranceExpiry) : null,
-        registrationExpiry: input.registrationExpiry ? new Date(input.registrationExpiry) : null,
-        lastServiceDate: input.lastServiceDate ? new Date(input.lastServiceDate) : null,
->>>>>>> origin/main
         lastServiceMileage: input.lastServiceMileage || null,
         nextServiceMileage: input.nextServiceMileage || null,
         primaryImageUrl: primaryPhoto.url,
@@ -569,7 +483,6 @@ export class VehicleService {
         photos: {
           orderBy: { order: 'asc' },
         },
-<<<<<<< HEAD
         vehicleFeatures: {
           include: {
             feature: true,
@@ -578,12 +491,6 @@ export class VehicleService {
       },
     });
 
-=======
-      },
-    });
-
-    // Record initial odometer log
->>>>>>> origin/main
     if (vehicle.mileage > 0) {
       await prisma.vehicleOdometerLog.create({
         data: {
@@ -596,10 +503,6 @@ export class VehicleService {
       });
     }
 
-<<<<<<< HEAD
-=======
-    // Record initial location if branch exists
->>>>>>> origin/main
     if (vehicle.branchId) {
       await prisma.vehicleLocationLog.create({
         data: {
@@ -607,34 +510,19 @@ export class VehicleService {
           branchId: vehicle.branchId,
           parkingBay: vehicle.parkingSpot,
           locationSource: 'INITIAL_ASSIGNMENT',
-<<<<<<< HEAD
           notes: 'Assigned to branch on fleet registration',
-=======
-          notes: `Assigned to branch on fleet registration`,
->>>>>>> origin/main
         },
       });
     }
 
-<<<<<<< HEAD
-=======
-    // Create initial baseline pricing tier for audit and historical continuity
->>>>>>> origin/main
     const activeBaseRate =
       input.pricingMethod === 'per_km'
         ? input.perKmRate || 0
         : input.pricingMethod === 'hourly'
-<<<<<<< HEAD
           ? input.hourlyRate || 0
           : input.pricingMethod === 'monthly'
             ? input.monthlyRate || 0
             : input.dailyRate;
-=======
-        ? input.hourlyRate || 0
-        : input.pricingMethod === 'monthly'
-        ? input.monthlyRate || 0
-        : input.dailyRate;
->>>>>>> origin/main
 
     await prisma.vehiclePricingTier.create({
       data: {
@@ -644,13 +532,8 @@ export class VehicleService {
           input.pricingMethod === 'hourly'
             ? 'HOUR'
             : input.pricingMethod === 'monthly'
-<<<<<<< HEAD
               ? 'MONTH'
               : 'DAY',
-=======
-            ? 'MONTH'
-            : 'DAY',
->>>>>>> origin/main
         pricingMethod: input.pricingMethod || 'daily',
         baseRate: activeBaseRate,
         currency: input.currency || 'PKR',
@@ -695,15 +578,11 @@ export class VehicleService {
   /**
    * Updates an existing vehicle
    */
-<<<<<<< HEAD
   static async updateVehicle(
     id: string,
     input: UpdateVehicleInput,
     adminUserId?: string
   ) {
-=======
-  static async updateVehicle(id: string, input: UpdateVehicleInput, adminUserId?: string) {
->>>>>>> origin/main
     const existing = await prisma.vehicle.findUnique({
       where: { id },
       include: { photos: true },
@@ -713,7 +592,6 @@ export class VehicleService {
       throw AppError.notFound('Vehicle not found');
     }
 
-<<<<<<< HEAD
     if (
       input.registrationNumber &&
       input.registrationNumber !== existing.registrationNumber
@@ -722,12 +600,6 @@ export class VehicleService {
         where: { registrationNumber: input.registrationNumber },
       });
 
-=======
-    if (input.registrationNumber && input.registrationNumber !== existing.registrationNumber) {
-      const duplicate = await prisma.vehicle.findUnique({
-        where: { registrationNumber: input.registrationNumber },
-      });
->>>>>>> origin/main
       if (duplicate) {
         throw AppError.conflict(
           `Vehicle registration number ${input.registrationNumber} is already in use`
@@ -739,7 +611,6 @@ export class VehicleService {
       const duplicateVin = await prisma.vehicle.findUnique({
         where: { vin: input.vin },
       });
-<<<<<<< HEAD
 
       if (duplicateVin) {
         throw AppError.conflict(
@@ -760,19 +631,6 @@ export class VehicleService {
       const primaryPhoto =
         processedPhotos.find((p) => p.isPrimary) || processedPhotos[0];
 
-=======
-      if (duplicateVin) {
-        throw AppError.conflict(`Vehicle VIN ${input.vin} is already in use`);
-      }
-    }
-
-    let primaryImageUrl = input.primaryImageUrl !== undefined ? input.primaryImageUrl : existing.primaryImageUrl;
-
-    // Handle photo replacement if photos array is provided
-    if (input.photos && input.photos.length > 0) {
-      const processedPhotos = await VehicleImageService.validateAndProcessPhotos(input.photos);
-      const primaryPhoto = processedPhotos.find((p) => p.isPrimary) || processedPhotos[0];
->>>>>>> origin/main
       primaryImageUrl = primaryPhoto.url;
 
       await prisma.$transaction([
@@ -794,7 +652,6 @@ export class VehicleService {
         ? Array.isArray(input.features)
           ? JSON.stringify(input.features)
           : typeof input.features === 'string'
-<<<<<<< HEAD
             ? input.features
             : null
         : undefined;
@@ -802,10 +659,6 @@ export class VehicleService {
     const featureIds =
       input.featureIds !== undefined
         ? await this.validateFeatureIds(input.featureIds)
-=======
-          ? input.features
-          : null
->>>>>>> origin/main
         : undefined;
 
     const updated = await prisma.vehicle.update({
@@ -817,13 +670,9 @@ export class VehicleService {
         trim: input.trim,
         vehicleCode: input.vehicleCode,
         ownershipType: input.ownershipType,
-<<<<<<< HEAD
         acquisitionDate: input.acquisitionDate
           ? new Date(input.acquisitionDate)
           : undefined,
-=======
-        acquisitionDate: input.acquisitionDate ? new Date(input.acquisitionDate) : undefined,
->>>>>>> origin/main
         acquisitionCost: input.acquisitionCost,
         isListed: input.isListed,
         isBookable: input.isBookable,
@@ -865,7 +714,6 @@ export class VehicleService {
         parkingSpot: input.parkingSpot,
         telematicsDeviceId: input.telematicsDeviceId,
         insurancePolicyNumber: input.insurancePolicyNumber,
-<<<<<<< HEAD
         insuranceExpiry: input.insuranceExpiry
           ? new Date(input.insuranceExpiry)
           : undefined,
@@ -875,11 +723,6 @@ export class VehicleService {
         lastServiceDate: input.lastServiceDate
           ? new Date(input.lastServiceDate)
           : undefined,
-=======
-        insuranceExpiry: input.insuranceExpiry ? new Date(input.insuranceExpiry) : undefined,
-        registrationExpiry: input.registrationExpiry ? new Date(input.registrationExpiry) : undefined,
-        lastServiceDate: input.lastServiceDate ? new Date(input.lastServiceDate) : undefined,
->>>>>>> origin/main
         lastServiceMileage: input.lastServiceMileage,
         nextServiceMileage: input.nextServiceMileage,
         primaryImageUrl,
@@ -893,7 +736,6 @@ export class VehicleService {
       },
     });
 
-<<<<<<< HEAD
     if (featureIds !== undefined) {
       await prisma.$transaction(async (tx) => {
         await tx.vehicleFeature.deleteMany({
@@ -911,9 +753,6 @@ export class VehicleService {
       });
     }
 
-=======
-    // Check if branch changed and log location
->>>>>>> origin/main
     if (input.branchId && input.branchId !== existing.branchId) {
       await prisma.vehicleLocationLog.create({
         data: {
@@ -926,15 +765,10 @@ export class VehicleService {
       });
     }
 
-<<<<<<< HEAD
     if (
       input.mileage !== undefined &&
       input.mileage !== existing.mileage
     ) {
-=======
-    // Check if mileage changed and log odometer
-    if (input.mileage !== undefined && input.mileage !== existing.mileage) {
->>>>>>> origin/main
       await prisma.vehicleOdometerLog.create({
         data: {
           vehicleId: id,
@@ -946,7 +780,6 @@ export class VehicleService {
       });
     }
 
-<<<<<<< HEAD
     const pricingChanged =
       (input.pricingMethod &&
         input.pricingMethod !== existing.pricingMethod) ||
@@ -966,49 +799,22 @@ export class VehicleService {
         Number(input.excessMileageFee) !== Number(existing.excessMileageFee));
 
     if (pricingChanged) {
-=======
-    // Check if any pricing parameters changed
-    const pricingChanged =
-      (input.pricingMethod && input.pricingMethod !== existing.pricingMethod) ||
-      (input.dailyRate !== undefined && Number(input.dailyRate) !== Number(existing.dailyRate)) ||
-      (input.perKmRate !== undefined && Number(input.perKmRate) !== Number(existing.perKmRate)) ||
-      (input.hourlyRate !== undefined && Number(input.hourlyRate) !== Number(existing.hourlyRate)) ||
-      (input.monthlyRate !== undefined && Number(input.monthlyRate) !== Number(existing.monthlyRate)) ||
-      (input.minimumTripCharge !== undefined && Number(input.minimumTripCharge) !== Number(existing.minimumTripCharge)) ||
-      (input.securityDeposit !== undefined && Number(input.securityDeposit) !== Number(existing.securityDeposit)) ||
-      (input.excessMileageFee !== undefined && Number(input.excessMileageFee) !== Number(existing.excessMileageFee));
-
-    if (pricingChanged) {
-      // Deactivate previous active tiers to preserve historical integrity
->>>>>>> origin/main
       await prisma.vehiclePricingTier.updateMany({
         where: { vehicleId: id, isActive: true },
         data: { isActive: false, validUntil: new Date() },
       });
 
       const effectiveMethod = updated.pricingMethod || 'daily';
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
       const effectiveBaseRate =
         effectiveMethod === 'per_km'
           ? Number(updated.perKmRate || 0)
           : effectiveMethod === 'hourly'
-<<<<<<< HEAD
             ? Number(updated.hourlyRate || 0)
             : effectiveMethod === 'monthly'
               ? Number(updated.monthlyRate || 0)
               : Number(updated.dailyRate || 0);
 
-=======
-          ? Number(updated.hourlyRate || 0)
-          : effectiveMethod === 'monthly'
-          ? Number(updated.monthlyRate || 0)
-          : Number(updated.dailyRate || 0);
-
-      // Create new active versioned pricing tier
->>>>>>> origin/main
       await prisma.vehiclePricingTier.create({
         data: {
           vehicleId: id,
@@ -1017,13 +823,8 @@ export class VehicleService {
             effectiveMethod === 'hourly'
               ? 'HOUR'
               : effectiveMethod === 'monthly'
-<<<<<<< HEAD
                 ? 'MONTH'
                 : 'DAY',
-=======
-              ? 'MONTH'
-              : 'DAY',
->>>>>>> origin/main
           pricingMethod: effectiveMethod,
           baseRate: effectiveBaseRate,
           currency: updated.currency || 'PKR',
@@ -1068,11 +869,7 @@ export class VehicleService {
         vehicleId: updated.id,
         userId: adminUserId,
         action: 'UPDATED',
-<<<<<<< HEAD
         details: 'Vehicle specifications and settings updated',
-=======
-        details: `Vehicle specifications and settings updated`,
->>>>>>> origin/main
         changes: JSON.stringify({
           updatedFields: Object.keys(input),
         }),
@@ -1088,7 +885,6 @@ export class VehicleService {
       },
     });
 
-<<<<<<< HEAD
     const updatedVehicle = await prisma.vehicle.findUnique({
       where: { id },
       include: {
@@ -1116,15 +912,6 @@ export class VehicleService {
     reason?: string,
     adminUserId?: string
   ) {
-=======
-    return updated;
-  }
-
-  /**
-   * Safely archives a vehicle, verifying no active bookings or ongoing rentals exist
-   */
-  static async archiveVehicle(id: string, reason?: string, adminUserId?: string) {
->>>>>>> origin/main
     const vehicle = await prisma.vehicle.findUnique({
       where: { id },
       include: {
@@ -1169,13 +956,9 @@ export class VehicleService {
         vehicleId: id,
         userId: adminUserId,
         action: 'ARCHIVED',
-<<<<<<< HEAD
         details: reason
           ? `Archived: ${reason}`
           : 'Vehicle archived from active fleet',
-=======
-        details: reason ? `Archived: ${reason}` : 'Vehicle archived from active fleet',
->>>>>>> origin/main
       },
     });
 
@@ -1189,18 +972,11 @@ export class VehicleService {
   }
 
   /**
-<<<<<<< HEAD
    * Restores an archived vehicle
    */
   static async restoreVehicle(id: string, adminUserId?: string) {
     const vehicle = await prisma.vehicle.findUnique({ where: { id } });
 
-=======
-   * Restores an archived vehicle to active fleet
-   */
-  static async restoreVehicle(id: string, adminUserId?: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
->>>>>>> origin/main
     if (!vehicle) {
       throw AppError.notFound('Vehicle not found');
     }
@@ -1253,10 +1029,6 @@ export class VehicleService {
       vehicle.damageReports.length > 0;
 
     if (hasHistory) {
-<<<<<<< HEAD
-=======
-      // Soft-archive to protect historical audit trail
->>>>>>> origin/main
       await prisma.vehicle.update({
         where: { id },
         data: {
@@ -1273,22 +1045,14 @@ export class VehicleService {
           vehicleId: id,
           userId: adminUserId,
           action: 'ARCHIVED',
-<<<<<<< HEAD
           details:
             'Vehicle archived rather than hard deleted due to existing history',
-=======
-          details: 'Vehicle archived rather than hard deleted due to existing history',
->>>>>>> origin/main
         },
       });
 
       return {
-<<<<<<< HEAD
         message:
           'Vehicle archived to protect historical operational records',
-=======
-        message: 'Vehicle archived to protect historical operational records',
->>>>>>> origin/main
         archived: true,
       };
     }
@@ -1300,14 +1064,10 @@ export class VehicleService {
     await AuditService.log({
       userId: adminUserId,
       event: 'FLEET_VEHICLE_DELETED',
-<<<<<<< HEAD
       metadata: {
         vehicleId: id,
         registrationNumber: vehicle.registrationNumber,
       },
-=======
-      metadata: { vehicleId: id, registrationNumber: vehicle.registrationNumber },
->>>>>>> origin/main
     });
 
     return { message: 'Vehicle deleted permanently', archived: false };
@@ -1324,7 +1084,6 @@ export class VehicleService {
     });
   }
 
-<<<<<<< HEAD
   static async createDocument(
     vehicleId: string,
     input: CreateDocumentInput,
@@ -1334,10 +1093,6 @@ export class VehicleService {
       where: { id: vehicleId },
     });
 
-=======
-  static async createDocument(vehicleId: string, input: CreateDocumentInput, adminUserId?: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
->>>>>>> origin/main
     if (!vehicle) throw AppError.notFound('Vehicle not found');
 
     const doc = await prisma.vehicleDocument.create({
@@ -1357,10 +1112,6 @@ export class VehicleService {
       },
     });
 
-<<<<<<< HEAD
-=======
-    // Sync vehicle expiry fields
->>>>>>> origin/main
     if (input.documentType === 'INSURANCE' && input.expiresAt) {
       await prisma.vehicle.update({
         where: { id: vehicleId },
@@ -1369,7 +1120,6 @@ export class VehicleService {
           insurancePolicyNumber: input.documentNumber || undefined,
         },
       });
-<<<<<<< HEAD
     } else if (
       input.documentType === 'REGISTRATION' &&
       input.expiresAt
@@ -1379,12 +1129,6 @@ export class VehicleService {
         data: {
           registrationExpiry: new Date(input.expiresAt),
         },
-=======
-    } else if (input.documentType === 'REGISTRATION' && input.expiresAt) {
-      await prisma.vehicle.update({
-        where: { id: vehicleId },
-        data: { registrationExpiry: new Date(input.expiresAt) },
->>>>>>> origin/main
       });
     }
 
@@ -1401,7 +1145,6 @@ export class VehicleService {
   }
 
   static async deleteDocument(docId: string, adminUserId?: string) {
-<<<<<<< HEAD
     const doc = await prisma.vehicleDocument.findUnique({
       where: { id: docId },
     });
@@ -1411,12 +1154,6 @@ export class VehicleService {
     await prisma.vehicleDocument.delete({
       where: { id: docId },
     });
-=======
-    const doc = await prisma.vehicleDocument.findUnique({ where: { id: docId } });
-    if (!doc) throw AppError.notFound('Document not found');
-
-    await prisma.vehicleDocument.delete({ where: { id: docId } });
->>>>>>> origin/main
 
     await prisma.vehicleAuditLog.create({
       data: {
@@ -1441,7 +1178,6 @@ export class VehicleService {
     });
   }
 
-<<<<<<< HEAD
   static async createMaintenance(
     vehicleId: string,
     input: CreateMaintenanceInput,
@@ -1451,10 +1187,6 @@ export class VehicleService {
       where: { id: vehicleId },
     });
 
-=======
-  static async createMaintenance(vehicleId: string, input: CreateMaintenanceInput, adminUserId?: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
->>>>>>> origin/main
     if (!vehicle) throw AppError.notFound('Vehicle not found');
 
     const record = await prisma.vehicleMaintenance.create({
@@ -1465,7 +1197,6 @@ export class VehicleService {
         title: input.title || input.description || 'Scheduled Maintenance',
         description: input.description || null,
         serviceProvider: input.serviceProvider || null,
-<<<<<<< HEAD
         scheduledDate: new Date(
           input.scheduledDate || input.scheduledAt || new Date()
         ),
@@ -1484,31 +1215,15 @@ export class VehicleService {
         nextServiceDueDate: input.nextServiceDueDate
           ? new Date(input.nextServiceDueDate)
           : null,
-=======
-        scheduledDate: new Date(input.scheduledDate || input.scheduledAt || new Date()),
-        startDate: input.startDate ? new Date(input.startDate) : null,
-        completedDate: (input.completedDate || input.completedAt) ? new Date((input.completedDate || input.completedAt)!) : null,
-        odometerReading: input.odometerReading || input.odometerValue || null,
-        cost: input.cost ?? input.costAmount ?? null,
-        currency: input.currency || 'USD',
-        invoiceNumber: input.invoiceNumber || null,
-        nextServiceDueMileage: input.nextServiceDueMileage || input.nextServiceMileage || null,
-        nextServiceDueDate: input.nextServiceDueDate ? new Date(input.nextServiceDueDate) : null,
->>>>>>> origin/main
         notes: input.notes || null,
         createdBy: adminUserId || 'Staff',
       },
     });
 
-<<<<<<< HEAD
     if (
       record.status === 'IN_PROGRESS' ||
       record.status === 'SCHEDULED'
     ) {
-=======
-    // Update vehicle status & service history
-    if (record.status === 'IN_PROGRESS' || record.status === 'SCHEDULED') {
->>>>>>> origin/main
       await prisma.vehicle.update({
         where: { id: vehicleId },
         data: { status: 'MAINTENANCE' },
@@ -1520,12 +1235,8 @@ export class VehicleService {
           status: 'AVAILABLE',
           lastServiceDate: record.completedDate || new Date(),
           lastServiceMileage: record.odometerReading || vehicle.mileage,
-<<<<<<< HEAD
           nextServiceMileage:
             record.nextServiceDueMileage || undefined,
-=======
-          nextServiceMileage: record.nextServiceDueMileage || undefined,
->>>>>>> origin/main
         },
       });
     }
@@ -1542,7 +1253,6 @@ export class VehicleService {
     return record;
   }
 
-<<<<<<< HEAD
   static async updateMaintenance(
     maintenanceId: string,
     input: UpdateMaintenanceInput,
@@ -1555,11 +1265,6 @@ export class VehicleService {
     if (!existing) {
       throw AppError.notFound('Maintenance record not found');
     }
-=======
-  static async updateMaintenance(maintenanceId: string, input: UpdateMaintenanceInput, adminUserId?: string) {
-    const existing = await prisma.vehicleMaintenance.findUnique({ where: { id: maintenanceId } });
-    if (!existing) throw AppError.notFound('Maintenance record not found');
->>>>>>> origin/main
 
     const updated = await prisma.vehicleMaintenance.update({
       where: { id: maintenanceId },
@@ -1569,7 +1274,6 @@ export class VehicleService {
         title: input.title,
         description: input.description,
         serviceProvider: input.serviceProvider,
-<<<<<<< HEAD
         scheduledDate: input.scheduledDate
           ? new Date(input.scheduledDate)
           : undefined,
@@ -1579,31 +1283,18 @@ export class VehicleService {
         completedDate: input.completedDate
           ? new Date(input.completedDate)
           : undefined,
-=======
-        scheduledDate: input.scheduledDate ? new Date(input.scheduledDate) : undefined,
-        startDate: input.startDate ? new Date(input.startDate) : undefined,
-        completedDate: input.completedDate ? new Date(input.completedDate) : undefined,
->>>>>>> origin/main
         odometerReading: input.odometerReading,
         cost: input.cost,
         currency: input.currency,
         invoiceNumber: input.invoiceNumber,
         nextServiceDueMileage: input.nextServiceDueMileage,
-<<<<<<< HEAD
         nextServiceDueDate: input.nextServiceDueDate
           ? new Date(input.nextServiceDueDate)
           : undefined,
-=======
-        nextServiceDueDate: input.nextServiceDueDate ? new Date(input.nextServiceDueDate) : undefined,
->>>>>>> origin/main
         notes: input.notes,
       },
     });
 
-<<<<<<< HEAD
-=======
-    // Status sync with vehicle
->>>>>>> origin/main
     if (updated.status === 'COMPLETED') {
       await prisma.vehicle.update({
         where: { id: existing.vehicleId },
@@ -1611,12 +1302,8 @@ export class VehicleService {
           status: 'AVAILABLE',
           lastServiceDate: updated.completedDate || new Date(),
           lastServiceMileage: updated.odometerReading || undefined,
-<<<<<<< HEAD
           nextServiceMileage:
             updated.nextServiceDueMileage || undefined,
-=======
-          nextServiceMileage: updated.nextServiceDueMileage || undefined,
->>>>>>> origin/main
         },
       });
     } else if (updated.status === 'IN_PROGRESS') {
@@ -1638,7 +1325,6 @@ export class VehicleService {
     return updated;
   }
 
-<<<<<<< HEAD
   static async deleteMaintenance(
     maintenanceId: string,
     adminUserId?: string
@@ -1654,13 +1340,6 @@ export class VehicleService {
     await prisma.vehicleMaintenance.delete({
       where: { id: maintenanceId },
     });
-=======
-  static async deleteMaintenance(maintenanceId: string, adminUserId?: string) {
-    const existing = await prisma.vehicleMaintenance.findUnique({ where: { id: maintenanceId } });
-    if (!existing) throw AppError.notFound('Maintenance record not found');
-
-    await prisma.vehicleMaintenance.delete({ where: { id: maintenanceId } });
->>>>>>> origin/main
 
     await prisma.vehicleAuditLog.create({
       data: {
@@ -1685,7 +1364,6 @@ export class VehicleService {
     });
   }
 
-<<<<<<< HEAD
   static async createDamageReport(
     vehicleId: string,
     input: CreateDamageReportInput,
@@ -1695,22 +1373,13 @@ export class VehicleService {
       where: { id: vehicleId },
     });
 
-=======
-  static async createDamageReport(vehicleId: string, input: CreateDamageReportInput, adminUserId?: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
->>>>>>> origin/main
     if (!vehicle) throw AppError.notFound('Vehicle not found');
 
     const photosJson = Array.isArray(input.photoUrls)
       ? JSON.stringify(input.photoUrls)
       : typeof input.photoUrls === 'string'
-<<<<<<< HEAD
         ? input.photoUrls
         : null;
-=======
-      ? input.photoUrls
-      : null;
->>>>>>> origin/main
 
     const report = await prisma.vehicleDamageReport.create({
       data: {
@@ -1726,26 +1395,17 @@ export class VehicleService {
         actualRepairCost: input.actualRepairCost || null,
         currency: input.currency || 'USD',
         photoUrls: photosJson,
-<<<<<<< HEAD
         resolvedAt: input.resolvedAt
           ? new Date(input.resolvedAt)
           : null,
-=======
-        resolvedAt: input.resolvedAt ? new Date(input.resolvedAt) : null,
->>>>>>> origin/main
         notes: input.notes || null,
       },
     });
 
-<<<<<<< HEAD
     if (
       input.severity === 'CRITICAL' &&
       report.status !== 'RESOLVED'
     ) {
-=======
-    // If critical damage, set vehicle to MAINTENANCE
-    if (input.severity === 'CRITICAL' && report.status !== 'RESOLVED') {
->>>>>>> origin/main
       await prisma.vehicle.update({
         where: { id: vehicleId },
         data: { status: 'MAINTENANCE' },
@@ -1764,7 +1424,6 @@ export class VehicleService {
     return report;
   }
 
-<<<<<<< HEAD
   static async updateDamageReport(
     reportId: string,
     input: UpdateDamageReportInput,
@@ -1777,24 +1436,14 @@ export class VehicleService {
     if (!existing) {
       throw AppError.notFound('Damage report not found');
     }
-=======
-  static async updateDamageReport(reportId: string, input: UpdateDamageReportInput, adminUserId?: string) {
-    const existing = await prisma.vehicleDamageReport.findUnique({ where: { id: reportId } });
-    if (!existing) throw AppError.notFound('Damage report not found');
->>>>>>> origin/main
 
     const photosJson =
       input.photoUrls !== undefined
         ? Array.isArray(input.photoUrls)
           ? JSON.stringify(input.photoUrls)
           : typeof input.photoUrls === 'string'
-<<<<<<< HEAD
             ? input.photoUrls
             : null
-=======
-          ? input.photoUrls
-          : null
->>>>>>> origin/main
         : undefined;
 
     const updated = await prisma.vehicleDamageReport.update({
@@ -1809,13 +1458,9 @@ export class VehicleService {
         actualRepairCost: input.actualRepairCost,
         currency: input.currency,
         photoUrls: photosJson,
-<<<<<<< HEAD
         resolvedAt: input.resolvedAt
           ? new Date(input.resolvedAt)
           : undefined,
-=======
-        resolvedAt: input.resolvedAt ? new Date(input.resolvedAt) : undefined,
->>>>>>> origin/main
         notes: input.notes,
       },
     });
@@ -1832,7 +1477,6 @@ export class VehicleService {
     return updated;
   }
 
-<<<<<<< HEAD
   static async deleteDamageReport(
     reportId: string,
     adminUserId?: string
@@ -1848,13 +1492,6 @@ export class VehicleService {
     await prisma.vehicleDamageReport.delete({
       where: { id: reportId },
     });
-=======
-  static async deleteDamageReport(reportId: string, adminUserId?: string) {
-    const existing = await prisma.vehicleDamageReport.findUnique({ where: { id: reportId } });
-    if (!existing) throw AppError.notFound('Damage report not found');
-
-    await prisma.vehicleDamageReport.delete({ where: { id: reportId } });
->>>>>>> origin/main
 
     await prisma.vehicleAuditLog.create({
       data: {
@@ -1879,7 +1516,6 @@ export class VehicleService {
     });
   }
 
-<<<<<<< HEAD
   static async createOdometerLog(
     vehicleId: string,
     input: CreateOdometerLogInput,
@@ -1889,10 +1525,6 @@ export class VehicleService {
       where: { id: vehicleId },
     });
 
-=======
-  static async createOdometerLog(vehicleId: string, input: CreateOdometerLogInput, adminUserId?: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
->>>>>>> origin/main
     if (!vehicle) throw AppError.notFound('Vehicle not found');
 
     const log = await prisma.vehicleOdometerLog.create({
@@ -1906,10 +1538,6 @@ export class VehicleService {
       },
     });
 
-<<<<<<< HEAD
-=======
-    // Update vehicle's current mileage if new reading is greater
->>>>>>> origin/main
     if (input.odometerReading > vehicle.mileage) {
       await prisma.vehicle.update({
         where: { id: vehicleId },
@@ -1940,7 +1568,6 @@ export class VehicleService {
     });
   }
 
-<<<<<<< HEAD
   static async createLocationLog(
     vehicleId: string,
     input: CreateLocationLogInput,
@@ -1950,10 +1577,6 @@ export class VehicleService {
       where: { id: vehicleId },
     });
 
-=======
-  static async createLocationLog(vehicleId: string, input: CreateLocationLogInput, adminUserId?: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
->>>>>>> origin/main
     if (!vehicle) throw AppError.notFound('Vehicle not found');
 
     const log = await prisma.vehicleLocationLog.create({
@@ -1961,26 +1584,17 @@ export class VehicleService {
         vehicleId,
         branchId: input.branchId || vehicle.branchId,
         parkingBay: input.parkingBay || vehicle.parkingSpot,
-<<<<<<< HEAD
         latitude: input.latitude
           ? new Prisma.Decimal(input.latitude)
           : null,
         longitude: input.longitude
           ? new Prisma.Decimal(input.longitude)
           : null,
-=======
-        latitude: input.latitude ? new Prisma.Decimal(input.latitude) : null,
-        longitude: input.longitude ? new Prisma.Decimal(input.longitude) : null,
->>>>>>> origin/main
         locationSource: input.locationSource || 'MANUAL_CHECKIN',
         notes: input.notes || null,
       },
     });
 
-<<<<<<< HEAD
-=======
-    // Sync vehicle parking spot or branch
->>>>>>> origin/main
     await prisma.vehicle.update({
       where: { id: vehicleId },
       data: {
@@ -2012,7 +1626,6 @@ export class VehicleService {
     });
   }
 
-<<<<<<< HEAD
   static async createPricingTier(
     vehicleId: string,
     input: CreatePricingTierInput,
@@ -2022,10 +1635,6 @@ export class VehicleService {
       where: { id: vehicleId },
     });
 
-=======
-  static async createPricingTier(vehicleId: string, input: CreatePricingTierInput, adminUserId?: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
->>>>>>> origin/main
     if (!vehicle) throw AppError.notFound('Vehicle not found');
 
     const tier = await prisma.vehiclePricingTier.create({
@@ -2040,17 +1649,12 @@ export class VehicleService {
         extraKmRate: input.extraKmRate || null,
         minimumDurationDays: input.minimumDurationDays ?? 1,
         maximumDurationDays: input.maximumDurationDays || null,
-<<<<<<< HEAD
         validFrom: input.validFrom
           ? new Date(input.validFrom)
           : null,
         validUntil: input.validUntil
           ? new Date(input.validUntil)
           : null,
-=======
-        validFrom: input.validFrom ? new Date(input.validFrom) : null,
-        validUntil: input.validUntil ? new Date(input.validUntil) : null,
->>>>>>> origin/main
         isActive: input.isActive ?? true,
       },
     });
@@ -2067,7 +1671,6 @@ export class VehicleService {
     return tier;
   }
 
-<<<<<<< HEAD
   static async updatePricingTier(
     tierId: string,
     input: UpdatePricingTierInput,
@@ -2080,11 +1683,6 @@ export class VehicleService {
     if (!existing) {
       throw AppError.notFound('Pricing tier not found');
     }
-=======
-  static async updatePricingTier(tierId: string, input: UpdatePricingTierInput, adminUserId?: string) {
-    const existing = await prisma.vehiclePricingTier.findUnique({ where: { id: tierId } });
-    if (!existing) throw AppError.notFound('Pricing tier not found');
->>>>>>> origin/main
 
     const updated = await prisma.vehiclePricingTier.update({
       where: { id: tierId },
@@ -2098,17 +1696,12 @@ export class VehicleService {
         extraKmRate: input.extraKmRate,
         minimumDurationDays: input.minimumDurationDays,
         maximumDurationDays: input.maximumDurationDays,
-<<<<<<< HEAD
         validFrom: input.validFrom
           ? new Date(input.validFrom)
           : undefined,
         validUntil: input.validUntil
           ? new Date(input.validUntil)
           : undefined,
-=======
-        validFrom: input.validFrom ? new Date(input.validFrom) : undefined,
-        validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
->>>>>>> origin/main
         isActive: input.isActive,
       },
     });
@@ -2125,7 +1718,6 @@ export class VehicleService {
     return updated;
   }
 
-<<<<<<< HEAD
   static async deletePricingTier(
     tierId: string,
     adminUserId?: string
@@ -2141,13 +1733,6 @@ export class VehicleService {
     await prisma.vehiclePricingTier.delete({
       where: { id: tierId },
     });
-=======
-  static async deletePricingTier(tierId: string, adminUserId?: string) {
-    const existing = await prisma.vehiclePricingTier.findUnique({ where: { id: tierId } });
-    if (!existing) throw AppError.notFound('Pricing tier not found');
-
-    await prisma.vehiclePricingTier.delete({ where: { id: tierId } });
->>>>>>> origin/main
 
     await prisma.vehicleAuditLog.create({
       data: {
@@ -2188,24 +1773,18 @@ export class VehicleService {
             phone: true,
           },
         },
-<<<<<<< HEAD
         pickupBranch: {
           select: { id: true, name: true },
         },
         returnBranch: {
           select: { id: true, name: true },
         },
-=======
-        pickupBranch: { select: { id: true, name: true } },
-        returnBranch: { select: { id: true, name: true } },
->>>>>>> origin/main
       },
       orderBy: { pickupDateTime: 'desc' },
       take: 50,
     });
   }
 
-<<<<<<< HEAD
   static async checkAvailability(
     vehicleId: string,
     pickupDateTime: string,
@@ -2227,18 +1806,6 @@ export class VehicleService {
       throw AppError.badRequest(
         'Pickup date/time must be before return date/time'
       );
-=======
-  static async checkAvailability(vehicleId: string, pickupDateTime: string, returnDateTime: string) {
-    const pickup = new Date(pickupDateTime);
-    const returnDate = new Date(returnDateTime);
-
-    if (isNaN(pickup.getTime()) || isNaN(returnDate.getTime())) {
-      throw AppError.badRequest('Invalid pickup or return date format');
-    }
-
-    if (pickup >= returnDate) {
-      throw AppError.badRequest('Pickup date/time must be before return date/time');
->>>>>>> origin/main
     }
 
     const vehicle = await prisma.vehicle.findUnique({
@@ -2258,31 +1825,19 @@ export class VehicleService {
     if (vehicle.status === 'ARCHIVED' || !vehicle.isBookable) {
       return {
         isAvailable: false,
-<<<<<<< HEAD
         reason:
           'Vehicle is currently archived or marked unbookable in fleet operations.',
-=======
-        reason: 'Vehicle is currently archived or marked unbookable in fleet operations.',
->>>>>>> origin/main
       };
     }
 
     if (vehicle.status === 'MAINTENANCE') {
       return {
         isAvailable: false,
-<<<<<<< HEAD
         reason:
           'Vehicle is currently offline for scheduled maintenance or repairs.',
       };
     }
 
-=======
-        reason: 'Vehicle is currently offline for scheduled maintenance or repairs.',
-      };
-    }
-
-    // Check for conflicting confirmed/active bookings within time window
->>>>>>> origin/main
     const conflictingBooking = await prisma.booking.findFirst({
       where: {
         vehicleId,
@@ -2306,25 +1861,17 @@ export class VehicleService {
         isAvailable: false,
         reason: `Vehicle has a conflicting booking (${conflictingBooking.bookingNumber}) scheduled from ${new Date(
           conflictingBooking.pickupDateTime
-<<<<<<< HEAD
         ).toLocaleDateString()} to ${new Date(
           conflictingBooking.returnDateTime
         ).toLocaleDateString()}.`,
-=======
-        ).toLocaleDateString()} to ${new Date(conflictingBooking.returnDateTime).toLocaleDateString()}.`,
->>>>>>> origin/main
         conflictingBooking,
       };
     }
 
     return {
       isAvailable: true,
-<<<<<<< HEAD
       reason:
         'Vehicle is eligible and available for reservation during the requested period.',
-=======
-      reason: 'Vehicle is eligible and available for reservation during the requested period.',
->>>>>>> origin/main
     };
   }
 
@@ -2345,7 +1892,6 @@ export class VehicleService {
   /**
    * Creates a new vehicle category
    */
-<<<<<<< HEAD
   static async createCategory(data: {
     name: string;
     slug?: string;
@@ -2354,15 +1900,10 @@ export class VehicleService {
   }) {
     const trimmedName = data.name.trim();
 
-=======
-  static async createCategory(data: { name: string; slug?: string; description?: string; baseRate?: number | string }) {
-    const trimmedName = data.name.trim();
->>>>>>> origin/main
     if (!trimmedName) {
       throw new AppError('Category name is required.', 400);
     }
 
-<<<<<<< HEAD
     const slug =
       data.slug?.trim() ||
       trimmedName
@@ -2370,11 +1911,6 @@ export class VehicleService {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
-=======
-    const slug = (data.slug?.trim() || trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
-
-    // Check duplicate
->>>>>>> origin/main
     const existing = await prisma.vehicleCategory.findFirst({
       where: {
         OR: [{ name: trimmedName }, { slug }],
@@ -2382,14 +1918,10 @@ export class VehicleService {
     });
 
     if (existing) {
-<<<<<<< HEAD
       throw new AppError(
         `A category with name "${trimmedName}" or slug "${slug}" already exists.`,
         409
       );
-=======
-      throw new AppError(`A category with name "${trimmedName}" or slug "${slug}" already exists.`, 409);
->>>>>>> origin/main
     }
 
     const baseRate = data.baseRate ? Number(data.baseRate) : 0;
@@ -2412,7 +1944,6 @@ export class VehicleService {
   /**
    * Updates an existing vehicle category
    */
-<<<<<<< HEAD
   static async updateCategory(
     id: string,
     data: {
@@ -2426,10 +1957,6 @@ export class VehicleService {
       where: { id },
     });
 
-=======
-  static async updateCategory(id: string, data: { name?: string; slug?: string; description?: string; baseRate?: number | string }) {
-    const existing = await prisma.vehicleCategory.findUnique({ where: { id } });
->>>>>>> origin/main
     if (!existing) {
       throw new AppError('Category not found.', 404);
     }
@@ -2438,7 +1965,6 @@ export class VehicleService {
 
     if (data.name !== undefined) {
       const trimmed = data.name.trim();
-<<<<<<< HEAD
 
       if (!trimmed) {
         throw new AppError('Category name cannot be empty.', 400);
@@ -2458,21 +1984,10 @@ export class VehicleService {
         );
       }
 
-=======
-      if (!trimmed) throw new AppError('Category name cannot be empty.', 400);
-
-      const conflict = await prisma.vehicleCategory.findFirst({
-        where: { name: trimmed, id: { not: id } },
-      });
-      if (conflict) {
-        throw new AppError(`A category with name "${trimmed}" already exists.`, 409);
-      }
->>>>>>> origin/main
       updatePayload.name = trimmed;
     }
 
     if (data.slug !== undefined) {
-<<<<<<< HEAD
       const slug = data.slug
         .trim()
         .toLowerCase()
@@ -2494,16 +2009,6 @@ export class VehicleService {
           );
         }
 
-=======
-      const slug = data.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      if (slug) {
-        const conflict = await prisma.vehicleCategory.findFirst({
-          where: { slug, id: { not: id } },
-        });
-        if (conflict) {
-          throw new AppError(`A category with slug "${slug}" already exists.`, 409);
-        }
->>>>>>> origin/main
         updatePayload.slug = slug;
       }
     }
@@ -2528,11 +2033,7 @@ export class VehicleService {
   }
 
   /**
-<<<<<<< HEAD
    * Deletes a vehicle category safely
-=======
-   * Deletes a vehicle category safely (preventing deletion if vehicles are attached)
->>>>>>> origin/main
    */
   static async deleteCategory(id: string) {
     const category = await prisma.vehicleCategory.findUnique({
@@ -2555,7 +2056,6 @@ export class VehicleService {
       );
     }
 
-<<<<<<< HEAD
     await prisma.vehicleCategory.delete({
       where: { id },
     });
@@ -2566,11 +2066,3 @@ export class VehicleService {
     };
   }
 }
-=======
-    await prisma.vehicleCategory.delete({ where: { id } });
-    return { success: true, message: `Category "${category.name}" deleted successfully.` };
-  }
-}
-
-
->>>>>>> origin/main
