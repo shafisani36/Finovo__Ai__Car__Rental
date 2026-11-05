@@ -7,6 +7,10 @@ import {
   Plus,
   Car,
   KeyRound,
+  User,
+  MapPin,
+  Clock,
+  DollarSign
 } from 'lucide-react';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import {
@@ -15,6 +19,59 @@ import {
   StatusBadge,
   Modal,
 } from '../../../components/common';
+
+function VehicleThumbnail({ src, brand, model }: { src?: string; brand: string; model: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!src || hasError) {
+    return (
+      <div
+        style={{
+          width: '110px',
+          height: '76px',
+          borderRadius: '10px',
+          backgroundColor: '#F5EFF8',
+          border: '1px solid #ECEAEF',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '4px',
+          flexShrink: 0,
+        }}
+      >
+        <Car size={24} color="#6C1E84" />
+        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6C1E84', textTransform: 'uppercase' }}>
+          {brand}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: '110px',
+        height: '76px',
+        borderRadius: '10px',
+        backgroundColor: '#F9FAFB',
+        border: '1px solid #ECEAEF',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <img
+        src={src}
+        alt={`${brand} ${model}`}
+        onError={() => setHasError(true)}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+    </div>
+  );
+}
 
 export function BookingsListPage() {
   const navigate = useNavigate();
@@ -205,148 +262,367 @@ export function BookingsListPage() {
         </div>
       </div>
 
-      {/* ================= BOOKINGS TABLE ================= */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '16px',
-          border: '1px solid #ECEAEF',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-          overflow: 'hidden',
-          marginBottom: '24px',
-        }}
-      >
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#6B7280', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                <th style={{ padding: '14px 18px' }}>Booking Number</th>
-                <th style={{ padding: '14px 18px' }}>Vehicle</th>
-                <th style={{ padding: '14px 18px' }}>Customer</th>
-                <th style={{ padding: '14px 18px' }}>Dates & Branches</th>
-                <th style={{ padding: '14px 18px' }}>Daily Rate</th>
-                <th style={{ padding: '14px 18px' }}>Total</th>
-                <th style={{ padding: '14px 18px' }}>Status</th>
-                <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: '36px', textAlign: 'center', color: '#6B7280' }}>
-                    Loading bookings...
-                  </td>
-                </tr>
-              ) : bookings.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: '#6B7280' }}>
-                    No bookings found matching criteria.
-                  </td>
-                </tr>
-              ) : (
-                bookings.map((b) => (
-                  <tr
-                    key={b.id}
-                    style={{ borderBottom: '1px solid #F3F4F6', transition: 'background-color 0.15s' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FAF5FB')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <td style={{ padding: '16px 18px', fontWeight: 800, color: '#1E0426' }}>
-                      {b.bookingNumber}
-                    </td>
-                    <td style={{ padding: '16px 18px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {b.vehicle.primaryImageUrl ? (
-                          <img src={b.vehicle.primaryImageUrl} alt={b.vehicle.model} style={{ width: '42px', height: '28px', objectFit: 'contain' }} />
-                        ) : (
-                          <Car size={20} color="#6C1E84" />
-                        )}
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#111827' }}>{b.vehicle.brand} {b.vehicle.model}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{b.vehicle.registrationNumber} • {b.vehicle.category.name}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px 18px' }}>
-                      <div style={{ fontWeight: 600, color: '#111827' }}>{b.customer.fullName}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{b.customer.email}</div>
-                    </td>
-                    <td style={{ padding: '16px 18px' }}>
-                      <div style={{ fontWeight: 600, color: '#374151', fontSize: '0.825rem' }}>
-                        {formatDate(b.pickupDateTime)} → {formatDate(b.returnDateTime)}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>
-                        {b.pickupBranch.name} ({b.totalDays} days)
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px 18px', color: '#4B5563' }}>
-                      ${Number(b.dailyRate).toFixed(2)}/day
-                    </td>
-                    <td style={{ padding: '16px 18px', fontWeight: 800, color: '#111827' }}>
-                      ${Number(b.totalAmount).toFixed(2)}
-                    </td>
-                    <td style={{ padding: '16px 18px' }}>
-                      {renderStatusPill(b.status)}
-                    </td>
-                    <td style={{ padding: '16px 18px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                        {b.status === 'CONFIRMED' && (
-                          <button
-                            onClick={() => navigate(`/admin/rentals/handover/${b.id}`)}
-                            title="Handover Vehicle"
-                            style={{
-                              backgroundColor: '#FAB826',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '6px 10px',
-                              fontSize: '0.78rem',
-                              fontWeight: 700,
-                              color: '#1C0324',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <KeyRound size={13} />
-                            <span>Handover</span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setSelectedBooking(b)}
-                          style={{
-                            backgroundColor: '#F3F4F6',
-                            border: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 10px',
-                            fontSize: '0.78rem',
-                            fontWeight: 600,
-                            color: '#374151',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Details
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* ================= BOOKINGS CARD LIST ================= */}
+      <div style={{ marginBottom: '24px' }}>
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  border: '1px solid #ECEAEF',
+                  padding: '24px',
+                  height: '140px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#9CA3AF',
+                }}
+              >
+                Loading reservations...
+              </div>
+            ))}
+          </div>
+        ) : bookings.length === 0 ? (
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              border: '1px solid #ECEAEF',
+              padding: '56px 24px',
+              textAlign: 'center',
+              color: '#6B7280',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+            }}
+          >
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#F5EEF8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#6C1E84',
+              }}
+            >
+              <Calendar size={28} />
+            </div>
+            <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#111827' }}>
+              No Bookings Found
+            </div>
+            <div style={{ fontSize: '0.85rem', maxWidth: '380px', color: '#6B7280' }}>
+              No reservations match your current filter or search criteria.
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {bookings.map((b) => (
+              <div
+                key={b.id}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  border: '1px solid #ECEAEF',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                  padding: '20px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#DACDE0';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(30, 4, 38, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#ECEAEF';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
+                }}
+              >
+                {/* Card Top Header: Reference & Status */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingBottom: '14px',
+                    borderBottom: '1px solid #F3F4F6',
+                    flexWrap: 'wrap',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        backgroundColor: '#F5EEF8',
+                        color: '#6C1E84',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        padding: '5px 12px',
+                        borderRadius: '8px',
+                        letterSpacing: '0.02em',
+                        border: '1px solid rgba(108, 30, 132, 0.12)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      #{b.bookingNumber}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#6B7280', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <Clock size={13} color="#9CA3AF" />
+                      <span>Reserved on {formatDate(b.createdAt)}</span>
+                    </span>
+                  </div>
 
-        {/* Pagination Bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {renderStatusPill(b.status)}
+                  </div>
+                </div>
+
+                {/* Card Main Body: 4-Column Responsive Grid Flow */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: '20px',
+                    alignItems: 'center',
+                  }}
+                >
+                  {/* Vehicle Section */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <VehicleThumbnail
+                      src={b.vehicle?.primaryImageUrl}
+                      brand={b.vehicle?.brand || 'Car'}
+                      model={b.vehicle?.model || ''}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6C1E84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Vehicle
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          color: '#111827',
+                          fontSize: '1rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title={`${b.vehicle?.brand} ${b.vehicle?.model}`}
+                      >
+                        {b.vehicle?.brand} {b.vehicle?.model}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px' }}>
+                        Plate: <strong style={{ color: '#374151' }}>{b.vehicle?.registrationNumber || 'N/A'}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '2px' }}>
+                        {b.vehicle?.category?.name || 'Coupe / Sports'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customer Section */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        backgroundColor: '#F3F4F6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#4B5563',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <User size={18} color="#6B7280" />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Customer
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          color: '#111827',
+                          fontSize: '0.92rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {b.customer?.fullName || 'Guest Customer'}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.78rem',
+                          color: '#6B7280',
+                          marginTop: '2px',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {b.customer?.email}
+                      </div>
+                      {b.customer?.phone && (
+                        <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '2px' }}>
+                          {b.customer.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Dates & Branches Section */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        backgroundColor: '#FFF7ED',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Calendar size={18} color="#D97706" />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Rental Period
+                      </div>
+                      <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.88rem' }}>
+                        {formatDate(b.pickupDateTime)} – {formatDate(b.returnDateTime)}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin size={12} color="#9CA3AF" />
+                        <span>{b.pickupBranch?.name || 'Finovo Hub'}</span>
+                        <span style={{ fontWeight: 700, color: '#D97706' }}>
+                          ({b.totalDays} {b.totalDays === 1 ? 'day' : 'days'})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pricing Section */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        backgroundColor: '#ECFDF5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <DollarSign size={18} color="#059669" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Total Amount
+                      </div>
+                      <div style={{ fontWeight: 800, color: '#1E0426', fontSize: '1.25rem', lineHeight: '1.2' }}>
+                        ${Number(b.totalAmount).toFixed(2)}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px' }}>
+                        ${Number(b.dailyRate).toFixed(2)} / day
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Actions Bottom Row */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    paddingTop: '12px',
+                    borderTop: '1px solid #F9FAFB',
+                    gap: '10px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  {b.status === 'CONFIRMED' && (
+                    <button
+                      onClick={() => navigate(`/admin/rentals/handover/${b.id}`)}
+                      title="Handover Vehicle"
+                      style={{
+                        backgroundColor: '#FAB826',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: '#1C0324',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(250, 184, 38, 0.3)',
+                        transition: 'background-color 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E5A61F')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FAB826')}
+                    >
+                      <KeyRound size={15} />
+                      <span>Handover</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setSelectedBooking(b)}
+                    style={{
+                      backgroundColor: '#F3F4F6',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'background-color 0.15s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E5E7EB')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F3F4F6')}
+                  >
+                    <span>Details</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ================= PAGINATION BAR ================= */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '14px 20px',
-            borderTop: '1px solid #ECEAEF',
-            backgroundColor: '#FAF9FB',
+            padding: '16px 20px',
+            borderRadius: '14px',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #ECEAEF',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
             fontSize: '0.85rem',
             color: '#6B7280',
+            flexWrap: 'wrap',
+            gap: '12px',
+            marginTop: '16px',
           }}
         >
           <div>
@@ -360,14 +636,16 @@ export function BookingsListPage() {
                 border: '1px solid #D1D5DB',
                 backgroundColor: '#FFFFFF',
                 borderRadius: '6px',
-                padding: '6px 12px',
+                padding: '6px 14px',
                 cursor: page <= 1 ? 'not-allowed' : 'pointer',
                 opacity: page <= 1 ? 0.5 : 1,
+                fontWeight: 600,
+                fontSize: '0.825rem',
               }}
             >
               Previous
             </button>
-            <span style={{ fontWeight: 700, color: '#111827' }}>
+            <span style={{ fontWeight: 700, color: '#111827', fontSize: '0.85rem' }}>
               Page {page} of {totalPages}
             </span>
             <button
@@ -377,9 +655,11 @@ export function BookingsListPage() {
                 border: '1px solid #D1D5DB',
                 backgroundColor: '#FFFFFF',
                 borderRadius: '6px',
-                padding: '6px 12px',
+                padding: '6px 14px',
                 cursor: page >= totalPages ? 'not-allowed' : 'pointer',
                 opacity: page >= totalPages ? 0.5 : 1,
+                fontWeight: 600,
+                fontSize: '0.825rem',
               }}
             >
               Next

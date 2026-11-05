@@ -33,6 +33,68 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import redCar from '../../../assets/cars/finovo-red-car.png';
+import grayCar from '../../../assets/cars/finovo-gray-car.png';
+import blueCar from '../../../assets/cars/finovo-blue-car.png';
+import whiteCar from '../../../assets/cars/finovo-white-car.png';
+import yellowCar from '../../../assets/cars/finovo-yellow-car.png';
+import greenCar from '../../../assets/cars/finovo-green-car.png';
+import heroCarImg from '../../../assets/cars/finovo-available-hero-car.png';
+import bmwLogo from '../../../assets/cars/finovo-bmw-logo.png';
+import lamboLogo from '../../../assets/cars/finovo-lamborghini-logo.png';
+
+function getFleetCarAssets(v: Vehicle) {
+  if (v.primaryImageUrl && !v.primaryImageUrl.includes('car-3-corolla') && !v.primaryImageUrl.includes('corolla')) {
+    return {
+      image: v.primaryImageUrl,
+      logo: v.brand?.toLowerCase().includes('lambo') ? lamboLogo : bmwLogo,
+    };
+  }
+
+  const modelLower = (v.model || '').toLowerCase();
+  const brandLower = (v.brand || '').toLowerCase();
+  const reg = (v.registrationNumber || '').toUpperCase();
+
+  if (modelLower.includes('hurac') || reg.includes('01')) {
+    return { image: redCar, logo: lamboLogo };
+  }
+  if (modelLower.includes('m4') || reg.includes('12')) {
+    return { image: heroCarImg, logo: bmwLogo };
+  }
+  if (modelLower.includes('urus') || reg.includes('11')) {
+    return { image: yellowCar, logo: lamboLogo };
+  }
+  if (modelLower.includes('cooper') || modelLower.includes('works') || reg.includes('08')) {
+    return { image: greenCar, logo: lamboLogo };
+  }
+  if (modelLower.includes('740') || reg.includes('10')) {
+    return { image: whiteCar, logo: bmwLogo };
+  }
+  if (reg.includes('09') || (v.category?.slug === 'suv' && brandLower.includes('bmw'))) {
+    return { image: blueCar, logo: bmwLogo };
+  }
+  if (reg.includes('07') || modelLower.includes('focus')) {
+    return { image: yellowCar, logo: lamboLogo };
+  }
+  if (reg.includes('05') || v.fuelType === 'HYBRID') {
+    return { image: whiteCar, logo: bmwLogo };
+  }
+  if (reg.includes('06')) {
+    return { image: blueCar, logo: bmwLogo };
+  }
+  if (brandLower.includes('bmw')) {
+    return { image: grayCar, logo: bmwLogo };
+  }
+  if (brandLower.includes('lambo')) {
+    return { image: redCar, logo: lamboLogo };
+  }
+
+  return {
+    image: v.primaryImageUrl || grayCar,
+    logo: bmwLogo,
+  };
+}
+
 
 
 export function CarsDirectoryPage() {
@@ -259,13 +321,13 @@ export function CarsDirectoryPage() {
         />
         <StatCard
           icon={Wrench}
-          label="In Maintenance"
+          label="Maintenance"
           value={metrics.maintenance}
           variant="amber"
         />
         <StatCard
           icon={Shield}
-          label={dashboardStats.expiredDocuments > 0 ? `${dashboardStats.expiredDocuments} Expired Docs` : 'Expiring Docs'}
+          label={dashboardStats.expiredDocuments > 0 ? `${dashboardStats.expiredDocuments} Exp. Docs` : 'Expiring Docs'}
           value={dashboardStats.expiredDocuments + dashboardStats.expiringSoonDocuments}
           variant={dashboardStats.expiredDocuments > 0 ? 'red' : dashboardStats.expiringSoonDocuments > 0 ? 'amber' : 'green'}
         />
@@ -526,7 +588,7 @@ export function CarsDirectoryPage() {
                           }}
                         >
                           <img
-                            src={v.primaryImageUrl || '/cars/car-3-corolla-transparent.png'}
+                            src={getFleetCarAssets(v).image}
                             alt={v.model}
                             style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }}
                           />
@@ -699,342 +761,388 @@ export function CarsDirectoryPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
-              gap: isMobile ? '16px' : '20px',
-              padding: isMobile ? '14px' : '24px',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(min(100%, 330px), 1fr))',
+              gap: isMobile ? '16px' : '22px',
+              padding: isMobile ? '16px' : '24px',
             }}
           >
-            {vehicles.map((v) => (
-              <div
-                key={v.id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  border: '1px solid #EFEAEF',
-                  boxShadow: '0 2px 10px rgba(30, 4, 50, 0.03)',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(108, 30, 132, 0.08)';
-                  e.currentTarget.style.borderColor = '#DACEDE';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(30, 4, 50, 0.03)';
-                  e.currentTarget.style.borderColor = '#EFEAEF';
-                }}
-              >
-                {/* Card Image Banner */}
+            {vehicles.map((v) => {
+              const assets = getFleetCarAssets(v);
+              return (
                 <div
+                  key={v.id}
                   style={{
-                    position: 'relative',
-                    height: isMobile ? '160px' : '175px',
-                    background: 'linear-gradient(180deg, #F9F6FA 0%, #F1E9F5 100%)',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '20px',
+                    border: '1px solid #ECE7ED',
+                    boxShadow: '0 4px 16px rgba(46, 7, 56, 0.04)',
+                    overflow: 'hidden',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '14px',
-                    borderBottom: '1px solid #F0EDF2',
+                    flexDirection: 'column',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(108, 30, 132, 0.1)';
+                    e.currentTarget.style.borderColor = '#DACDE0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(46, 7, 56, 0.04)';
+                    e.currentTarget.style.borderColor = '#ECE7ED';
                   }}
                 >
-                  <img
-                    src={v.primaryImageUrl || '/cars/car-3-corolla-transparent.png'}
-                    alt={`${v.brand} ${v.model}`}
-                    style={{
-                      maxWidth: '92%',
-                      maxHeight: '92%',
-                      objectFit: 'contain',
-                      filter: 'drop-shadow(0 6px 12px rgba(30, 4, 50, 0.12))',
-                      transition: 'transform 0.3s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                  />
-
-                  {/* Top Badges */}
+                  {/* Card Showcase Stage */}
                   <div
                     style={{
-                      position: 'absolute',
-                      top: '12px',
-                      left: '12px',
+                      position: 'relative',
+                      height: '190px',
+                      background: 'radial-gradient(circle at 50% 60%, #FAF7FC 0%, #F1E9F6 100%)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      justifyContent: 'center',
+                      padding: '16px 20px',
+                      borderBottom: '1px solid #ECE7ED',
+                      overflow: 'hidden',
                     }}
                   >
-                    <span
+                    {/* Brand watermark logo in backdrop */}
+                    {assets.logo && (
+                      <img
+                        src={assets.logo}
+                        alt=""
+                        style={{
+                          position: 'absolute',
+                          right: '14px',
+                          bottom: '12px',
+                          width: '42px',
+                          height: '42px',
+                          objectFit: 'contain',
+                          opacity: 0.12,
+                          pointerEvents: 'none',
+                        }}
+                      />
+                    )}
+
+                    {/* Top Badges */}
+                    <div
                       style={{
-                        display: 'inline-block',
-                        backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                        backdropFilter: 'blur(4px)',
-                        color: '#6C1E84',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        padding: '3px 8px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(108, 30, 132, 0.15)',
+                        position: 'absolute',
+                        top: '12px',
+                        left: '14px',
+                        zIndex: 2,
                       }}
                     >
-                      {v.category?.name || 'Sedan'}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '12px',
-                      right: '12px',
-                    }}
-                  >
-                    {renderStatusBadge(v.status)}
-                  </div>
-                </div>
-
-                {/* Card Body */}
-                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1, gap: '12px' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-                      <h3
-                        style={{
-                          margin: 0,
-                          fontSize: '1.05rem',
-                          fontWeight: 700,
-                          color: '#1A0322',
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {v.brand} {v.model}
-                      </h3>
                       <span
                         style={{
-                          fontSize: '0.8rem',
-                          color: '#8A7090',
-                          fontWeight: 600,
-                          backgroundColor: '#FAF7FB',
-                          padding: '2px 7px',
-                          borderRadius: '6px',
-                          border: '1px solid #ECE7ED',
-                          flexShrink: 0,
+                          display: 'inline-block',
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(6px)',
+                          color: '#6C1E84',
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(108, 30, 132, 0.18)',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                         }}
                       >
-                        {v.year}
+                        {v.category?.name || 'Luxury'}
                       </span>
                     </div>
 
                     <div
                       style={{
-                        marginTop: '4px',
-                        fontSize: '0.78rem',
-                        color: '#66566A',
-                        fontFamily: 'monospace',
-                        fontWeight: 600,
-                        letterSpacing: '0.5px',
+                        position: 'absolute',
+                        top: '12px',
+                        right: '14px',
+                        zIndex: 2,
                       }}
                     >
-                      Plate: {v.registrationNumber}
+                      {renderStatusBadge(v.status)}
                     </div>
+
+                    {/* High-Resolution Vehicle Showcase Cutout */}
+                    <img
+                      src={assets.image}
+                      alt={`${v.brand} ${v.model}`}
+                      style={{
+                        maxWidth: '94%',
+                        maxHeight: '140px',
+                        objectFit: 'contain',
+                        filter: 'drop-shadow(0 10px 14px rgba(30, 4, 38, 0.15))',
+                        transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                    />
                   </div>
 
-                  {/* Specs Pills */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: '8px',
-                      padding: '8px 0',
-                      borderTop: '1px solid #F4F1F5',
-                      borderBottom: '1px solid #F4F1F5',
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        fontSize: '0.76rem',
-                        color: '#554458',
-                        backgroundColor: '#FAF8FB',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #EDE8EF',
-                      }}
-                    >
-                      <Users size={12} color="#6C1E84" />
-                      <span>{v.seats || 5} Seats</span>
-                    </span>
-
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        fontSize: '0.76rem',
-                        color: '#554458',
-                        backgroundColor: '#FAF8FB',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #EDE8EF',
-                      }}
-                    >
-                      <Fuel size={12} color="#6C1E84" />
-                      <span>{v.fuelType || 'Petrol'}</span>
-                    </span>
-
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        fontSize: '0.76rem',
-                        color: '#554458',
-                        backgroundColor: '#FAF8FB',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #EDE8EF',
-                      }}
-                    >
-                      <DoorOpen size={12} color="#6C1E84" />
-                      <span>{v.doors || 4} Doors</span>
-                    </span>
-                  </div>
-
-                  {/* Pricing & Actions */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginTop: 'auto',
-                      paddingTop: '6px',
-                    }}
-                  >
+                  {/* Card Body */}
+                  <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', flex: 1, gap: '14px' }}>
                     <div>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1A0322' }}>
-                        ${Number(v.dailyRate).toFixed(0)}
-                      </span>
-                      <span style={{ fontSize: '0.78rem', color: '#8A7090', marginLeft: '4px' }}>/ day</span>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#6C1E84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {v.brand}
+                          </div>
+                          <h3
+                            style={{
+                              margin: '2px 0 0',
+                              fontSize: '1.12rem',
+                              fontWeight: 800,
+                              color: '#1A0322',
+                              lineHeight: 1.25,
+                            }}
+                          >
+                            {v.model}
+                          </h3>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.8rem',
+                            color: '#66566A',
+                            fontWeight: 700,
+                            backgroundColor: '#F7F5F8',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #ECE7ED',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {v.year}
+                        </span>
+                      </div>
+
+                      {/* Plate Badge */}
+                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.76rem',
+                            fontWeight: 700,
+                            color: '#374151',
+                            backgroundColor: '#F3EFF5',
+                            border: '1px solid #E4DDE7',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          Plate: {v.registrationNumber}
+                        </span>
+                        {v.trim && (
+                          <span style={{ fontSize: '0.75rem', color: '#8A7090', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {v.trim}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/admin/cars/${v.id}`)}
-                        title="View Details"
+                    {/* Specs Micro Pills */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '6px',
+                        padding: '10px 0',
+                        borderTop: '1px solid #F3F0F5',
+                        borderBottom: '1px solid #F3F0F5',
+                      }}
+                    >
+                      <div
                         style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          backgroundColor: '#F8F6F9',
-                          border: '1px solid #EBE5ED',
-                          color: '#66566A',
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#6C1E84';
-                          e.currentTarget.style.borderColor = '#6C1E84';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = '#66566A';
-                          e.currentTarget.style.borderColor = '#EBE5ED';
+                          gap: '6px',
+                          fontSize: '0.76rem',
+                          color: '#4A315A',
+                          backgroundColor: '#FAF8FB',
+                          padding: '6px 8px',
+                          borderRadius: '8px',
+                          border: '1px solid #EDE8EF',
                         }}
                       >
-                        <Eye size={14} />
-                      </button>
+                        <Users size={13} color="#6C1E84" />
+                        <span style={{ fontWeight: 600 }}>{v.seats || 5} Seats</span>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/admin/cars/${v.id}/edit`)}
-                        title="Edit Car"
+                      <div
                         style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          backgroundColor: '#F8F6F9',
-                          border: '1px solid #EBE5ED',
-                          color: '#66566A',
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#6C1E84';
-                          e.currentTarget.style.borderColor = '#6C1E84';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = '#66566A';
-                          e.currentTarget.style.borderColor = '#EBE5ED';
+                          gap: '6px',
+                          fontSize: '0.76rem',
+                          color: '#4A315A',
+                          backgroundColor: '#FAF8FB',
+                          padding: '6px 8px',
+                          borderRadius: '8px',
+                          border: '1px solid #EDE8EF',
                         }}
                       >
-                        <Pencil size={13} />
-                      </button>
+                        <Fuel size={13} color="#6C1E84" />
+                        <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>
+                          {(v.fuelType || 'Petrol').toLowerCase()}
+                        </span>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleArchiveToggle(v)}
-                        title={v.status === 'ARCHIVED' ? 'Restore Car' : 'Archive Car'}
+                      <div
                         style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          backgroundColor: '#F8F6F9',
-                          border: '1px solid #EBE5ED',
-                          color: '#66566A',
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#6C1E84';
-                          e.currentTarget.style.borderColor = '#6C1E84';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = '#66566A';
-                          e.currentTarget.style.borderColor = '#EBE5ED';
+                          gap: '6px',
+                          fontSize: '0.76rem',
+                          color: '#4A315A',
+                          backgroundColor: '#FAF8FB',
+                          padding: '6px 8px',
+                          borderRadius: '8px',
+                          border: '1px solid #EDE8EF',
                         }}
                       >
-                        {v.status === 'ARCHIVED' ? <RotateCcw size={13} /> : <Archive size={13} />}
-                      </button>
+                        <DoorOpen size={13} color="#6C1E84" />
+                        <span style={{ fontWeight: 600 }}>{v.doors || 4} Doors</span>
+                      </div>
+                    </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteWithConfirm(v)}
-                        title="Delete Car"
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          backgroundColor: '#FDF2F2',
-                          border: '1px solid #F8B4B4',
-                          color: '#E02424',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FDE8E8')}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FDF2F2')}
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                    {/* Pricing & Actions */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: 'auto',
+                        paddingTop: '4px',
+                        flexWrap: 'wrap',
+                        gap: '10px',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Daily Rate
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
+                          <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1A0322', lineHeight: 1.1 }}>
+                            ${Number(v.dailyRate).toFixed(0)}
+                          </span>
+                          <span style={{ fontSize: '0.78rem', color: '#8A7090' }}>/ day</span>
+                        </div>
+                      </div>
+
+                      {/* Action Group */}
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/cars/${v.id}`)}
+                          title="View Details"
+                          style={{
+                            backgroundColor: '#1E0426',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '7px 12px',
+                            color: '#FFFFFF',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#6C1E84')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1E0426')}
+                        >
+                          <Eye size={13} />
+                          <span>View</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/cars/${v.id}/edit`)}
+                          title="Edit Car"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            backgroundColor: '#F8F6F9',
+                            border: '1px solid #EBE5ED',
+                            color: '#66566A',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#6C1E84';
+                            e.currentTarget.style.borderColor = '#6C1E84';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#66566A';
+                            e.currentTarget.style.borderColor = '#EBE5ED';
+                          }}
+                        >
+                          <Pencil size={13} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleArchiveToggle(v)}
+                          title={v.status === 'ARCHIVED' ? 'Restore Car' : 'Archive Car'}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            backgroundColor: '#F8F6F9',
+                            border: '1px solid #EBE5ED',
+                            color: '#66566A',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#6C1E84';
+                            e.currentTarget.style.borderColor = '#6C1E84';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#66566A';
+                            e.currentTarget.style.borderColor = '#EBE5ED';
+                          }}
+                        >
+                          {v.status === 'ARCHIVED' ? <RotateCcw size={13} /> : <Archive size={13} />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteWithConfirm(v)}
+                          title="Delete Car"
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            backgroundColor: '#FDF2F2',
+                            border: '1px solid #F8B4B4',
+                            color: '#E02424',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FDE8E8')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FDF2F2')}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {vehicles.length === 0 && (
               <div
@@ -1053,8 +1161,7 @@ export function CarsDirectoryPage() {
             )}
           </div>
         )}
-
-        {/* ================= PAGINATION FOOTER ================= */}
+{/* ================= PAGINATION FOOTER ================= */}
         <div
           style={{
             padding: '16px 24px',
