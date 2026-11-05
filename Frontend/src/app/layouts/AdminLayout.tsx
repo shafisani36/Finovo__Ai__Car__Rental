@@ -29,6 +29,7 @@ import {
   Tag,
   MessageSquare,
   UserCog,
+  Users,
   Languages,
 } from 'lucide-react';
 
@@ -153,6 +154,7 @@ export function AdminLayout() {
               { to: '/admin/rentals', icon: KeyRound, label: t('nav.rentals') },
               { to: '/admin/inspections', icon: ShieldAlert, label: t('nav.aiInspection') },
               { to: '/admin/inquiries', icon: MessageSquare, label: t('nav.inquiries') },
+              { to: '/admin/customers', icon: Users, label: t('nav.customers', 'Customers') },
               { to: '/admin/users', icon: UserCog, label: t('nav.manageUsers') },
               { to: '/admin/employees', icon: Briefcase, label: t('nav.staff') },
               { to: '/admin/branches', icon: Building2, label: t('nav.branches') },

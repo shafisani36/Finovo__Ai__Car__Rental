@@ -83,4 +83,110 @@ export class CustomerService {
       data: { isLicenseVerified },
     });
   }
+
+  static async createCustomer(data: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    driverLicenseNumber?: string;
+    licenseExpiryDate?: string | Date;
+    isLicenseVerified?: boolean;
+  }) {
+    if (!data.fullName || !data.email) {
+      throw AppError.badRequest('Full name and email are required');
+    }
+
+    const existing = await prisma.customer.findUnique({
+      where: { email: data.email.toLowerCase().trim() },
+    });
+    if (existing) {
+      throw AppError.conflict('A customer with this email already exists');
+    }
+
+    const expiryDate = data.licenseExpiryDate ? new Date(data.licenseExpiryDate) : null;
+
+    return prisma.customer.create({
+      data: {
+        fullName: data.fullName.trim(),
+        email: data.email.toLowerCase().trim(),
+        phone: data.phone?.trim() || null,
+        driverLicenseNumber: data.driverLicenseNumber?.trim() || null,
+        licenseExpiryDate: expiryDate && !isNaN(expiryDate.getTime()) ? expiryDate : null,
+        isLicenseVerified: Boolean(data.isLicenseVerified),
+      },
+    });
+  }
+
+  static async updateCustomer(
+    id: string,
+    data: {
+      fullName?: string;
+      email?: string;
+      phone?: string;
+      driverLicenseNumber?: string;
+      licenseExpiryDate?: string | Date;
+      isLicenseVerified?: boolean;
+    }
+  ) {
+    const existing = await prisma.customer.findUnique({ where: { id } });
+    if (!existing) {
+      throw AppError.notFound('Customer not found');
+    }
+
+    if (data.email && data.email.toLowerCase().trim() !== existing.email) {
+      const emailConflict = await prisma.customer.findUnique({
+        where: { email: data.email.toLowerCase().trim() },
+      });
+      if (emailConflict && emailConflict.id !== id) {
+        throw AppError.conflict('A customer with this email already exists');
+      }
+    }
+
+    const expiryDate = data.licenseExpiryDate ? new Date(data.licenseExpiryDate) : undefined;
+
+    return prisma.customer.update({
+      where: { id },
+      data: {
+        fullName: data.fullName !== undefined ? data.fullName.trim() : undefined,
+        email: data.email !== undefined ? data.email.toLowerCase().trim() : undefined,
+        phone: data.phone !== undefined ? (data.phone ? data.phone.trim() : null) : undefined,
+        driverLicenseNumber:
+          data.driverLicenseNumber !== undefined
+            ? data.driverLicenseNumber
+              ? data.driverLicenseNumber.trim()
+              : null
+            : undefined,
+        licenseExpiryDate:
+          data.licenseExpiryDate !== undefined
+            ? expiryDate && !isNaN(expiryDate.getTime())
+              ? expiryDate
+              : null
+            : undefined,
+        isLicenseVerified:
+          data.isLicenseVerified !== undefined ? Boolean(data.isLicenseVerified) : undefined,
+      },
+    });
+  }
+
+  static async deleteCustomer(id: string) {
+    const customer = await prisma.customer.findUnique({
+      where: { id },
+      include: {
+        bookings: {
+          where: { status: { in: ['ACTIVE', 'CONFIRMED', 'PENDING'] } },
+        },
+      },
+    });
+
+    if (!customer) {
+      throw AppError.notFound('Customer not found');
+    }
+
+    if (customer.bookings.length > 0) {
+      throw AppError.badRequest('Cannot delete customer with active or upcoming reservations');
+    }
+
+    await prisma.customer.delete({ where: { id } });
+    return { success: true, message: 'Customer deleted successfully' };
+  }
 }

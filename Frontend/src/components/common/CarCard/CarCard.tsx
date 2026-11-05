@@ -73,14 +73,14 @@ export const CarCard: React.FC<CarCardProps> = ({
         </svg>
 
         {/* Centered Vehicle Cutout */}
-        <div className="finovo-car-card-vehicle-wrap">
+        <Link to={`/cars/${id}`} className="finovo-car-card-vehicle-wrap" title={`View full specs & book ${name}`}>
           <img
             src={image}
             alt={name}
             className="finovo-car-card-vehicle-img"
             loading="lazy"
           />
-        </div>
+        </Link>
       </div>
 
       {/* 2. BOTTOM INFO BAR: Logo, Name, Mileage, Fee, Circular Arrow */}
@@ -92,10 +92,10 @@ export const CarCard: React.FC<CarCardProps> = ({
             alt={`${name} emblem`}
             className="finovo-car-card-logo-img"
           />
-          <div className="finovo-car-card-text-box">
+          <Link to={`/cars/${id}`} className="finovo-car-card-text-box" style={{ textDecoration: 'none' }} title={`View details for ${name}`}>
             <h4 className="finovo-car-card-title">{name}</h4>
             <div className="finovo-car-card-year">{year}</div>
-          </div>
+          </Link>
         </div>
 
         {/* Middle: Mileage & Rate Stats */}

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import { useAuth } from '../../features/auth/context';
+import { getCarImage } from '../../utils/carImageHelper';
 
 // Assets
 import carMain from '../../assets/car-detail/car-main.jpg';
@@ -53,24 +54,28 @@ export function CarDetailsPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
+  // Dynamic Dates (Tomorrow to +3 days)
+  const tomorrowStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  };
+
+  const inThreeDaysStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 4);
+    return d.toISOString().split('T')[0];
+  };
+
   const [activeThumb, setActiveThumb] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState<InsurancePlan>(INSURANCE_PLANS[1]);
   const [pickupCity, setPickupCity] = useState('Riyadh Central');
   const [dropoffCity, setDropoffCity] = useState('Riyadh Central');
-  const [pickupDate, setPickupDate] = useState('2026-10-25');
-  const [dropoffDate, setDropoffDate] = useState('2026-10-27');
+  const [pickupDate, setPickupDate] = useState(tomorrowStr);
+  const [dropoffDate, setDropoffDate] = useState(inThreeDaysStr);
   const [vehicle, setVehicle] = useState<any>(null);
   const [cartAdded, setCartAdded] = useState(false);
   const [wishlistAdded, setWishlistAdded] = useState(false);
-
-  // Gallery items
-  const gallery = [
-    { label: 'Exterior Front', src: carMain },
-    { label: 'Rear Angle', src: thumb18 },
-    { label: 'Cabin Interior', src: interiorImg },
-    { label: 'Side Profile', src: thumb20 },
-    { label: 'Cockpit Controls', src: thumb21 },
-  ];
 
   useEffect(() => {
     let isMounted = true;
@@ -80,9 +85,69 @@ export function CarDetailsPage() {
         const res = await vehiclesApi.getById(id);
         if (res && res.vehicle && isMounted) {
           setVehicle(res.vehicle);
+          return;
         }
       } catch (e) {
-        // Fallback default vehicle details
+        // Fallback below
+      }
+
+      // Fallback matching mock/catalog IDs
+      if (isMounted) {
+        if (id.includes('hurac') || id === 'car-1') {
+          setVehicle({
+            id: 'car-1',
+            brand: 'Lamborghini',
+            model: 'Huracán Evo Spider',
+            year: 2026,
+            dailyRate: 1000,
+            engineCapacity: '5.2L V10 Naturally Aspirated',
+            horsepower: 640,
+            fuelType: 'Petrol',
+            doors: 2,
+            seats: 2,
+            luggageCapacity: 2,
+            drivetrain: 'AWD All-Wheel Drive',
+            topSpeed: 325,
+            transmission: '7-Speed Dual Clutch',
+            primaryImageUrl: carMain,
+          });
+        } else if (id.includes('m4') || id === 'car-bmw-m4') {
+          setVehicle({
+            id,
+            brand: 'BMW',
+            model: 'M4 Competition Coupe',
+            year: 2026,
+            dailyRate: 550,
+            engineCapacity: '3.0L M TwinPower Turbo',
+            horsepower: 503,
+            fuelType: 'Petrol',
+            doors: 2,
+            seats: 4,
+            luggageCapacity: 3,
+            drivetrain: 'M xDrive AWD',
+            topSpeed: 290,
+            transmission: '8-Speed M Steptronic',
+            primaryImageUrl: orangeCar,
+          });
+        } else {
+          setVehicle({
+            id,
+            brand: 'BMW',
+            model: '520 i M-Sport Executive',
+            year: 2026,
+            dailyRate: 480,
+            engineCapacity: '2.0L TwinPower Turbo',
+            horsepower: 255,
+            fuelType: 'Petrol',
+            doors: 4,
+            seats: 5,
+            luggageCapacity: 4,
+            drivetrain: 'Rear-Wheel Drive (RWD)',
+            topSpeed: 250,
+            transmission: '8-Speed Steptronic Automatic',
+            primaryImageUrl: bmwImg,
+          });
+        }
       }
     }
     fetchCarDetails();
@@ -91,16 +156,54 @@ export function CarDetailsPage() {
     };
   }, [id]);
 
-  const carName = vehicle ? `${vehicle.brand || vehicle.make} ${vehicle.model}` : 'Lamborghini 2026';
-  const baseRate = vehicle?.dailyRate ? Number(vehicle.dailyRate) : 1000;
+  // Dynamic gallery items
+  const vehicleMainImg = getCarImage(vehicle) || carMain;
+  const gallery = [
+    { label: 'Exterior Front', src: vehicleMainImg },
+    { label: 'Rear Angle', src: thumb18 },
+    { label: 'Cabin Interior', src: interiorImg },
+    { label: 'Side Profile', src: thumb20 },
+    { label: 'Cockpit Controls', src: thumb21 },
+  ];
+
+  const brandName = vehicle?.brand?.name || vehicle?.brand || 'Luxury';
+  const modelName = vehicle?.model?.name || vehicle?.model || 'Performance';
+  const carName = vehicle ? `${brandName} ${modelName}` : 'Luxury Vehicle';
+  const baseRate = vehicle?.dailyRate ? Number(vehicle.dailyRate) : 500;
   const days = Math.max(1, Math.ceil((new Date(dropoffDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)) || 2);
   const totalRental = (baseRate + selectedPlan.pricePerDay) * days;
 
+  // Dynamic Specs
+  const isSports =
+    vehicle?.category?.slug === 'sports' ||
+    vehicle?.categoryName?.toLowerCase().includes('sport') ||
+    modelName.toLowerCase().includes('hurac') ||
+    modelName.toLowerCase().includes('m4');
+
+  const engineVal = vehicle?.engineCapacity || (isSports ? '5.2L V10' : '2.0L TwinPower Turbo');
+  const powerVal = vehicle?.horsepower || vehicle?.horsePower ? `${vehicle.horsepower || vehicle.horsePower} HP` : (isSports ? '640 HP' : '255 HP');
+  const fuelVal = vehicle?.fuelType || vehicle?.fuel || 'Petrol';
+  const doorsVal = vehicle?.doors ? `${vehicle.doors} Doors` : (vehicle?.seats && vehicle.seats <= 2 ? '2 Doors' : '4 Doors');
+  const luggageVal = vehicle?.luggageCapacity ? `${vehicle.luggageCapacity} Bags` : (vehicle?.seats && vehicle.seats > 4 ? '4 Bags' : '2 Bags');
+  const drivetrainVal = vehicle?.drivetrain || (isSports ? 'Performance AWD' : 'RWD / xDrive');
+  const speedVal = vehicle?.topSpeed ? `${vehicle.topSpeed} km/h` : (isSports ? '325 km/h' : '250 km/h');
+  const transVal = vehicle?.transmission || 'Automatic (8-Speed)';
+
   const handleBookNow = () => {
+    const bookingQuery = new URLSearchParams({
+      vehicleId: id || vehicle?.id || '',
+      pickupDate: pickupDate,
+      returnDate: dropoffDate,
+      pickupCity: pickupCity,
+      dropoffCity: dropoffCity,
+      plan: selectedPlan.id,
+    }).toString();
+
+    const checkoutUrl = `/customer/bookings/new?${bookingQuery}`;
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate(`/login?redirect=${encodeURIComponent(checkoutUrl)}`);
     } else {
-      navigate('/customer/dashboard');
+      navigate(checkoutUrl);
     }
   };
 
@@ -140,7 +243,13 @@ export function CarDetailsPage() {
                 </div>
               </div>
 
-              <img src={lamboLogo} alt="Brand" style={{ height: '48px', objectFit: 'contain' }} />
+              {brandName.toLowerCase().includes('lambo') ? (
+                <img src={lamboLogo} alt="Lamborghini" style={{ height: '48px', objectFit: 'contain' }} />
+              ) : (
+                <div style={{ padding: '6px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 800, fontSize: '1.1rem', letterSpacing: '1px' }}>
+                  {brandName.toUpperCase()}
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: '20px', marginBottom: '24px' }}>
@@ -472,14 +581,14 @@ export function CarDetailsPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px' }}>
           {[
-            { icon: Cog, label: 'Engine', val: '5.2L V10' },
-            { icon: Gauge, label: 'Power', val: '640 HP' },
-            { icon: Fuel, label: 'Fuel Type', val: 'Petrol' },
-            { icon: DoorOpen, label: 'Doors', val: '2 Doors' },
-            { icon: Briefcase, label: 'Luggage', val: '2 Bags' },
-            { icon: Network, label: 'Drivetrain', val: 'AWD' },
-            { icon: Gauge, label: 'Top Speed', val: '325 km/h' },
-            { icon: Fuel, label: 'Fuel Tank', val: '80 Liters' },
+            { icon: Cog, label: 'Engine', val: engineVal },
+            { icon: Gauge, label: 'Power', val: powerVal },
+            { icon: Fuel, label: 'Fuel Type', val: fuelVal },
+            { icon: DoorOpen, label: 'Doors', val: doorsVal },
+            { icon: Briefcase, label: 'Luggage', val: luggageVal },
+            { icon: Network, label: 'Drivetrain', val: drivetrainVal },
+            { icon: Gauge, label: 'Top Speed', val: speedVal },
+            { icon: Fuel, label: 'Transmission', val: transVal },
           ].map((item) => {
             const Icon = item.icon;
             return (

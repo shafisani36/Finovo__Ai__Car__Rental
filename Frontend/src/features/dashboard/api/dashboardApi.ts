@@ -17,6 +17,11 @@ export interface DashboardOverviewResponse {
     activeRentals: number;
     overdueRentals: number;
   };
+  customers?: {
+    total: number;
+    verified: number;
+    pending: number;
+  };
   financials: {
     totalRevenue: number;
     monthlyRevenue: number;

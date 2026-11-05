@@ -4,10 +4,10 @@ import { RentalPricingService } from '../fleet/rental-pricing.service';
 import { PricingMethod } from '@prisma/client';
 
 export interface CreateBookingDTO {
-  customerId: string;
+  customerId?: string;
   vehicleId: string;
-  pickupBranchId: string;
-  returnBranchId: string;
+  pickupBranchId?: string;
+  returnBranchId?: string;
   pickupDateTime: string; // ISO string
   returnDateTime: string;  // ISO string
   notes?: string;
@@ -186,12 +186,44 @@ export class BookingService {
       dto.driverRequired
     );
 
-    // Verify customer exists
-    const customer = await prisma.customer.findUnique({
-      where: { id: dto.customerId },
-    });
+    // Verify customer exists or auto-resolve from logged-in actorUserId
+    let customer = dto.customerId
+      ? await prisma.customer.findUnique({ where: { id: dto.customerId } })
+      : null;
+
+    if (!customer && actorUserId) {
+      customer = await prisma.customer.findFirst({
+        where: { userId: actorUserId },
+      });
+      if (!customer) {
+        const user = await prisma.user.findUnique({ where: { id: actorUserId } });
+        if (user) {
+          customer = await prisma.customer.create({
+            data: {
+              userId: user.id,
+              email: user.email,
+              fullName: user.fullName,
+              phone: user.phone || null,
+            },
+          });
+        }
+      }
+    }
+
     if (!customer) {
-      throw AppError.notFound('Customer profile not found');
+      throw AppError.notFound('Customer profile not found. Please log in or provide a valid customerId.');
+    }
+
+    // Resolve branches with fallback if missing
+    let pickupBranchId = dto.pickupBranchId;
+    let returnBranchId = dto.returnBranchId;
+    if (!pickupBranchId || !returnBranchId) {
+      const defaultBranch = await prisma.branch.findFirst();
+      if (!defaultBranch) {
+        throw AppError.badRequest('No rental branches configured in system');
+      }
+      pickupBranchId = pickupBranchId || defaultBranch.id;
+      returnBranchId = returnBranchId || defaultBranch.id;
     }
 
     // Generate unique booking number: FIN-2026-XXXX
@@ -226,10 +258,10 @@ export class BookingService {
       const created = await tx.booking.create({
         data: {
           bookingNumber,
-          customerId: dto.customerId,
+          customerId: customer.id,
           vehicleId: dto.vehicleId,
-          pickupBranchId: dto.pickupBranchId,
-          returnBranchId: dto.returnBranchId,
+          pickupBranchId,
+          returnBranchId,
           pickupDateTime: pickupDate,
           returnDateTime: returnDate,
           status: 'CONFIRMED',

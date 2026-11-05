@@ -11,6 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
+import { getCarImage } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 const FALLBACK_CARS = [
@@ -298,7 +299,10 @@ export function CustomerCarsPage() {
                   alt={`${car.brand} ${car.model}`}
                   className="cp-auto-card-img"
                   onError={(e) => {
-                    e.currentTarget.src = '/cars/car-4-tucson.png';
+                    const fallback = getCarImage(car);
+                    if (!e.currentTarget.src.includes(fallback)) {
+                      e.currentTarget.src = fallback;
+                    }
                   }}
                 />
                 <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '6px', zIndex: 3 }}>

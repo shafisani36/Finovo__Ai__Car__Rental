@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader } from '../../../components/common';
+import { getCarImage } from '../../../utils/carImageHelper';
 
 export function ReturnVehiclePage() {
   const { rentalId } = useParams<{ rentalId: string }>();
@@ -213,7 +214,7 @@ export function ReturnVehiclePage() {
       >
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <img
-            src={rental.vehicle.primaryImageUrl || '/cars/car-4-tucson.png'}
+            src={getCarImage(rental.vehicle)}
             alt=""
             style={{
               width: '100px',

@@ -12,6 +12,7 @@ import {
   customerPortalApi,
   type RentalHistoryItem,
 } from '../api/customerPortalApi';
+import { getCarImage } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerHistoryPage() {
@@ -158,7 +159,10 @@ export function CustomerHistoryPage() {
                       alt={item.vehicle?.name}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
-                        e.currentTarget.src = '/cars/car-4-tucson.png';
+                        const fallback = getCarImage({ model: item.vehicle?.name });
+                        if (!e.currentTarget.src.includes(fallback)) {
+                          e.currentTarget.src = fallback;
+                        }
                       }}
                     />
                   </div>

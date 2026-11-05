@@ -30,6 +30,7 @@ export async function seedVehicles() {
   const vehiclesData = [
     {
       registrationNumber: 'LMB-2026-01',
+      primaryImageUrl: '/cars/finovo-red-car.png',
       vin: 'ZHWUR12S8NLA00001',
       brand: 'Lamborghini',
       model: 'Huracán Evo',
@@ -51,6 +52,7 @@ export async function seedVehicles() {
     },
     {
       registrationNumber: 'BMW-2026-02',
+      primaryImageUrl: '/cars/finovo-gray-car.png',
       vin: 'WBA53AH09SNA00002',
       brand: 'BMW',
       model: '520 i',
@@ -72,6 +74,7 @@ export async function seedVehicles() {
     },
     {
       registrationNumber: 'BMW-2026-03',
+      primaryImageUrl: '/cars/finovo-blue-car.png',
       vin: '5UXCR6C04SNA00003',
       brand: 'BMW',
       model: '520 i',
@@ -114,6 +117,7 @@ export async function seedVehicles() {
     },
     {
       registrationNumber: 'BMW-2026-05',
+      primaryImageUrl: '/cars/finovo-white-car.png',
       vin: 'WBA53AH09SNA00005',
       brand: 'BMW',
       model: '520 i',
@@ -156,6 +160,7 @@ export async function seedVehicles() {
     },
     {
       registrationNumber: 'LMB-2026-07',
+      primaryImageUrl: '/cars/finovo-yellow-car.png',
       vin: 'ZHWUR12S8NLA00007',
       brand: 'Lamborghini',
       model: 'Focus ST',
@@ -177,6 +182,7 @@ export async function seedVehicles() {
     },
     {
       registrationNumber: 'LMB-2026-08',
+      primaryImageUrl: '/cars/finovo-green-car.png',
       vin: 'ZHWUR12S8NLA00008',
       brand: 'Lamborghini',
       model: 'Cooper Works',
@@ -261,6 +267,7 @@ export async function seedVehicles() {
     },
     {
       registrationNumber: 'BMW-2026-12',
+      primaryImageUrl: '/cars/finovo-available-hero-car.png',
       vin: 'WBS33AZ09SNA00012',
       brand: 'BMW',
       model: 'M4',
@@ -283,10 +290,21 @@ export async function seedVehicles() {
   ];
 
   for (const car of vehiclesData) {
-    await prisma.vehicle.upsert({
+    const v = await prisma.vehicle.upsert({
       where: { registrationNumber: car.registrationNumber },
       update: car,
       create: car,
+    });
+
+    await prisma.vehiclePhoto.deleteMany({ where: { vehicleId: v.id } });
+    await prisma.vehiclePhoto.createMany({
+      data: [
+        { vehicleId: v.id, url: car.primaryImageUrl || '/cars/finovo-white-car.png', isPrimary: true, order: 0, caption: `${car.brand} ${car.model} Front Cutout` },
+        { vehicleId: v.id, url: '/cars/thumb-18.jpg', isPrimary: false, order: 1, caption: 'Studio Rear Perspective' },
+        { vehicleId: v.id, url: '/cars/interior.jpg', isPrimary: false, order: 2, caption: 'Luxury Leather Cabin' },
+        { vehicleId: v.id, url: '/cars/thumb-20.jpg', isPrimary: false, order: 3, caption: 'Side Aero Profile' },
+        { vehicleId: v.id, url: '/cars/thumb-21.jpg', isPrimary: false, order: 4, caption: 'Driver Cockpit Controls' },
+      ],
     });
   }
 

@@ -29,6 +29,8 @@ export class DashboardService {
       categories,
       branches,
       recentLogs,
+      totalCustomers,
+      verifiedCustomers,
     ] = await Promise.all([
       prisma.vehicle.count(),
       prisma.vehicle.count({ where: { status: 'AVAILABLE' } }),
@@ -117,6 +119,8 @@ export class DashboardService {
           user: { select: { fullName: true, email: true } },
         },
       }),
+      prisma.customer.count(),
+      prisma.customer.count({ where: { isLicenseVerified: true } }),
     ]);
 
     // Financial sums
@@ -180,6 +184,11 @@ export class DashboardService {
         upcomingBookings: upcomingBookingsCount,
         activeRentals,
         overdueRentals: 0,
+      },
+      customers: {
+        total: totalCustomers,
+        verified: verifiedCustomers,
+        pending: totalCustomers - verifiedCustomers,
       },
       financials: {
         totalRevenue,

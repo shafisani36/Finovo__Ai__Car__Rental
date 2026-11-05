@@ -40,10 +40,14 @@ customerRouter.get('/portal/history', CustomerPortalController.getRentalHistory)
 customerRouter.post('/portal/reviews', CustomerPortalController.submitReview);
 
 // ==========================================
-// ADMIN & OPERATOR CUSTOMER MANAGEMENT
+// ADMIN & OPERATOR CUSTOMER MANAGEMENT (CRUD)
 // ==========================================
 customerRouter.get('/', requireRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR'), CustomerController.list);
 customerRouter.get('/:id', requireRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR'), CustomerController.getById);
+customerRouter.post('/', requireRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR'), CustomerController.create);
+customerRouter.put('/:id', requireRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR'), CustomerController.update);
+customerRouter.patch('/:id', requireRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR'), CustomerController.update);
+customerRouter.delete('/:id', requireRole('ADMIN', 'SUPER_ADMIN'), CustomerController.delete);
 customerRouter.patch(
   '/:id/verify',
   requireRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR'),

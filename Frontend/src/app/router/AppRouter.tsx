@@ -70,6 +70,7 @@ import { BranchesListPage } from '../../features/branches/pages/BranchesListPage
 import { AuditLogsPage } from '../../features/audit-logs/pages/AuditLogsPage';
 import { InquiriesListPage } from '../../features/inquiries/pages/InquiriesListPage';
 import { UsersManagementPage } from '../../features/users/pages/UsersManagementPage';
+import { CustomersListPage } from '../../features/customers/pages/CustomersListPage';
 
 export function AppRouter() {
   return (
@@ -199,6 +200,7 @@ export function AppRouter() {
 
             {/* Administration & Directory */}
             <Route path="inquiries" element={<InquiriesListPage />} />
+            <Route path="customers" element={<CustomersListPage />} />
             <Route path="users" element={<UsersManagementPage />} />
             <Route path="employees" element={<EmployeesListPage />} />
             <Route path="branches" element={<BranchesListPage />} />

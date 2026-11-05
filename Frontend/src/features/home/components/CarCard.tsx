@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { FeaturedCar } from '../../../types';
 import { Fuel, Gauge, Star } from 'lucide-react';
 
@@ -66,21 +67,30 @@ function DrivetrainChassisIcon({ size = 16, color = '#D9C7E6' }: { size?: number
 }
 
 export function CarCard({ car, onRent }: CarCardProps) {
+  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
   const subtitle = car.subtitle || car.type.toUpperCase();
   const priceDisplay = car.priceDisplay || `$${car.dailyRate} / day`;
   const rating = car.rating || 5;
 
+  const handleAction = () => {
+    if (onRent) {
+      onRent(car);
+    } else {
+      navigate(`/cars/${car.id}`);
+    }
+  };
+
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => onRent?.(car)}
+      onClick={handleAction}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onRent?.(car);
+          handleAction();
         }
       }}
       onMouseEnter={() => setIsHovered(true)}
@@ -295,7 +305,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          onRent?.(car);
+          handleAction();
         }}
         style={{
           marginTop: '12px',

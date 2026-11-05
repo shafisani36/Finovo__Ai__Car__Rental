@@ -16,3 +16,4 @@ export * from './CustomSelect';
 export * from './LanguageSelector';
 export * from './TextTranslator';
 export * from './CarCard';
+export * from './DynamicErrorBoundary';

@@ -1025,13 +1025,27 @@ export function AvailableCarsPage() {
                       <p>{periodLabel}</p>
                     </div>
 
-                    <Link
-                      to={`/cars/${car.id}`}
-                      className="car-card-circle-arrow-btn"
-                      aria-label={`Book ${car.name}`}
-                    >
-                      <ChevronRight size={18} />
-                    </Link>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Link
+                        to={`/cars/${car.id}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          backgroundColor: '#1E0426',
+                          color: '#FAB826',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          textDecoration: 'none',
+                        }}
+                        title={`View all details for ${car.name}`}
+                      >
+                        <span>View Details</span>
+                        <ChevronRight size={14} />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               );
