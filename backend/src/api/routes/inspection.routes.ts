@@ -7,15 +7,18 @@ export const inspectionRouter = Router();
 
 inspectionRouter.use(authenticate);
 
+// Inspection read operations (authenticated users, customers & staff)
 inspectionRouter.get('/', InspectionController.list);
 inspectionRouter.get('/:id', InspectionController.getById);
 
-inspectionRouter.post(
-  '/analyze',
-  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'),
-  InspectionController.analyze
-);
+// AI Computer Vision Analysis: Open to Customers during checkout/return & Staff
+inspectionRouter.post('/analyze', InspectionController.analyze);
 
+// Inspection comparison (baseline vs return): Open to Customers during return & Staff
+inspectionRouter.post('/compare', InspectionController.compare);
+inspectionRouter.get('/comparisons/:id', InspectionController.getComparisonById);
+
+// Staff human verification
 inspectionRouter.patch(
   '/findings/:findingId/review',
   requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),

@@ -97,6 +97,22 @@ export const inspectionApi = {
     return authClient.request<{ success: boolean; inspection: InspectionRecord }>(`/inspections/${id}`);
   },
 
+  async compare(payload: {
+    bookingId: string;
+    pickupInspectionId: string;
+    returnInspectionId: string;
+    securityDeposit?: number;
+  }): Promise<{ success: boolean; comparison: any }> {
+    return authClient.request('/inspections/compare', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getComparisonById(id: string): Promise<{ success: boolean; comparison: any }> {
+    return authClient.request('/inspections/comparisons/' + id);
+  },
+
   async analyze(payload: AnalyzePayload): Promise<{ success: boolean; inspection: InspectionRecord }> {
     return authClient.request<{ success: boolean; inspection: InspectionRecord }>('/inspections/analyze', {
       method: 'POST',

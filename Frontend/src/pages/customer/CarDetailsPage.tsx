@@ -21,10 +21,17 @@ import {
   Wrench,
   CalendarX,
   Star,
+  Zap,
+  ShieldCheck,
+  FileCheck,
+  Camera,
+  Activity,
 } from 'lucide-react';
+import { lookupPretrainedVehicle } from '../../features/fleet/data/pretrainedVehicles';
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import { useAuth } from '../../features/auth/context';
 import { getCarImage } from '../../utils/carImageHelper';
+import { parseVehicleNotes } from '../../utils/vehicleNotesHelper';
 
 // Assets
 import carMain from '../../assets/car-detail/car-main.jpg';
@@ -173,21 +180,53 @@ export function CarDetailsPage() {
   const days = Math.max(1, Math.ceil((new Date(dropoffDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)) || 2);
   const totalRental = (baseRate + selectedPlan.pricePerDay) * days;
 
-  // Dynamic Specs
+  // Dynamic Specs with Pre-Trained Engine & Extra Metadata
+  const extraSpecs = (() => {
+    if (!vehicle?.notes) return null;
+    return parseVehicleNotes(vehicle.notes).extraSpecs;
+  })();
+
+  const pretrainedSpec = lookupPretrainedVehicle(brandName, modelName);
+
   const isSports =
     vehicle?.category?.slug === 'sports' ||
     vehicle?.categoryName?.toLowerCase().includes('sport') ||
     modelName.toLowerCase().includes('hurac') ||
     modelName.toLowerCase().includes('m4');
 
-  const engineVal = vehicle?.engineCapacity || (isSports ? '5.2L V10' : '2.0L TwinPower Turbo');
-  const powerVal = vehicle?.horsepower || vehicle?.horsePower ? `${vehicle.horsepower || vehicle.horsePower} HP` : (isSports ? '640 HP' : '255 HP');
-  const fuelVal = vehicle?.fuelType || vehicle?.fuel || 'Petrol';
+  const engineVal = vehicle?.engineCapacity || pretrainedSpec?.engineSize || (isSports ? '5.2L V10 Naturally Aspirated' : '2.0L TwinPower Turbo');
+  const powerVal = vehicle?.horsepower || vehicle?.horsePower
+    ? `${vehicle.horsepower || vehicle.horsePower} HP`
+    : pretrainedSpec
+      ? `${pretrainedSpec.horsePower} HP`
+      : (isSports ? '640 HP' : '255 HP');
+  const accelVal = extraSpecs?.acceleration0to100
+    ? `${extraSpecs.acceleration0to100}s`
+    : pretrainedSpec
+      ? `${pretrainedSpec.acceleration0to100}s`
+      : (isSports ? '3.2s' : '5.4s');
+  const torqueVal = extraSpecs?.torqueNm
+    ? `${extraSpecs.torqueNm} Nm`
+    : pretrainedSpec
+      ? `${pretrainedSpec.torqueNm} Nm`
+      : (isSports ? '600 Nm' : '400 Nm');
+  const fuelEconomyVal = extraSpecs?.fuelEconomy || (pretrainedSpec ? `${pretrainedSpec.fuelEconomyL100km} L/100km` : '9.8 L/100km');
+  const fuelVal = vehicle?.fuelType || vehicle?.fuel || pretrainedSpec?.fuelType || 'Petrol (98 Octane)';
   const doorsVal = vehicle?.doors ? `${vehicle.doors} Doors` : (vehicle?.seats && vehicle.seats <= 2 ? '2 Doors' : '4 Doors');
-  const luggageVal = vehicle?.luggageCapacity ? `${vehicle.luggageCapacity} Bags` : (vehicle?.seats && vehicle.seats > 4 ? '4 Bags' : '2 Bags');
-  const drivetrainVal = vehicle?.drivetrain || (isSports ? 'Performance AWD' : 'RWD / xDrive');
-  const speedVal = vehicle?.topSpeed ? `${vehicle.topSpeed} km/h` : (isSports ? '325 km/h' : '250 km/h');
-  const transVal = vehicle?.transmission || 'Automatic (8-Speed)';
+  const luggageVal = extraSpecs?.luggageCapacityBags
+    ? `${extraSpecs.luggageCapacityBags} Large, ${extraSpecs?.cabinBagsCapacity || 2} Cabin`
+    : pretrainedSpec
+      ? `${pretrainedSpec.luggageCapacityBags} Large, ${pretrainedSpec.cabinBagsCapacity} Cabin`
+      : (vehicle?.luggageCapacity ? `${vehicle.luggageCapacity} Bags` : '3 Bags');
+  const drivetrainVal = vehicle?.drivetrain || pretrainedSpec?.drivetrain || (isSports ? 'Performance AWD' : 'RWD / xDrive');
+  const speedVal = extraSpecs?.topSpeed
+    ? `${extraSpecs.topSpeed} km/h`
+    : vehicle?.topSpeed
+      ? `${vehicle.topSpeed} km/h`
+      : pretrainedSpec
+        ? `${pretrainedSpec.topSpeedKmH} km/h`
+        : (isSports ? '325 km/h' : '250 km/h');
+  const transVal = vehicle?.transmission || pretrainedSpec?.transmission || 'Automatic (8-Speed)';
 
   const handleBookNow = () => {
     const bookingQuery = new URLSearchParams({
@@ -579,15 +618,17 @@ export function CarDetailsPage() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
           {[
-            { icon: Cog, label: 'Engine', val: engineVal },
-            { icon: Gauge, label: 'Power', val: powerVal },
-            { icon: Fuel, label: 'Fuel Type', val: fuelVal },
-            { icon: DoorOpen, label: 'Doors', val: doorsVal },
-            { icon: Briefcase, label: 'Luggage', val: luggageVal },
-            { icon: Network, label: 'Drivetrain', val: drivetrainVal },
+            { icon: Cog, label: 'Powertrain', val: engineVal },
+            { icon: Gauge, label: 'Horsepower', val: powerVal },
+            { icon: Zap, label: '0-100 km/h', val: accelVal },
             { icon: Gauge, label: 'Top Speed', val: speedVal },
+            { icon: Activity, label: 'Torque', val: torqueVal },
+            { icon: Fuel, label: 'Fuel & Economy', val: `${fuelVal} (${fuelEconomyVal})` },
+            { icon: Briefcase, label: 'Luggage Bags', val: luggageVal },
+            { icon: Network, label: 'Drivetrain', val: drivetrainVal },
+            { icon: DoorOpen, label: 'Doors & Seats', val: doorsVal },
             { icon: Fuel, label: 'Transmission', val: transVal },
           ].map((item) => {
             const Icon = item.icon;
@@ -624,6 +665,59 @@ export function CarDetailsPage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* Finovo AI Pre-Inspection Guarantee Banner */}
+      <section style={{ maxWidth: '1240px', margin: '0 auto 50px', padding: '0 24px' }}>
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #1E0426 0%, #3B1149 100%)',
+            borderRadius: '24px',
+            padding: '36px',
+            color: '#FFFFFF',
+            boxShadow: '0 12px 36px rgba(30, 4, 38, 0.25)',
+            border: '1px solid rgba(250, 184, 38, 0.3)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '30px',
+            alignItems: 'center',
+          }}
+        >
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(250, 184, 38, 0.15)', border: '1px solid #FAB826', color: '#FAB826', fontSize: '12px', fontWeight: 800, marginBottom: '16px' }}>
+              <ShieldCheck size={16} />
+              <span>CERTIFIED AI VEHICLE INSPECTION GUARANTEE</span>
+            </div>
+            <h3 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 12px', lineHeight: 1.3 }}>
+              Zero-Dispute Handover with Computer Vision Verification
+            </h3>
+            <p style={{ fontSize: '14px', opacity: 0.88, lineHeight: 1.6, margin: 0 }}>
+              Never worry about false damage claims. At pickup confirmation, our pre-trained AI vision model scans the vehicle across 5 angles, auto-detects scratches, dents, and paint color, and generates a digitally stamped <strong>Pickup Inspection Certificate (PDF)</strong>.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#FAB826', marginBottom: '8px' }}>
+                <Camera size={20} />
+                <strong style={{ fontSize: '14px', color: '#FFFFFF' }}>AI Pickup Scan</strong>
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>
+                Baseline photo capture maps any pre-existing blemishes before handover.
+              </p>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#FAB826', marginBottom: '8px' }}>
+                <FileCheck size={20} />
+                <strong style={{ fontSize: '14px', color: '#FFFFFF' }}>Settlement PDF</strong>
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>
+                At return, AI automates comparison. 100% deposit released if identical.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

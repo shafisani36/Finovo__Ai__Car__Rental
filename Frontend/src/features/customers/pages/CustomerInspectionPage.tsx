@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
-  ShieldCheck,
   CheckCircle2,
-  Cpu,
+  FileText,
+  Camera,
   Layers,
+  AlertTriangle,
 } from 'lucide-react';
 import { customerPortalApi, type CustomerBookingDetail } from '../api/customerPortalApi';
+import { AiCameraScannerModal } from '../../inspections/components/AiCameraScannerModal';
+import { InspectionReportPdfModal } from '../../inspections/components/InspectionReportPdfModal';
+import {
+  InspectionAiEngine,
+  type ClientInspectionReport,
+  type ClientComparisonReport,
+} from '../../inspections/services/inspectionAiEngine';
 import './CustomerPortal.css';
 
 export function CustomerInspectionPage() {
@@ -19,6 +27,15 @@ export function CustomerInspectionPage() {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [showOverlays, setShowOverlays] = useState(true);
   const [acknowledged, setAcknowledged] = useState(false);
+
+  // AI Camera & PDF Modal State
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // Stored reports
+  const [pickupReport, setPickupReport] = useState<ClientInspectionReport | null>(null);
+  const [returnReport, setReturnReport] = useState<ClientInspectionReport | null>(null);
+  const [comparisonReport, setComparisonReport] = useState<ClientComparisonReport | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -37,8 +54,94 @@ export function CustomerInspectionPage() {
       }
     }
     loadData();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [bookingId]);
+
+  // Pre-generate Baseline Pickup and Return Reports if needed
+  useEffect(() => {
+    const v = booking?.vehicle || {
+      brand: 'Lamborghini',
+      model: 'Huracán Evo Spyder',
+      year: 2026,
+      registrationNumber: 'FIN-889-AE',
+      vin: 'FIN-VIN-VERIFIED-9821',
+      color: 'Arancio Borealis (Orange)',
+      primaryImageUrl:
+        'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=1200&q=80',
+    };
+
+    const photosList = [
+      {
+        view: 'FRONT',
+        imageUrl:
+          v.primaryImageUrl ||
+          'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        view: 'DRIVER_SIDE',
+        imageUrl:
+          'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        view: 'PASSENGER_SIDE',
+        imageUrl:
+          'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
+      },
+      {
+        view: 'REAR',
+        imageUrl:
+          'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80',
+      },
+    ];
+
+    if (!pickupReport) {
+      const p = InspectionAiEngine.runInspection({
+        type: 'PICKUP',
+        vehicle: {
+          brand: v.brand,
+          model: v.model,
+          year: v.year || 2026,
+          registrationNumber: (v as any).registrationNumber || 'FIN-889-AE',
+          vin: (v as any).vin || 'FIN-VIN-VERIFIED-9821',
+          color: (v as any).color || 'Orange',
+        },
+        photos: photosList,
+        simulateDamage: false,
+      });
+      setPickupReport(p);
+    }
+
+    if (!returnReport) {
+      const r = InspectionAiEngine.runInspection({
+        type: 'RETURN',
+        vehicle: {
+          brand: v.brand,
+          model: v.model,
+          year: v.year || 2026,
+          registrationNumber: (v as any).registrationNumber || 'FIN-889-AE',
+          vin: (v as any).vin || 'FIN-VIN-VERIFIED-9821',
+          color: (v as any).color || 'Orange',
+        },
+        photos: photosList,
+        simulateDamage: true,
+      });
+      setReturnReport(r);
+    }
+  }, [booking, pickupReport, returnReport]);
+
+  // Update comparison when both reports exist
+  useEffect(() => {
+    if (pickupReport && returnReport && !comparisonReport) {
+      const comp = InspectionAiEngine.compareReports(
+        pickupReport,
+        returnReport,
+        Number(booking?.depositAmount || 2500)
+      );
+      setComparisonReport(comp);
+    }
+  }, [pickupReport, returnReport, comparisonReport, booking]);
 
   if (isLoading) {
     return (
@@ -48,63 +151,15 @@ export function CustomerInspectionPage() {
     );
   }
 
-  // Fallback demo inspection if no inspection has run yet
-  const inspections = booking?.inspections || [];
-  const currentInspection = inspections.find((i) => i.type === selectedType) || {
-    id: 'demo-insp-01',
-    type: selectedType,
-    overallScore: 97,
-    summary: 'Vehicle is in pristine cosmetic condition. No severe structural or mechanical defects detected.',
-    hasDamageDetected: false,
-    createdAt: new Date().toISOString(),
-    photos: [
-      {
-        id: 'p1',
-        view: 'FRONT_3_QUARTER',
-        imageUrl:
-          booking?.vehicle?.primaryImageUrl ||
-          'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-      },
-      {
-        id: 'p2',
-        view: 'PASSENGER_PROFILE',
-        imageUrl:
-          'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
-      },
-      {
-        id: 'p3',
-        view: 'REAR_PROFILE',
-        imageUrl:
-          'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80',
-      },
-      {
-        id: 'p4',
-        view: 'DRIVER_PROFILE',
-        imageUrl:
-          'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80',
-      },
-    ],
-    findings: [
-      {
-        id: 'f1',
-        damageType: 'SURFACE_SCRATCH',
-        severity: 'MINOR',
-        location: 'Lower Front Bumper Lip',
-        confidence: 0.94,
-        estimatedRepairCost: 0,
-        boundingBox: '{"x": 420, "y": 310, "w": 45, "h": 22}',
-      },
-    ],
-  };
-
-  const selectedPhoto = currentInspection.photos[selectedPhotoIndex] || currentInspection.photos[0];
+  const activeReport = selectedType === 'RETURN' ? (returnReport || pickupReport!) : (pickupReport!);
+  const currentPhoto = activeReport?.photos?.[selectedPhotoIndex] || activeReport?.photos?.[0];
 
   return (
     <div className="cp-page-container">
-      {/* Top Breadcrumb */}
+      {/* Breadcrumb Navigation */}
       <div>
         <Link
-          to={bookingId ? `/customer/bookings/${bookingId}` : '/customer/bookings'}
+          to={`/customer/bookings/${bookingId}`}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -113,7 +168,7 @@ export function CustomerInspectionPage() {
             textDecoration: 'none',
             fontSize: '0.9rem',
             fontWeight: 600,
-            marginBottom: '12px',
+            marginBottom: '16px',
           }}
         >
           <ArrowLeft size={16} />
@@ -121,41 +176,127 @@ export function CustomerInspectionPage() {
         </Link>
       </div>
 
-      {/* Header */}
-      <div className="cp-page-header">
+      {/* Top Header Card */}
+      <div className="cp-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <span className="cp-badge cp-badge-accent">
-              <Cpu size={14} /> AI Computer Vision
+              Booking #{booking?.bookingNumber || bookingId}
             </span>
-            <span className="cp-badge cp-badge-success">YOLO v8 Calibrated</span>
+            <span
+              style={{
+                backgroundColor: '#ECFDF5',
+                color: '#065F46',
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '3px 10px',
+                borderRadius: '20px',
+              }}
+            >
+              ✓ Pre-Trained AI Calibrated
+            </span>
           </div>
-          <h1 className="cp-page-title">Digital Damage Inspection Report</h1>
-          <p className="cp-page-subtitle">
-            Booking #{booking?.bookingNumber || bookingId} •{' '}
-            {booking?.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Vehicle Condition Audit'}
+
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--cp-primary)', margin: 0 }}>
+            Computer Vision Vehicle Inspection Audit
+          </h1>
+          <p style={{ margin: '4px 0 0 0', color: 'var(--cp-text-muted)', fontSize: '0.9rem' }}>
+            Multi-angle damage detection with automated baseline vs return comparison.
           </p>
         </div>
 
-        <div className="cp-header-actions">
-          <div className="cp-tabs-bar" style={{ border: 'none', padding: 0 }}>
+        {/* Tab & Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              background: '#F1EEF4',
+              borderRadius: '10px',
+              padding: '4px',
+              gap: '4px',
+            }}
+          >
             <button
-              className={`cp-tab-btn ${selectedType === 'PICKUP' ? 'active' : ''}`}
-              onClick={() => setSelectedType('PICKUP')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                background: selectedType === 'PICKUP' ? '#FFFFFF' : 'transparent',
+                color: selectedType === 'PICKUP' ? 'var(--cp-primary)' : 'var(--cp-text-muted)',
+                boxShadow: selectedType === 'PICKUP' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}
+              onClick={() => {
+                setSelectedType('PICKUP');
+                setSelectedPhotoIndex(0);
+              }}
             >
-              Pickup Handover
+              Pickup Baseline Scan
             </button>
             <button
-              className={`cp-tab-btn ${selectedType === 'RETURN' ? 'active' : ''}`}
-              onClick={() => setSelectedType('RETURN')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                background: selectedType === 'RETURN' ? '#FFFFFF' : 'transparent',
+                color: selectedType === 'RETURN' ? 'var(--cp-primary)' : 'var(--cp-text-muted)',
+                boxShadow: selectedType === 'RETURN' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}
+              onClick={() => {
+                setSelectedType('RETURN');
+                setSelectedPhotoIndex(0);
+              }}
             >
-              Post-Trip Return
+              Return Damage Scan
             </button>
           </div>
+
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 16px',
+              backgroundColor: '#1E0426',
+              color: '#FAB826',
+              border: 'none',
+              borderRadius: '10px',
+              fontWeight: 800,
+              fontSize: '13px',
+              cursor: 'pointer',
+            }}
+          >
+            <Camera size={16} /> Run Live AI Scan
+          </button>
+
+          <button
+            onClick={() => setIsPdfModalOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 16px',
+              backgroundColor: '#FAB826',
+              color: '#1E0426',
+              border: 'none',
+              borderRadius: '10px',
+              fontWeight: 800,
+              fontSize: '13px',
+              cursor: 'pointer',
+            }}
+          >
+            <FileText size={16} /> Official PDF Report
+          </button>
         </div>
       </div>
 
-      {/* Score and Highlights Bar */}
+      {/* Diagnostics Banner */}
       <div
         className="cp-card"
         style={{
@@ -164,7 +305,7 @@ export function CustomerInspectionPage() {
           padding: '24px',
         }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div
               style={{
@@ -181,22 +322,39 @@ export function CustomerInspectionPage() {
                 color: '#FAB826',
               }}
             >
-              {currentInspection.overallScore || 98}%
+              {activeReport?.overallScore || 98}%
             </div>
             <div>
-              <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)' }}>AI Cosmetic Health Score</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>Pristine Condition</div>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)' }}>Cosmetic Integrity</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                {activeReport?.overallScore && activeReport.overallScore > 95 ? 'Pristine Surface' : 'Action Required'}
+              </div>
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)' }}>Inspection Protocol</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>4-Point Synchronized 4K Scan</div>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)' }}>Detected Color</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+              <div
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '50%',
+                  backgroundColor: activeReport?.detectedColor?.hexCode || '#FFFFFF',
+                  border: '1px solid #FFFFFF',
+                }}
+              />
+              <span style={{ fontSize: '0.95rem', fontWeight: 700 }}>
+                {activeReport?.detectedColor?.colorName || 'Alpine White'}
+              </span>
+            </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)' }}>Customer Liability Status</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#34D399' }}>Zero Detected Chargeable Damage</div>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.7)' }}>Scratches & Dents</div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#FAB826' }}>
+              {activeReport?.scratchesCount || 0} Scratch(es) • {activeReport?.dentsCount || 0} Dent(s)
+            </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
@@ -212,121 +370,152 @@ export function CustomerInspectionPage() {
         </div>
       </div>
 
+      {/* Return Comparison Delta Banner (If Viewing Return) */}
+      {selectedType === 'RETURN' && comparisonReport && (
+        <div
+          className="cp-card"
+          style={{
+            borderLeft: comparisonReport.newDamageCount > 0 ? '5px solid #EF4444' : '5px solid #10B981',
+            backgroundColor: '#FFFFFF',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {comparisonReport.newDamageCount > 0 ? (
+                  <AlertTriangle size={20} color="#EF4444" />
+                ) : (
+                  <CheckCircle2 size={20} color="#10B981" />
+                )}
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
+                  Pre-Trained AI Comparison Delta
+                </h3>
+              </div>
+              <p style={{ margin: '4px 0 0', color: 'var(--cp-text-muted)', fontSize: '0.88rem' }}>
+                {comparisonReport.summary}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', fontSize: '0.9rem' }}>
+              <div>
+                <span style={{ color: 'var(--cp-text-muted)' }}>Pre-Existing:</span>{' '}
+                <strong style={{ color: '#10B981' }}>{comparisonReport.preExistingCount} (Free)</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--cp-text-muted)' }}>New Incidents:</span>{' '}
+                <strong style={{ color: '#EF4444' }}>{comparisonReport.newDamageCount}</strong>
+              </div>
+              <div style={{ backgroundColor: '#F8F6F9', padding: '6px 14px', borderRadius: '8px' }}>
+                <span style={{ color: 'var(--cp-text-muted)' }}>Deposit Refund:</span>{' '}
+                <strong style={{ color: '#10B981', fontSize: '1.05rem' }}>
+                  PKR {comparisonReport.netRefundAmount.toLocaleString()}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Visualizer and Findings */}
       <div className="cp-responsive-grid-2col">
-        {/* Left: Interactive Canvas Photo */}
+        {/* Left: Viewport with Bounding Boxes */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="cp-card" style={{ padding: '0', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', height: 'clamp(260px, 45vw, 420px)', background: '#0F0314', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                position: 'relative',
+                height: 'clamp(280px, 45vw, 420px)',
+                background: '#0F0314',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <img
-                src={selectedPhoto?.imageUrl}
-                alt={selectedPhoto?.view}
+                src={currentPhoto?.imageUrl}
+                alt={currentPhoto?.view}
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
 
-              {/* Simulated Bounding Box Overlay if enabled */}
-              {showOverlays && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '68%',
-                    left: '32%',
-                    width: '60px',
-                    height: '28px',
-                    border: '2px solid #FAB826',
-                    background: 'rgba(250, 184, 38, 0.25)',
-                    borderRadius: '4px',
-                    pointerEvents: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '-18px',
-                      left: '0',
-                      background: '#FAB826',
-                      color: '#1E0528',
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      padding: '2px 4px',
-                      borderRadius: '3px',
-                    }}
-                  >
-                    Scratch 94%
-                  </span>
-                </div>
-              )}
-
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '12px',
-                  left: '12px',
-                  background: 'rgba(0, 0, 0, 0.75)',
-                  color: '#FFFFFF',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                }}
-              >
-                Angle: {selectedPhoto?.view?.replace('_', ' ')}
-              </div>
+              {/* Bounding Box Overlays */}
+              {showOverlays &&
+                activeReport?.findings
+                  .filter((f) => f.view === (currentPhoto?.view || 'FRONT'))
+                  .map((finding) => (
+                    <div
+                      key={finding.id}
+                      style={{
+                        position: 'absolute',
+                        left: `${finding.boundingBox.x * 100}%`,
+                        top: `${finding.boundingBox.y * 100}%`,
+                        width: `${finding.boundingBox.width * 100}%`,
+                        height: `${finding.boundingBox.height * 100}%`,
+                        border: finding.category === 'SCRATCH' ? '2px solid #F59E0B' : '2px solid #EF4444',
+                        backgroundColor:
+                          finding.category === 'SCRATCH'
+                            ? 'rgba(245, 158, 11, 0.25)'
+                            : 'rgba(239, 68, 68, 0.25)',
+                        borderRadius: '4px',
+                        boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '-20px',
+                          left: '0',
+                          backgroundColor: finding.category === 'SCRATCH' ? '#D97706' : '#DC2626',
+                          color: '#FFFFFF',
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '1px 6px',
+                          borderRadius: '3px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {finding.category}: {finding.damageType} ({finding.confidence}%)
+                      </span>
+                    </div>
+                  ))}
             </div>
 
-            {/* Photo thumbnails */}
-            <div style={{ display: 'flex', gap: '12px', padding: '16px', background: '#FFFFFF', borderTop: '1px solid var(--cp-border)' }}>
-              {currentInspection.photos.map((photo, idx) => (
-                <div
+            {/* Thumbnail Angle Strip */}
+            <div style={{ display: 'flex', gap: '8px', padding: '12px', background: '#FFFFFF', overflowX: 'auto' }}>
+              {activeReport?.photos?.map((photo, idx) => (
+                <button
                   key={idx}
+                  type="button"
+                  onClick={() => setSelectedPhotoIndex(idx)}
                   style={{
-                    width: '90px',
-                    height: '60px',
+                    width: '76px',
+                    height: '52px',
                     borderRadius: '8px',
                     overflow: 'hidden',
-                    border: selectedPhotoIndex === idx ? '2px solid var(--cp-accent)' : '2px solid rgba(30, 5, 40, 0.1)',
+                    border: selectedPhotoIndex === idx ? '2px solid var(--cp-accent)' : '1px solid var(--cp-border)',
+                    padding: 0,
+                    background: 'none',
                     cursor: 'pointer',
+                    flexShrink: 0,
                   }}
-                  onClick={() => setSelectedPhotoIndex(idx)}
                 >
                   <img src={photo.imageUrl} alt={photo.view} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
+                </button>
               ))}
-            </div>
-          </div>
-
-          {/* AI Methodology Note */}
-          <div
-            style={{
-              background: '#F8F6F9',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              border: '1px solid var(--cp-border)',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              fontSize: '0.85rem',
-              color: 'var(--cp-text-muted)',
-            }}
-          >
-            <ShieldCheck size={20} color="#10B981" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <strong style={{ color: 'var(--cp-primary)' }}>Customer Protection Guarantee:</strong> Finovo AI uses multi-frame object detection to differentiate pre-existing road grime and light cosmetic abrasions from new chargeable damage, preventing unexpected post-trip charges.
             </div>
           </div>
         </div>
 
-        {/* Right: Findings List */}
+        {/* Right: Findings Anomaly Schedule */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="cp-card">
-            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Detected Findings & Anomaly Log</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>
+              Detected Damage Findings ({activeReport?.findings?.length || 0})
+            </h2>
 
-            {currentInspection.findings && currentInspection.findings.length > 0 ? (
+            {activeReport?.findings && activeReport.findings.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {currentInspection.findings.map((f) => (
+                {activeReport.findings.map((f) => (
                   <div
                     key={f.id}
                     style={{
@@ -337,28 +526,37 @@ export function CustomerInspectionPage() {
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '6px',
+                      borderLeft: f.category === 'SCRATCH' ? '4px solid #F59E0B' : '4px solid #EF4444',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="cp-badge cp-badge-warning">{f.damageType.replace('_', ' ')}</span>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--cp-text-subtle)' }}>
-                        {(f.confidence * 100).toFixed(0)}% AI Confidence
+                      <span className={`cp-badge ${f.category === 'SCRATCH' ? 'cp-badge-warning' : 'cp-badge-danger'}`}>
+                        {f.category}: {f.damageType}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--cp-text-subtle)', fontWeight: 600 }}>
+                        {f.confidence}% AI Confidence
                       </span>
                     </div>
-                    <div style={{ fontWeight: 700, color: 'var(--cp-primary)', fontSize: '0.9rem' }}>{f.location}</div>
+
+                    <div style={{ fontWeight: 700, color: 'var(--cp-primary)', fontSize: '0.9rem' }}>
+                      {f.location}
+                    </div>
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--cp-text-muted)' }}>
                       <span>Severity: <strong>{f.severity}</strong></span>
-                      <span style={{ color: '#10B981', fontWeight: 700 }}>
-                        {f.estimatedRepairCost === 0 ? 'Pre-existing (No Charge)' : `$${f.estimatedRepairCost}`}
+                      <span style={{ color: 'var(--cp-accent)', fontWeight: 700 }}>
+                        Est. Repair: PKR {f.estimatedRepairCost.toLocaleString()}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--cp-text-muted)' }}>
-                <CheckCircle2 size={32} color="#10B981" style={{ margin: '0 auto 8px auto' }} />
-                <p style={{ margin: 0, fontSize: '0.9rem' }}>Zero anomalies detected across all vehicle surfaces.</p>
+              <div style={{ textAlign: 'center', padding: '28px 0', color: 'var(--cp-text-muted)' }}>
+                <CheckCircle2 size={36} color="#10B981" style={{ margin: '0 auto 10px auto' }} />
+                <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600 }}>
+                  Zero cosmetic defects or surface scratches detected.
+                </p>
               </div>
             )}
 
@@ -395,6 +593,57 @@ export function CustomerInspectionPage() {
           </div>
         </div>
       </div>
+
+      {/* AI Live Camera Scanner Modal */}
+      <AiCameraScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        inspectionType={selectedType}
+        vehicle={{
+          id: booking?.vehicle?.id,
+          brand: booking?.vehicle?.brand || 'Luxury',
+          model: booking?.vehicle?.model || 'Vehicle',
+          year: booking?.vehicle?.year || 2026,
+          registrationNumber: (booking?.vehicle as any)?.registrationNumber || 'FIN-889-AE',
+          vin: (booking?.vehicle as any)?.vin || 'FIN-VIN-VERIFIED-9821',
+          color: (booking?.vehicle as any)?.color || 'Orange',
+          primaryImageUrl: booking?.vehicle?.primaryImageUrl || undefined,
+        }}
+        onInspectionComplete={(report) => {
+          if (selectedType === 'PICKUP') {
+            setPickupReport(report);
+          } else {
+            setReturnReport(report);
+            if (pickupReport) {
+              setComparisonReport(
+                InspectionAiEngine.compareReports(
+                  pickupReport,
+                  report,
+                  Number(booking?.depositAmount || 2500)
+                )
+              );
+            }
+          }
+          setIsScannerOpen(false);
+        }}
+        onOpenPdfReport={(report) => {
+          if (selectedType === 'PICKUP') {
+            setPickupReport(report);
+          } else {
+            setReturnReport(report);
+          }
+          setIsScannerOpen(false);
+          setIsPdfModalOpen(true);
+        }}
+      />
+
+      {/* Official PDF Certificate Modal */}
+      <InspectionReportPdfModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        report={activeReport}
+        comparisonReport={selectedType === 'RETURN' ? comparisonReport : null}
+      />
     </div>
   );
 }

@@ -360,6 +360,16 @@ export interface VehicleFormData {
   isPublicCatalog: boolean;
   features?: string[];
   featureIds?: string[];
+  luggageCapacity?: number;
+  cabinBagsCapacity?: number;
+  acceleration0to100?: number;
+  topSpeed?: number;
+  torqueNm?: number;
+  fuelEconomy?: number;
+  minAge?: number;
+  minLicenseYears?: number;
+  fuelPolicy?: string;
+  depositRefundHours?: number;
   notes?: string;
   parkingSpot?: string;
   telematicsDeviceId?: string;

@@ -51,9 +51,12 @@ import {
   AlertCircle,
   Activity,
   CalendarCheck,
+  Zap,
+  Briefcase,
 } from 'lucide-react';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import { parseVehicleNotes } from '../../../utils/vehicleNotesHelper';
 import './CarDetailPage.css';
 
 export function CarDetailPage() {
@@ -526,6 +529,9 @@ export function CarDetailPage() {
       console.error('Failed to delete pricing tier:', err);
     }
   };
+
+  const parsedNotes = parseVehicleNotes(vehicle?.notes);
+  const extraSpecs = parsedNotes.extraSpecs;
 
   return (
     <div className="car-detail-page">
@@ -1187,7 +1193,7 @@ export function CarDetailPage() {
               </div>
             </div>
             <div className="car-notes-body">
-              {vehicle.notes ||
+              {parsedNotes.notesText ||
                 'Well-maintained vehicle, fully inspected and ready for booking operations.'}
             </div>
           </div>
@@ -1272,6 +1278,46 @@ export function CarDetailPage() {
                 </div>
                 <div className="car-spec-val">{vehicle.trim || 'Standard Equipment'}</div>
               </div>
+
+              {extraSpecs?.acceleration0to100 && (
+                <div className="car-spec-row">
+                  <div className="car-spec-label">
+                    <Zap size={18} color="#8A7090" />
+                    <span>0-100 km/h Acceleration</span>
+                  </div>
+                  <div className="car-spec-val">{extraSpecs.acceleration0to100}s</div>
+                </div>
+              )}
+
+              {extraSpecs?.topSpeed && (
+                <div className="car-spec-row">
+                  <div className="car-spec-label">
+                    <Gauge size={18} color="#8A7090" />
+                    <span>Top Speed</span>
+                  </div>
+                  <div className="car-spec-val">{extraSpecs.topSpeed} km/h</div>
+                </div>
+              )}
+
+              {extraSpecs?.torqueNm && (
+                <div className="car-spec-row">
+                  <div className="car-spec-label">
+                    <Sliders size={18} color="#8A7090" />
+                    <span>Peak Torque</span>
+                  </div>
+                  <div className="car-spec-val">{extraSpecs.torqueNm} Nm</div>
+                </div>
+              )}
+
+              {extraSpecs?.fuelEconomy && (
+                <div className="car-spec-row">
+                  <div className="car-spec-label">
+                    <Fuel size={18} color="#8A7090" />
+                    <span>Combined Fuel Economy</span>
+                  </div>
+                  <div className="car-spec-val">{extraSpecs.fuelEconomy} L/100km</div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1302,6 +1348,18 @@ export function CarDetailPage() {
                 </div>
                 <div className="car-spec-val">{vehicle.doors} Doors</div>
               </div>
+
+              {extraSpecs?.luggageCapacityBags !== undefined && (
+                <div className="car-spec-row">
+                  <div className="car-spec-label">
+                    <Briefcase size={18} color="#8A7090" />
+                    <span>Luggage Capacity</span>
+                  </div>
+                  <div className="car-spec-val">
+                    {extraSpecs.luggageCapacityBags} Large Bags {extraSpecs.cabinBagsCapacity ? `(${extraSpecs.cabinBagsCapacity} Cabin)` : ''}
+                  </div>
+                </div>
+              )}
 
               <div className="car-spec-row">
                 <div className="car-spec-label">

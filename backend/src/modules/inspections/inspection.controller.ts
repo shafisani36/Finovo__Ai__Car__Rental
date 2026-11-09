@@ -39,4 +39,23 @@ export class InspectionController {
       next(err);
     }
   }
+
+  static async compare(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await InspectionService.compareInspections(req.body, req.user?.userId);
+      res.status(201).json({ success: true, comparison: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getComparisonById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const comparison = await InspectionService.getComparisonById(id);
+      res.status(200).json({ success: true, comparison });
+    } catch (err) {
+      next(err);
+    }
+  }
 }

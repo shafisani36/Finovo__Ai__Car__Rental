@@ -472,7 +472,7 @@
 }
 
 /* Responsive label switching for single-row grid (0 X-Scroll) */
-@media (min-width: 1200px) {
+@media (min-width: 1400px) {
   .car-nav-label-full {
     display: inline;
   }
@@ -486,7 +486,7 @@
   }
 }
 
-@media (max-width: 1199px) and (min-width: 880px) {
+@media (max-width: 1399px) and (min-width: 880px) {
   .car-nav-label-full {
     display: none;
   }
@@ -578,22 +578,23 @@
 -------------------------------------------------------------------------- */
 .car-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-bottom: 6px;
 }
 
 .car-kpi-card {
   background-color: #FFFFFF;
-  border-radius: var(--finovo-radius-lg);
-  padding: 18px 22px;
+  border-radius: var(--finovo-radius-md);
+  padding: 12px 18px;
   border: 1.5px solid var(--finovo-border-subtle);
-  box-shadow: var(--finovo-shadow-sm);
+  box-shadow: 0 2px 8px rgba(30, 4, 50, 0.03);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   box-sizing: border-box;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
 }
@@ -714,7 +715,7 @@
 -------------------------------------------------------------------------- */
 .car-workspace-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
+  grid-template-columns: minmax(0, 1fr) 350px;
   gap: 24px;
   align-items: start;
 }
@@ -1900,7 +1901,7 @@
 @media (min-width: 992px) {
   .car-workspace-grid {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 400px !important;
+    grid-template-columns: minmax(0, 1fr) 350px !important;
   }
 
   .car-form-pane,
@@ -1972,5 +1973,15 @@
 
   .car-features-grid {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 1280px) {
+  .car-row-3 {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .car-row-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
   }
 }
