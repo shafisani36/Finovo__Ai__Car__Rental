@@ -11,6 +11,7 @@ import {
   type CustomerDocumentItem,
   type DocumentChecklistItem,
 } from '../api/customerPortalApi';
+import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
 export function CustomerDocumentsPage() {
@@ -281,12 +282,17 @@ export function CustomerDocumentsPage() {
             <form onSubmit={handleUploadSubmit}>
               <div className="cp-form-group">
                 <label className="cp-label">Document Category</label>
-                <select className="cp-select" value={docType} onChange={(e) => setDocType(e.target.value)}>
-                  <option value="DRIVER_LICENSE_FRONT">Driver's License (Front Side)</option>
-                  <option value="DRIVER_LICENSE_BACK">Driver's License (Back Side)</option>
-                  <option value="PASSPORT">Passport / National ID</option>
-                  <option value="PROOF_OF_ADDRESS">Proof of Address (Utility Bill)</option>
-                </select>
+                <CustomSelect
+                  value={docType}
+                  onChange={(val) => setDocType(String(val))}
+                  options={[
+                    { value: 'DRIVER_LICENSE_FRONT', label: "Driver's License (Front Side)" },
+                    { value: 'DRIVER_LICENSE_BACK', label: "Driver's License (Back Side)" },
+                    { value: 'PASSPORT', label: 'Passport / National ID' },
+                    { value: 'PROOF_OF_ADDRESS', label: 'Proof of Address (Utility Bill)' },
+                  ]}
+                  size="md"
+                />
               </div>
 
               <div className="cp-form-group">

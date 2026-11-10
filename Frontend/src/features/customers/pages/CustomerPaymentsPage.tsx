@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import { customerPortalApi, type CustomerPaymentSummary } from '../api/customerPortalApi';
+import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
 export function CustomerPaymentsPage() {
@@ -291,21 +292,23 @@ export function CustomerPaymentsPage() {
               <>
                 <div className="cp-form-group">
                   <label className="cp-label">Select Booking</label>
-                  <select
-                    className="cp-select"
+                  <CustomSelect
                     value={selectedBookingId}
-                    onChange={(e) => {
-                      setSelectedBookingId(e.target.value);
-                      const inv = data?.invoices.find((i) => i.bookingId === e.target.value);
+                    onChange={(val) => {
+                      const bookingId = String(val);
+                      setSelectedBookingId(bookingId);
+                      const inv = data?.invoices.find((i) => i.bookingId === bookingId);
                       if (inv) setPayAmount(inv.balanceDue > 0 ? inv.balanceDue : inv.totalAmount);
                     }}
-                  >
-                    {data?.invoices.map((inv) => (
-                      <option key={inv.bookingId} value={inv.bookingId}>
-                        Booking #{inv.bookingNumber} - {inv.vehicleName} (Balance: ${inv.balanceDue.toFixed(2)})
-                      </option>
-                    ))}
-                  </select>
+                    options={(data?.invoices || []).map((inv) => ({
+                      value: inv.bookingId,
+                      label: `Booking #${inv.bookingNumber} - ${inv.vehicleName}`,
+                      sublabel: `Balance: ${inv.balanceDue.toFixed(2)}`,
+                      badge: inv.status,
+                    }))}
+                    placeholder="Select a booking invoice..."
+                    size="md"
+                  />
                 </div>
 
                 <div className="cp-form-group">

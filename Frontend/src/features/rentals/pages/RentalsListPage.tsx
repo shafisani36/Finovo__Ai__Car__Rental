@@ -296,7 +296,7 @@ export function RentalsListPage() {
                       {/* Dispatched */}
                       <td style={{ padding: '16px 20px' }}>
                         <div style={{ color: '#1E0426', fontWeight: 600 }}>
-                          {new Date(rental.startedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {new Date(rental.pickedUpAt || rental.startedAt || rental.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#685D73', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <MapPin size={12} />
@@ -426,7 +426,7 @@ export function RentalsListPage() {
             <div style={{ padding: '12px', border: '1px solid #ECEAEF', borderRadius: '8px' }}>
               <div style={{ fontSize: '0.75rem', color: '#685D73' }}>Dispatched At</div>
               <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E0426', marginTop: '4px' }}>
-                {new Date(selectedRental.startedAt).toLocaleDateString()}
+                {new Date(selectedRental.pickedUpAt || selectedRental.startedAt || selectedRental.createdAt).toLocaleDateString()}
               </div>
             </div>
           </div>

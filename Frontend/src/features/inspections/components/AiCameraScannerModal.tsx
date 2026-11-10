@@ -188,7 +188,7 @@ export function AiCameraScannerModal({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.85)',
+        backgroundColor: 'rgba(20, 2, 32, 0.84)',
         backdropFilter: 'blur(8px)',
         zIndex: 9999,
         display: 'flex',
@@ -199,27 +199,29 @@ export function AiCameraScannerModal({
     >
       <div
         style={{
-          backgroundColor: '#0F172A',
-          color: '#F8FAFC',
-          borderRadius: '20px',
+          background: 'linear-gradient(180deg, #1E0432 0%, #140220 100%)',
+          color: '#FFFFFF',
+          borderRadius: '22px',
           width: '100%',
           maxWidth: '1100px',
           maxHeight: '94vh',
           overflowY: 'auto',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          border: '1px solid #334155',
+          boxShadow: '0 24px 60px rgba(18, 2, 30, 0.55)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           display: 'flex',
           flexDirection: 'column',
+          fontFamily: "var(--font-family-sans, 'Manrope', sans-serif)",
         }}
       >
         {/* Header */}
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #1E293B',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '12px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -228,52 +230,74 @@ export function AiCameraScannerModal({
                 width: '42px',
                 height: '42px',
                 borderRadius: '12px',
-                background: 'linear-gradient(135deg, #FAB826 0%, #D97706 100%)',
+                background: 'linear-gradient(135deg, #FAB826 0%, #E5A417 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#111827',
+                color: '#1E0432',
+                boxShadow: '0 4px 14px rgba(250, 184, 38, 0.3)',
+                flexShrink: 0,
               }}
             >
               <Sparkles size={22} />
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h3
+                  style={{
+                    fontFamily: "var(--font-family-display, 'Archivo', sans-serif)",
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                    margin: 0,
+                  }}
+                >
                   Pre-Trained AI Inspection Scanner
                 </h3>
                 <span
                   style={{
-                    backgroundColor: inspectionType === 'PICKUP' ? '#065F46' : '#991B1B',
-                    color: '#ECFDF5',
+                    backgroundColor:
+                      inspectionType === 'PICKUP'
+                        ? 'rgba(16, 185, 129, 0.18)'
+                        : 'rgba(239, 68, 68, 0.2)',
+                    color: inspectionType === 'PICKUP' ? '#6EE7B7' : '#FCA5A5',
+                    border:
+                      inspectionType === 'PICKUP'
+                        ? '1px solid rgba(110, 231, 183, 0.35)'
+                        : '1px solid rgba(252, 165, 165, 0.35)',
                     fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '20px',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: '9999px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
+                    letterSpacing: '0.04em',
                   }}
                 >
                   {inspectionType === 'PICKUP' ? 'Handover Baseline' : 'Return Verification'}
                 </span>
               </div>
-              <p style={{ margin: 0, fontSize: '13px', color: '#94A3B8' }}>
+              <p style={{ margin: '3px 0 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>
                 {vehicle.brand} {vehicle.model} ({vehicle.year}) • Plate #{vehicle.registrationNumber}
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close AI scanner"
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#94A3B8',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.14)',
+              borderRadius: '10px',
+              color: 'rgba(255, 255, 255, 0.8)',
               cursor: 'pointer',
               padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
@@ -283,12 +307,14 @@ export function AiCameraScannerModal({
             display: 'flex',
             gap: '8px',
             padding: '12px 24px',
-            backgroundColor: '#1E293B',
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             overflowX: 'auto',
           }}
         >
           {VIEW_ANGLES.map((angle, idx) => (
             <button
+              type="button"
               key={angle.id}
               onClick={() => {
                 setActiveAngleIndex(idx);
@@ -301,19 +327,26 @@ export function AiCameraScannerModal({
                 padding: '8px 16px',
                 borderRadius: '10px',
                 fontSize: '13px',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
-                border: activeAngleIndex === idx ? '1px solid #FAB826' : '1px solid transparent',
-                backgroundColor: activeAngleIndex === idx ? 'rgba(250, 184, 38, 0.15)' : '#0F172A',
-                color: activeAngleIndex === idx ? '#FAB826' : '#94A3B8',
+                border:
+                  activeAngleIndex === idx
+                    ? '1px solid #FAB826'
+                    : '1px solid rgba(255, 255, 255, 0.12)',
+                backgroundColor:
+                  activeAngleIndex === idx
+                    ? 'rgba(250, 184, 38, 0.16)'
+                    : 'rgba(255, 255, 255, 0.05)',
+                color: activeAngleIndex === idx ? '#FAB826' : 'rgba(255, 255, 255, 0.76)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 whiteSpace: 'nowrap',
+                transition: 'all 0.18s ease',
               }}
             >
               <span>{angle.label}</span>
-              {capturedPhotos[angle.id] && <CheckCircle2 size={14} color="#10B981" />}
+              {capturedPhotos[angle.id] && <CheckCircle2 size={14} color="#34D399" />}
             </button>
           ))}
         </div>
@@ -322,7 +355,7 @@ export function AiCameraScannerModal({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1.4fr) minmax(320px, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
             gap: '24px',
             padding: '24px',
           }}
@@ -333,11 +366,11 @@ export function AiCameraScannerModal({
               style={{
                 position: 'relative',
                 width: '100%',
-                height: '420px',
+                height: 'clamp(280px, 44vw, 420px)',
                 borderRadius: '16px',
                 overflow: 'hidden',
-                backgroundColor: '#020617',
-                border: '2px solid #334155',
+                backgroundColor: '#12021D',
+                border: '2px solid rgba(250, 184, 38, 0.28)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -463,19 +496,21 @@ export function AiCameraScannerModal({
                     </button>
                   ) : (
                     <button
+                      type="button"
                       onClick={startCamera}
                       style={{
                         padding: '10px 16px',
-                        backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                        color: '#F8FAFC',
-                        border: '1px solid #475569',
+                        backgroundColor: 'rgba(30, 4, 50, 0.88)',
+                        color: '#FFFFFF',
+                        border: '1px solid rgba(255, 255, 255, 0.22)',
                         borderRadius: '10px',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         fontSize: '13px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
+                        backdropFilter: 'blur(6px)',
                       }}
                     >
                       <Camera size={16} /> Open Live Camera
@@ -483,19 +518,21 @@ export function AiCameraScannerModal({
                   )}
 
                   <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
                     style={{
                       padding: '10px 16px',
-                      backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                      color: '#F8FAFC',
-                      border: '1px solid #475569',
+                      backgroundColor: 'rgba(30, 4, 50, 0.88)',
+                      color: '#FFFFFF',
+                      border: '1px solid rgba(255, 255, 255, 0.22)',
                       borderRadius: '10px',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       fontSize: '13px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
+                      backdropFilter: 'blur(6px)',
                     }}
                   >
                     <Upload size={16} /> Upload Photo
@@ -511,12 +548,12 @@ export function AiCameraScannerModal({
 
                 <span
                   style={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                    backgroundColor: 'rgba(20, 2, 32, 0.88)',
                     padding: '6px 12px',
                     borderRadius: '8px',
                     fontSize: '12px',
-                    color: '#94A3B8',
-                    border: '1px solid #334155',
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    border: '1px solid rgba(250, 184, 38, 0.3)',
                   }}
                 >
                   {currentAngle.label} (Angle {activeAngleIndex + 1}/{VIEW_ANGLES.length})
@@ -531,24 +568,15 @@ export function AiCameraScannerModal({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Action Bar */}
             <button
+              type="button"
               onClick={handleRunAiInspection}
               disabled={isScanning}
+              className="cp-btn-primary"
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: '12px',
-                backgroundColor: isScanning ? '#475569' : '#FAB826',
-                color: '#111827',
-                border: 'none',
-                fontWeight: 800,
                 fontSize: '15px',
                 cursor: isScanning ? 'wait' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: isScanning ? 'none' : '0 4px 14px rgba(250, 184, 38, 0.35)',
-                transition: 'all 0.2s',
               }}
             >
               {isScanning ? (
@@ -568,27 +596,28 @@ export function AiCameraScannerModal({
             {inspectionResult ? (
               <div
                 style={{
-                  backgroundColor: '#1E293B',
-                  borderRadius: '14px',
+                  backgroundColor: '#2B0744',
+                  borderRadius: '16px',
                   padding: '20px',
-                  border: '1px solid #334155',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '16px',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#F8FAFC' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#FFFFFF' }}>
                     Neural Diagnostics Result
                   </h4>
                   <span
                     style={{
-                      backgroundColor: '#065F46',
-                      color: '#34D399',
+                      backgroundColor: 'rgba(16, 185, 129, 0.16)',
+                      color: '#6EE7B7',
+                      border: '1px solid rgba(110, 231, 183, 0.3)',
                       fontSize: '11px',
                       fontWeight: 700,
-                      padding: '3px 8px',
-                      borderRadius: '12px',
+                      padding: '3px 10px',
+                      borderRadius: '9999px',
                     }}
                   >
                     99.4% Accuracy Calibrated
@@ -598,15 +627,17 @@ export function AiCameraScannerModal({
                 {/* Detected Car Color Pill */}
                 <div
                   style={{
-                    backgroundColor: '#0F172A',
+                    backgroundColor: '#1E0432',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     padding: '12px 16px',
-                    borderRadius: '10px',
+                    borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    gap: '10px',
                   }}
                 >
-                  <span style={{ fontSize: '13px', color: '#94A3B8' }}>AI Detected Vehicle Color:</span>
+                  <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.72)' }}>AI Detected Vehicle Color:</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div
                       style={{
@@ -614,13 +645,13 @@ export function AiCameraScannerModal({
                         height: '18px',
                         borderRadius: '50%',
                         backgroundColor: inspectionResult.detectedColor.hexCode,
-                        border: '2px solid #F8FAFC',
+                        border: '2px solid #FFFFFF',
                       }}
                     />
-                    <strong style={{ fontSize: '13px', color: '#F8FAFC' }}>
+                    <strong style={{ fontSize: '13px', color: '#FFFFFF' }}>
                       {inspectionResult.detectedColor.colorName}
                     </strong>
-                    <span style={{ fontSize: '11px', color: '#38BDF8' }}>
+                    <span style={{ fontSize: '11px', color: '#FAB826', fontWeight: 700 }}>
                       ({inspectionResult.detectedColor.confidence}%)
                     </span>
                   </div>
@@ -630,44 +661,47 @@ export function AiCameraScannerModal({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   <div
                     style={{
-                      backgroundColor: '#0F172A',
+                      backgroundColor: '#1E0432',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       padding: '12px',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       textAlign: 'center',
                     }}
                   >
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10B981' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34D399' }}>
                       {inspectionResult.overallScore}%
                     </div>
-                    <div style={{ fontSize: '11px', color: '#94A3B8' }}>Body Integrity</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Body Integrity</div>
                   </div>
 
                   <div
                     style={{
-                      backgroundColor: '#0F172A',
+                      backgroundColor: '#1E0432',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       padding: '12px',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       textAlign: 'center',
                     }}
                   >
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#F59E0B' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FAB826' }}>
                       {inspectionResult.scratchesCount}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#94A3B8' }}>Scratches</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Scratches</div>
                   </div>
 
                   <div
                     style={{
-                      backgroundColor: '#0F172A',
+                      backgroundColor: '#1E0432',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       padding: '12px',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       textAlign: 'center',
                     }}
                   >
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#EF4444' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#F87171' }}>
                       {inspectionResult.dentsCount}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#94A3B8' }}>Dents</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Dents</div>
                   </div>
                 </div>
 
@@ -677,7 +711,7 @@ export function AiCameraScannerModal({
                     style={{
                       fontSize: '12px',
                       fontWeight: 700,
-                      color: '#94A3B8',
+                      color: 'rgba(255, 255, 255, 0.7)',
                       textTransform: 'uppercase',
                       marginBottom: '8px',
                     }}
@@ -688,9 +722,10 @@ export function AiCameraScannerModal({
                     <div
                       style={{
                         padding: '14px',
-                        backgroundColor: '#064E3B',
+                        backgroundColor: 'rgba(16, 185, 129, 0.16)',
+                        border: '1px solid rgba(110, 231, 183, 0.25)',
                         color: '#A7F3D0',
-                        borderRadius: '8px',
+                        borderRadius: '10px',
                         fontSize: '13px',
                         textAlign: 'center',
                         fontWeight: 600,
@@ -705,9 +740,10 @@ export function AiCameraScannerModal({
                           key={f.id}
                           style={{
                             padding: '10px 12px',
-                            backgroundColor: '#0F172A',
-                            borderRadius: '8px',
-                            borderLeft: f.category === 'SCRATCH' ? '3px solid #F59E0B' : '3px solid #EF4444',
+                            backgroundColor: '#1E0432',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '10px',
+                            borderLeft: f.category === 'SCRATCH' ? '3px solid #FAB826' : '3px solid #EF4444',
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
@@ -715,8 +751,8 @@ export function AiCameraScannerModal({
                           }}
                         >
                           <div>
-                            <strong style={{ color: '#F8FAFC' }}>{f.damageType}</strong>
-                            <div style={{ color: '#94A3B8', fontSize: '11px' }}>
+                            <strong style={{ color: '#FFFFFF' }}>{f.damageType}</strong>
+                            <div style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '11px' }}>
                               {f.location} • Conf: {f.confidence}%
                             </div>
                           </div>
@@ -729,12 +765,13 @@ export function AiCameraScannerModal({
 
                 {/* Generate / Open PDF Report Button */}
                 <button
+                  type="button"
                   onClick={() => onOpenPdfReport(inspectionResult)}
                   style={{
                     padding: '12px',
-                    borderRadius: '10px',
-                    backgroundColor: '#1E293B',
-                    border: '1px solid #FAB826',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(250, 184, 38, 0.5)',
                     color: '#FAB826',
                     fontWeight: 700,
                     fontSize: '14px',
@@ -743,7 +780,7 @@ export function AiCameraScannerModal({
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    marginTop: '8px',
+                    marginTop: '4px',
                   }}
                 >
                   <FileText size={18} />
@@ -753,19 +790,19 @@ export function AiCameraScannerModal({
             ) : (
               <div
                 style={{
-                  backgroundColor: '#1E293B',
-                  borderRadius: '14px',
-                  padding: '30px 20px',
+                  backgroundColor: '#2B0744',
+                  borderRadius: '16px',
+                  padding: '32px 20px',
                   textAlign: 'center',
-                  border: '1px dashed #334155',
-                  color: '#94A3B8',
+                  border: '1px dashed rgba(250, 184, 38, 0.35)',
+                  color: 'rgba(255, 255, 255, 0.72)',
                 }}
               >
                 <ShieldCheck size={40} color="#FAB826" style={{ margin: '0 auto 12px' }} />
-                <h5 style={{ color: '#F8FAFC', margin: '0 0 6px', fontSize: '15px' }}>
+                <h5 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '15px', fontWeight: 700 }}>
                   Pre-Trained AI Inspection Ready
                 </h5>
-                <p style={{ fontSize: '12px', margin: 0 }}>
+                <p style={{ fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
                   Capture or select inspection photos across all 5 key angles, then click "Run Pre-Trained AI Neural
                   Scan" to evaluate color, scratches, and dents.
                 </p>
@@ -778,26 +815,29 @@ export function AiCameraScannerModal({
         <div
           style={{
             padding: '16px 24px',
-            borderTop: '1px solid #1E293B',
+            borderTop: '1px solid rgba(255, 255, 255, 0.12)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
           }}
         >
-          <span style={{ fontSize: '12px', color: '#64748B' }}>
+          <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.56)' }}>
             Finovo Pre-Trained Neural Computer Vision v3.8 • Calibrated for Zero False Claims
           </span>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
+              type="button"
               onClick={onClose}
               style={{
                 padding: '10px 18px',
-                borderRadius: '10px',
-                border: '1px solid #334155',
-                backgroundColor: 'transparent',
-                color: '#94A3B8',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                color: 'rgba(255, 255, 255, 0.82)',
                 fontSize: '13px',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
               }}
             >

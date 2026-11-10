@@ -1,12 +1,34 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { RentalPricingService } from '../fleet/rental-pricing.service';
+import { InspectionService } from '../inspections/inspection.service';
+
+export interface HandoverPickupInspectionDTO {
+  overallScore?: number;
+  summary?: string;
+  hasDamageDetected?: boolean;
+  detectedColorName?: string;
+  photos?: Array<{
+    view: string;
+    imageUrl: string;
+  }>;
+  findings?: Array<{
+    damageType: string;
+    severity: string;
+    location: string;
+    confidence: number;
+    boundingBox?: unknown;
+    view?: string;
+    estimatedRepairCost?: number;
+  }>;
+}
 
 export interface HandoverDTO {
   bookingId: string;
   startMileage: number;
   startFuelLevel: string;
   notes?: string;
+  pickupInspectionData?: HandoverPickupInspectionDTO;
 }
 
 export interface ReturnVehicleDTO {
@@ -129,6 +151,7 @@ export class RentalService {
           },
         },
         inspections: {
+          orderBy: { createdAt: 'asc' },
           include: {
             findings: true,
             photos: true,
@@ -141,7 +164,13 @@ export class RentalService {
       throw AppError.notFound('Rental record not found');
     }
 
-    return rental;
+    return {
+      ...rental,
+      inspections: rental.inspections.map((ins) => ({
+        ...ins,
+        findings: ins.findings.map((f) => InspectionService.formatFinding(f)),
+      })),
+    };
   }
 
   /**
@@ -180,8 +209,8 @@ export class RentalService {
       actualReturnDateTime: returnTime,
       startOdometer: rental.startMileage,
       endOdometer: endMileage,
-      fuelDiscrepancyCharge: Number(dto.fuelDiscrepancyCharge || 0),
-      damageCharge: Number(dto.damageCharge || 0),
+      fuelDiscrepancyCharge: Number(dto.fuelDiscrepancyCharge ?? (dto as any).fuelCharges ?? 0),
+      damageCharge: Number(dto.damageCharge ?? (dto as any).damageCharges ?? 0),
       additionalAdjustment: Number(dto.additionalAdjustment || 0),
       amountAlreadyPaid: Number(rental.booking.totalAmount || 0),
     });
@@ -252,18 +281,60 @@ export class RentalService {
         },
       });
 
-      // 5. Create Initial Pickup Inspection record
-      await tx.inspection.create({
+      // 5. Persist Real Pre-Handover Baseline Pickup Inspection (Photos + AI Findings)
+      const pickupData = dto.pickupInspectionData;
+      const pickupFindings = pickupData?.findings || [];
+      const createdPickup = await tx.inspection.create({
         data: {
           rentalId: rental.id,
           vehicleId: booking.vehicleId,
           type: 'PICKUP',
           performedById: staffUserId || null,
-          overallScore: 99.0,
-          summary: `Pickup handover completed. Starting mileage: ${dto.startMileage} km, Fuel: ${dto.startFuelLevel}. ${dto.notes || 'No pre-existing critical damage.'}`,
-          hasDamageDetected: false,
+          overallScore: pickupData?.overallScore ?? 100.0,
+          summary:
+            pickupData?.summary ||
+            `Pickup handover completed. Starting mileage: ${dto.startMileage} km, Fuel: ${dto.startFuelLevel}. ${dto.notes || 'No pre-existing critical damage.'}`,
+          hasDamageDetected: pickupData?.hasDamageDetected ?? pickupFindings.length > 0,
         },
       });
+
+      const pickupPhotos =
+        pickupData?.photos && pickupData.photos.length > 0
+          ? pickupData.photos
+          : [
+              {
+                view: 'FRONT',
+                imageUrl: booking.vehicle.primaryImageUrl || '',
+              },
+            ];
+
+      for (const p of pickupPhotos) {
+        await tx.inspectionPhoto.create({
+          data: {
+            inspectionId: createdPickup.id,
+            view: p.view || 'FRONT',
+            imageUrl: InspectionService.persistPhotoUrl(p.imageUrl, `pickup-${(p.view || 'front').toLowerCase()}`),
+            qualityScore: 99.2,
+          },
+        });
+      }
+
+      for (const f of pickupFindings) {
+        await tx.damageFinding.create({
+          data: {
+            inspectionId: createdPickup.id,
+            damageType: f.damageType,
+            severity: f.severity || 'LOW',
+            location: f.location,
+            region: f.view || 'FRONT',
+            confidence: f.confidence > 1 ? f.confidence / 100 : f.confidence,
+            boundingBox: f.boundingBox ? JSON.stringify(f.boundingBox) : null,
+            estimatedRepairCost: f.estimatedRepairCost ?? 150,
+            isHumanVerified: true,
+            humanDecision: 'BASELINE_DOCUMENTED',
+          },
+        });
+      }
 
       // 6. Audit Log
       await tx.securityAuditLog.create({
@@ -326,8 +397,8 @@ export class RentalService {
       actualReturnDateTime: returnTime,
       startOdometer: rental.startMileage,
       endOdometer: endMileage,
-      fuelDiscrepancyCharge: Number(dto.fuelDiscrepancyCharge || 0),
-      damageCharge: Number(dto.damageCharge || 0),
+      fuelDiscrepancyCharge: Number(dto.fuelDiscrepancyCharge ?? (dto as any).fuelCharges ?? 0),
+      damageCharge: Number(dto.damageCharge ?? (dto as any).damageCharges ?? 0),
       additionalAdjustment: Number(dto.additionalAdjustment || 0),
       amountAlreadyPaid: Number(rental.booking.totalAmount || 0),
     });

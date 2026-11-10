@@ -15,6 +15,7 @@ import {
   StatCard,
   StatGrid,
   Modal,
+  CustomSelect,
 } from '../../../components/common';
 import { inquiryApi, type Inquiry } from '../../../api/services/inquiry.api';
 
@@ -529,27 +530,18 @@ export function InquiriesListPage() {
                 <div style={{ fontWeight: 700, color: '#1E0426' }}>{selectedInquiry.phone || 'Not provided'}</div>
               </div>
               <div>
-                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600 }}>Status Control</div>
-                <select
+                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Status Control</div>
+                <CustomSelect<Inquiry['status']>
                   value={selectedInquiry.status}
-                  onChange={(e) => handleStatusChange(selectedInquiry.id, e.target.value as Inquiry['status'])}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    border: '1px solid #ECEAEF',
-                    backgroundColor: '#FFFFFF',
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    color: '#1E0426',
-                    cursor: 'pointer',
-                    marginTop: '2px',
-                  }}
-                >
-                  <option value="NEW">NEW</option>
-                  <option value="IN_PROGRESS">IN PROGRESS</option>
-                  <option value="REPLIED">REPLIED</option>
-                  <option value="CLOSED">CLOSED</option>
-                </select>
+                  onChange={(val) => handleStatusChange(selectedInquiry.id, val)}
+                  options={[
+                    { value: 'NEW', label: 'NEW' },
+                    { value: 'IN_PROGRESS', label: 'IN PROGRESS' },
+                    { value: 'REPLIED', label: 'REPLIED' },
+                    { value: 'CLOSED', label: 'CLOSED' },
+                  ]}
+                  size="sm"
+                />
               </div>
             </div>
 

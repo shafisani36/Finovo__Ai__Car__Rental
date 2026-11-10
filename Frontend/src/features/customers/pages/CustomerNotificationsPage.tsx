@@ -9,7 +9,11 @@ import {
   FileText,
   ChevronRight,
 } from 'lucide-react';
-import { customerPortalApi, type CustomerNotificationItem } from '../api/customerPortalApi';
+import {
+  customerPortalApi,
+  notifyNotificationsUpdated,
+  type CustomerNotificationItem,
+} from '../api/customerPortalApi';
 import './CustomerPortal.css';
 
 export function CustomerNotificationsPage() {
@@ -17,6 +21,7 @@ export function CustomerNotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [isLoading, setIsLoading] = useState(true);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
 
   const fetchNotifications = async () => {
     try {
@@ -40,22 +45,30 @@ export function CustomerNotificationsPage() {
   const handleMarkAsRead = async (id: string) => {
     try {
       await customerPortalApi.markNotificationRead(id);
+      const target = notifications.find((n) => n.id === id);
+      const nextUnreadCount = target && !target.isRead ? Math.max(0, unreadCount - 1) : unreadCount;
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setUnreadCount(nextUnreadCount);
+      notifyNotificationsUpdated(nextUnreadCount);
     } catch (err) {
       console.error('Error marking read:', err);
     }
   };
 
   const handleMarkAllRead = async () => {
+    if (isMarkingAll) return;
     try {
+      setIsMarkingAll(true);
       await customerPortalApi.markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
+      notifyNotificationsUpdated(0);
     } catch (err) {
       console.error('Error marking all read:', err);
+    } finally {
+      setIsMarkingAll(false);
     }
   };
 
@@ -102,9 +115,9 @@ export function CustomerNotificationsPage() {
 
         {unreadCount > 0 && (
           <div className="cp-header-actions">
-            <button className="cp-btn-outline" onClick={handleMarkAllRead}>
+            <button className="cp-btn-outline" onClick={handleMarkAllRead} disabled={isMarkingAll}>
               <CheckCheck size={16} />
-              Mark All as Read
+              {isMarkingAll ? 'Marking...' : 'Mark All as Read'}
             </button>
           </div>
         )}

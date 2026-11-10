@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../features/auth/context';
 import { BrandLogo } from '../../components/common/BrandLogo';
-import { customerPortalApi } from '../../features/customers/api/customerPortalApi';
+import {
+  customerPortalApi,
+  CUSTOMER_NOTIFICATIONS_UPDATED_EVENT,
+} from '../../features/customers/api/customerPortalApi';
 import {
   LayoutDashboard,
   Car,
@@ -43,14 +46,34 @@ export function CustomerLayout() {
       })
       .catch(() => {});
 
+    const handleNotificationsUpdated = (event: Event) => {
+      if (!isMounted) return;
+      const customEvent = event as CustomEvent<{ unreadCount?: number }>;
+      if (typeof customEvent.detail?.unreadCount === 'number') {
+        setUnreadNotifications(Math.max(0, customEvent.detail.unreadCount));
+      } else {
+        customerPortalApi
+          .listNotifications()
+          .then((res) => {
+            if (isMounted && res.success) {
+              setUnreadNotifications(res.unreadCount || 0);
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
     const handleResize = () => {
       if (window.innerWidth >= 992) {
         setMobileSidebarOpen(false);
       }
     };
+
+    window.addEventListener(CUSTOMER_NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
     window.addEventListener('resize', handleResize);
     return () => {
       isMounted = false;
+      window.removeEventListener(CUSTOMER_NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated);
       window.removeEventListener('resize', handleResize);
     };
   }, []);

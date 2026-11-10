@@ -246,6 +246,134 @@ export class InspectionAiEngine {
   }
 
   /**
+   * Infers camera angle view from explicit region or location label
+   */
+  static inferFindingView(
+    region?: string | null,
+    location?: string | null
+  ): DetectedDamageItem['view'] {
+    const r = (region || '').toUpperCase();
+    if (
+      r === 'FRONT' ||
+      r === 'DRIVER_SIDE' ||
+      r === 'PASSENGER_SIDE' ||
+      r === 'REAR' ||
+      r === 'ROOF' ||
+      r === 'INTERIOR'
+    ) {
+      return r as DetectedDamageItem['view'];
+    }
+    const loc = (location || '').toLowerCase();
+    if (loc.includes('rear')) return 'REAR';
+    if (loc.includes('driver') || loc.includes('left')) return 'DRIVER_SIDE';
+    if (loc.includes('passenger') || loc.includes('door') || loc.includes('right')) return 'PASSENGER_SIDE';
+    if (loc.includes('roof')) return 'ROOF';
+    return 'FRONT';
+  }
+
+  /**
+   * Converts a backend Inspection record into a ClientInspectionReport for comparison & PDF generation
+   */
+  static fromServerRecord(
+    record: {
+      id: string;
+      type: string;
+      overallScore?: number | null;
+      summary?: string | null;
+      createdAt: string;
+      photos?: Array<{ view: string; imageUrl: string }>;
+      findings?: Array<{
+        id: string;
+        damageType: string;
+        severity: string;
+        location: string;
+        region?: string | null;
+        confidence: number;
+        boundingBox?: string | null;
+        estimatedRepairCost?: number;
+        status?: string;
+        humanDecision?: string;
+      }>;
+    },
+    vehicle: {
+      brand: string;
+      model: string;
+      year?: number;
+      registrationNumber: string;
+      vin?: string;
+      color?: string;
+      primaryImageUrl?: string;
+    }
+  ): ClientInspectionReport {
+    const mappedFindings: DetectedDamageItem[] = (record.findings || []).map((f) => {
+      let parsedBox = { x: 0.25, y: 0.35, width: 0.16, height: 0.1 };
+      if (f.boundingBox) {
+        try {
+          const raw = JSON.parse(f.boundingBox);
+          parsedBox = {
+            x: raw.x > 1 ? raw.x / 100 : raw.x,
+            y: raw.y > 1 ? raw.y / 100 : raw.y,
+            width: raw.width > 1 ? raw.width / 100 : raw.width,
+            height: raw.height > 1 ? raw.height / 100 : raw.height,
+          };
+        } catch {
+          // keep default
+        }
+      }
+      const conf = Number(f.confidence ?? 0);
+      const confidencePct = conf <= 1 ? Math.round(conf * 100) : Math.round(conf);
+      return {
+        id: f.id,
+        damageType: f.damageType,
+        category: f.damageType.toLowerCase().includes('scratch') ? 'SCRATCH' : 'DENT',
+        severity: (['LOW', 'MEDIUM', 'HIGH'].includes((f.severity || '').toUpperCase())
+          ? f.severity.toUpperCase()
+          : 'MEDIUM') as DetectedDamageItem['severity'],
+        location: f.location,
+        confidence: confidencePct,
+        boundingBox: parsedBox,
+        view: this.inferFindingView(f.region, f.location),
+        estimatedRepairCost: Number(f.estimatedRepairCost || 0),
+        description: f.damageType,
+      };
+    });
+
+    const scratches = mappedFindings.filter((f) => f.category === 'SCRATCH').length;
+    const dents = mappedFindings.filter((f) => f.category === 'DENT').length;
+    const fallbackImg =
+      vehicle.primaryImageUrl ||
+      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80';
+
+    return {
+      id: record.id,
+      type: record.type === 'RETURN' ? 'RETURN' : 'PICKUP',
+      detectedColor: this.detectCarColor(vehicle.color),
+      overallScore: record.overallScore ?? 100,
+      summary: record.summary || 'Vehicle inspection documented.',
+      findings: mappedFindings,
+      scratchesCount: scratches,
+      dentsCount: dents,
+      coverageScore: 100,
+      inspectionHash: this.generateHash(`${record.id}-${vehicle.registrationNumber}`),
+      timestamp: new Date(record.createdAt).toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+      vehicle: {
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year || 2026,
+        registrationNumber: vehicle.registrationNumber,
+        vin: vehicle.vin,
+      },
+      photos:
+        record.photos && record.photos.length > 0
+          ? record.photos.map((p) => ({ view: p.view, imageUrl: p.imageUrl }))
+          : [{ view: 'FRONT', imageUrl: fallbackImg }],
+    };
+  }
+
+  /**
    * Compares Return Inspection Report vs Pickup Baseline Report
    */
   static compareReports(

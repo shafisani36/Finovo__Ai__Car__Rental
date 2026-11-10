@@ -15,6 +15,7 @@ import {
   StatCard,
   StatGrid,
   Modal,
+  CustomSelect,
 } from '../../../components/common';
 import { adminApi, type AdminUser } from '../../../api/services/admin.api';
 import { useAuth } from '../../../features/auth/context';
@@ -546,11 +547,11 @@ export function UsersManagementPage() {
                               justifyContent: 'center',
                               width: '28px',
                               height: '28px',
-                              backgroundColor: isCurrent ? '#F3F4F6' : '#FEF2F2',
+                              backgroundColor: isCurrent ? '#FAF7FA' : '#FEF2F2',
                               border: '1px solid',
-                              borderColor: isCurrent ? '#E5E7EB' : '#FECACA',
+                              borderColor: isCurrent ? '#EFEAEF' : '#FECACA',
                               borderRadius: '8px',
-                              color: isCurrent ? '#9CA3AF' : '#DC2626',
+                              color: isCurrent ? '#8A7090' : '#DC2626',
                               cursor: isCurrent ? 'not-allowed' : 'pointer',
                             }}
                           >
@@ -677,26 +678,17 @@ export function UsersManagementPage() {
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
                 System Role *
               </label>
-              <select
+              <CustomSelect
                 value={createForm.role}
-                onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  fontWeight: 600,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <option value="CUSTOMER">CUSTOMER (Standard Renter)</option>
-                <option value="ADMIN">ADMIN (Operations Manager)</option>
-                <option value="SUPER_ADMIN">SUPER_ADMIN (System Root)</option>
-              </select>
+                onChange={(val) => setCreateForm({ ...createForm, role: String(val) })}
+                options={[
+                  { value: 'CUSTOMER', label: 'CUSTOMER (Standard Renter)', sublabel: 'Self-service booking & portal' },
+                  { value: 'ADMIN', label: 'ADMIN (Operations Manager)', sublabel: 'Fleet & rental management' },
+                  { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN (System Root)', sublabel: 'Full platform control' },
+                ]}
+                size="md"
+                menuPlacement="top"
+              />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
@@ -795,52 +787,34 @@ export function UsersManagementPage() {
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
                 Account Status
               </label>
-              <select
+              <CustomSelect<AdminUser['status']>
                 value={editForm.status}
-                onChange={(e) => setEditForm({ ...editForm, status: e.target.value as AdminUser['status'] })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  fontWeight: 600,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="SUSPENDED">SUSPENDED</option>
-                <option value="PENDING_VERIFICATION">PENDING VERIFICATION</option>
-              </select>
+                onChange={(val) => setEditForm({ ...editForm, status: val })}
+                options={[
+                  { value: 'ACTIVE', label: 'ACTIVE' },
+                  { value: 'SUSPENDED', label: 'SUSPENDED' },
+                  { value: 'PENDING_VERIFICATION', label: 'PENDING VERIFICATION' },
+                ]}
+                size="md"
+                menuPlacement="top"
+              />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
                 Access Role
               </label>
-              <select
+              <CustomSelect
                 value={editForm.role}
-                onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  fontWeight: 600,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <option value="CUSTOMER">CUSTOMER</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-              </select>
+                onChange={(val) => setEditForm({ ...editForm, role: String(val) })}
+                options={[
+                  { value: 'CUSTOMER', label: 'CUSTOMER' },
+                  { value: 'ADMIN', label: 'ADMIN' },
+                  { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN' },
+                ]}
+                size="md"
+                menuPlacement="top"
+              />
             </div>
 
             <div>

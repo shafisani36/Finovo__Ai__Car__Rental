@@ -23,6 +23,7 @@ import { vehiclesApi } from '../../api/services/vehicles.api';
 import type { Vehicle } from '../../features/fleet/types/fleet.types';
 import './AvailableCarsPage.css';
 import { CarCard } from '../../components/common/CarCard';
+import { CustomSelect } from '../../components/common/CustomSelect';
 
 // Master Visual Assets matching Figma Design Specification
 import heroCarImg from '../../assets/cars/finovo-available-hero-car.png';
@@ -880,16 +881,19 @@ export function AvailableCarsPage() {
             {/* Sort Dropdown */}
             <div className="cars-sort-selector-box">
               <span className="cars-sort-label">Sort by:</span>
-              <select
-                className="cars-sort-dropdown"
+              <CustomSelect
                 value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-              >
-                <option>Newest First</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-                <option>Most Popular</option>
-              </select>
+                onChange={(val) => setSortOption(String(val))}
+                options={[
+                  { value: 'Newest First', label: 'Newest First' },
+                  { value: 'Price: Low to High', label: 'Price: Low to High' },
+                  { value: 'Price: High to Low', label: 'Price: High to Low' },
+                  { value: 'Most Popular', label: 'Most Popular' },
+                ]}
+                fullWidth={false}
+                size="sm"
+                triggerStyle={{ minWidth: '185px', backgroundColor: '#FFFFFF' }}
+              />
             </div>
 
             {/* View Mode Toggle */}

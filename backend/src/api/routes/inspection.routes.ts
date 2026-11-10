@@ -21,6 +21,6 @@ inspectionRouter.get('/comparisons/:id', InspectionController.getComparisonById)
 // Staff human verification
 inspectionRouter.patch(
   '/findings/:findingId/review',
-  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'),
   InspectionController.reviewFinding
 );

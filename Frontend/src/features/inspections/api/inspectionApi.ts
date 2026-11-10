@@ -9,6 +9,7 @@ export interface DamageFinding {
   location: string;
   confidence: number;
   boundingBox?: string; // JSON string of { x, y, width, height }
+  region?: string;
   estimatedRepairCost?: number;
   status?: string;
   humanDecision?: string;
@@ -22,7 +23,7 @@ export interface DamageFinding {
 export interface InspectionPhoto {
   id: string;
   inspectionId: string;
-  view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR';
+  view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR';
   imageUrl: string;
   createdAt: string;
 }
@@ -58,13 +59,24 @@ export interface InspectionRecord {
     booking: {
       id: string;
       bookingNumber: string;
+      depositAmount?: number;
       customer: {
         id: string;
         fullName: string;
         email: string;
         phone?: string;
       };
+      damage_comparisons?: Array<{
+        id: string;
+        status: string;
+        summary?: string;
+        preExistingCount: number;
+        newDamageCount: number;
+        totalProposedCharges: number;
+        totalApprovedCharges: number;
+      }>;
     };
+    inspections?: InspectionRecord[];
   };
   photos: InspectionPhoto[];
   findings: DamageFinding[];
@@ -75,10 +87,12 @@ export type CreateInspectionPayload = AnalyzePayload;
 export interface AnalyzePayload {
   vehicleId: string;
   rentalId?: string;
+  bookingId?: string;
   type: 'PICKUP' | 'RETURN' | 'ROUTINE';
   summary?: string;
+  simulatedDamage?: boolean;
   photos: Array<{
-    view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR';
+    view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR';
     imageUrl: string;
   }>;
 }
@@ -120,8 +134,17 @@ export const inspectionApi = {
     });
   },
 
-  async reviewFinding(findingId: string, payload: ReviewFindingPayload): Promise<{ success: boolean; finding: DamageFinding }> {
-    return authClient.request<{ success: boolean; finding: DamageFinding }>(`/inspections/findings/${findingId}/review`, {
+  async reviewFinding(
+    findingId: string,
+    payload: ReviewFindingPayload
+  ): Promise<{
+    success: boolean;
+    finding: DamageFinding;
+    maintenanceCreated?: boolean;
+    maintenanceRecordId?: string | null;
+    vehicleStatus?: string;
+  }> {
+    return authClient.request(`/inspections/findings/${findingId}/review`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });

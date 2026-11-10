@@ -44,7 +44,7 @@ export function InspectionReportPdfModal({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.85)',
+        backgroundColor: 'rgba(20, 2, 32, 0.84)',
         backdropFilter: 'blur(8px)',
         zIndex: 10000,
         display: 'flex',
@@ -71,16 +71,17 @@ export function InspectionReportPdfModal({
           className="no-print"
           style={{
             padding: '16px 24px',
-            backgroundColor: '#1E0426',
+            background: 'linear-gradient(135deg, #1E0432 0%, #2E0949 100%)',
             color: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '12px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <FileCheck size={22} color="#FAB826" />
-            <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>
+            <span style={{ fontFamily: "var(--font-family-display, 'Archivo', sans-serif)", fontWeight: 800, fontSize: '1.05rem' }}>
               {isComparison
                 ? 'Official Return Damage Comparison Report (PDF)'
                 : 'Official Vehicle Handover Pre-Inspection Certificate (PDF)'}
@@ -89,34 +90,30 @@ export function InspectionReportPdfModal({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
+              type="button"
               onClick={handlePrint}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                backgroundColor: '#FAB826',
-                color: '#1E0426',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '13px',
-                cursor: 'pointer',
-              }}
+              className="cp-btn-primary"
+              style={{ padding: '8px 16px', fontSize: '13px', minHeight: '36px' }}
             >
               <Printer size={16} /> Print / Save as PDF
             </button>
             <button
+              type="button"
               onClick={onClose}
+              aria-label="Close PDF preview"
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#94A3B8',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.16)',
+                borderRadius: '8px',
+                color: 'rgba(255, 255, 255, 0.8)',
                 cursor: 'pointer',
-                padding: '4px',
+                padding: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <X size={22} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -125,8 +122,8 @@ export function InspectionReportPdfModal({
         <div
           style={{
             overflowY: 'auto',
-            padding: '40px',
-            backgroundColor: '#F8FAFC',
+            padding: 'clamp(16px, 4vw, 36px)',
+            backgroundColor: '#F7F5F8',
             flex: 1,
           }}
         >
@@ -136,14 +133,14 @@ export function InspectionReportPdfModal({
             className="printable-certificate"
             style={{
               backgroundColor: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '12px',
-              padding: '40px',
+              border: '1px solid #EFEAEF',
+              borderRadius: '16px',
+              padding: 'clamp(20px, 4vw, 40px)',
               maxWidth: '820px',
               margin: '0 auto',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-              fontFamily: '"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-              color: '#0F172A',
+              boxShadow: '0 6px 20px rgba(30, 4, 50, 0.06)',
+              fontFamily: "var(--font-family-sans, 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif)",
+              color: '#1E0432',
             }}
           >
             {/* Certificate Header */}
@@ -152,7 +149,9 @@ export function InspectionReportPdfModal({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                borderBottom: '2px solid #1E0426',
+                flexWrap: 'wrap',
+                gap: '16px',
+                borderBottom: '2px solid #1E0432',
                 paddingBottom: '24px',
                 marginBottom: '28px',
               }}
@@ -161,10 +160,10 @@ export function InspectionReportPdfModal({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      backgroundColor: '#1E0426',
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '9px',
+                      backgroundColor: '#1E0432',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -172,14 +171,14 @@ export function InspectionReportPdfModal({
                   >
                     <Award size={18} color="#FAB826" />
                   </div>
-                  <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#1E0426', margin: 0 }}>
+                  <h1 style={{ fontFamily: "var(--font-family-display, 'Archivo', sans-serif)", fontSize: '24px', fontWeight: 900, color: '#1E0432', margin: 0 }}>
                     FINOVO AI CAR RENTAL
                   </h1>
                 </div>
-                <p style={{ margin: 0, fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
+                <p style={{ margin: 0, fontSize: '12px', color: '#4A315A', fontWeight: 600 }}>
                   Pre-Trained Computer Vision Vehicle Inspection & Handover Certificate
                 </p>
-                <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94A3B8' }}>
+                <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#8A7090' }}>
                   Standard ISO/SAE Automotive Inspection Compliance • Verification Hash: {activeReport.inspectionHash}
                 </p>
               </div>
@@ -187,25 +186,25 @@ export function InspectionReportPdfModal({
               <div style={{ textAlign: 'right' }}>
                 <span
                   style={{
-                    backgroundColor: isComparison ? '#FEF2F2' : '#ECFDF5',
-                    color: isComparison ? '#991B1B' : '#065F46',
-                    border: isComparison ? '1px solid #FCA5A5' : '1px solid #A7F3D0',
+                    backgroundColor: isComparison ? '#FEE2E2' : '#E8F9F0',
+                    color: isComparison ? '#B91C1C' : '#057A55',
+                    border: isComparison ? '1px solid #FECACA' : '1px solid #A7F3D0',
                     fontWeight: 800,
                     fontSize: '12px',
                     padding: '6px 14px',
-                    borderRadius: '20px',
+                    borderRadius: '9999px',
                     display: 'inline-block',
                     marginBottom: '8px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
+                    letterSpacing: '0.04em',
                   }}
                 >
                   {isComparison ? 'Return Damage Delta Audit' : 'Certified Pickup Baseline'}
                 </span>
-                <div style={{ fontSize: '12px', color: '#64748B' }}>
+                <div style={{ fontSize: '12px', color: '#4A315A' }}>
                   Certificate ID: <strong>#{activeReport.id}</strong>
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748B' }}>Date: {activeReport.timestamp}</div>
+                <div style={{ fontSize: '12px', color: '#8A7090' }}>Date: {activeReport.timestamp}</div>
               </div>
             </div>
 
@@ -213,41 +212,41 @@ export function InspectionReportPdfModal({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1.4fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
                 gap: '20px',
-                backgroundColor: '#F8F6F9',
+                backgroundColor: '#FAF7FA',
                 padding: '20px',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 marginBottom: '28px',
-                border: '1px solid #E2E8F0',
+                border: '1px solid #EFEAEF',
               }}
             >
               <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 10px', color: '#1E0426' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 10px', color: '#1E0432' }}>
                   {activeReport.vehicle.brand} {activeReport.vehicle.model} ({activeReport.vehicle.year})
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
                   <div>
-                    <span style={{ color: '#64748B' }}>Plate #:</span>{' '}
+                    <span style={{ color: '#8A7090' }}>Plate #:</span>{' '}
                     <strong>{activeReport.vehicle.registrationNumber}</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748B' }}>VIN:</span>{' '}
+                    <span style={{ color: '#8A7090' }}>VIN:</span>{' '}
                     <strong>{activeReport.vehicle.vin || 'FIN-VIN-VERIFIED'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748B' }}>Classification:</span>{' '}
+                    <span style={{ color: '#8A7090' }}>Classification:</span>{' '}
                     <strong>Fleet Active</strong>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ color: '#64748B' }}>Detected Color:</span>
+                    <span style={{ color: '#8A7090' }}>Detected Color:</span>
                     <div
                       style={{
                         width: '12px',
                         height: '12px',
                         borderRadius: '50%',
                         backgroundColor: activeReport.detectedColor.hexCode,
-                        border: '1px solid #CBD5E1',
+                        border: '1px solid #E0D8E3',
                       }}
                     />
                     <strong>{activeReport.detectedColor.colorName}</strong>
@@ -260,33 +259,33 @@ export function InspectionReportPdfModal({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-around',
-                  borderLeft: '1px solid #CBD5E1',
+                  borderLeft: '1px solid #E0D8E3',
                   paddingLeft: '16px',
                 }}
               >
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '28px', fontWeight: 900, color: '#10B981', lineHeight: 1 }}>
+                  <div style={{ fontSize: '28px', fontWeight: 900, color: '#057A55', lineHeight: 1 }}>
                     {activeReport.overallScore}%
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, marginTop: '4px' }}>
+                  <div style={{ fontSize: '11px', color: '#8A7090', fontWeight: 700, marginTop: '4px' }}>
                     Body Integrity
                   </div>
                 </div>
 
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#F59E0B', lineHeight: 1 }}>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#B45309', lineHeight: 1 }}>
                     {activeReport.scratchesCount}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, marginTop: '4px' }}>
+                  <div style={{ fontSize: '11px', color: '#8A7090', fontWeight: 700, marginTop: '4px' }}>
                     Scratches
                   </div>
                 </div>
 
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#EF4444', lineHeight: 1 }}>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#B91C1C', lineHeight: 1 }}>
                     {activeReport.dentsCount}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, marginTop: '4px' }}>
+                  <div style={{ fontSize: '11px', color: '#8A7090', fontWeight: 700, marginTop: '4px' }}>
                     Dents
                   </div>
                 </div>
@@ -296,12 +295,12 @@ export function InspectionReportPdfModal({
             {/* AI Summary Callout */}
             <div
               style={{
-                backgroundColor: '#EFF6FF',
-                borderLeft: '4px solid #3B82F6',
+                backgroundColor: '#FAF6FC',
+                borderLeft: '4px solid #6C1E84',
                 padding: '12px 16px',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 fontSize: '12px',
-                color: '#1E3A8A',
+                color: '#1E0432',
                 marginBottom: '28px',
                 lineHeight: 1.5,
               }}
@@ -373,28 +372,30 @@ export function InspectionReportPdfModal({
                 <div
                   style={{
                     backgroundColor: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '8px',
+                    border: '1px solid #EFEAEF',
+                    borderRadius: '10px',
                     padding: '14px 18px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px',
                     fontSize: '13px',
                   }}
                 >
                   <div>
-                    <span style={{ color: '#64748B' }}>Original Security Deposit:</span>{' '}
-                    <strong>PKR {comparisonReport.securityDeposit.toLocaleString()}</strong>
+                    <span style={{ color: '#8A7090' }}>Original Security Deposit:</span>{' '}
+                    <strong style={{ color: '#1E0432' }}>PKR {comparisonReport.securityDeposit.toLocaleString()}</strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748B' }}>Damage Deduction:</span>{' '}
-                    <strong style={{ color: '#DC2626' }}>
+                    <span style={{ color: '#8A7090' }}>Damage Deduction:</span>{' '}
+                    <strong style={{ color: '#B91C1C' }}>
                       - PKR {comparisonReport.totalProposedCharges.toLocaleString()}
                     </strong>
                   </div>
                   <div>
-                    <span style={{ color: '#64748B' }}>Net Deposit Refund Authorized:</span>{' '}
-                    <strong style={{ color: '#16A34A', fontSize: '15px' }}>
+                    <span style={{ color: '#8A7090' }}>Net Deposit Refund Authorized:</span>{' '}
+                    <strong style={{ color: '#057A55', fontSize: '15px' }}>
                       PKR {comparisonReport.netRefundAmount.toLocaleString()}
                     </strong>
                   </div>
@@ -441,7 +442,7 @@ export function InspectionReportPdfModal({
                   }}
                 >
                   <thead>
-                    <tr style={{ backgroundColor: '#F1F5F9', borderBottom: '2px solid #CBD5E1' }}>
+                    <tr style={{ backgroundColor: '#FAF6FC', borderBottom: '2px solid #E0D8E3', color: '#1E0432' }}>
                       <th style={{ padding: '10px 12px' }}>#</th>
                       <th style={{ padding: '10px 12px' }}>Damage Classification</th>
                       <th style={{ padding: '10px 12px' }}>Location on Vehicle</th>
@@ -452,10 +453,10 @@ export function InspectionReportPdfModal({
                   </thead>
                   <tbody>
                     {activeReport.findings.map((finding, idx) => (
-                      <tr key={finding.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                      <tr key={finding.id} style={{ borderBottom: '1px solid #EFEAEF' }}>
                         <td style={{ padding: '10px 12px', fontWeight: 700 }}>{idx + 1}</td>
                         <td style={{ padding: '10px 12px', fontWeight: 600 }}>{finding.damageType}</td>
-                        <td style={{ padding: '10px 12px', color: '#475569' }}>{finding.location}</td>
+                        <td style={{ padding: '10px 12px', color: '#4A315A' }}>{finding.location}</td>
                         <td style={{ padding: '10px 12px' }}>
                           <span
                             style={{
@@ -501,10 +502,10 @@ export function InspectionReportPdfModal({
                   <div
                     key={i}
                     style={{
-                      borderRadius: '8px',
+                      borderRadius: '10px',
                       overflow: 'hidden',
-                      border: '1px solid #CBD5E1',
-                      backgroundColor: '#0F172A',
+                      border: '1px solid #E0D8E3',
+                      backgroundColor: '#1E0432',
                     }}
                   >
                     <img
@@ -516,9 +517,9 @@ export function InspectionReportPdfModal({
                       style={{
                         padding: '6px 8px',
                         fontSize: '10px',
-                        backgroundColor: '#F8FAFC',
+                        backgroundColor: '#FAF7FA',
                         fontWeight: 700,
-                        color: '#475569',
+                        color: '#4A315A',
                         textAlign: 'center',
                       }}
                     >
@@ -532,20 +533,20 @@ export function InspectionReportPdfModal({
             {/* Legal Signatures & Cryptographic Stamp Footer */}
             <div
               style={{
-                borderTop: '2px solid #E2E8F0',
+                borderTop: '2px solid #EFEAEF',
                 paddingTop: '24px',
                 display: 'grid',
-                gridTemplateColumns: '1.2fr 1fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                 gap: '24px',
                 alignItems: 'flex-end',
               }}
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <ShieldCheck size={20} color="#16A34A" />
-                  <strong style={{ fontSize: '13px' }}>Digital Tamper-Proof Seal</strong>
+                  <ShieldCheck size={20} color="#057A55" />
+                  <strong style={{ fontSize: '13px', color: '#1E0432' }}>Digital Tamper-Proof Seal</strong>
                 </div>
-                <p style={{ margin: 0, fontSize: '11px', color: '#64748B', lineHeight: 1.4 }}>
+                <p style={{ margin: 0, fontSize: '11px', color: '#4A315A', lineHeight: 1.45 }}>
                   This certificate was computed and digitally signed by Finovo AI Neural Engine v3.8. All timestamps,
                   color diagnostics, and bounding box coordinates are immutable and cryptographically bound to the
                   rental agreement.
@@ -553,39 +554,39 @@ export function InspectionReportPdfModal({
               </div>
 
               <div>
-                <div style={{ fontSize: '11px', color: '#64748B', marginBottom: '4px' }}>Fleet Inspector Sign-off:</div>
+                <div style={{ fontSize: '11px', color: '#8A7090', marginBottom: '4px' }}>Fleet Inspector Sign-off:</div>
                 <div
                   style={{
-                    borderBottom: '1px solid #94A3B8',
+                    borderBottom: '1px solid #D4C8DA',
                     height: '36px',
                     fontFamily: 'cursive',
                     fontSize: '16px',
-                    color: '#1E3A8A',
+                    color: '#4A1270',
                     display: 'flex',
                     alignItems: 'flex-end',
                   }}
                 >
                   Finovo Quality Assured
                 </div>
-                <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>Authorized Staff Signature</div>
+                <div style={{ fontSize: '10px', color: '#8A7090', marginTop: '2px' }}>Authorized Staff Signature</div>
               </div>
 
               <div>
-                <div style={{ fontSize: '11px', color: '#64748B', marginBottom: '4px' }}>Customer Acknowledgment:</div>
+                <div style={{ fontSize: '11px', color: '#8A7090', marginBottom: '4px' }}>Customer Acknowledgment:</div>
                 <div
                   style={{
-                    borderBottom: '1px solid #94A3B8',
+                    borderBottom: '1px solid #D4C8DA',
                     height: '36px',
                     fontFamily: 'cursive',
                     fontSize: '16px',
-                    color: '#1E3A8A',
+                    color: '#4A1270',
                     display: 'flex',
                     alignItems: 'flex-end',
                   }}
                 >
                   Verified & Accepted Digitally
                 </div>
-                <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>Customer / Renter Signature</div>
+                <div style={{ fontSize: '10px', color: '#8A7090', marginTop: '2px' }}>Customer / Renter Signature</div>
               </div>
             </div>
           </div>

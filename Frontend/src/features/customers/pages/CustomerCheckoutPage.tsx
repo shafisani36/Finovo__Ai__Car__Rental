@@ -22,6 +22,7 @@ import {
   InspectionAiEngine,
   type ClientInspectionReport,
 } from '../../inspections/services/inspectionAiEngine';
+import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
 export function CustomerCheckoutPage() {
@@ -55,6 +56,12 @@ export function CustomerCheckoutPage() {
   const [returnTime, setReturnTime] = useState('10:00');
   const [pickupBranchId, setPickupBranchId] = useState('');
   const [returnBranchId, setReturnBranchId] = useState('');
+
+  const branchOptions = branches.map((b) => ({
+    value: b.id,
+    label: `${b.name} (${b.city})`,
+    sublabel: b.city,
+  }));
 
   // Extras
   const [protectionPlan, setProtectionPlan] = useState<'standard' | 'premium'>('premium');
@@ -370,7 +377,7 @@ export function CustomerCheckoutPage() {
           {/* Certificate & Specs Summary Box */}
           <div
             style={{
-              background: '#F8F6F9',
+              background: '#FAF7FA',
               borderRadius: '16px',
               padding: '24px',
               textAlign: 'left',
@@ -378,7 +385,7 @@ export function CustomerCheckoutPage() {
               flexDirection: 'column',
               gap: '12px',
               marginBottom: '28px',
-              border: '1px solid #E5E7EB',
+              border: '1px solid var(--cp-border)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
@@ -429,20 +436,7 @@ export function CustomerCheckoutPage() {
             <button
               type="button"
               onClick={() => setIsPdfModalOpen(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 22px',
-                backgroundColor: '#1E0426',
-                color: '#FAB826',
-                border: 'none',
-                borderRadius: '12px',
-                fontWeight: 800,
-                fontSize: '14px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(30, 4, 38, 0.25)',
-              }}
+              className="cp-btn-primary"
             >
               <FileText size={18} />
               Download Official Handover PDF Report
@@ -450,8 +444,7 @@ export function CustomerCheckoutPage() {
 
             <Link
               to={`/customer/bookings/${bookingSuccess.id}`}
-              className="cp-btn-primary"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              className="cp-btn-secondary"
             >
               View Booking Details
               <ChevronRight size={16} />
@@ -546,31 +539,23 @@ export function CustomerCheckoutPage() {
               <div className="cp-subgrid-2col" style={{ marginBottom: '16px' }}>
                 <div>
                   <label className="cp-label">Pickup Branch</label>
-                  <select
-                    className="cp-select"
+                  <CustomSelect
                     value={pickupBranchId}
-                    onChange={(e) => setPickupBranchId(e.target.value)}
-                  >
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name} ({b.city})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setPickupBranchId(String(val))}
+                    options={branchOptions}
+                    placeholder="Select Pickup Branch"
+                    size="md"
+                  />
                 </div>
                 <div>
                   <label className="cp-label">Return Branch</label>
-                  <select
-                    className="cp-select"
+                  <CustomSelect
                     value={returnBranchId}
-                    onChange={(e) => setReturnBranchId(e.target.value)}
-                  >
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name} ({b.city})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setReturnBranchId(String(val))}
+                    options={branchOptions}
+                    placeholder="Select Return Branch"
+                    size="md"
+                  />
                 </div>
               </div>
 
@@ -631,7 +616,7 @@ export function CustomerCheckoutPage() {
                 Step 2: Protection Tier & Add-ons
               </h2>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div className="cp-subgrid-2col" style={{ marginBottom: '24px' }}>
                 <div
                   onClick={() => setProtectionPlan('standard')}
                   style={{
@@ -639,18 +624,19 @@ export function CustomerCheckoutPage() {
                       protectionPlan === 'standard'
                         ? '2px solid var(--cp-accent)'
                         : '1px solid var(--cp-border)',
-                    borderRadius: '12px',
+                    borderRadius: '14px',
                     padding: '18px',
                     cursor: 'pointer',
                     backgroundColor:
-                      protectionPlan === 'standard' ? 'rgba(250, 184, 38, 0.08)' : 'transparent',
+                      protectionPlan === 'standard' ? 'rgba(250, 184, 38, 0.08)' : '#FAF7FA',
+                    transition: 'var(--cp-transition)',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                     <strong style={{ fontSize: '1.05rem', color: 'var(--cp-primary)' }}>Standard CDW</strong>
-                    <span style={{ fontWeight: 800, color: 'var(--cp-accent)' }}>+$35/day</span>
+                    <span className="cp-badge cp-badge-accent">+$35/day</span>
                   </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', margin: '8px 0 0 0' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', margin: '8px 0 0 0', lineHeight: 1.45 }}>
                     Collision Damage Waiver with $1,000 deductible. Third-party liability included.
                   </p>
                 </div>
@@ -662,20 +648,21 @@ export function CustomerCheckoutPage() {
                       protectionPlan === 'premium'
                         ? '2px solid var(--cp-accent)'
                         : '1px solid var(--cp-border)',
-                    borderRadius: '12px',
+                    borderRadius: '14px',
                     padding: '18px',
                     cursor: 'pointer',
                     backgroundColor:
-                      protectionPlan === 'premium' ? 'rgba(250, 184, 38, 0.08)' : 'transparent',
+                      protectionPlan === 'premium' ? 'rgba(250, 184, 38, 0.08)' : '#FAF7FA',
+                    transition: 'var(--cp-transition)',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                     <strong style={{ fontSize: '1.05rem', color: 'var(--cp-primary)' }}>
                       Full Shield Premium
                     </strong>
-                    <span style={{ fontWeight: 800, color: 'var(--cp-accent)' }}>+$75/day</span>
+                    <span className="cp-badge cp-badge-accent">+$75/day</span>
                   </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', margin: '8px 0 0 0' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', margin: '8px 0 0 0', lineHeight: 1.45 }}>
                     Zero deductible ($0 liability). Complete windshield, tyre, wheel, and undercarriage coverage.
                   </p>
                 </div>
@@ -818,32 +805,26 @@ export function CustomerCheckoutPage() {
               {/* Stripe Test Helper Banner */}
               <div
                 style={{
-                  backgroundColor: '#F8F6F9',
-                  border: '1px dashed #D97706',
+                  backgroundColor: 'var(--cp-warning-bg)',
+                  border: '1px dashed var(--cp-warning-border)',
                   borderRadius: '12px',
                   padding: '12px 16px',
                   marginBottom: '20px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '10px',
                 }}
               >
-                <div style={{ fontSize: '12px', color: '#B45309' }}>
+                <div style={{ fontSize: '12.5px', color: 'var(--cp-warning)' }}>
                   <strong>Stripe Test Environment Active:</strong> Click button to auto-fill verified test card.
                 </div>
                 <button
                   type="button"
                   onClick={handleFillTestCard}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#D97706',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
+                  className="cp-btn-primary"
+                  style={{ padding: '6px 14px', fontSize: '12px', minHeight: '32px' }}
                 >
                   ⚡ Fill Stripe Test Card
                 </button>
@@ -952,17 +933,7 @@ export function CustomerCheckoutPage() {
                     Pre-rental computer vision scan to document baseline scratches, color, and dents.
                   </p>
                 </div>
-                <span
-                  style={{
-                    backgroundColor: '#ECFDF5',
-                    color: '#065F46',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '4px 10px',
-                    borderRadius: '20px',
-                    border: '1px solid #A7F3D0',
-                  }}
-                >
+                <span className="cp-badge cp-badge-success">
                   ✓ AI Handover Guarantee
                 </span>
               </div>
@@ -970,17 +941,18 @@ export function CustomerCheckoutPage() {
               {/* Inspection Live Status Card */}
               <div
                 style={{
-                  backgroundColor: '#0F172A',
-                  color: '#F8FAFC',
-                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, var(--cp-primary) 0%, var(--cp-primary-light) 100%)',
+                  color: '#FFFFFF',
+                  borderRadius: '16px',
                   padding: '24px',
                   marginBottom: '24px',
-                  border: '1px solid #334155',
+                  border: '1px solid rgba(250, 184, 38, 0.28)',
+                  boxShadow: '0 8px 24px rgba(30, 4, 50, 0.16)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
                   <div>
-                    <div style={{ fontSize: '12px', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700 }}>
+                    <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.72)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
                       Inspection Baseline Status
                     </div>
                     <h3 style={{ margin: '4px 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#FAB826' }}>
@@ -991,28 +963,16 @@ export function CustomerCheckoutPage() {
                   <button
                     type="button"
                     onClick={() => setIsScannerOpen(true)}
-                    style={{
-                      padding: '8px 16px',
-                      backgroundColor: '#FAB826',
-                      color: '#111827',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: 800,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
+                    className="cp-btn-primary"
                   >
                     <Camera size={16} /> Open Camera Scanner
                   </button>
                 </div>
 
                 {inspectionReport && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: '12px' }}>
-                    <div style={{ backgroundColor: '#1E293B', padding: '12px', borderRadius: '10px' }}>
-                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>Detected Color</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', padding: '12px', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)' }}>Detected Color</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                         <div
                           style={{
@@ -1027,23 +987,23 @@ export function CustomerCheckoutPage() {
                       </div>
                     </div>
 
-                    <div style={{ backgroundColor: '#1E293B', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>Health Score</div>
-                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10B981', marginTop: '2px' }}>
+                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', padding: '12px', borderRadius: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)' }}>Health Score</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34D399', marginTop: '2px' }}>
                         {inspectionReport.overallScore}%
                       </div>
                     </div>
 
-                    <div style={{ backgroundColor: '#1E293B', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>Scratches</div>
-                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F59E0B', marginTop: '2px' }}>
+                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', padding: '12px', borderRadius: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)' }}>Scratches</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FAB826', marginTop: '2px' }}>
                         {inspectionReport.scratchesCount}
                       </div>
                     </div>
 
-                    <div style={{ backgroundColor: '#1E293B', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>Dents</div>
-                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#EF4444', marginTop: '2px' }}>
+                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', padding: '12px', borderRadius: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)' }}>Dents</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F87171', marginTop: '2px' }}>
                         {inspectionReport.dentsCount}
                       </div>
                     </div>
@@ -1056,21 +1016,15 @@ export function CustomerCheckoutPage() {
                     <button
                       type="button"
                       onClick={() => setIsPdfModalOpen(true)}
+                      className="cp-btn-outline"
                       style={{
-                        background: 'transparent',
-                        border: '1px solid #FAB826',
+                        background: 'rgba(255, 255, 255, 0.1)',
                         color: '#FAB826',
-                        borderRadius: '8px',
-                        padding: '8px 14px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
+                        borderColor: 'rgba(250, 184, 38, 0.45)',
+                        fontSize: '13px',
                       }}
                     >
-                      <FileText size={14} /> View & Download Handover PDF Report
+                      <FileText size={15} /> View & Download Handover PDF Report
                     </button>
                   </div>
                 )}

@@ -16,7 +16,7 @@ import {
   Navigation,
 } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
-import { PageContainer, PageHeader } from '../../../components/common';
+import { PageContainer, PageHeader, Button } from '../../../components/common';
 
 interface BranchOption {
   id: string;
@@ -221,7 +221,7 @@ export function CreateBookingPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4A315A', marginBottom: '8px' }}>
                   Choose Vehicle *
                 </label>
                 <CustomSelect
@@ -283,7 +283,7 @@ export function CreateBookingPage() {
               {/* Availability Alert */}
               <div style={{ marginTop: '14px' }}>
                 {isCheckingAvail ? (
-                  <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>Checking vehicle calendar availability...</div>
+                  <div style={{ fontSize: '0.85rem', color: '#8A7090' }}>Checking vehicle calendar availability...</div>
                 ) : availResult?.available ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#059669', fontWeight: 700 }}>
                     <CheckCircle2 size={16} />
@@ -306,7 +306,7 @@ export function CreateBookingPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4A315A', marginBottom: '8px' }}>
                   Select Customer *
                 </label>
                 <CustomSelect
@@ -330,36 +330,36 @@ export function CreateBookingPage() {
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>3. Schedule, Route & Options</h3>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     Pickup Date & Time *
                   </label>
                   <input
                     type="datetime-local"
                     value={pickupDateTime}
                     onChange={(e) => setPickupDateTime(e.target.value)}
-                    style={{ width: '100%', height: '42px', borderRadius: '8px', border: '1px solid #D1D5DB', padding: '0 10px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '44px', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '0 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                     required
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     Return Date & Time *
                   </label>
                   <input
                     type="datetime-local"
                     value={returnDateTime}
                     onChange={(e) => setReturnDateTime(e.target.value)}
-                    style={{ width: '100%', height: '42px', borderRadius: '8px', border: '1px solid #D1D5DB', padding: '0 10px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '44px', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '0 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                     required
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     Pickup Branch *
                   </label>
                   <CustomSelect
@@ -374,7 +374,7 @@ export function CreateBookingPage() {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     Return Branch *
                   </label>
                   <CustomSelect
@@ -393,7 +393,7 @@ export function CreateBookingPage() {
               {/* Method-Specific Estimated Distance */}
               {(selectedCar?.pricingMethod === 'per_km' || selectedCar?.pricingMethod === 'daily_extra_km') && (
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     <Navigation size={14} style={{ display: 'inline', marginRight: '4px' }} />
                     Estimated Trip Distance (KM) *
                   </label>
@@ -402,7 +402,7 @@ export function CreateBookingPage() {
                     min={1}
                     value={estimatedKm}
                     onChange={(e) => setEstimatedKm(Number(e.target.value))}
-                    style={{ width: '100%', height: '42px', borderRadius: '8px', border: '1px solid #D1D5DB', padding: '0 10px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: '44px', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '0 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                     required
                   />
                   <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '4px' }}>
@@ -420,8 +420,8 @@ export function CreateBookingPage() {
                     gap: '10px',
                     padding: '12px 14px',
                     borderRadius: '8px',
-                    backgroundColor: driverRequired ? '#FAF5FB' : '#F9FAFB',
-                    border: `1px solid ${driverRequired ? '#6C1E84' : '#E5E7EB'}`,
+                    backgroundColor: driverRequired ? '#FAF5FB' : '#FAF7FA',
+                    border: `1.5px solid ${driverRequired ? '#6C1E84' : '#EFEAEF'}`,
                     cursor: 'pointer',
                   }}
                 >
@@ -438,7 +438,7 @@ export function CreateBookingPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                   Reservation Notes (Optional)
                 </label>
                 <textarea
@@ -446,7 +446,7 @@ export function CreateBookingPage() {
                   placeholder="Special customer requests, accessories, flight numbers..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  style={{ width: '100%', borderRadius: '8px', border: '1px solid #D1D5DB', padding: '10px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  style={{ width: '100%', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '10px 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                 />
               </div>
             </div>
@@ -567,27 +567,16 @@ export function CreateBookingPage() {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="lg"
+                fullWidth
                 disabled={Boolean(isSubmitting || (availResult && !availResult.available))}
-                style={{
-                  width: '100%',
-                  height: '50px',
-                  backgroundColor: '#FAB826',
-                  color: '#1A0322',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontWeight: 800,
-                  fontSize: '1rem',
-                  cursor: isSubmitting || (availResult && !availResult.available) ? 'not-allowed' : 'pointer',
-                  marginTop: '24px',
-                  boxShadow: '0 4px 14px rgba(250, 184, 38, 0.35)',
-                  opacity: isSubmitting || (availResult && !availResult.available) ? 0.6 : 1,
-                  transition: 'all 0.2s ease',
-                }}
+                style={{ marginTop: '24px' }}
               >
                 {isSubmitting ? 'Confirming Reservation...' : 'Confirm & Allocate Vehicle'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

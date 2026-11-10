@@ -10,9 +10,17 @@ import {
   Droplet,
   ShieldCheck,
   RotateCcw,
+  Camera,
+  CheckCircle2,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
-import { PageContainer, PageHeader } from '../../../components/common';
+import { PageContainer, PageHeader, Button } from '../../../components/common';
+import { getCarImage } from '../../../utils/carImageHelper';
+import { AiCameraScannerModal } from '../../inspections/components/AiCameraScannerModal';
+import { InspectionReportPdfModal } from '../../inspections/components/InspectionReportPdfModal';
+import type { ClientInspectionReport } from '../../inspections/services/inspectionAiEngine';
 
 export function HandoverVehiclePage() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -34,6 +42,11 @@ export function HandoverVehiclePage() {
   const [depositSecured, setDepositSecured] = useState<boolean>(true);
   const [keysInspected, setKeysInspected] = useState<boolean>(true);
 
+  // Mandatory Pre-Handover AI Baseline Inspection Scan (before keys release)
+  const [pickupReport, setPickupReport] = useState<ClientInspectionReport | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
   useEffect(() => {
     if (bookingId) {
       loadBooking(bookingId);
@@ -46,13 +59,17 @@ export function HandoverVehiclePage() {
       const res = await bookingApi.getById(id);
       if (res.success && res.booking) {
         setBooking(res.booking);
+        const vehicleMileage = Number((res.booking.vehicle as { mileage?: number })?.mileage || 0);
+        if (vehicleMileage > 0) {
+          setStartMileage(vehicleMileage);
+        }
         if (res.booking.rental) {
           setError('This booking has already been handed over into an active rental.');
         }
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to retrieve booking information');
+      const e = err as { message?: string; response?: { data?: { message?: string } } };
+      setError(e.message || e.response?.data?.message || 'Failed to retrieve booking information');
     } finally {
       setLoading(false);
     }
@@ -67,6 +84,11 @@ export function HandoverVehiclePage() {
       return;
     }
 
+    if (!pickupReport) {
+      setError('Please run the Pre-Handover AI 360° Baseline Scan before releasing the vehicle keys.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
@@ -75,12 +97,31 @@ export function HandoverVehiclePage() {
         startMileage: Number(startMileage) || 12500,
         startFuelLevel,
         notes,
+        pickupInspectionData: {
+          overallScore: pickupReport.overallScore,
+          summary: pickupReport.summary,
+          hasDamageDetected: pickupReport.findings.length > 0,
+          detectedColorName: pickupReport.detectedColor.colorName,
+          photos: pickupReport.photos.map((p) => ({
+            view: p.view,
+            imageUrl: p.imageUrl,
+          })),
+          findings: pickupReport.findings.map((f) => ({
+            damageType: f.damageType,
+            severity: f.severity,
+            location: f.location,
+            confidence: f.confidence,
+            boundingBox: f.boundingBox,
+            view: f.view,
+            estimatedRepairCost: f.estimatedRepairCost,
+          })),
+        },
       });
 
       navigate('/admin/rentals');
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to complete vehicle handover');
+      const e = err as { message?: string; response?: { data?: { message?: string } } };
+      setError(e.message || e.response?.data?.message || 'Failed to complete vehicle handover');
     } finally {
       setSubmitting(false);
     }
@@ -167,7 +208,7 @@ export function HandoverVehiclePage() {
           {/* Vehicle Info */}
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <img
-              src={booking.vehicle.primaryImageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=300&q=80'}
+              src={getCarImage(booking.vehicle)}
               alt=""
               style={{
                 width: '100px',
@@ -409,41 +450,161 @@ export function HandoverVehiclePage() {
           </div>
         </div>
 
+        {/* Mandatory Pre-Handover AI Baseline Inspection Card */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #1E0432 0%, #2E0949 100%)',
+            color: '#FFFFFF',
+            borderRadius: '18px',
+            padding: '24px',
+            border: pickupReport
+              ? '1.5px solid rgba(52, 211, 153, 0.45)'
+              : '1.5px solid rgba(250, 184, 38, 0.35)',
+            boxShadow: '0 10px 28px rgba(30, 4, 50, 0.18)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+              gap: '14px',
+              marginBottom: pickupReport ? '18px' : '0',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: '9999px',
+                    backgroundColor: pickupReport ? 'rgba(16, 185, 129, 0.18)' : 'rgba(250, 184, 38, 0.16)',
+                    color: pickupReport ? '#6EE7B7' : '#FAB826',
+                    border: pickupReport
+                      ? '1px solid rgba(110, 231, 183, 0.35)'
+                      : '1px solid rgba(250, 184, 38, 0.4)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {pickupReport ? '✓ Pre-Handover Baseline Locked' : 'Required Before Key Release'}
+                </span>
+              </div>
+              <h3
+                style={{
+                  margin: 0,
+                  fontFamily: "var(--font-family-display, 'Archivo', sans-serif)",
+                  fontSize: '1.15rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Sparkles size={18} color="#FAB826" />
+                Pre-Handover AI 360° Vehicle Baseline Scan
+              </h3>
+              <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'rgba(255, 255, 255, 0.74)' }}>
+                Captures baseline exterior angles before handing over keys so any new return damage can be compared accurately.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {pickupReport && (
+                <Button
+                  type="button"
+                  variant="glass"
+                  size="sm"
+                  onClick={() => setIsPdfModalOpen(true)}
+                >
+                  <FileText size={15} />
+                  <span>Handover Baseline PDF</span>
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => setIsScannerOpen(true)}
+              >
+                <Camera size={16} />
+                <span>{pickupReport ? 'Re-Scan Pickup Angles' : 'Run Pre-Handover AI Scan'}</span>
+              </Button>
+            </div>
+          </div>
+
+          {pickupReport && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px' }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Detected Color</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                  <span
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: pickupReport.detectedColor.hexCode,
+                      border: '1px solid #FFFFFF',
+                    }}
+                  />
+                  <strong style={{ fontSize: '13px' }}>{pickupReport.detectedColor.colorName}</strong>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Pickup Baseline Score</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34D399', marginTop: '2px' }}>
+                  {pickupReport.overallScore}%
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Pre-Existing Scratches</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FAB826', marginTop: '2px' }}>
+                  {pickupReport.scratchesCount}
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Pre-Existing Dents</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F87171', marginTop: '2px' }}>
+                  {pickupReport.dentsCount}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', flexWrap: 'wrap', paddingBottom: '24px' }}>
           <Link
             to="/admin/bookings"
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               padding: '12px 24px',
-              borderRadius: '10px',
+              borderRadius: '9999px',
               backgroundColor: '#FFFFFF',
-              border: '1px solid #ECEAEF',
+              border: '1.5px solid #E0D8E3',
               fontSize: '0.95rem',
-              fontWeight: 600,
-              color: '#685D73',
+              fontWeight: 700,
+              color: '#4A315A',
               textDecoration: 'none',
             }}
           >
             Cancel
           </Link>
 
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="md"
             disabled={submitting}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px 32px',
-              backgroundColor: '#FAB826',
-              color: '#1E0426',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '1rem',
-              fontWeight: 800,
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 12px rgba(250, 184, 38, 0.3)',
-            }}
           >
             {submitting ? (
               <>
@@ -452,13 +613,45 @@ export function HandoverVehiclePage() {
               </>
             ) : (
               <>
-                <KeyRound size={20} />
+                {pickupReport ? <CheckCircle2 size={18} /> : <KeyRound size={18} />}
                 <span>Confirm Handover & Release Keys</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </form>
+
+      {/* Pre-Handover AI Camera Scanner Modal */}
+      <AiCameraScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        inspectionType="PICKUP"
+        vehicle={{
+          id: booking.vehicle.id,
+          brand: booking.vehicle.brand,
+          model: booking.vehicle.model,
+          year: Number((booking.vehicle as { year?: number }).year || 2026),
+          registrationNumber: booking.vehicle.registrationNumber,
+          vin: (booking.vehicle as { vin?: string }).vin,
+          color: (booking.vehicle as { color?: string }).color,
+          primaryImageUrl: getCarImage(booking.vehicle),
+        }}
+        onInspectionComplete={(report) => {
+          setPickupReport(report);
+          setError(null);
+        }}
+        onOpenPdfReport={(report) => {
+          setPickupReport(report);
+          setIsScannerOpen(false);
+          setIsPdfModalOpen(true);
+        }}
+      />
+
+      <InspectionReportPdfModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        report={pickupReport}
+      />
     </PageContainer>
   );
 }

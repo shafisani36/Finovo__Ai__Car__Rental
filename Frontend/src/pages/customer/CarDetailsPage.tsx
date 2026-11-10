@@ -32,6 +32,7 @@ import { vehiclesApi } from '../../api/services/vehicles.api';
 import { useAuth } from '../../features/auth/context';
 import { getCarImage } from '../../utils/carImageHelper';
 import { parseVehicleNotes } from '../../utils/vehicleNotesHelper';
+import { CustomSelect } from '../../components/common/CustomSelect';
 
 // Assets
 import carMain from '../../assets/car-detail/car-main.jpg';
@@ -54,6 +55,13 @@ const INSURANCE_PLANS: InsurancePlan[] = [
   { id: 'basic', name: 'Basic', pricePerDay: 0, description: 'Third-Party Liability' },
   { id: 'standard', name: 'Standard', pricePerDay: 50, description: 'Collision Damage Waiver (CDW)' },
   { id: 'premium', name: 'Premium', pricePerDay: 100, description: 'Zero Deductible & Full Shield' },
+];
+
+const CITY_OPTIONS = [
+  { value: 'Riyadh Central', label: 'Riyadh Central Hub', sublabel: 'King Fahd Road' },
+  { value: 'Dubai Downtown', label: 'Dubai Downtown', sublabel: 'Financial Centre' },
+  { value: 'Abu Dhabi Airport', label: 'Abu Dhabi Airport', sublabel: 'Terminal 1 VIP' },
+  { value: 'Jeddah Corniche', label: 'Jeddah Corniche', sublabel: 'Red Sea Hub' },
 ];
 
 export function CarDetailsPage() {
@@ -410,53 +418,29 @@ export function CarDetailsPage() {
               {/* Locations & Dates Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '6px' }}>
                     PICK-UP LOCATION
                   </label>
-                  <select
+                  <CustomSelect
                     value={pickupCity}
-                    onChange={(e) => setPickupCity(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '10px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      color: '#FFFFFF',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
-                  >
-                    <option value="Riyadh Central" style={{ color: '#000' }}>Riyadh Central Hub</option>
-                    <option value="Dubai Downtown" style={{ color: '#000' }}>Dubai Downtown</option>
-                    <option value="Abu Dhabi Airport" style={{ color: '#000' }}>Abu Dhabi Airport</option>
-                    <option value="Jeddah Corniche" style={{ color: '#000' }}>Jeddah Corniche</option>
-                  </select>
+                    onChange={(val) => setPickupCity(String(val))}
+                    options={CITY_OPTIONS}
+                    variant="dark"
+                    size="sm"
+                  />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '6px' }}>
                     DROP-OFF LOCATION
                   </label>
-                  <select
+                  <CustomSelect
                     value={dropoffCity}
-                    onChange={(e) => setDropoffCity(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '10px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      color: '#FFFFFF',
-                      fontSize: '13px',
-                      outline: 'none',
-                    }}
-                  >
-                    <option value="Riyadh Central" style={{ color: '#000' }}>Riyadh Central Hub</option>
-                    <option value="Dubai Downtown" style={{ color: '#000' }}>Dubai Downtown</option>
-                    <option value="Abu Dhabi Airport" style={{ color: '#000' }}>Abu Dhabi Airport</option>
-                    <option value="Jeddah Corniche" style={{ color: '#000' }}>Jeddah Corniche</option>
-                  </select>
+                    onChange={(val) => setDropoffCity(String(val))}
+                    options={CITY_OPTIONS}
+                    variant="dark"
+                    size="sm"
+                  />
                 </div>
 
                 <div>

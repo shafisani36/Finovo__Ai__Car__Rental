@@ -10,6 +10,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '../Button';
+import { CustomSelect } from '../CustomSelect';
 import { apiClient } from '../../../api/client';
 import { SUPPORTED_LANGUAGES, type LanguageCode } from '../../../i18n/config';
 
@@ -187,26 +188,20 @@ export function TextTranslator({
               >
                 {t('translator.sourceLabel')}:
               </label>
-              <select
+              <CustomSelect
                 id="translator-source-lang"
                 value={sourceLang}
-                onChange={(e) => setSourceLang(e.target.value)}
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: '8px',
-                  border: '1px solid #E5DFE7',
-                  backgroundColor: '#FAF8FB',
-                  color: '#1C0324',
-                  fontSize: '0.825rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="auto">🌐 {t('common.autoDetect')}</option>
-                <option value="en">English (English)</option>
-                <option value="ur">اردو (Urdu)</option>
-                <option value="ar">العربية (Arabic)</option>
-              </select>
+                onChange={(val) => setSourceLang(String(val))}
+                options={[
+                  { value: 'auto', label: `🌐 ${t('common.autoDetect')}` },
+                  { value: 'en', label: 'English (English)', badge: 'EN' },
+                  { value: 'ur', label: 'اردو (Urdu)', badge: 'UR' },
+                  { value: 'ar', label: 'العربية (Arabic)', badge: 'AR' },
+                ]}
+                fullWidth={false}
+                size="sm"
+                containerStyle={{ minWidth: '175px' }}
+              />
             </div>
 
             {detectedLang && (
@@ -287,25 +282,19 @@ export function TextTranslator({
               >
                 {t('translator.targetLabel')}:
               </label>
-              <select
+              <CustomSelect<LanguageCode>
                 id="translator-target-lang"
                 value={targetLang}
-                onChange={(e) => setTargetLang(e.target.value as LanguageCode)}
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: '8px',
-                  border: '1px solid #E5DFE7',
-                  backgroundColor: '#FAF8FB',
-                  color: '#1C0324',
-                  fontSize: '0.825rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="en">English (English)</option>
-                <option value="ur">اردو (Urdu)</option>
-                <option value="ar">العربية (Arabic)</option>
-              </select>
+                onChange={(val) => setTargetLang(val)}
+                options={[
+                  { value: 'en', label: 'English (English)', badge: 'EN' },
+                  { value: 'ur', label: 'اردو (Urdu)', badge: 'UR' },
+                  { value: 'ar', label: 'العربية (Arabic)', badge: 'AR' },
+                ]}
+                fullWidth={false}
+                size="sm"
+                containerStyle={{ minWidth: '175px' }}
+              />
             </div>
 
             {outputText && (

@@ -33,8 +33,14 @@ export class InspectionController {
   static async reviewFinding(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const findingId = Array.isArray(req.params.findingId) ? req.params.findingId[0] : req.params.findingId;
-      const updated = await InspectionService.reviewFinding(findingId, req.body, req.user?.userId);
-      res.status(200).json({ success: true, finding: updated });
+      const result = await InspectionService.reviewFinding(findingId, req.body, req.user?.userId);
+      res.status(200).json({
+        success: true,
+        finding: result.finding,
+        maintenanceCreated: result.maintenanceCreated,
+        maintenanceRecordId: result.maintenanceRecordId,
+        vehicleStatus: result.vehicleStatus,
+      });
     } catch (err) {
       next(err);
     }

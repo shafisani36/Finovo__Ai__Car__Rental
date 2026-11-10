@@ -272,10 +272,36 @@ export interface RentalHistoryItem {
   } | null;
 }
 
+export const CUSTOMER_NOTIFICATIONS_UPDATED_EVENT = 'finovo:customer-notifications-updated';
+
+/** Broadcasts unread notification count updates or requests a refresh when omitted. */
+export function notifyNotificationsUpdated(unreadCount?: number): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent<{ unreadCount?: number }>(CUSTOMER_NOTIFICATIONS_UPDATED_EVENT, {
+        detail: { unreadCount },
+      })
+    );
+  }
+}
+
+async function withNotificationRefresh<T>(
+  requestPromise: Promise<T>,
+  nextUnreadCount?: number
+): Promise<T> {
+  const res = await requestPromise;
+  notifyNotificationsUpdated(nextUnreadCount);
+  return res;
+}
+
 export const customerPortalApi = {
   // 1. Overview
   async getOverview(): Promise<PortalOverviewResponse> {
-    return authClient.request<PortalOverviewResponse>('/customers/portal/overview');
+    const res = await authClient.request<PortalOverviewResponse>('/customers/portal/overview');
+    if (typeof res?.stats?.unreadNotificationsCount === 'number') {
+      notifyNotificationsUpdated(res.stats.unreadNotificationsCount);
+    }
+    return res;
   },
 
   // 2. Bookings
@@ -303,20 +329,24 @@ export const customerPortalApi = {
   },
 
   async cancelBooking(id: string, reason?: string): Promise<{ success: boolean; message: string }> {
-    return authClient.request(`/customers/portal/bookings/${id}/cancel`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
+    return withNotificationRefresh(
+      authClient.request(`/customers/portal/bookings/${id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      })
+    );
   },
 
   async extendBooking(
     id: string,
     newReturnDateTime: string
   ): Promise<{ success: boolean; additionalCost: number }> {
-    return authClient.request(`/customers/portal/bookings/${id}/extend`, {
-      method: 'POST',
-      body: JSON.stringify({ newReturnDateTime }),
-    });
+    return withNotificationRefresh(
+      authClient.request(`/customers/portal/bookings/${id}/extend`, {
+        method: 'POST',
+        body: JSON.stringify({ newReturnDateTime }),
+      })
+    );
   },
 
   // 3. Payments & Invoices
@@ -332,10 +362,12 @@ export const customerPortalApi = {
     cardBrand?: string;
     type?: string;
   }): Promise<{ success: boolean; payment: unknown }> {
-    return authClient.request('/customers/portal/payments', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    return withNotificationRefresh(
+      authClient.request('/customers/portal/payments', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
   },
 
   // 4. Documents
@@ -356,10 +388,12 @@ export const customerPortalApi = {
     fileSize?: number;
     expiresAt?: string;
   }): Promise<{ success: boolean; document: CustomerDocumentItem }> {
-    return authClient.request('/customers/portal/documents', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    return withNotificationRefresh(
+      authClient.request('/customers/portal/documents', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
   },
 
   // 5. Profile & Settings
@@ -383,7 +417,15 @@ export const customerPortalApi = {
     notifications: CustomerNotificationItem[];
     unreadCount: number;
   }> {
-    return authClient.request('/customers/portal/notifications');
+    const res = await authClient.request<{
+      success: boolean;
+      notifications: CustomerNotificationItem[];
+      unreadCount: number;
+    }>('/customers/portal/notifications');
+    if (typeof res?.unreadCount === 'number') {
+      notifyNotificationsUpdated(res.unreadCount);
+    }
+    return res;
   },
 
   async markNotificationRead(id: string): Promise<{ success: boolean }> {
@@ -393,9 +435,12 @@ export const customerPortalApi = {
   },
 
   async markAllNotificationsRead(): Promise<{ success: boolean }> {
-    return authClient.request('/customers/portal/notifications/read-all', {
-      method: 'PATCH',
-    });
+    return withNotificationRefresh(
+      authClient.request<{ success: boolean }>('/customers/portal/notifications/read-all', {
+        method: 'PATCH',
+      }),
+      0
+    );
   },
 
   // 7. Support Tickets

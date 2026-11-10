@@ -7,12 +7,19 @@ export interface RentalInspection {
   summary?: string;
   hasDamageDetected: boolean;
   createdAt: string;
+  photos?: Array<{
+    id: string;
+    view: string;
+    imageUrl: string;
+  }>;
   findings: Array<{
     id: string;
     damageType: string;
     severity: string;
     location: string;
+    region?: string | null;
     confidence: number;
+    boundingBox?: string | null;
     estimatedRepairCost: number;
     status: string;
   }>;
@@ -26,7 +33,8 @@ export interface RentalRecord {
   endMileage?: number | null;
   startFuelLevel: string;
   endFuelLevel?: string | null;
-  startedAt: string;
+  pickedUpAt?: string;
+  startedAt?: string;
   returnedAt?: string | null;
   status: 'ACTIVE' | 'RETURNED' | 'DISPUTED';
   createdAt: string;
@@ -76,6 +84,83 @@ export interface HandoverPayload {
   startMileage: number;
   startFuelLevel: string;
   notes?: string;
+  pickupInspectionData?: {
+    overallScore?: number;
+    summary?: string;
+    hasDamageDetected?: boolean;
+    detectedColorName?: string;
+    photos?: Array<{
+      view: string;
+      imageUrl: string;
+    }>;
+    findings?: Array<{
+      damageType: string;
+      severity: string;
+      location: string;
+      confidence: number;
+      boundingBox?: unknown;
+      view?: string;
+      estimatedRepairCost?: number;
+    }>;
+  };
+}
+
+export interface SettlementLineItem {
+  lineType: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  amount: number;
+  currency: string;
+  isTaxable?: boolean;
+  taxAmount?: number;
+}
+
+export interface SettlementPreview {
+  rentalId?: string;
+  bookingNumber?: string;
+  vehicle?: string;
+  pricingMethod: string;
+  currency: string;
+  odometer: {
+    startOdometer: number;
+    endOdometer: number;
+    actualDistanceTraveled: number;
+    includedKm: number;
+    extraKm: number;
+    extraKmRate: number;
+    extraKmCharge: number;
+  };
+  duration: {
+    agreedHours: number;
+    actualHours: number;
+    gracePeriodMinutes: number;
+    lateHours: number;
+    lateFee: number;
+  };
+  breakdown: {
+    baseRental: number;
+    extraKmCharge: number;
+    lateFee: number;
+    damageCharge: number;
+    fuelCharge: number;
+    manualAdjustment: number;
+    taxAmount: number;
+    finalRentalTotal: number;
+  };
+  depositAccounting: {
+    originalDeposit: number;
+    deductions: number;
+    refundableDeposit: number;
+  };
+  financialSummary: {
+    totalBilled: number;
+    amountAlreadyPaid: number;
+    netPayableOrRefund: number;
+    isRefundDue: boolean;
+  };
+  lineItems: SettlementLineItem[];
 }
 
 export interface ReturnPayload {
@@ -84,8 +169,8 @@ export interface ReturnPayload {
   endFuelLevel: string;
   conditionNotes?: string;
   sendToMaintenance?: boolean;
-  damageCharges?: number;
-  fuelCharges?: number;
+  damageCharge?: number;
+  fuelDiscrepancyCharge?: number;
   additionalAdjustment?: number;
   returnDateTime?: string;
 }
@@ -107,11 +192,16 @@ export const rentalApi = {
     });
   },
 
-  async previewSettlement(payload: ReturnPayload): Promise<{ success: boolean; settlement: any }> {
-    return authClient.request<{ success: boolean; settlement: any }>('/rentals/preview-settlement', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+  async previewSettlement(
+    payload: ReturnPayload
+  ): Promise<{ success: boolean; settlement: SettlementPreview }> {
+    return authClient.request<{ success: boolean; settlement: SettlementPreview }>(
+      '/rentals/preview-settlement',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
   },
 
   async returnVehicle(payload: ReturnPayload): Promise<{ success: boolean; rental: RentalRecord }> {

@@ -11,6 +11,7 @@ import {
 import { customerPortalApi, type CustomerProfile } from '../api/customerPortalApi';
 import { authClient } from '../../auth/api/authClient';
 import type { SessionInfo } from '../../auth/types/auth.types';
+import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
 export function CustomerProfilePage() {
@@ -258,14 +259,15 @@ export function CustomerProfilePage() {
             </div>
             <div className="cp-form-group">
               <label className="cp-label">Preferred Portal Language</label>
-              <select
-                className="cp-select"
+              <CustomSelect
                 value={preferredLanguage}
-                onChange={(e) => setPreferredLanguage(e.target.value)}
-              >
-                <option value="en">English (US)</option>
-                <option value="ar">Arabic (العربية)</option>
-              </select>
+                onChange={(val) => setPreferredLanguage(String(val))}
+                options={[
+                  { value: 'en', label: 'English (US)', badge: 'EN' },
+                  { value: 'ar', label: 'Arabic (العربية)', badge: 'AR' },
+                ]}
+                size="md"
+              />
             </div>
           </div>
 

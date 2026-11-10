@@ -162,20 +162,10 @@ export function CustomerDashboardOverviewPage() {
             <span>Viewing dynamic preview mode. Live customer telemetry ready to sync.</span>
           </div>
           <button
+            type="button"
             onClick={loadData}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: '#1E0426',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
+            className="cp-btn-secondary"
+            style={{ padding: '6px 14px', fontSize: '0.75rem', minHeight: '32px', gap: '5px' }}
           >
             <RefreshCw size={12} />
             <span>Sync</span>

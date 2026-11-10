@@ -239,6 +239,15 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
     setTimeout(() => setPretrainedSuccessMsg(null), 5000);
   };
 
+  const pretrainedOptions = useMemo(() => {
+    return PRETRAINED_VEHICLE_DATABASE.map((v) => ({
+      value: `${v.brand} ${v.model}`,
+      label: `${v.brand} ${v.model} (${v.year})`,
+      sublabel: `${v.trim} • ${v.horsePower} HP • 0-100: ${v.acceleration0to100}s`,
+      badge: v.categoryName,
+    }));
+  }, []);
+
 
   const handlePricingChange = (field: keyof VehiclePricingState, value: string) => {
     setPricingState((prev) => ({ ...prev, [field]: value }));
@@ -1486,39 +1495,22 @@ features: carFeatures
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-              <div style={{ flex: '1 1 240px', minWidth: '0' }}>
-                <select
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+              <div style={{ flex: '1 1 320px', minWidth: '0' }}>
+                <CustomSelect
                   value={selectedPretrainedPreset}
-                  onChange={(e) => handleApplyPretrainedPreset(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    backgroundColor: '#FAF7FB',
-                    color: '#1E0432',
-                    border: '1.5px solid #DFD5E3',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    outline: 'none',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  <option value="" style={{ color: '#000' }}>
-                    -- Select Verified Pre-Trained Manufacturer Model --
-                  </option>
-                  {PRETRAINED_VEHICLE_DATABASE.map((v) => (
-                    <option key={v.brand + '-' + v.model} value={v.brand + ' ' + v.model} style={{ color: '#000' }}>
-                      {v.brand} {v.model} ({v.year}) • {v.horsePower} HP
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => handleApplyPretrainedPreset(String(val))}
+                  options={pretrainedOptions}
+                  placeholder="-- Select Verified Pre-Trained Manufacturer Model --"
+                  searchable
+                  searchPlaceholder="Filter verified OEM models (e.g. BMW, Huracán)..."
+                  size="md"
+                />
               </div>
 
               <button
                 type="button"
+                className="btn btn-primary"
                 onClick={() => {
                   if (selectedPretrainedPreset) {
                     handleApplyPretrainedPreset(selectedPretrainedPreset);
@@ -1526,22 +1518,7 @@ features: carFeatures
                     handleApplyPretrainedPreset(PRETRAINED_VEHICLE_DATABASE[0].brand + ' ' + PRETRAINED_VEHICLE_DATABASE[0].model);
                   }
                 }}
-                style={{
-                  flex: '0 0 auto',
-                  padding: '10px 18px',
-                  background: 'linear-gradient(135deg, #FAB826 0%, #F59E0B 100%)',
-                  color: '#1E0426',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontWeight: 800,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 10px rgba(250, 184, 38, 0.25)',
-                }}
+                style={{ flex: '0 0 auto' }}
               >
                 <Sparkles size={16} /> Auto-Fill Specs
               </button>
@@ -1550,19 +1527,19 @@ features: carFeatures
             {selectedPretrainedPreset && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#F5EEF8', color: '#6C1E84', border: '1px solid #EADBEE' }}>
-                  🏎️ 640 HP Engine
+                  🏎️ {horsePower || '—'} HP Engine
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#DEF7EC', color: '#03543F', border: '1px solid #BCF0DA' }}>
-                  ⚡ 0-100 in 3.1s
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#E8F9F0', color: '#057A55', border: '1px solid #A7F3D0' }}>
+                  ⚡ 0-100 in {acceleration0to100 || '—'}s
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
-                  🚀 325 km/h Top Speed
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A' }}>
+                  🚀 {topSpeed || '—'} km/h Top Speed
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#E0F2FE', color: '#075985', border: '1px solid #BAE6FD' }}>
-                  🧳 2 Large + 1 Cabin
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#FAF6FC', color: '#1E0432', border: '1px solid #E0D8E3' }}>
+                  🧳 {luggageCapacityBags} Large + {cabinBagsCapacity} Cabin
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#F3E8FF', color: '#6B21A8', border: '1px solid #E9D5FF' }}>
-                  ⛽ Full-to-Full Policy
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#F5EEF8', color: '#4A1270', border: '1px solid #E0D8E3' }}>
+                  ⛽ {fuelPolicy} Policy
                 </span>
               </div>
             )}
@@ -2594,15 +2571,16 @@ features: carFeatures
                 </div>
                 <div className="fleet-form-group">
                   <label className="fleet-form-label">Fuel Return Policy</label>
-                  <select
+                  <CustomSelect
                     value={fuelPolicy}
-                    onChange={(e) => setFuelPolicy(e.target.value)}
-                    className="fleet-form-input"
-                  >
-                    <option value="Full-to-Full">Full-to-Full</option>
-                    <option value="Same-to-Same">Same-to-Same</option>
-                    <option value="Prepaid Full Tank">Prepaid Full Tank</option>
-                  </select>
+                    onChange={(val) => setFuelPolicy(String(val))}
+                    options={[
+                      { value: 'Full-to-Full', label: 'Full-to-Full', sublabel: 'Return tank 100% full' },
+                      { value: 'Same-to-Same', label: 'Same-to-Same', sublabel: 'Match handover level' },
+                      { value: 'Prepaid Full Tank', label: 'Prepaid Full Tank', sublabel: 'Pre-purchased tank' },
+                    ]}
+                    size="md"
+                  />
                 </div>
                 <div className="fleet-form-group">
                   <label className="fleet-form-label">Deposit Release (Hours)</label>

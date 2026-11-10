@@ -540,8 +540,8 @@ export function CustomersListPage() {
                       <span
                         style={{
                           fontWeight: 700,
-                          color: '#1E0426',
-                          backgroundColor: '#F3F4F6',
+                          color: '#1E0432',
+                          backgroundColor: '#F5EEF8',
                           padding: '4px 8px',
                           borderRadius: '6px',
                           fontSize: '0.8rem',

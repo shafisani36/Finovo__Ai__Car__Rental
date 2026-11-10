@@ -10,6 +10,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { customerPortalApi, type SupportTicketItem } from '../api/customerPortalApi';
+import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
 export function CustomerSupportPage() {
@@ -266,23 +267,33 @@ export function CustomerSupportPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="cp-form-group">
                   <label className="cp-label">Category</label>
-                  <select className="cp-select" value={category} onChange={(e) => setCategory(e.target.value)}>
-                    <option value="BOOKING">Booking & Scheduling</option>
-                    <option value="PAYMENT">Billing & Security Deposit</option>
-                    <option value="INSPECTION">Damage Inspection Dispute</option>
-                    <option value="ROADSIDE">Roadside Assistance</option>
-                    <option value="GENERAL">General Inquiries</option>
-                  </select>
+                  <CustomSelect
+                    value={category}
+                    onChange={(val) => setCategory(String(val))}
+                    options={[
+                      { value: 'BOOKING', label: 'Booking & Scheduling' },
+                      { value: 'PAYMENT', label: 'Billing & Security Deposit' },
+                      { value: 'INSPECTION', label: 'Damage Inspection Dispute' },
+                      { value: 'ROADSIDE', label: 'Roadside Assistance' },
+                      { value: 'GENERAL', label: 'General Inquiries' },
+                    ]}
+                    size="md"
+                  />
                 </div>
 
                 <div className="cp-form-group">
                   <label className="cp-label">Priority</label>
-                  <select className="cp-select" value={priority} onChange={(e) => setPriority(e.target.value)}>
-                    <option value="LOW">Low</option>
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent (Immediate Callback)</option>
-                  </select>
+                  <CustomSelect
+                    value={priority}
+                    onChange={(val) => setPriority(String(val))}
+                    options={[
+                      { value: 'LOW', label: 'Low' },
+                      { value: 'NORMAL', label: 'Normal' },
+                      { value: 'HIGH', label: 'High' },
+                      { value: 'URGENT', label: 'Urgent (Immediate Callback)', badge: 'VIP' },
+                    ]}
+                    size="md"
+                  />
                 </div>
               </div>
 

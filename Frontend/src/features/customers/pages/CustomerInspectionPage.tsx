@@ -183,16 +183,7 @@ export function CustomerInspectionPage() {
             <span className="cp-badge cp-badge-accent">
               Booking #{booking?.bookingNumber || bookingId}
             </span>
-            <span
-              style={{
-                backgroundColor: '#ECFDF5',
-                color: '#065F46',
-                fontSize: '11px',
-                fontWeight: 800,
-                padding: '3px 10px',
-                borderRadius: '20px',
-              }}
-            >
+            <span className="cp-badge cp-badge-success">
               ✓ Pre-Trained AI Calibrated
             </span>
           </div>
@@ -258,38 +249,14 @@ export function CustomerInspectionPage() {
 
           <button
             onClick={() => setIsScannerOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '10px 16px',
-              backgroundColor: '#1E0426',
-              color: '#FAB826',
-              border: 'none',
-              borderRadius: '10px',
-              fontWeight: 800,
-              fontSize: '13px',
-              cursor: 'pointer',
-            }}
+            className="cp-btn-primary"
           >
             <Camera size={16} /> Run Live AI Scan
           </button>
 
           <button
             onClick={() => setIsPdfModalOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '10px 16px',
-              backgroundColor: '#FAB826',
-              color: '#1E0426',
-              border: 'none',
-              borderRadius: '10px',
-              fontWeight: 800,
-              fontSize: '13px',
-              cursor: 'pointer',
-            }}
+            className="cp-btn-secondary"
           >
             <FileText size={16} /> Official PDF Report
           </button>
@@ -300,9 +267,10 @@ export function CustomerInspectionPage() {
       <div
         className="cp-card"
         style={{
-          background: 'linear-gradient(135deg, #1E0528 0%, #2A083A 100%)',
+          background: 'linear-gradient(135deg, var(--cp-primary) 0%, var(--cp-primary-light) 100%)',
           color: '#FFFFFF',
           padding: '24px',
+          borderColor: 'rgba(250, 184, 38, 0.24)',
         }}
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', alignItems: 'center' }}>
@@ -544,7 +512,7 @@ export function CustomerInspectionPage() {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--cp-text-muted)' }}>
                       <span>Severity: <strong>{f.severity}</strong></span>
-                      <span style={{ color: 'var(--cp-accent)', fontWeight: 700 }}>
+                      <span style={{ color: 'var(--cp-warning)', fontWeight: 700 }}>
                         Est. Repair: PKR {f.estimatedRepairCost.toLocaleString()}
                       </span>
                     </div>

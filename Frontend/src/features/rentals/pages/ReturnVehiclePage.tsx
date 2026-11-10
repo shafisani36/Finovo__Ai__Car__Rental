@@ -1,23 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { rentalApi } from '../api/rentalApi';
-import type { RentalRecord } from '../api/rentalApi';
+import type { RentalRecord, SettlementLineItem, SettlementPreview } from '../api/rentalApi';
+import { inspectionApi } from '../../inspections/api/inspectionApi';
+import {
+  InspectionAiEngine,
+  type ClientInspectionReport,
+  type ClientComparisonReport,
+} from '../../inspections/services/inspectionAiEngine';
+import { AiCameraScannerModal } from '../../inspections/components/AiCameraScannerModal';
+import { InspectionReportPdfModal } from '../../inspections/components/InspectionReportPdfModal';
 import {
   RotateCcw,
   CheckCircle2,
   AlertTriangle,
   Gauge,
   Droplet,
-  ShieldAlert,
   Wrench,
   Sparkles,
   DollarSign,
   ShieldCheck,
   Clock,
   Layers,
+  Camera,
+  FileText,
+  ArrowRight,
+  GitCompare,
 } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
-import { PageContainer, PageHeader } from '../../../components/common';
+import { PageContainer, PageHeader, Button } from '../../../components/common';
 import { getCarImage } from '../../../utils/carImageHelper';
 
 export function ReturnVehiclePage() {
@@ -41,8 +52,18 @@ export function ReturnVehiclePage() {
   const [additionalAdjustment, setAdditionalAdjustment] = useState<number>(0);
 
   // Real-time Settlement Preview state
-  const [settlementPreview, setSettlementPreview] = useState<any | null>(null);
+  const [settlementPreview, setSettlementPreview] = useState<SettlementPreview | null>(null);
   const [isCalculatingSettlement, setIsCalculatingSettlement] = useState<boolean>(false);
+
+  // Return AI Scan + Pickup vs Return Comparison Engine
+  const [pickupBaselineReport, setPickupBaselineReport] = useState<ClientInspectionReport | null>(null);
+  const [pickupInspectionId, setPickupInspectionId] = useState<string | null>(null);
+  const [returnScanReport, setReturnScanReport] = useState<ClientInspectionReport | null>(null);
+  const [savedReturnInspectionId, setSavedReturnInspectionId] = useState<string | null>(null);
+  const [comparisonReport, setComparisonReport] = useState<ClientComparisonReport | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isSavingReturnScan, setIsSavingReturnScan] = useState(false);
 
   useEffect(() => {
     if (rentalId) {
@@ -58,12 +79,139 @@ export function ReturnVehiclePage() {
         setRental(res.rental);
         const defaultEndMileage = res.rental.startMileage + 180;
         setEndMileage(defaultEndMileage);
+
+        const vehicleMeta = {
+          brand: res.rental.vehicle.brand,
+          model: res.rental.vehicle.model,
+          year: res.rental.vehicle.year,
+          registrationNumber: res.rental.vehicle.registrationNumber,
+          primaryImageUrl: getCarImage(res.rental.vehicle),
+        };
+
+        const pickupIns = res.rental.inspections?.find((ins) => ins.type === 'PICKUP');
+        const returnIns = [...(res.rental.inspections || [])]
+          .reverse()
+          .find((ins) => ins.type === 'RETURN');
+
+        let builtPickup: ClientInspectionReport | null = null;
+        if (pickupIns) {
+          builtPickup = InspectionAiEngine.fromServerRecord(pickupIns, vehicleMeta);
+          setPickupBaselineReport(builtPickup);
+          setPickupInspectionId(pickupIns.id);
+        }
+
+        if (returnIns) {
+          const builtReturn = InspectionAiEngine.fromServerRecord(returnIns, vehicleMeta);
+          setReturnScanReport(builtReturn);
+          setSavedReturnInspectionId(returnIns.id);
+
+          const baselineForCmp =
+            builtPickup ||
+            InspectionAiEngine.fromServerRecord(
+              {
+                id: 'baseline-default',
+                type: 'PICKUP',
+                overallScore: 100,
+                summary: 'Clean baseline recorded at booking confirmation.',
+                createdAt: res.rental.pickedUpAt || res.rental.createdAt,
+                findings: [],
+              },
+              vehicleMeta
+            );
+
+          const depositAmt = Number(
+            (res.rental.booking as { depositAmount?: number })?.depositAmount || 5000
+          );
+          const cmp = InspectionAiEngine.compareReports(baselineForCmp, builtReturn, depositAmt);
+          setComparisonReport(cmp);
+          if (cmp.totalProposedCharges > 0) {
+            setDamageCharges(cmp.totalProposedCharges);
+          }
+        }
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to retrieve rental record');
+      const e = err as { message?: string; response?: { data?: { message?: string } } };
+      setError(e.message || e.response?.data?.message || 'Failed to retrieve rental record');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReturnScanCompleted = async (clientReport: ClientInspectionReport) => {
+    if (!rental) return;
+    setReturnScanReport(clientReport);
+
+    const vehicleMeta = {
+      brand: rental.vehicle.brand,
+      model: rental.vehicle.model,
+      year: rental.vehicle.year,
+      registrationNumber: rental.vehicle.registrationNumber,
+      primaryImageUrl: getCarImage(rental.vehicle),
+    };
+
+    const baselineForCompare =
+      pickupBaselineReport ||
+      InspectionAiEngine.fromServerRecord(
+        {
+          id: 'baseline-default',
+          type: 'PICKUP',
+          overallScore: 100,
+          summary: 'Standard clean condition prior to key release.',
+          createdAt: rental.pickedUpAt || rental.createdAt,
+          findings: [],
+        },
+        vehicleMeta
+      );
+
+    const depositAmt = Number(
+      settlementPreview?.depositAccounting?.originalDeposit ||
+        (rental.booking as { depositAmount?: number })?.depositAmount ||
+        5000
+    );
+
+    try {
+      setIsSavingReturnScan(true);
+      const analyzed = await inspectionApi.analyze({
+        vehicleId: rental.vehicleId,
+        rentalId: rental.id,
+        type: 'RETURN',
+        simulatedDamage: true,
+        photos: clientReport.photos.map((p) => ({
+          view: (p.view as 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR') || 'FRONT',
+          imageUrl: p.imageUrl,
+        })),
+      });
+
+      let finalReturnReport = clientReport;
+      if (analyzed.success && analyzed.inspection) {
+        setSavedReturnInspectionId(analyzed.inspection.id);
+        finalReturnReport = InspectionAiEngine.fromServerRecord(analyzed.inspection, vehicleMeta);
+        setReturnScanReport(finalReturnReport);
+
+        if (pickupInspectionId) {
+          await inspectionApi.compare({
+            bookingId: rental.booking.id,
+            pickupInspectionId,
+            returnInspectionId: analyzed.inspection.id,
+            securityDeposit: depositAmt,
+          }).catch(() => {});
+        }
+      }
+
+      const cmp = InspectionAiEngine.compareReports(baselineForCompare, finalReturnReport, depositAmt);
+      setComparisonReport(cmp);
+      if (cmp.totalProposedCharges > 0) {
+        setDamageCharges(cmp.totalProposedCharges);
+      }
+    } catch (err) {
+      console.warn('Return AI inspection DB sync warning, using computed comparison:', err);
+      const cmp = InspectionAiEngine.compareReports(baselineForCompare, clientReport, depositAmt);
+      setComparisonReport(cmp);
+      if (cmp.totalProposedCharges > 0) {
+        setDamageCharges(cmp.totalProposedCharges);
+      }
+    } finally {
+      setIsSavingReturnScan(false);
     }
   };
 
@@ -79,8 +227,8 @@ export function ReturnVehiclePage() {
           rentalId: rental.id,
           endMileage: Number(endMileage),
           endFuelLevel,
-          damageCharges: Number(damageCharges || 0),
-          fuelCharges: Number(fuelCharges || 0),
+          damageCharge: Number(damageCharges || 0),
+          fuelDiscrepancyCharge: Number(fuelCharges || 0),
           additionalAdjustment: Number(additionalAdjustment || 0),
         });
 
@@ -119,15 +267,15 @@ export function ReturnVehiclePage() {
         endFuelLevel,
         conditionNotes,
         sendToMaintenance,
-        damageCharges: Number(damageCharges || 0),
-        fuelCharges: Number(fuelCharges || 0),
+        damageCharge: Number(damageCharges || 0),
+        fuelDiscrepancyCharge: Number(fuelCharges || 0),
         additionalAdjustment: Number(additionalAdjustment || 0),
       });
 
       navigate('/admin/rentals');
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Failed to process vehicle return and settlement');
+      const e = err as { message?: string; response?: { data?: { message?: string } } };
+      setError(e.message || e.response?.data?.message || 'Failed to process vehicle return and settlement');
     } finally {
       setSubmitting(false);
     }
@@ -169,6 +317,29 @@ export function ReturnVehiclePage() {
 
   const distanceDriven = Math.max(0, endMileage - rental.startMileage);
   const currency = settlementPreview?.currency || 'PKR';
+  const dispatchedDate = rental.pickedUpAt || rental.startedAt || rental.createdAt;
+  const settlementLineItems: SettlementLineItem[] = Array.isArray(settlementPreview?.lineItems)
+    ? settlementPreview.lineItems
+    : Array.isArray((settlementPreview as unknown as { breakdown?: unknown })?.breakdown)
+      ? ((settlementPreview as unknown as { breakdown: SettlementLineItem[] }).breakdown)
+      : [];
+  const durationHours = settlementPreview?.duration?.actualHours ?? 0;
+  const agreedHours = settlementPreview?.duration?.agreedHours ?? 0;
+  const billableDays = Math.max(1, Math.ceil((agreedHours || durationHours || 24) / 24));
+  const lateHours = settlementPreview?.duration?.lateHours ?? 0;
+  const verifiedDistance = settlementPreview?.odometer?.actualDistanceTraveled ?? distanceDriven;
+  const includedKm = settlementPreview?.odometer?.includedKm ?? 0;
+  const extraKm = settlementPreview?.odometer?.extraKm ?? 0;
+  const heldDeposit = Number(settlementPreview?.depositAccounting?.originalDeposit ?? 0);
+  const depositDeductions = Number(settlementPreview?.depositAccounting?.deductions ?? 0);
+  const depositRefund = Number(settlementPreview?.depositAccounting?.refundableDeposit ?? 0);
+  const finalRentalTotal = Number(
+    settlementPreview?.breakdown?.finalRentalTotal ??
+      settlementPreview?.financialSummary?.totalBilled ??
+      0
+  );
+  const amountAlreadyPaid = Number(settlementPreview?.financialSummary?.amountAlreadyPaid ?? 0);
+  const netBalance = Number(settlementPreview?.financialSummary?.netPayableOrRefund ?? 0);
 
   return (
     <PageContainer>
@@ -283,8 +454,8 @@ export function ReturnVehiclePage() {
                 <div style={{ fontSize: '0.875rem', color: '#1E0426' }}>
                   Departure Fuel: <strong>{rental.startFuelLevel}</strong>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
-                  Dispatched: {new Date(rental.startedAt).toLocaleString()}
+                <div style={{ fontSize: '0.75rem', color: '#8A7090' }}>
+                  Dispatched: {dispatchedDate ? new Date(dispatchedDate).toLocaleString() : 'N/A'}
                 </div>
               </div>
             </div>
@@ -503,72 +674,78 @@ export function ReturnVehiclePage() {
                 marginBottom: '20px',
               }}
             >
-              <div style={{ padding: '12px 16px', backgroundColor: '#FAF5FB', borderRadius: '10px' }}>
-                <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ padding: '12px 16px', backgroundColor: '#FAF6FC', border: '1px solid #EFEAEF', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#8A7090', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Clock size={12} /> DURATION BILLED
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1E0426', marginTop: '2px' }}>
-                  {settlementPreview.actualDuration?.billableDays} Days ({settlementPreview.actualDuration?.totalHours} hrs)
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1E0432', marginTop: '3px' }}>
+                  {billableDays} {billableDays === 1 ? 'Day' : 'Days'} ({durationHours} hrs)
                 </div>
-                {settlementPreview.actualDuration?.lateHours > 0 && (
-                  <div style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: 700, marginTop: '2px' }}>
-                    Late Return: +{settlementPreview.actualDuration.lateHours} hrs past grace
+                {lateHours > 0 && (
+                  <div style={{ fontSize: '0.75rem', color: '#B91C1C', fontWeight: 700, marginTop: '3px' }}>
+                    Late Return: +{lateHours} hrs past grace
                   </div>
                 )}
               </div>
 
-              <div style={{ padding: '12px 16px', backgroundColor: '#FAF5FB', borderRadius: '10px' }}>
-                <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ padding: '12px 16px', backgroundColor: '#FAF6FC', border: '1px solid #EFEAEF', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#8A7090', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Gauge size={12} /> VERIFIED DISTANCE
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1E0426', marginTop: '2px' }}>
-                  {settlementPreview.mileage?.actualKm} km total
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1E0432', marginTop: '3px' }}>
+                  {verifiedDistance.toLocaleString()} km total
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '2px' }}>
-                  Included: {settlementPreview.mileage?.includedKm} km • Extra: {settlementPreview.mileage?.extraKm} km
+                <div style={{ fontSize: '0.75rem', color: '#4A315A', marginTop: '3px' }}>
+                  Included: {includedKm.toLocaleString()} km • Extra: {extraKm.toLocaleString()} km
                 </div>
               </div>
 
-              <div style={{ padding: '12px 16px', backgroundColor: '#EFF6FF', borderRadius: '10px' }}>
-                <div style={{ fontSize: '0.75rem', color: '#1E40AF', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ padding: '12px 16px', backgroundColor: '#F5EEF8', border: '1px solid #E0D8E3', borderRadius: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#6C1E84', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <ShieldCheck size={12} /> HELD DEPOSIT
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1E40AF', marginTop: '2px' }}>
-                  {currency} {Number(settlementPreview.deposit?.heldDeposit || 0).toLocaleString()}
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#1E0432', marginTop: '3px' }}>
+                  {currency} {heldDeposit.toLocaleString()}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#3B82F6', marginTop: '2px' }}>
-                  Deductions: {currency} {Number(settlementPreview.deposit?.deductions || 0).toLocaleString()}
+                <div style={{ fontSize: '0.75rem', color: '#6C1E84', fontWeight: 600, marginTop: '3px' }}>
+                  Deductions: {currency} {depositDeductions.toLocaleString()}
                 </div>
               </div>
             </div>
 
             {/* Line-item breakdown */}
-            <div style={{ borderTop: '1px solid #ECEAEF', paddingTop: '16px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#374151', marginBottom: '10px' }}>
+            <div style={{ borderTop: '1px solid #EFEAEF', paddingTop: '16px', marginBottom: '20px' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#4A315A', marginBottom: '10px' }}>
                 Settlement Line Items:
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {settlementPreview.breakdown?.map((item: any, idx: number) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' }}>
-                    <div>
-                      <span style={{ color: '#1E0426', fontWeight: 600 }}>{item.description}</span>
-                      <span style={{ fontSize: '0.75rem', color: '#685D73', marginLeft: '6px' }}>
-                        ({item.quantity} {item.unit})
+              {settlementLineItems.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {settlementLineItems.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '0.875rem' }}>
+                      <div>
+                        <span style={{ color: '#1E0432', fontWeight: 600 }}>{item.description}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#8A7090', marginLeft: '6px' }}>
+                          ({item.quantity} {item.unit})
+                        </span>
+                      </div>
+                      <span style={{ fontWeight: 700, color: item.amount < 0 ? '#057A55' : '#1E0432', whiteSpace: 'nowrap' }}>
+                        {currency} {Number(item.amount).toLocaleString()}
                       </span>
                     </div>
-                    <span style={{ fontWeight: 700, color: item.amount < 0 ? '#059669' : '#1E0426' }}>
-                      {currency} {Number(item.amount).toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.85rem', color: '#8A7090' }}>
+                  No itemized settlement charges recorded yet.
+                </div>
+              )}
             </div>
 
             {/* Financial Summary & Net Balance */}
             <div
               style={{
-                backgroundColor: '#FAF5FB',
-                border: '1px solid #E6D8ED',
+                backgroundColor: '#FAF6FC',
+                border: '1px solid #E0D8E3',
                 borderRadius: '12px',
                 padding: '16px 20px',
                 display: 'flex',
@@ -576,44 +753,46 @@ export function ReturnVehiclePage() {
                 gap: '8px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#685D73' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#4A315A' }}>
                 <span>Final Earned Rental Charges:</span>
-                <span style={{ fontWeight: 700, color: '#1E0426' }}>
-                  {currency} {Number(settlementPreview.charges?.finalRentalTotal || 0).toLocaleString()}
+                <span style={{ fontWeight: 700, color: '#1E0432' }}>
+                  {currency} {finalRentalTotal.toLocaleString()}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#685D73' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#4A315A' }}>
                 <span>Previously Collected Payment:</span>
-                <span style={{ fontWeight: 700, color: '#059669' }}>
-                  - {currency} {Number(settlementPreview.financialSummary?.previouslyPaid || 0).toLocaleString()}
+                <span style={{ fontWeight: 700, color: '#057A55' }}>
+                  - {currency} {amountAlreadyPaid.toLocaleString()}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#685D73' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#4A315A' }}>
                 <span>Refundable Deposit Refund Amount:</span>
-                <span style={{ fontWeight: 700, color: '#2563EB' }}>
-                  {currency} {Number(settlementPreview.deposit?.refundAmount || 0).toLocaleString()}
+                <span style={{ fontWeight: 700, color: '#6C1E84' }}>
+                  {currency} {depositRefund.toLocaleString()}
                 </span>
               </div>
 
               <div
                 style={{
-                  borderTop: '2px solid #E6D8ED',
+                  borderTop: '2px solid #E0D8E3',
                   paddingTop: '12px',
                   marginTop: '4px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  gap: '12px',
+                  flexWrap: 'wrap',
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E0426' }}>
-                    {settlementPreview.financialSummary?.netBalanceDue > 0
+                  <div style={{ fontSize: '1.08rem', fontWeight: 800, color: '#1E0432' }}>
+                    {netBalance > 0
                       ? 'Additional Payment Due from Customer:'
-                      : settlementPreview.financialSummary?.netBalanceDue < 0
+                      : netBalance < 0
                         ? 'Net Refund Payable to Customer:'
                         : 'Account Fully Reconciled:'}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#8A7090' }}>
                     Calculated via immutable contract snapshot. Excludes unearned deposits from revenue.
                   </div>
                 </div>
@@ -622,14 +801,14 @@ export function ReturnVehiclePage() {
                     fontSize: '1.4rem',
                     fontWeight: 900,
                     color:
-                      settlementPreview.financialSummary?.netBalanceDue > 0
-                        ? '#DC2626'
-                        : settlementPreview.financialSummary?.netBalanceDue < 0
-                          ? '#059669'
-                          : '#1E0426',
+                      netBalance > 0
+                        ? '#B91C1C'
+                        : netBalance < 0
+                          ? '#057A55'
+                          : '#1E0432',
                   }}
                 >
-                  {currency} {Math.abs(Number(settlementPreview.financialSummary?.netBalanceDue || 0)).toLocaleString()}
+                  {currency} {Math.abs(netBalance).toLocaleString()}
                 </div>
               </div>
             </div>
@@ -661,49 +840,264 @@ export function ReturnVehiclePage() {
           </label>
         </div>
 
-        {/* AI Inspection Recommendation Banner */}
+        {/* Return AI Scan & Pickup-vs-Return Comparison Engine */}
         <div
           style={{
-            backgroundColor: 'rgba(250, 184, 38, 0.12)',
-            border: '1px solid #FAB826',
-            borderRadius: '14px',
-            padding: '18px 24px',
+            background: 'linear-gradient(135deg, #1E0432 0%, #2E0949 100%)',
+            color: '#FFFFFF',
+            border: '1.5px solid rgba(250, 184, 38, 0.3)',
+            borderRadius: '18px',
+            padding: '24px',
+            boxShadow: '0 10px 28px rgba(30, 4, 50, 0.16)',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px',
+            flexDirection: 'column',
+            gap: '18px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Sparkles size={24} color="#D97706" />
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <div style={{ fontWeight: 800, color: '#1E0426', fontSize: '0.95rem' }}>
-                Perform AI Computer Vision Damage Inspection
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: '9999px',
+                    backgroundColor: 'rgba(250, 184, 38, 0.18)',
+                    color: '#FAB826',
+                    border: '1px solid rgba(250, 184, 38, 0.4)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Pickup Baseline vs Return Scan Delta
+                </span>
+                {isSavingReturnScan && (
+                  <span style={{ fontSize: '0.75rem', color: '#FAB826', fontWeight: 700 }}>
+                    Saving & Comparing Reports...
+                  </span>
+                )}
               </div>
-              <div style={{ fontSize: '0.8125rem', color: '#685D73' }}>
-                Run an instant multi-angle photo analysis to compare against baseline pickup scans and detect scratches, dents, or chips.
+              <h3
+                style={{
+                  margin: 0,
+                  fontFamily: "var(--font-family-display, 'Archivo', sans-serif)",
+                  fontSize: '1.18rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Sparkles size={19} color="#FAB826" />
+                Return AI Damage Scan & Baseline Comparison
+              </h3>
+              <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'rgba(255, 255, 255, 0.74)' }}>
+                Scan the returned vehicle and compare automatically with the pre-handover pickup inspection to isolate new damage.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {comparisonReport && (
+                <Button
+                  type="button"
+                  variant="glass"
+                  size="sm"
+                  onClick={() => setIsPdfModalOpen(true)}
+                >
+                  <FileText size={15} />
+                  <span>Comparison PDF</span>
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => setIsScannerOpen(true)}
+                disabled={isSavingReturnScan}
+              >
+                <Camera size={16} />
+                <span>{returnScanReport ? 'Re-Scan Return Angles' : 'Run Return AI Scan'}</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Side-by-side Pickup vs Return Score Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '14px', padding: '16px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#FAB826', textTransform: 'uppercase' }}>
+                1. Before Key Handover (Pickup Baseline)
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '8px' }}>
+                <span style={{ fontSize: '1.45rem', fontWeight: 900, color: '#34D399' }}>
+                  {pickupBaselineReport ? `${pickupBaselineReport.overallScore}%` : '100%'}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.72)' }}>
+                  {pickupBaselineReport ? `${pickupBaselineReport.findings.length} Pre-Existing Marks` : 'Default Clean Baseline'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '14px', padding: '16px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#FAB826', textTransform: 'uppercase' }}>
+                2. Upon Return (Post-Handover Scan)
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '8px' }}>
+                <span
+                  style={{
+                    fontSize: '1.45rem',
+                    fontWeight: 900,
+                    color: returnScanReport
+                      ? returnScanReport.overallScore < (pickupBaselineReport?.overallScore ?? 100)
+                        ? '#F87171'
+                        : '#34D399'
+                      : 'rgba(255, 255, 255, 0.5)',
+                  }}
+                >
+                  {returnScanReport ? `${returnScanReport.overallScore}%` : 'Pending Scan'}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.72)' }}>
+                  {returnScanReport
+                    ? `${returnScanReport.scratchesCount} Scratches • ${returnScanReport.dentsCount} Dents`
+                    : 'Click Run Return AI Scan'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '14px', padding: '16px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#FAB826', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <GitCompare size={13} /> 3. Difference (Kya Farq Aaya)
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '8px' }}>
+                <span
+                  style={{
+                    fontSize: '1.35rem',
+                    fontWeight: 900,
+                    color: comparisonReport
+                      ? comparisonReport.newDamageCount > 0
+                        ? '#F87171'
+                        : '#34D399'
+                      : 'rgba(255, 255, 255, 0.5)',
+                  }}
+                >
+                  {comparisonReport
+                    ? comparisonReport.newDamageCount > 0
+                      ? `+${comparisonReport.newDamageCount} New Incident(s)`
+                      : '0 Differences'
+                    : '—'}
+                </span>
+                {comparisonReport && comparisonReport.totalProposedCharges > 0 && (
+                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#FAB826' }}>
+                    {currency} {comparisonReport.totalProposedCharges.toLocaleString()}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-          <Link
-            to={`/admin/inspections/new?vehicleId=${rental.vehicleId}&rentalId=${rental.id}&type=RETURN`}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#1E0426',
-              color: '#FFFFFF',
-              borderRadius: '8px',
-              fontSize: '0.8125rem',
-              fontWeight: 700,
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <ShieldAlert size={14} />
-            <span>Launch AI Scanner</span>
-          </Link>
+
+          {/* Itemized Difference Breakdown */}
+          {comparisonReport && (
+            <div
+              style={{
+                backgroundColor: '#140220',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '14px',
+                padding: '16px 18px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: comparisonReport.newDamageCount > 0 ? '#FCA5A5' : '#6EE7B7' }}>
+                {comparisonReport.summary}
+              </div>
+
+              {comparisonReport.preExistingDamages.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'rgba(255, 255, 255, 0.65)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Pre-Existing at Handover (Excluded — Customer Liability: {currency} 0)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {comparisonReport.preExistingDamages.map((item, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '8px 12px',
+                          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        <span>
+                          ✓ <strong>{item.damageType}</strong> • {item.location} ({item.view})
+                        </span>
+                        <span style={{ color: '#6EE7B7', fontWeight: 700 }}>Pre-Existing ($0)</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {comparisonReport.newDamages.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#FCA5A5', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    NEW Damages Detected After Return (Auto-Applied to Damage Charges)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {comparisonReport.newDamages.map((item, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '10px 12px',
+                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                          borderLeft: '3px solid #EF4444',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        <div>
+                          <strong style={{ color: '#FFFFFF' }}>{item.damageType}</strong> ({item.severity})
+                          <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.72)' }}>
+                            {item.location} • Angle: {item.view} • Confidence: {item.confidence}%
+                          </div>
+                        </div>
+                        <span style={{ color: '#FAB826', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                          + {currency} {item.estimatedRepairCost.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {savedReturnInspectionId && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
+                  <Link
+                    to={`/admin/inspections/${savedReturnInspectionId}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      color: '#FAB826',
+                      fontWeight: 700,
+                      fontSize: '0.84rem',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>Review Bounding Boxes, Approve Claim, Dismiss or Send to Workshop</span>
+                    <ArrowRight size={15} />
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -711,36 +1105,27 @@ export function ReturnVehiclePage() {
           <Link
             to="/admin/rentals"
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               padding: '12px 24px',
-              borderRadius: '10px',
+              borderRadius: '9999px',
               backgroundColor: '#FFFFFF',
-              border: '1px solid #ECEAEF',
+              border: '1.5px solid #E0D8E3',
               fontSize: '0.95rem',
-              fontWeight: 600,
-              color: '#685D73',
+              fontWeight: 700,
+              color: '#4A315A',
               textDecoration: 'none',
             }}
           >
             Cancel
           </Link>
 
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="md"
             disabled={submitting}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px 32px',
-              backgroundColor: '#1E0426',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '1rem',
-              fontWeight: 800,
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 12px rgba(30, 4, 38, 0.25)',
-            }}
           >
             {submitting ? (
               <>
@@ -749,13 +1134,42 @@ export function ReturnVehiclePage() {
               </>
             ) : (
               <>
-                <CheckCircle2 size={20} color="#FAB826" />
+                <CheckCircle2 size={18} />
                 <span>Complete Return & Settle Contract</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </form>
+
+      {/* Return AI Camera Scanner Modal */}
+      <AiCameraScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        inspectionType="RETURN"
+        vehicle={{
+          id: rental.vehicle.id,
+          brand: rental.vehicle.brand,
+          model: rental.vehicle.model,
+          year: rental.vehicle.year,
+          registrationNumber: rental.vehicle.registrationNumber,
+          primaryImageUrl: getCarImage(rental.vehicle),
+        }}
+        onInspectionComplete={handleReturnScanCompleted}
+        onOpenPdfReport={(rep) => {
+          setReturnScanReport(rep);
+          setIsScannerOpen(false);
+          setIsPdfModalOpen(true);
+        }}
+      />
+
+      {/* Pickup vs Return Comparison PDF Report Modal */}
+      <InspectionReportPdfModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        report={returnScanReport || pickupBaselineReport}
+        comparisonReport={comparisonReport}
+      />
     </PageContainer>
   );
 }

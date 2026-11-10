@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
 import { getCarImage } from '../../../utils/carImageHelper';
+import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
 const FALLBACK_CARS = [
@@ -146,6 +147,15 @@ export function CustomerCarsPage() {
     return ['ALL', ...Array.from(set)];
   }, [vehicles]);
 
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((cat) => ({
+        value: cat,
+        label: cat === 'ALL' ? 'All Categories' : cat,
+      })),
+    [categories]
+  );
+
   const filteredVehicles = useMemo(() => {
     return vehicles.filter((v) => {
       const matchSearch =
@@ -197,45 +207,42 @@ export function CustomerCarsPage() {
 
           <div>
             <label className="cp-label">Category</label>
-            <select
-              className="cp-select"
+            <CustomSelect
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat === 'ALL' ? 'All Categories' : cat}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedCategory(String(val))}
+              options={categoryOptions}
+              size="md"
+            />
           </div>
 
           <div>
             <label className="cp-label">Fuel Engine</label>
-            <select
-              className="cp-select"
+            <CustomSelect
               value={selectedFuel}
-              onChange={(e) => setSelectedFuel(e.target.value)}
-            >
-              <option value="ALL">All Fuel Types</option>
-              <option value="PETROL">Petrol</option>
-              <option value="ELECTRIC">Electric (EV)</option>
-              <option value="HYBRID">Hybrid</option>
-              <option value="DIESEL">Diesel</option>
-            </select>
+              onChange={(val) => setSelectedFuel(String(val))}
+              options={[
+                { value: 'ALL', label: 'All Fuel Types' },
+                { value: 'PETROL', label: 'Petrol' },
+                { value: 'ELECTRIC', label: 'Electric (EV)', badge: 'EV' },
+                { value: 'HYBRID', label: 'Hybrid' },
+                { value: 'DIESEL', label: 'Diesel' },
+              ]}
+              size="md"
+            />
           </div>
 
           <div>
             <label className="cp-label">Transmission</label>
-            <select
-              className="cp-select"
+            <CustomSelect
               value={selectedTransmission}
-              onChange={(e) => setSelectedTransmission(e.target.value)}
-            >
-              <option value="ALL">All Transmissions</option>
-              <option value="AUTOMATIC">Automatic</option>
-              <option value="MANUAL">Manual</option>
-            </select>
+              onChange={(val) => setSelectedTransmission(String(val))}
+              options={[
+                { value: 'ALL', label: 'All Transmissions' },
+                { value: 'AUTOMATIC', label: 'Automatic' },
+                { value: 'MANUAL', label: 'Manual' },
+              ]}
+              size="md"
+            />
           </div>
 
           <div>
