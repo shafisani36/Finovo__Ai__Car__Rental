@@ -15,7 +15,10 @@ async function runTests() {
     assert.strictEqual(detectLanguage('Hello, I want to rent a car'), 'en');
     assert.strictEqual(detectLanguage('مجھے گاڑی کرایہ پر چاہیے'), 'ur');
     assert.strictEqual(detectLanguage('أريد استئجار سيارة فاخرة اليوم'), 'ar');
-    console.log(' [PASS] Language auto-detector accurately identifies English, Urdu, and Arabic');
+    assert.strictEqual(detectLanguage('Bonjour, je voudrais louer une voiture'), 'fr');
+    assert.strictEqual(detectLanguage('Hola, quiero reservar un coche'), 'es');
+    assert.strictEqual(detectLanguage('Hallo, ich möchte ein Fahrzeug mieten'), 'de');
+    console.log(' [PASS] Language auto-detector accurately identifies English, Urdu, Arabic, French, Spanish, and German');
     passed++;
   } catch (err) {
     console.error(' [FAIL] Language detection failed:', err);
@@ -31,6 +34,13 @@ async function runTests() {
     assert.strictEqual(valid.sourceLanguage, 'en');
     assert.strictEqual(valid.targetLanguage, 'ur');
 
+    const validFrench = translateSchema.parse({
+      text: 'Luxury car rental in Paris',
+      sourceLanguage: 'en',
+      targetLanguage: 'fr',
+    });
+    assert.strictEqual(validFrench.targetLanguage, 'fr');
+
     // Reject empty text
     assert.throws(() => {
       translateSchema.parse({ text: '   ', sourceLanguage: 'en', targetLanguage: 'ur' });
@@ -38,10 +48,10 @@ async function runTests() {
 
     // Reject unsupported languages
     assert.throws(() => {
-      translateSchema.parse({ text: 'Valid text', sourceLanguage: 'fr', targetLanguage: 'ur' });
+      translateSchema.parse({ text: 'Valid text', sourceLanguage: 'xx', targetLanguage: 'ur' });
     });
 
-    console.log(' [PASS] Translation validation schema enforces 5000 char limit & language allowlist');
+    console.log(' [PASS] Translation validation schema enforces 5000 char limit & 6-language allowlist');
     passed++;
   } catch (err) {
     console.error(' [FAIL] Validation schema test failed:', err);
@@ -49,13 +59,15 @@ async function runTests() {
 
   // 3. User Language Preference Validation
   try {
-    const validPref = userLanguagePreferenceSchema.parse({ preferredLanguage: 'ur' });
-    assert.strictEqual(validPref.preferredLanguage, 'ur');
+    for (const code of ['en', 'ur', 'ar', 'fr', 'es', 'de'] as const) {
+      const validPref = userLanguagePreferenceSchema.parse({ preferredLanguage: code });
+      assert.strictEqual(validPref.preferredLanguage, code);
+    }
 
     assert.throws(() => {
-      userLanguagePreferenceSchema.parse({ preferredLanguage: 'es' });
+      userLanguagePreferenceSchema.parse({ preferredLanguage: 'ja' });
     });
-    console.log(' [PASS] User language preference schema validates allowed locales strictly');
+    console.log(' [PASS] User language preference schema validates all 6 allowed locales strictly');
     passed++;
   } catch (err) {
     console.error(' [FAIL] Preference schema test failed:', err);
@@ -135,6 +147,35 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Urdu translation failed:', err);
+  }
+
+  // 8. French, Spanish & German Translation Verification
+  try {
+    const frRes = await TranslationService.translateText({
+      text: 'luxury car rental',
+      sourceLanguage: 'en',
+      targetLanguage: 'fr',
+    });
+    assert.ok(frRes.translatedText.includes('Location de voitures de luxe'));
+
+    const esRes = await TranslationService.translateText({
+      text: 'luxury car rental',
+      sourceLanguage: 'en',
+      targetLanguage: 'es',
+    });
+    assert.ok(esRes.translatedText.includes('Alquiler de coches de lujo'));
+
+    const deRes = await TranslationService.translateText({
+      text: 'luxury car rental',
+      sourceLanguage: 'en',
+      targetLanguage: 'de',
+    });
+    assert.ok(deRes.translatedText.includes('Luxusautovermietung'));
+
+    console.log(' [PASS] French, Spanish, and German translations produce verified automotive terminology');
+    passed++;
+  } catch (err) {
+    console.error(' [FAIL] European language translations failed:', err);
   }
 
   console.log('\n======================================================');

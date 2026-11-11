@@ -73,7 +73,7 @@
 /* ---------------- Hero Grid (Left Photo + Right 3 Metrics) ---------------- */
 .car-hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.38fr) minmax(310px, 1fr);
+  grid-template-columns: minmax(0, 1.38fr) minmax(min(100%, 310px), 1fr);
   gap: 24px;
   margin-bottom: 24px;
   align-items: stretch;
@@ -1260,12 +1260,20 @@
   border-radius: 18px;
   box-shadow: 0 20px 45px rgba(26, 3, 34, 0.3);
   width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
+  max-width: min(100%, 560px);
+  max-height: calc(100dvh - 24px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: carModalSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.car-modal-box form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @keyframes carModalSlideIn {
@@ -1280,11 +1288,12 @@
 }
 
 .car-modal-header {
-  padding: 18px 24px;
+  padding: clamp(14px, 2.5vw, 18px) clamp(16px, 3vw, 24px);
   border-bottom: 1px solid #ECE7ED;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .car-modal-title {
@@ -1295,21 +1304,26 @@
 }
 
 .car-modal-body {
-  padding: 20px 24px;
+  padding: clamp(16px, 2.5vw, 20px) clamp(16px, 3vw, 24px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
 .car-modal-footer {
-  padding: 16px 24px;
+  padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 24px);
   border-top: 1px solid #ECE7ED;
   background-color: #FAF9FB;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 

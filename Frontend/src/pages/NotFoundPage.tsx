@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../components/common/Button';
 import { ArrowLeft, Car } from 'lucide-react';
 
 export function NotFoundPage() {
+  const { t } = useTranslation();
+
   return (
     <div
       style={{
@@ -42,16 +45,16 @@ export function NotFoundPage() {
           marginBottom: '12px',
         }}
       >
-        404
+        {t('notFound.title')}
       </h1>
 
       <p style={{ fontSize: '1.1rem', color: 'var(--text-white-secondary)', maxWidth: '440px', marginBottom: '32px' }}>
-        The vehicle or road you are looking for does not exist in our route map.
+        {t('notFound.description')}
       </p>
 
       <Link to="/" style={{ textDecoration: 'none' }}>
-        <Button variant="primary" size="md" icon={<ArrowLeft size={16} />} iconPosition="left">
-          Return to Homepage
+        <Button variant="primary" size="md" icon={<ArrowLeft size={16} className="rtl-mirror-arrow" />} iconPosition="left">
+          {t('notFound.backHome')}
         </Button>
       </Link>
     </div>

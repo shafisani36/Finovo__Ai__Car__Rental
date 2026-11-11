@@ -92,6 +92,8 @@ export interface HandoverPayload {
     photos?: Array<{
       view: string;
       imageUrl: string;
+      qualityScore?: number;
+      pixelTelemetry?: unknown;
     }>;
     findings?: Array<{
       damageType: string;

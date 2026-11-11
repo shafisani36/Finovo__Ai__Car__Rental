@@ -85,7 +85,7 @@ export function Footer() {
           className="footer-main-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
             gap: '40px',
             marginBottom: '60px',
           }}
@@ -254,9 +254,9 @@ export function Footer() {
                 <Smartphone size={20} color="var(--color-accent-500)" />
                 <div style={{ textAlign: 'start' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-white-muted)', textTransform: 'uppercase' }}>
-                    Download on
+                    {t('footer.downloadOn')}
                   </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>App Store & Google Play</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{t('footer.storeNames')}</div>
                 </div>
               </a>
             </div>

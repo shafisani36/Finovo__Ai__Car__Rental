@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 import '../../styles/about-page.css';
 
@@ -16,33 +17,35 @@ import teamThree from '../../assets/about/finovo-team-three.png';
 import journeyImg from '../../assets/about/finovo-journey.png';
 
 export function AboutUsPage() {
+  const { t } = useTranslation();
+
   const benefits = [
     {
-      title: 'Trust & Transparency',
-      desc: 'No hidden fees, honest pricing, and full clarity before you step behind the wheel.',
+      title: t('about.b1Title'),
+      desc: t('about.b1Desc'),
       img: shieldImg,
     },
     {
-      title: 'Premium Fleet',
-      desc: 'Extensive line-up of world-class, meticulously maintained luxury and economy vehicles.',
+      title: t('about.b2Title'),
+      desc: t('about.b2Desc'),
       img: carImg,
     },
     {
-      title: '24/7 Roadside Support',
-      desc: 'Our dedicated customer success team is on standby 24/7 for help across any city.',
+      title: t('about.b3Title'),
+      desc: t('about.b3Desc'),
       img: supportImg,
     },
     {
-      title: 'Seamless Digital Booking',
-      desc: 'Pick your dates, choose your insurance, and get instant digital key access.',
+      title: t('about.b4Title'),
+      desc: t('about.b4Desc'),
       img: calendarImg,
     },
   ];
 
   const team = [
-    { name: 'Ahmed Khan', role: 'CEO & Founder', img: teamOne },
-    { name: 'Sarah Al-Mansoor', role: 'Head of Operations', img: teamTwo },
-    { name: 'Fariha Siddiqui', role: 'Customer Experience Lead', img: teamThree },
+    { name: 'Ahmed Khan', role: t('about.role1'), img: teamOne },
+    { name: 'Sarah Al-Mansoor', role: t('about.role2'), img: teamTwo },
+    { name: 'Fariha Siddiqui', role: t('about.role3'), img: teamThree },
   ];
 
   return (
@@ -51,12 +54,13 @@ export function AboutUsPage() {
       <section className="intro-band" aria-labelledby="about-hero-title">
         <img className="hero-photo" src={heroImg} alt="Finovo luxury rental car experience" />
         <div className="intro-copy">
-          <p className="eyebrow">ABOUT FINOVO</p>
-          <h1 id="about-hero-title">Driven by People.<br />Built for Better Journeys.</h1>
-          <p className="intro-description">
-            At Finovo, we believe every journey should be simple, safe, and extraordinary.
-            We are more than a car rental platform — we are your trusted mobility partner.
-          </p>
+          <p className="eyebrow">{t('about.eyebrow')}</p>
+          <h1 id="about-hero-title">
+            {t('about.heroTitle1')}
+            <br />
+            {t('about.heroTitle2')}
+          </h1>
+          <p className="intro-description">{t('about.heroDesc')}</p>
           <Link
             to="/cars"
             style={{
@@ -73,20 +77,21 @@ export function AboutUsPage() {
               boxShadow: '0 4px 15px rgba(250, 184, 38, 0.4)',
             }}
           >
-            Explore Fleet <ArrowRight size={16} />
+            <span>{t('about.exploreFleet')}</span>
+            <ArrowRight size={16} className="rtl-mirror-arrow" />
           </Link>
           <div className="stats">
             <div>
               <strong>10K+</strong>
-              <span>Happy customers</span>
+              <span>{t('about.stat1Label')}</span>
             </div>
             <div>
               <strong>500+</strong>
-              <span>Premium cars</span>
+              <span>{t('about.stat2Label')}</span>
             </div>
             <div>
               <strong>25+</strong>
-              <span>Cities & locations</span>
+              <span>{t('about.stat3Label')}</span>
             </div>
           </div>
         </div>
@@ -95,23 +100,16 @@ export function AboutUsPage() {
       {/* Story Section */}
       <section className="story-section">
         <div className="story-copy">
-          <p className="eyebrow">OUR STORY</p>
-          <h2>A Smarter Way to Move Forward</h2>
-          <p>
-            Finovo was founded with a single mission: to eliminate friction from car rental. What started
-            as a boutique fleet with a vision for transparency has grown into a premier mobility platform
-            trusted by thousands of business travelers, families, and automotive enthusiasts.
-          </p>
-          <p>
-            With integrated AI computer-vision damage inspections, automated transparent pricing, and instant
-            approvals, we ensure that your vehicle pickup and return take minutes, not hours.
-          </p>
+          <p className="eyebrow">{t('about.storyEyebrow')}</p>
+          <h2>{t('about.storyTitle')}</h2>
+          <p>{t('about.storyP1')}</p>
+          <p>{t('about.storyP2')}</p>
         </div>
         <div className="story-imagery">
           <img className="steering-photo" src={steeringImg} alt="Driver behind the wheel of a Finovo vehicle" />
           <div className="experience-badge">
             <strong>8+</strong>
-            <span>Years of Excellence</span>
+            <span>{t('about.yearsExcellence')}</span>
           </div>
         </div>
       </section>
@@ -119,29 +117,23 @@ export function AboutUsPage() {
       {/* Mission & Vision */}
       <section className="mission-section">
         <div className="section-heading">
-          <p className="eyebrow" style={{ textAlign: 'center' }}>PURPOSE</p>
-          <h2>Our Mission & Vision</h2>
-          <p>Guided by purpose. Driven by a better tomorrow.</p>
+          <p className="eyebrow" style={{ textAlign: 'center' }}>{t('about.purposeEyebrow')}</p>
+          <h2>{t('about.missionVisionTitle')}</h2>
+          <p>{t('about.missionVisionSubtitle')}</p>
         </div>
         <div className="purpose-panels">
           <div className="purpose-panel mission-panel">
-            <img src={missionImg} alt="Mission icon" />
+            <img src={missionImg} alt={t('about.missionTitle')} />
             <div>
-              <h3>Our Mission</h3>
-              <p>
-                To provide seamless, affordable, and reliable car rental services that empower our
-                customers to explore with complete confidence and supreme comfort.
-              </p>
+              <h3>{t('about.missionTitle')}</h3>
+              <p>{t('about.missionDesc')}</p>
             </div>
           </div>
           <div className="purpose-panel vision-panel">
-            <img src={visionImg} alt="Vision icon" />
+            <img src={visionImg} alt={t('about.visionTitle')} />
             <div>
-              <h3>Our Vision</h3>
-              <p>
-                To become the most trusted mobility partner in the region, recognized for transparent pricing,
-                cutting-edge AI inspection technology, and an exceptional luxury fleet.
-              </p>
+              <h3>{t('about.visionTitle')}</h3>
+              <p>{t('about.visionDesc')}</p>
             </div>
           </div>
         </div>
@@ -150,9 +142,9 @@ export function AboutUsPage() {
       {/* Why Choose Us */}
       <section className="why-section">
         <div className="section-heading">
-          <p className="eyebrow" style={{ textAlign: 'center' }}>BENEFITS</p>
-          <h2>Why Choose Finovo</h2>
-          <p>More than a rental. A elevated way to travel.</p>
+          <p className="eyebrow" style={{ textAlign: 'center' }}>{t('about.benefitsEyebrow')}</p>
+          <h2>{t('about.whyTitle')}</h2>
+          <p>{t('about.whySubtitle')}</p>
         </div>
         <div className="benefit-grid">
           {benefits.map((b) => (
@@ -170,9 +162,9 @@ export function AboutUsPage() {
       {/* Leadership & Team */}
       <section className="team-section">
         <div className="section-heading">
-          <p className="eyebrow" style={{ textAlign: 'center' }}>OUR LEADERSHIP</p>
-          <h2>The People Behind Your Perfect Ride</h2>
-          <p>A passionate team dedicated to making every journey memorable and secure.</p>
+          <p className="eyebrow" style={{ textAlign: 'center' }}>{t('about.teamEyebrow')}</p>
+          <h2>{t('about.teamTitle')}</h2>
+          <p>{t('about.teamSubtitle')}</p>
         </div>
         <div className="polaroid-row">
           {team.map((member, i) => (
@@ -189,10 +181,10 @@ export function AboutUsPage() {
       <section className="journey-section">
         <img className="journey-photo" src={journeyImg} alt="Finovo vehicle journey" />
         <div className="journey-copy">
-          <p className="eyebrow">• LET'S GET MOVING</p>
-          <h2>Ready to hit the road? Book your dream car today.</h2>
+          <p className="eyebrow">{t('about.ctaEyebrow')}</p>
+          <h2>{t('about.ctaTitle')}</h2>
           <p style={{ opacity: 0.85, marginBottom: '24px', fontSize: '15px' }}>
-            Choose from hundreds of premium sedans, SUVs, and exotics ready for instant departure.
+            {t('about.ctaDesc')}
           </p>
           <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
             <Link
@@ -210,7 +202,8 @@ export function AboutUsPage() {
                 textDecoration: 'none',
               }}
             >
-              Browse Cars <ArrowRight size={16} />
+              <span>{t('about.browseCars')}</span>
+              <ArrowRight size={16} className="rtl-mirror-arrow" />
             </Link>
             <Link
               to="/contact"
@@ -228,7 +221,7 @@ export function AboutUsPage() {
                 border: '1px solid rgba(255, 255, 255, 0.25)',
               }}
             >
-              Contact Support
+              {t('about.contactSupport')}
             </Link>
           </div>
         </div>

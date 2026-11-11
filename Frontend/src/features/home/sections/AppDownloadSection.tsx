@@ -1,9 +1,11 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { Sparkles, Apple, Play } from 'lucide-react';
 
 export function AppDownloadSection() {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -104,10 +106,10 @@ export function AppDownloadSection() {
                 <div style={{ padding: '14px 10px', color: '#FFFFFF' }}>
                   <div style={{ width: '36px', height: '3.5px', backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: '2px', margin: '0 auto 14px auto' }} />
                   <div style={{ fontSize: '0.6rem', color: 'var(--color-accent-500)', fontWeight: 700, textTransform: 'uppercase' }}>
-                    AI Inspection
+                    {t('home.appDownload.phone1Tag')}
                   </div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 800, marginBottom: '10px' }}>
-                    Scan Exterior 360°
+                    {t('home.appDownload.phone1Title')}
                   </div>
                   <div
                     style={{
@@ -124,8 +126,8 @@ export function AppDownloadSection() {
                     }}
                   >
                     <Sparkles size={20} color="var(--color-accent-500)" style={{ marginBottom: '4px' }} />
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700 }}>Condition Verified</div>
-                    <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.7)' }}>0 Scratches Detected</div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 700 }}>{t('home.appDownload.phone1Status')}</div>
+                    <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.7)' }}>{t('home.appDownload.phone1Sub')}</div>
                   </div>
                 </div>
               </div>
@@ -149,16 +151,16 @@ export function AppDownloadSection() {
                 <div style={{ padding: '14px 10px', color: '#FFFFFF' }}>
                   <div style={{ width: '40px', height: '3.5px', backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: '2px', margin: '0 auto 12px auto' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.7)' }}>Digital Key</div>
+                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.7)' }}>{t('home.appDownload.phone2Tag')}</div>
                     <span style={{ fontSize: '0.55rem', padding: '2px 5px', backgroundColor: '#22C55E', borderRadius: '6px', color: '#000', fontWeight: 800 }}>
-                      ACTIVE
+                      {t('home.appDownload.phone2Status')}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '2px' }}>
                     Audi A7 Sportback
                   </div>
                   <div style={{ fontSize: '0.6rem', color: 'var(--color-accent-500)', marginBottom: '12px' }}>
-                    Tap to unlock vehicle
+                    {t('home.appDownload.phone2Hint')}
                   </div>
 
                   <div
@@ -176,9 +178,9 @@ export function AppDownloadSection() {
                     }}
                   >
                     <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--color-accent-500)' }}>
-                      UNLOCK
+                      {t('home.appDownload.phone2Action')}
                     </div>
-                    <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.8)' }}>Bluetooth Proximity</div>
+                    <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.8)' }}>{t('home.appDownload.phone2Sub')}</div>
                   </div>
                 </div>
               </div>
@@ -197,7 +199,7 @@ export function AppDownloadSection() {
                   marginBottom: '14px',
                 }}
               >
-                Drive Your Journey With Finovo
+                {t('home.appDownload.title')}
               </h2>
 
               <p
@@ -209,7 +211,7 @@ export function AppDownloadSection() {
                   maxWidth: '480px',
                 }}
               >
-                Download the official Finovo app for frictionless car bookings, instant contactless vehicle unlocking, live GPS updates, and automatic AI inspections anywhere.
+                {t('home.appDownload.subtitle')}
               </p>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
@@ -236,9 +238,9 @@ export function AppDownloadSection() {
                   }}
                 >
                   <Apple size={22} color="#FFFFFF" />
-                  <div style={{ textAlign: 'left' }}>
+                  <div style={{ textAlign: 'start' }}>
                     <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.6)' }}>
-                      Download on the
+                      {t('home.appDownload.downloadOn')}
                     </div>
                     <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>App Store</div>
                   </div>
@@ -267,9 +269,9 @@ export function AppDownloadSection() {
                   }}
                 >
                   <Play size={20} color="var(--color-accent-500)" fill="var(--color-accent-500)" />
-                  <div style={{ textAlign: 'left' }}>
+                  <div style={{ textAlign: 'start' }}>
                     <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.6)' }}>
-                      Get it on
+                      {t('home.appDownload.getItOn')}
                     </div>
                     <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Google Play</div>
                   </div>

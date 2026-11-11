@@ -237,7 +237,7 @@ export function BookingsListPage() {
         </div>
 
         {/* Search Input */}
-        <div style={{ position: 'relative', width: '280px' }}>
+        <div style={{ position: 'relative', width: 'min(100%, 280px)', flex: '1 1 220px' }}>
           <Search size={16} color="#9CA3AF" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
@@ -691,7 +691,7 @@ export function BookingsListPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '12px' }}>
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>Customer</div>
                 <div style={{ fontWeight: 700 }}>{selectedBooking.customer.fullName}</div>

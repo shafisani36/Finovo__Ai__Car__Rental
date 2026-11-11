@@ -1,10 +1,12 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { Button } from '../../../components/common/Button';
 import { ShieldCheck, Check } from 'lucide-react';
 
 export function InsuranceBannerSection() {
+  const { t } = useTranslation();
   const bannerRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -91,7 +93,7 @@ export function InsuranceBannerSection() {
               marginBottom: '14px',
             }}
           >
-            Car Insurance Banner
+            {t('home.insurance.title')}
           </h2>
 
           <p
@@ -104,7 +106,7 @@ export function InsuranceBannerSection() {
               marginBottom: '28px',
             }}
           >
-            Drive with 100% peace of mind. Zero-deductible collision protection, 24/7 roadside assistance, and instant digital claim resolution included.
+            {t('home.insurance.subtitle')}
           </p>
 
           <div
@@ -119,7 +121,11 @@ export function InsuranceBannerSection() {
               color: '#341C07',
             }}
           >
-            {['$0 Deductible Collision', 'Glass & Tire Protection', '24/7 Rapid Replacement'].map((item) => (
+            {[
+              t('home.insurance.bullet1'),
+              t('home.insurance.bullet2'),
+              t('home.insurance.bullet3'),
+            ].map((item) => (
               <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span
                   style={{
@@ -130,6 +136,7 @@ export function InsuranceBannerSection() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    flexShrink: 0,
                   }}
                 >
                   <Check size={14} color="#1A0228" strokeWidth={3} />
@@ -143,8 +150,7 @@ export function InsuranceBannerSection() {
             variant="dark"
             size="md"
             onClick={() => {
-              const el = document.getElementById('search-form');
-              el?.scrollIntoView({ behavior: 'smooth' });
+              window.location.href = '/insurance';
             }}
             style={{
               backgroundColor: '#1E0432',
@@ -153,7 +159,7 @@ export function InsuranceBannerSection() {
               padding: '14px 32px',
             }}
           >
-            Explore Insurance Plans
+            {t('home.insurance.cta')}
           </Button>
         </div>
       </div>

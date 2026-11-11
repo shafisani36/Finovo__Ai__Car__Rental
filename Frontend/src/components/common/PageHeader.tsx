@@ -1,5 +1,6 @@
 import type { ReactNode, CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
 export interface BreadcrumbItem {
@@ -27,10 +28,13 @@ export function PageHeader({
   badge,
   actions,
   backTo,
-  backLabel = 'Back',
+  backLabel,
   className = '',
   style = {},
 }: PageHeaderProps) {
+  const { t } = useTranslation();
+  const resolvedBackLabel = backLabel ?? t('common.actions.back');
+
   return (
     <div className={`finovo-page-header ${className}`} style={style}>
       <div className="finovo-page-header-left">
@@ -39,8 +43,8 @@ export function PageHeader({
           <nav aria-label="Breadcrumb" className="finovo-breadcrumb">
             {backTo && (
               <Link to={backTo} className="finovo-breadcrumb-item" style={{ fontWeight: 700, color: 'var(--finovo-purple-600, #6C1E84)' }}>
-                <ArrowLeft size={14} />
-                <span>{backLabel}</span>
+                <ArrowLeft size={14} className="rtl-mirror-arrow" />
+                <span>{resolvedBackLabel}</span>
               </Link>
             )}
 

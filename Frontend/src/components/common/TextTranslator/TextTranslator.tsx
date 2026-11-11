@@ -140,12 +140,15 @@ export function TextTranslator({
   };
 
   const sourceDir =
-    sourceLang === 'ur' || sourceLang === 'ar'
-      ? 'rtl'
-      : sourceLang === 'auto'
+    sourceLang === 'auto'
       ? 'auto'
-      : 'ltr';
-  const targetDir = targetLang === 'ur' || targetLang === 'ar' ? 'rtl' : 'ltr';
+      : SUPPORTED_LANGUAGES[sourceLang as LanguageCode]?.direction || 'ltr';
+  const targetDir = SUPPORTED_LANGUAGES[targetLang]?.direction || 'ltr';
+  const languageOptions = Object.values(SUPPORTED_LANGUAGES).map((lang) => ({
+    value: lang.code,
+    label: `${lang.nativeName} (${lang.name})`,
+    badge: lang.shortCode,
+  }));
 
   return (
     <div className="finovo-translator-container">
@@ -194,31 +197,13 @@ export function TextTranslator({
                 onChange={(val) => setSourceLang(String(val))}
                 options={[
                   { value: 'auto', label: `🌐 ${t('common.autoDetect')}` },
-                  { value: 'en', label: 'English (English)', badge: 'EN' },
-                  { value: 'ur', label: 'اردو (Urdu)', badge: 'UR' },
-                  { value: 'ar', label: 'العربية (Arabic)', badge: 'AR' },
+                  ...languageOptions,
                 ]}
                 fullWidth={false}
                 size="sm"
-                containerStyle={{ minWidth: '175px' }}
+                containerStyle={{ minWidth: 'min(100%, 160px)' }}
               />
             </div>
-
-            {detectedLang && (
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  backgroundColor: '#F3E8FF',
-                  color: '#6C1E84',
-                  fontWeight: 600,
-                }}
-              >
-                {t('translator.detectedLanguage')}:{' '}
-                {SUPPORTED_LANGUAGES[detectedLang as LanguageCode]?.nativeName || detectedLang}
-              </span>
-            )}
           </div>
 
           <textarea
@@ -275,7 +260,7 @@ export function TextTranslator({
         {/* Target Translation Panel */}
         <div className="finovo-translator-card">
           <div className="finovo-translator-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <label
                 htmlFor="translator-target-lang"
                 style={{ fontSize: '0.8rem', fontWeight: 700, color: '#66566A' }}
@@ -286,14 +271,10 @@ export function TextTranslator({
                 id="translator-target-lang"
                 value={targetLang}
                 onChange={(val) => setTargetLang(val)}
-                options={[
-                  { value: 'en', label: 'English (English)', badge: 'EN' },
-                  { value: 'ur', label: 'اردو (Urdu)', badge: 'UR' },
-                  { value: 'ar', label: 'العربية (Arabic)', badge: 'AR' },
-                ]}
+                options={languageOptions}
                 fullWidth={false}
                 size="sm"
-                containerStyle={{ minWidth: '175px' }}
+                containerStyle={{ minWidth: 'min(100%, 160px)' }}
               />
             </div>
 

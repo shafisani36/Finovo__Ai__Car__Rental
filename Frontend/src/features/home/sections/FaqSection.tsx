@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -9,6 +10,7 @@ import { HelpCircle, Mail, Phone, Plus } from 'lucide-react';
 gsap.registerPlugin(ScrollTrigger);
 
 export function FaqSection() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const [activeFaqId, setActiveFaqId] = useState<string>(FAQ_ITEMS[0].id);
 
@@ -77,7 +79,7 @@ export function FaqSection() {
               marginBottom: '12px',
             }}
           >
-            Frequently Asked Questions
+            {t('home.faq.title')}
           </h2>
           <p
             style={{
@@ -90,7 +92,7 @@ export function FaqSection() {
               margin: 0,
             }}
           >
-            Everything you need to know about our fleet, insurance coverage, and AI inspection technology.
+            {t('home.faq.subtitle')}
           </p>
         </div>
 
@@ -148,7 +150,7 @@ export function FaqSection() {
                   letterSpacing: '-0.015em',
                 }}
               >
-                Have Any Question?
+                {t('home.faq.supportTitle')}
               </h3>
 
               <p
@@ -161,7 +163,7 @@ export function FaqSection() {
                   marginBottom: '26px',
                 }}
               >
-                Can't find what you are looking for? Our 24/7 dedicated support team is available around the clock.
+                {t('home.faq.supportDesc')}
               </p>
 
               {/* Direct Contact Links */}
@@ -182,7 +184,7 @@ export function FaqSection() {
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
                 >
                   <Phone size={16} color="#330231" />
-                  <span>+1 (800) 555-FINOVO</span>
+                  <span className="phone-number">+1 (800) 555-FINOVO</span>
                 </a>
                 <a
                   href="mailto:support@finovorentals.com"
@@ -210,7 +212,7 @@ export function FaqSection() {
               size="md"
               fullWidth
               onClick={() => {
-                window.location.href = 'mailto:support@finovorentals.com';
+                window.location.href = '/contact';
               }}
               style={{
                 backgroundColor: '#330231',
@@ -221,7 +223,7 @@ export function FaqSection() {
                 boxShadow: '0 8px 20px rgba(51, 2, 49, 0.25)',
               }}
             >
-              Contact Us
+              {t('home.faq.contactUs')}
             </Button>
           </div>
 
@@ -238,6 +240,8 @@ export function FaqSection() {
           >
             {FAQ_ITEMS.map((item, index) => {
               const isActive = activeFaqId === item.id;
+              const questionText = t(`home.faq.q${index + 1}`, { defaultValue: item.question });
+              const answerText = t(`home.faq.a${index + 1}`, { defaultValue: item.answer });
 
               return (
                 <div
@@ -304,7 +308,7 @@ export function FaqSection() {
                         userSelect: 'none',
                       }}
                     >
-                      {item.question}
+                      {questionText}
                     </div>
 
                     {/* Plus Icon with smooth rotation */}
@@ -342,7 +346,7 @@ export function FaqSection() {
                         ? 'opacity 0.35s ease 0.16s'
                         : 'opacity 0.15s ease',
                       zIndex: 2,
-                      minWidth: '320px',
+                      minWidth: 'min(100%, 300px)',
                     }}
                   >
                     <div>
@@ -367,7 +371,7 @@ export function FaqSection() {
                             letterSpacing: '0.04em',
                           }}
                         >
-                          FAQ 0{index + 1}
+                          {t('home.faq.faqLabel')} 0{index + 1}
                         </span>
 
                         <div
@@ -402,7 +406,7 @@ export function FaqSection() {
                           marginBottom: '16px',
                         }}
                       >
-                        {item.question}
+                        {questionText}
                       </h4>
 
                       {/* Answer Body Text */}
@@ -416,7 +420,7 @@ export function FaqSection() {
                           margin: 0,
                         }}
                       >
-                        {item.answer}
+                        {answerText}
                       </p>
                     </div>
 
@@ -438,7 +442,7 @@ export function FaqSection() {
                           fontWeight: 600,
                         }}
                       >
-                        Click another tab to explore
+                        {t('home.faq.tabHint')}
                       </span>
                       <span
                         style={{
@@ -450,7 +454,7 @@ export function FaqSection() {
                           borderRadius: '6px',
                         }}
                       >
-                        Finovo Verified
+                        {t('home.faq.verifiedBadge')}
                       </span>
                     </div>
                   </div>
@@ -463,6 +467,8 @@ export function FaqSection() {
           <div className="faq-box-anim faq-accordion-mobile">
             {FAQ_ITEMS.map((item, index) => {
               const isOpen = activeFaqId === item.id;
+              const questionText = t(`home.faq.q${index + 1}`, { defaultValue: item.question });
+              const answerText = t(`home.faq.a${index + 1}`, { defaultValue: item.answer });
 
               return (
                 <div
@@ -487,7 +493,7 @@ export function FaqSection() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      textAlign: 'left',
+                      textAlign: 'start',
                       color: '#330231',
                       border: 'none',
                       backgroundColor: 'transparent',
@@ -504,7 +510,7 @@ export function FaqSection() {
                         lineHeight: 1.35,
                       }}
                     >
-                      0{index + 1}. {item.question}
+                      0{index + 1}. {questionText}
                     </span>
 
                     <span
@@ -553,7 +559,7 @@ export function FaqSection() {
                             'opacity 0.3s ease 0.08s, transform 0.3s ease 0.08s',
                         }}
                       >
-                        {item.answer}
+                        {answerText}
                       </div>
                     </div>
                   </div>
@@ -573,7 +579,7 @@ export function FaqSection() {
         /* Desktop Horizontal Accordion Flex Ratios */
         .faq-panel-card.is-active {
           flex: 4;
-          min-width: 320px;
+          min-width: min(100%, 300px);
         }
 
         .faq-panel-card.is-collapsed {

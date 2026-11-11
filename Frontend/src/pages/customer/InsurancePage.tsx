@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -9,57 +10,59 @@ import {
 } from 'lucide-react';
 
 export function InsurancePage() {
+  const { t } = useTranslation();
+
   const plans = [
     {
-      name: 'Basic Coverage',
-      price: 'Included Free',
-      tag: 'STANDARD',
-      desc: 'Essential legal coverage for domestic and city driving.',
+      name: t('insurance.plan1Name'),
+      price: t('insurance.plan1Price'),
+      tag: t('insurance.plan1Tag'),
+      desc: t('insurance.plan1Desc'),
       highlight: false,
       features: [
-        { text: 'Third-Party Property Damage Liability', included: true },
-        { text: 'Third-Party Bodily Injury Coverage', included: true },
-        { text: '24/7 Standard Breakdown Assistance', included: true },
-        { text: 'Collision Damage Waiver (CDW)', included: false },
-        { text: 'Theft & Total Loss Protection', included: false },
-        { text: 'Zero Deductible Waiver', included: false },
-        { text: 'Windshield & Tire Hazard Waiver', included: false },
+        { text: t('insurance.featLiability'), included: true },
+        { text: t('insurance.featBodily'), included: true },
+        { text: t('insurance.featBreakdown'), included: true },
+        { text: t('insurance.featCdw'), included: false },
+        { text: t('insurance.featTheft'), included: false },
+        { text: t('insurance.featZeroDeductible'), included: false },
+        { text: t('insurance.featGlassTire'), included: false },
       ],
-      deductible: 'SAR 3,000 Excess',
+      deductible: t('insurance.plan1Deductible'),
     },
     {
-      name: 'Standard Shield',
-      price: 'SAR 50 / day',
-      tag: 'MOST POPULAR',
-      desc: 'Balanced comprehensive protection against accidental damages.',
+      name: t('insurance.plan2Name'),
+      price: t('insurance.plan2Price'),
+      tag: t('insurance.plan2Tag'),
+      desc: t('insurance.plan2Desc'),
       highlight: true,
       features: [
-        { text: 'Third-Party Property Damage Liability', included: true },
-        { text: 'Third-Party Bodily Injury Coverage', included: true },
-        { text: '24/7 Priority Roadside Assistance', included: true },
-        { text: 'Collision Damage Waiver (CDW)', included: true },
-        { text: 'Theft & Total Loss Protection', included: true },
-        { text: 'Zero Deductible Waiver', included: false },
-        { text: 'Windshield & Tire Hazard Waiver', included: false },
+        { text: t('insurance.featLiability'), included: true },
+        { text: t('insurance.featBodily'), included: true },
+        { text: t('insurance.featPriorityBreakdown'), included: true },
+        { text: t('insurance.featCdw'), included: true },
+        { text: t('insurance.featTheft'), included: true },
+        { text: t('insurance.featZeroDeductible'), included: false },
+        { text: t('insurance.featGlassTire'), included: false },
       ],
-      deductible: 'SAR 500 Reduced Excess',
+      deductible: t('insurance.plan2Deductible'),
     },
     {
-      name: 'Premium Zero Shield',
-      price: 'SAR 100 / day',
-      tag: 'TOTAL PEACE OF MIND',
-      desc: 'Full zero-liability security covering all minor and major events.',
+      name: t('insurance.plan3Name'),
+      price: t('insurance.plan3Price'),
+      tag: t('insurance.plan3Tag'),
+      desc: t('insurance.plan3Desc'),
       highlight: false,
       features: [
-        { text: 'Third-Party Property Damage Liability', included: true },
-        { text: 'Third-Party Bodily Injury Coverage', included: true },
-        { text: '24/7 VIP Dedicated Roadside Recovery', included: true },
-        { text: 'Collision Damage Waiver (CDW)', included: true },
-        { text: 'Theft & Total Loss Protection', included: true },
-        { text: 'Zero Deductible (SAR 0 Excess)', included: true },
-        { text: 'Windshield, Glass & Tire Hazard Waiver', included: true },
+        { text: t('insurance.featLiability'), included: true },
+        { text: t('insurance.featBodily'), included: true },
+        { text: t('insurance.featVipRecovery'), included: true },
+        { text: t('insurance.featCdw'), included: true },
+        { text: t('insurance.featTheft'), included: true },
+        { text: t('insurance.featZeroExcess'), included: true },
+        { text: t('insurance.featFullGlassTire'), included: true },
       ],
-      deductible: 'SAR 0 Zero Deductible',
+      deductible: t('insurance.plan3Deductible'),
     },
   ];
 
@@ -85,13 +88,13 @@ export function InsurancePage() {
               marginBottom: '10px',
             }}
           >
-            COMPREHENSIVE MOBILITY PROTECTION
+            {t('insurance.eyebrow')}
           </p>
-          <h1 style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px' }}>
-            Drive With Total Peace of Mind
+          <h1 style={{ fontSize: 'clamp(1.9rem, 4.5vw, 2.75rem)', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px' }}>
+            {t('insurance.heroTitle')}
           </h1>
           <p style={{ fontSize: '16px', lineHeight: 1.6, opacity: 0.9, marginBottom: '32px' }}>
-            Every Finovo vehicle is backed by licensed insurance underwriters. Pick the tier that matches your itinerary and travel with zero worries.
+            {t('insurance.heroDesc')}
           </p>
           <Link
             to="/cars"
@@ -109,14 +112,15 @@ export function InsurancePage() {
               boxShadow: '0 4px 15px rgba(250, 184, 38, 0.4)',
             }}
           >
-            Explore Protected Cars <ArrowRight size={16} />
+            <span>{t('insurance.exploreCta')}</span>
+            <ArrowRight size={16} className="rtl-mirror-arrow" />
           </Link>
         </div>
       </section>
 
       {/* Insurance Tiers Comparison */}
-      <section style={{ maxWidth: '1240px', margin: '-30px auto 60px', padding: '0 24px', position: 'relative', zIndex: 5 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      <section style={{ maxWidth: '1240px', margin: '-30px auto 60px', padding: '0 clamp(16px, 4vw, 24px)', position: 'relative', zIndex: 5 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
           {plans.map((p) => (
             <div
               key={p.name}
@@ -124,7 +128,7 @@ export function InsurancePage() {
                 backgroundColor: p.highlight ? '#1E0426' : '#FFFFFF',
                 color: p.highlight ? '#FFFFFF' : '#1E0426',
                 borderRadius: '24px',
-                padding: '36px',
+                padding: 'clamp(24px, 4vw, 36px)',
                 border: p.highlight ? '2px solid #FAB826' : '1px solid #ECEAEF',
                 boxShadow: p.highlight ? '0 15px 40px rgba(30, 4, 38, 0.25)' : '0 8px 30px rgba(0, 0, 0, 0.05)',
                 display: 'flex',
@@ -192,8 +196,8 @@ export function InsurancePage() {
                   boxShadow: p.highlight ? '0 4px 15px rgba(250, 184, 38, 0.4)' : 'none',
                 }}
               >
-                <span style={{ color: p.highlight ? '#1E0426' : '#FAB826' }}>Choose With Vehicle</span>
-                <ArrowRight size={16} color={p.highlight ? '#1E0426' : '#FAB826'} />
+                <span style={{ color: p.highlight ? '#1E0426' : '#FAB826' }}>{t('insurance.chooseWithVehicle')}</span>
+                <ArrowRight size={16} color={p.highlight ? '#1E0426' : '#FAB826'} className="rtl-mirror-arrow" />
               </Link>
             </div>
           ))}
@@ -201,23 +205,23 @@ export function InsurancePage() {
       </section>
 
       {/* Claims Process Section */}
-      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 24px' }}>
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '40px', border: '1px solid #ECEAEF', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#1E0426', textAlign: 'center', marginBottom: '8px' }}>
-            Fast 3-Step Incident Resolution
+      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 clamp(16px, 4vw, 24px)' }}>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: 'clamp(24px, 4vw, 40px)', border: '1px solid #ECEAEF', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 1.75rem)', fontWeight: 800, color: '#1E0426', textAlign: 'center', marginBottom: '8px' }}>
+            {t('insurance.claimsTitle')}
           </h2>
           <p style={{ fontSize: '15px', color: '#6B7280', textAlign: 'center', marginBottom: '40px' }}>
-            In the rare event of damage or a minor parking scratch, resolution is seamless and fair.
+            {t('insurance.claimsDesc')}
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '30px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '30px' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1E0426', color: '#FAB826', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
                 <PhoneCall size={26} />
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>1. Notify Support</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>{t('insurance.step1Title')}</h3>
               <p style={{ fontSize: '14px', color: '#6B7280', margin: 0, lineHeight: 1.5 }}>
-                Tap emergency call in your app or call our 24/7 hotline. We immediately arrange towing or vehicle exchange.
+                {t('insurance.step1Desc')}
               </p>
             </div>
 
@@ -225,9 +229,9 @@ export function InsurancePage() {
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1E0426', color: '#FAB826', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
                 <ShieldCheck size={26} />
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>2. AI Computer Scan</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>{t('insurance.step2Title')}</h3>
               <p style={{ fontSize: '14px', color: '#6B7280', margin: 0, lineHeight: 1.5 }}>
-                Our AI inspection model objectively records the damage and compares against your check-out baseline.
+                {t('insurance.step2Desc')}
               </p>
             </div>
 
@@ -235,9 +239,9 @@ export function InsurancePage() {
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1E0426', color: '#FAB826', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
                 <FileCheck size={26} />
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>3. Instant Settlement</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>{t('insurance.step3Title')}</h3>
               <p style={{ fontSize: '14px', color: '#6B7280', margin: 0, lineHeight: 1.5 }}>
-                Your selected coverage takes care of repair costs. With Premium Shield, your deductible liability is SAR 0.
+                {t('insurance.step3Desc')}
               </p>
             </div>
           </div>

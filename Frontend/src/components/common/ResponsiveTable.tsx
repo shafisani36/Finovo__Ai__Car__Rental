@@ -1,4 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface ResponsiveTableProps {
@@ -21,6 +22,8 @@ export function ResponsiveTable({
   className = '',
   style = {},
 }: ResponsiveTableProps) {
+  const { t } = useTranslation();
+
   return (
     <div className={`finovo-table-card ${className}`} style={style}>
       <div className="finovo-table-scroll custom-scrollbar">
@@ -30,10 +33,13 @@ export function ResponsiveTable({
       {pagination && pagination.totalPages > 1 && (
         <div className="finovo-pagination">
           <div>
-            Showing Page <strong>{pagination.page}</strong> of{' '}
+            {t('common.pagination.showingPage')} <strong>{pagination.page}</strong> {t('common.pagination.of')}{' '}
             <strong>{pagination.totalPages}</strong>
             {pagination.totalCount !== undefined && (
-              <span> ({pagination.totalCount} total {pagination.label || 'records'})</span>
+              <span>
+                {' '}
+                ({pagination.totalCount} {t('common.pagination.totalRecords')} {pagination.label || t('common.pagination.records')})
+              </span>
             )}
           </div>
 
@@ -43,10 +49,10 @@ export function ResponsiveTable({
               onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
               disabled={pagination.page <= 1}
               className="finovo-pagination-btn"
-              aria-label="Previous page"
+              aria-label={t('common.pagination.previous')}
             >
-              <ChevronLeft size={16} />
-              <span>Previous</span>
+              <ChevronLeft size={16} className="rtl-mirror-arrow" />
+              <span>{t('common.pagination.previous')}</span>
             </button>
 
             <button
@@ -54,10 +60,10 @@ export function ResponsiveTable({
               onClick={() => pagination.onPageChange(Math.min(pagination.totalPages, pagination.page + 1))}
               disabled={pagination.page >= pagination.totalPages}
               className="finovo-pagination-btn"
-              aria-label="Next page"
+              aria-label={t('common.pagination.next')}
             >
-              <span>Next</span>
-              <ChevronRight size={16} />
+              <span>{t('common.pagination.next')}</span>
+              <ChevronRight size={16} className="rtl-mirror-arrow" />
             </button>
           </div>
         </div>

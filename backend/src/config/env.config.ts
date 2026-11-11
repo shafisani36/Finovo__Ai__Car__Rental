@@ -43,4 +43,11 @@ export const env = {
     PROVIDER: process.env.EMAIL_PROVIDER || 'mock',
     FROM: process.env.EMAIL_FROM || 'Finovo AI Car Rental <noreply@finovo-rental.com>',
   },
+
+  VISION: {
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    GEMINI_MODEL: process.env.GEMINI_VISION_MODEL || 'gemini-2.5-flash',
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+    OPENAI_MODEL: process.env.OPENAI_VISION_MODEL || 'gpt-4o-mini',
+  },
 };

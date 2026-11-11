@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context';
 import { getDirectDashboardRoute } from '../utils/roleRouting';
 
 export function UnauthorizedPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const directDashboard = getDirectDashboardRoute(user?.roles);
 
@@ -40,20 +42,20 @@ export function UnauthorizedPage() {
 
       <h1
         style={{
-          fontSize: '2rem',
+          fontSize: 'clamp(1.6rem, 4vw, 2rem)',
           fontWeight: 800,
           fontFamily: 'var(--font-family-display, "Archivo", sans-serif)',
           margin: '0 0 12px 0',
         }}
       >
-        403 - Access Denied
+        {t('auth.unauthorized.title')}
       </h1>
 
       <p style={{ maxWidth: '440px', color: '#66566A', fontSize: '1rem', lineHeight: 1.6, margin: '0 0 28px 0' }}>
-        You do not have the required administrative permissions to access this resource. Please contact your system administrator if you believe this is an error.
+        {t('auth.unauthorized.description')}
       </p>
 
-      <div style={{ display: 'flex', gap: '12px' }}>
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <Link
           to={directDashboard}
           style={{
@@ -65,7 +67,7 @@ export function UnauthorizedPage() {
             textDecoration: 'none',
           }}
         >
-          Return to Dashboard
+          {t('auth.unauthorized.returnDashboard')}
         </Link>
         <Link
           to="/"
@@ -79,7 +81,7 @@ export function UnauthorizedPage() {
             textDecoration: 'none',
           }}
         >
-          Go to Homepage
+          {t('auth.unauthorized.goHome')}
         </Link>
       </div>
     </div>

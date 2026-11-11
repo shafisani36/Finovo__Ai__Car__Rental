@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { dashboardApi, type DashboardOverviewResponse } from '../api/dashboardApi';
 import {
   PageContainer,
@@ -124,6 +125,7 @@ const FALLBACK_DASHBOARD: DashboardOverviewResponse = {
 };
 
 export function AdminDashboardPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<DashboardOverviewResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,7 +165,7 @@ export function AdminDashboardPage() {
   if (isLoading && !data) {
     return (
       <PageContainer>
-        <LoadingState message="Loading executive analytics and fleet telemetry..." minHeight="400px" />
+        <LoadingState message={t('admin.loadingTelemetry')} minHeight="400px" />
       </PageContainer>
     );
   }
@@ -199,7 +201,7 @@ export function AdminDashboardPage() {
             <AlertTriangle size={32} />
           </div>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#991B1B', marginBottom: '8px' }}>
-            Unable to Load Executive Dashboard
+            {t('admin.unableLoad')}
           </h3>
           <p style={{ color: '#66566A', marginBottom: '24px', fontSize: '0.9rem' }}>{error}</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -216,7 +218,7 @@ export function AdminDashboardPage() {
                 boxShadow: '0 2px 8px rgba(30, 4, 38, 0.2)',
               }}
             >
-              Retry Connection
+              {t('admin.retryConnection')}
             </button>
             <button
               onClick={() => {
@@ -234,7 +236,7 @@ export function AdminDashboardPage() {
                 boxShadow: '0 2px 8px rgba(250, 184, 38, 0.3)',
               }}
             >
-              Load Dynamic Fallback Telemetry
+              {t('admin.loadFallback')}
             </button>
           </div>
         </div>
@@ -248,11 +250,11 @@ export function AdminDashboardPage() {
     <PageContainer>
       {/* ================= TOP HEADER ================= */}
       <PageHeader
-        title="Executive Overview"
-        subtitle="Real-time operations, fleet utilization, revenue performance, and AI inspection monitoring"
+        title={t('admin.executiveTitle')}
+        subtitle={t('admin.executiveSubtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Dashboard' },
+          { label: t('nav.adminPlatform'), to: '/admin/dashboard' },
+          { label: t('admin.dashboard') },
         ]}
         actions={
           <>
@@ -320,7 +322,7 @@ export function AdminDashboardPage() {
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FAB826')}
             >
               <Plus size={16} strokeWidth={2.5} />
-              <span>Add Car</span>
+              <span>{t('admin.addVehicle')}</span>
             </Link>
           </>
         }
@@ -329,28 +331,28 @@ export function AdminDashboardPage() {
       {/* ================= 6 STATS KPI CARDS ================= */}
       <StatGrid>
         <StatCard
-          label="Total Fleet"
+          label={t('admin.totalFleet')}
           value={fleet.total}
           icon={Car}
           variant="purple"
           subtext="Total vehicles registered"
         />
         <StatCard
-          label="Available"
+          label={t('common.status.available')}
           value={fleet.available}
           icon={CheckCircle2}
           variant="green"
           subtext="Ready for instant booking"
         />
         <StatCard
-          label="Rented Out"
+          label={t('admin.activeRentals')}
           value={fleet.rented}
           icon={Clock}
           variant="blue"
           subtext="Active on trips"
         />
         <StatCard
-          label="In Service"
+          label={t('common.status.maintenance')}
           value={fleet.maintenance}
           icon={Wrench}
           variant="amber"
@@ -364,7 +366,7 @@ export function AdminDashboardPage() {
           subtext="Fleet operational efficiency"
         />
         <StatCard
-          label="Monthly Revenue"
+          label={t('admin.totalRevenue')}
           value={`$${financials.monthlyRevenue.toLocaleString()}`}
           icon={DollarSign}
           variant="gold"
@@ -372,11 +374,11 @@ export function AdminDashboardPage() {
         />
         {data?.customers && (
           <StatCard
-            label="Total Renters"
+            label={t('nav.customers')}
             value={data.customers.total}
             icon={Users}
             variant="purple"
-            subtext={`${data.customers.verified} verified driver licenses`}
+            subtext={`${data.customers.verified} ${t('common.status.verified')}`}
           />
         )}
       </StatGrid>
@@ -386,7 +388,7 @@ export function AdminDashboardPage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
           gap: '20px',
           marginBottom: '28px',
         }}
@@ -422,7 +424,7 @@ export function AdminDashboardPage() {
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '12px', marginBottom: '18px' }}>
             <div style={{ backgroundColor: '#F9FAFB', padding: '12px 14px', borderRadius: '10px', border: '1px solid #F3F4F6' }}>
               <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 600 }}>Scheduled Pickups Today</div>
               <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#111827', marginTop: '2px' }}>
@@ -600,7 +602,7 @@ export function AdminDashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
           <div>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 4px 0', color: '#1A0322' }}>
-              Recent Bookings & Allocations
+              {t('admin.recentBookings')}
             </h3>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#66566A' }}>
               Live customer reservations, vehicle assignments, and payment statuses
@@ -619,8 +621,8 @@ export function AdminDashboardPage() {
               textDecoration: 'none',
             }}
           >
-            <span>View All Fleet</span>
-            <ChevronRight size={16} />
+            <span>{t('common.actions.viewAll')}</span>
+            <ChevronRight size={16} className="rtl-mirror-arrow" />
           </Link>
         </div>
 
@@ -635,7 +637,7 @@ export function AdminDashboardPage() {
                 <th>Pickup Date</th>
                 <th>Total Amount</th>
                 <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
+                <th style={{ textAlign: 'end' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -674,7 +676,7 @@ export function AdminDashboardPage() {
                   <td>
                     <StatusBadge status={b.status} />
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td style={{ textAlign: 'end' }}>
                     <Link
                       to="/admin/cars"
                       style={{
@@ -742,9 +744,9 @@ export function AdminDashboardPage() {
                 />
                 <div>
                   <strong style={{ color: '#111827' }}>{act.event.replace(/_/g, ' ')}</strong>
-                  <span style={{ color: '#6B7280', marginLeft: '6px' }}>by {act.user}</span>
+                  <span style={{ color: '#6B7280', marginInlineStart: '6px' }}>by {act.user}</span>
                   {act.metadata && (
-                    <span style={{ color: '#4B5563', marginLeft: '6px', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#4B5563', marginInlineStart: '6px', fontSize: '0.8rem' }}>
                       ({Object.entries(act.metadata).map(([k, v]) => `${k}: ${v}`).join(', ')})
                     </span>
                   )}

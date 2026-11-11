@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { TestimonialItem } from '../../../types';
 import { Star } from 'lucide-react';
 
@@ -6,7 +7,26 @@ interface TestimonialBubbleProps {
 }
 
 export function TestimonialBubble({ item }: TestimonialBubbleProps) {
+  const { t } = useTranslation();
   const isFeatured = item.variant === 'featured';
+
+  const translatedReview =
+    item.variant === 'featured'
+      ? t('home.testimonials.featuredReview')
+      : item.variant === 'bubble-left'
+      ? t('home.testimonials.review1')
+      : item.variant === 'bubble-center'
+      ? t('home.testimonials.review2')
+      : item.variant === 'bubble-right'
+      ? t('home.testimonials.review3')
+      : item.review;
+
+  const translatedLocation =
+    item.location.toLowerCase().includes('dubai')
+      ? t('home.testimonials.dubai')
+      : item.location.toLowerCase().includes('saud')
+      ? t('home.testimonials.saudia')
+      : item.location;
 
   if (isFeatured) {
     return (
@@ -89,7 +109,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
                 fontWeight: 500,
               }}
             >
-              {item.review}
+              {translatedReview}
             </p>
           </div>
 
@@ -104,14 +124,14 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
               userSelect: 'none',
               pointerEvents: 'none',
               alignSelf: 'flex-start',
-              marginLeft: '4px',
+              marginInlineStart: '4px',
               marginTop: '-4px',
             }}
           >
             ”
           </div>
 
-          {/* Speech Bubble Tail pointing down-left */}
+          {/* Speech Bubble Tail */}
           <svg
             className="speech-bubble-tail"
             viewBox="0 0 24 16"
@@ -120,7 +140,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
             style={{
               position: 'absolute',
               bottom: '-12px',
-              left: '26px',
+              insetInlineStart: '26px',
               width: '24px',
               height: '14px',
               pointerEvents: 'none',
@@ -157,8 +177,8 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
         style={{
           position: 'absolute',
           top: '-36px',
-          left: isSaudia ? '50%' : isKhalid ? 'auto' : '22px',
-          right: isKhalid ? '26px' : 'auto',
+          insetInlineStart: isSaudia ? '50%' : isKhalid ? 'auto' : '22px',
+          insetInlineEnd: isKhalid ? '26px' : 'auto',
           transform: isSaudia ? 'translateX(-50%)' : 'none',
           width: '66px',
           height: '66px',
@@ -225,7 +245,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
                 color: 'rgba(255, 255, 255, 0.72)',
               }}
             >
-              ({item.location})
+              ({translatedLocation})
             </span>
           </div>
 
@@ -254,7 +274,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
             margin: 0,
           }}
         >
-          {item.review}
+          {translatedReview}
         </p>
       </div>
     </div>

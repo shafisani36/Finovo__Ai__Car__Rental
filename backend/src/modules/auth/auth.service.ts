@@ -220,6 +220,7 @@ export class AuthService {
         fullName: user.fullName,
         isEmailVerified: user.isEmailVerified,
         status: user.status,
+        preferredLanguage: user.preferredLanguage || 'en',
         roles,
         permissions,
       },
@@ -275,6 +276,7 @@ export class AuthService {
         id: session.user.id,
         email: session.user.email,
         fullName: session.user.fullName,
+        preferredLanguage: session.user.preferredLanguage || 'en',
         roles,
         permissions,
       },
@@ -494,6 +496,7 @@ export class AuthService {
         avatarUrl: true,
         isEmailVerified: true,
         status: true,
+        preferredLanguage: true,
         createdAt: true,
         userRoles: {
           select: {
@@ -539,6 +542,7 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
       isEmailVerified: user.isEmailVerified,
       status: user.status,
+      preferredLanguage: user.preferredLanguage || 'en',
       createdAt: user.createdAt,
       roles,
       permissions: Array.from(permissionSet),

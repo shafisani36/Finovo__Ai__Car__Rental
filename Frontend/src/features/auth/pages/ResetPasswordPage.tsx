@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthSplitLayout } from '../layouts/AuthSplitLayout';
 import { AuthInput } from '../components/AuthInput';
 import { useAuth } from '../context';
 import { Lock, ArrowLeft, CheckCircle2, Check, X } from 'lucide-react';
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -24,7 +26,6 @@ export function ResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Password rules validation criteria
   const hasMinLength = newPassword.length >= 8;
   const hasUpperLower = /(?=.*[a-z])(?=.*[A-Z])/.test(newPassword);
   const hasNumberSpecial = /(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/.test(newPassword);
@@ -34,18 +35,18 @@ export function ResetPasswordPage() {
     const newErrors: Record<string, string> = {};
 
     if (!email.trim()) {
-      newErrors.email = 'Email address is required';
+      newErrors.email = t('auth.errors.emailRequired');
     }
     if (!code.trim() || code.trim().length !== 6) {
-      newErrors.code = 'Valid 6-digit verification code is required';
+      newErrors.code = t('auth.errors.codeRequired');
     }
     if (!newPassword || newPassword.length < 8) {
-      newErrors.newPassword = 'Password must be at least 8 characters long';
+      newErrors.newPassword = t('auth.errors.passwordMin');
     } else if (!hasUpperLower || !hasNumberSpecial) {
-      newErrors.newPassword = 'Password must contain uppercase, lowercase, number, and special character';
+      newErrors.newPassword = t('auth.errors.passwordSpecial');
     }
     if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth.errors.passwordMismatch');
     }
 
     setErrors(newErrors);
@@ -64,11 +65,11 @@ export function ResetPasswordPage() {
       setIsSuccess(true);
       setTimeout(() => {
         navigate('/login', {
-          state: { message: 'Your password has been successfully reset! Please log in with your new password.' },
+          state: { message: t('auth.passwordChangedSuccess') },
         });
       }, 1500);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to reset password. Please try again.';
+      const msg = err instanceof Error ? err.message : t('auth.errors.resetFailed');
       setServerError(msg);
     } finally {
       setIsSubmitting(false);
@@ -79,12 +80,12 @@ export function ResetPasswordPage() {
     <AuthSplitLayout
       variant="login"
       topRightPrompt={{
-        text: 'Remember your password?',
-        linkText: 'Sign In →',
+        text: t('auth.rememberPassword'),
+        linkText: t('auth.signInSimpleArrow'),
         linkTo: '/login',
       }}
     >
-      <div style={{ textAlign: 'left' }}>
+      <div style={{ textAlign: 'start' }}>
         <Link
           to="/login"
           style={{
@@ -98,8 +99,8 @@ export function ResetPasswordPage() {
             marginBottom: '20px',
           }}
         >
-          <ArrowLeft size={16} />
-          <span>Back to sign in</span>
+          <ArrowLeft size={16} className="rtl-mirror-arrow" />
+          <span>{t('auth.backToLogin')}</span>
         </Link>
 
         <h2
@@ -112,7 +113,7 @@ export function ResetPasswordPage() {
             margin: '0 0 10px 0',
           }}
         >
-          Reset Password
+          {t('auth.resetPasswordTitle')}
         </h2>
         <p
           style={{
@@ -124,11 +125,11 @@ export function ResetPasswordPage() {
         >
           {email ? (
             <>
-              Create a new secure password for{' '}
+              {t('auth.resetPasswordDescFor')}{' '}
               <strong style={{ color: '#230528' }}>{email}</strong>.
             </>
           ) : (
-            'Create a new secure password for your Finovo account.'
+            t('auth.resetPasswordDesc')
           )}
         </p>
 
@@ -162,15 +163,14 @@ export function ResetPasswordPage() {
           >
             <CheckCircle2 size={48} color="#0E9F6E" style={{ margin: '0 auto 14px' }} />
             <h3 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 8px 0' }}>
-              Password Reset Successful!
+              {t('auth.passwordResetSuccessTitle')}
             </h3>
             <p style={{ fontSize: '0.925rem', margin: 0, color: '#046C4E' }}>
-              Your password has been securely updated. Redirecting you to sign in...
+              {t('auth.passwordResetSuccessDesc')}
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate>
-            {/* If email or code missing from flow, allow filling them */}
             {(!emailParam || !codeParam) && (
               <div
                 style={{
@@ -183,9 +183,9 @@ export function ResetPasswordPage() {
               >
                 {!emailParam && (
                   <AuthInput
-                    label="Email Address"
+                    label={t('auth.email')}
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder={t('auth.enterEmailPlaceholder')}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -197,8 +197,8 @@ export function ResetPasswordPage() {
                 )}
                 {!codeParam && (
                   <AuthInput
-                    label="Verification Code"
-                    placeholder="6-digit verification code"
+                    label={t('auth.verificationCodeLabel')}
+                    placeholder={t('auth.verificationCodePlaceholder')}
                     value={code}
                     onChange={(e) => {
                       setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
@@ -212,10 +212,10 @@ export function ResetPasswordPage() {
             )}
 
             <AuthInput
-              label="New Password"
+              label={t('auth.newPassword')}
               isPassword
               icon={<Lock size={18} />}
-              placeholder="Enter new password"
+              placeholder={t('auth.newPasswordPlaceholder')}
               value={newPassword}
               onChange={(e) => {
                 setNewPassword(e.target.value);
@@ -226,10 +226,10 @@ export function ResetPasswordPage() {
             />
 
             <AuthInput
-              label="Confirm Password"
+              label={t('auth.confirmPassword')}
               isPassword
               icon={<Lock size={18} />}
-              placeholder="Confirm your new password"
+              placeholder={t('auth.confirmNewPasswordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
@@ -255,20 +255,20 @@ export function ResetPasswordPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: hasMinLength ? '#0E9F6E' : '#66566A' }}>
                 {hasMinLength ? <Check size={14} color="#0E9F6E" strokeWidth={2.5} /> : <X size={14} color="#9CA3AF" />}
-                <span>At least 8 characters long</span>
+                <span>{t('auth.rules.minLength')}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: hasUpperLower ? '#0E9F6E' : '#66566A' }}>
                 {hasUpperLower ? <Check size={14} color="#0E9F6E" strokeWidth={2.5} /> : <X size={14} color="#9CA3AF" />}
-                <span>Uppercase and lowercase letters</span>
+                <span>{t('auth.rules.upperLower')}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: hasNumberSpecial ? '#0E9F6E' : '#66566A' }}>
                 {hasNumberSpecial ? <Check size={14} color="#0E9F6E" strokeWidth={2.5} /> : <X size={14} color="#9CA3AF" />}
-                <span>At least one number and special character</span>
+                <span>{t('auth.rules.numberSpecial')}</span>
               </div>
               {confirmPassword.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: passwordsMatch ? '#0E9F6E' : '#E53935' }}>
                   {passwordsMatch ? <Check size={14} color="#0E9F6E" strokeWidth={2.5} /> : <X size={14} color="#E53935" />}
-                  <span>Passwords match</span>
+                  <span>{t('auth.rules.match')}</span>
                 </div>
               )}
             </div>
@@ -294,18 +294,8 @@ export function ResetPasswordPage() {
                 transition: 'background-color 0.2s, transform 0.15s, box-shadow 0.2s',
                 opacity: isSubmitting ? 0.8 : 1,
               }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting) {
-                  e.currentTarget.style.backgroundColor = '#E5A61F';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#FAB826';
-                e.currentTarget.style.transform = 'none';
-              }}
             >
-              <span>{isSubmitting ? 'Resetting Password...' : 'Reset Password'}</span>
+              <span>{isSubmitting ? t('auth.resettingPassword') : t('auth.setNewPasswordBtn')}</span>
             </button>
           </form>
         )}

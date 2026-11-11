@@ -23,6 +23,7 @@ import {
   type ClientInspectionReport,
 } from '../../inspections/services/inspectionAiEngine';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import { getCarImage, resolveVehiclePricing } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerCheckoutPage() {
@@ -146,13 +147,12 @@ export function CustomerCheckoutPage() {
               setVehicle({
                 id: vehicleIdParam,
                 brand: 'Lamborghini',
-                model: 'Huracán Evo Spyder',
+                model: 'Huracán Evo',
                 year: 2026,
-                dailyRate: 1000,
-                securityDeposit: 2500,
-                color: 'Arancio Borealis (Orange)',
-                primaryImageUrl:
-                  'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=800&q=80',
+                dailyRate: 980,
+                securityDeposit: 2000,
+                color: 'Arancio Orange',
+                primaryImageUrl: '/cars/orange-car.jpg',
               });
             }
           }
@@ -162,13 +162,12 @@ export function CustomerCheckoutPage() {
             setVehicle({
               id: 'car-huracan-flagship',
               brand: 'Lamborghini',
-              model: 'Huracán Evo Spyder',
+              model: 'Huracán Evo',
               year: 2026,
-              dailyRate: 1000,
-              securityDeposit: 2500,
-              color: 'Arancio Borealis (Orange)',
-              primaryImageUrl:
-                'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=800&q=80',
+              dailyRate: 980,
+              securityDeposit: 2000,
+              color: 'Arancio Orange',
+              primaryImageUrl: '/cars/orange-car.jpg',
             });
           }
         }
@@ -185,13 +184,15 @@ export function CustomerCheckoutPage() {
     };
   }, [vehicleIdParam]);
 
-  // Pre-initialize Baseline AI Inspection Report if not already captured
+  // Real pixel scan only runs when vehicle photo exists or customer scans angles
+  const resolvedVehicleImg = vehicle ? getCarImage(vehicle) : '';
   useEffect(() => {
-    if (vehicle && !inspectionReport) {
-      const initialReport = InspectionAiEngine.runInspection({
+    let active = true;
+    if (vehicle && resolvedVehicleImg && !inspectionReport) {
+      InspectionAiEngine.runInspectionAsync({
         type: 'PICKUP',
         vehicle: {
-          brand: vehicle.brand || 'Luxury',
+          brand: vehicle.brand || 'Fleet',
           model: vehicle.model || 'Vehicle',
           year: vehicle.year || 2026,
           registrationNumber: vehicle.registrationNumber || 'FIN-889-AE',
@@ -201,39 +202,28 @@ export function CustomerCheckoutPage() {
         photos: [
           {
             view: 'FRONT',
-            imageUrl:
-              vehicle.primaryImageUrl ||
-              'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=1200&q=80',
-          },
-          {
-            view: 'DRIVER_SIDE',
-            imageUrl:
-              'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80',
-          },
-          {
-            view: 'PASSENGER_SIDE',
-            imageUrl:
-              'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
-          },
-          {
-            view: 'REAR',
-            imageUrl:
-              'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80',
+            imageUrl: resolvedVehicleImg,
           },
         ],
-        simulateDamage: false,
-      });
-      setInspectionReport(initialReport);
+      })
+        .then((rep) => {
+          if (active) setInspectionReport(rep);
+        })
+        .catch(() => {});
     }
-  }, [vehicle, inspectionReport]);
+    return () => {
+      active = false;
+    };
+  }, [vehicle, resolvedVehicleImg, inspectionReport]);
 
-  // Calculate pricing
+  // Calculate pricing dynamically from backend rates/tiers & security deposit
   const pDate = new Date(pickupDate);
   const rDate = new Date(returnDate);
   const diffTime = Math.max(0, rDate.getTime() - pDate.getTime());
   const daysCount = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  const baseRate = Number(vehicle?.dailyRate || 500);
+  const resolvedPricing = resolveVehiclePricing(vehicle);
+  const baseRate = resolvedPricing.dailyRate;
   const rentalSubtotal = baseRate * daysCount;
 
   const protectionRate = protectionPlan === 'premium' ? 75 : 35;
@@ -244,7 +234,7 @@ export function CustomerCheckoutPage() {
     (addChildSeat ? 8 * daysCount : 0) +
     (addExtraDriver ? 15 * daysCount : 0);
 
-  const securityDeposit = Number(vehicle?.securityDeposit || 500);
+  const securityDeposit = resolvedPricing.securityDeposit;
   const taxAmount = (rentalSubtotal + protectionTotal + extrasTotal) * 0.15;
   const totalAmount = rentalSubtotal + protectionTotal + extrasTotal + taxAmount;
 
@@ -418,8 +408,10 @@ export function CustomerCheckoutPage() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
               <span style={{ color: 'var(--cp-text-muted)' }}>AI Pre-Inspection Certificate:</span>
-              <span style={{ color: '#10B981', fontWeight: 700 }}>
-                ✓ Certified (Health: {inspectionReport?.overallScore || 98.5}%)
+              <span style={{ color: inspectionReport ? '#10B981' : '#F59E0B', fontWeight: 700 }}>
+                {inspectionReport
+                  ? `✓ Verified (Health: ${inspectionReport.overallScore}%)`
+                  : 'Pending Branch Handover Scan'}
               </span>
             </div>
 
@@ -433,14 +425,16 @@ export function CustomerCheckoutPage() {
 
           {/* Action CTAs */}
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => setIsPdfModalOpen(true)}
-              className="cp-btn-primary"
-            >
-              <FileText size={18} />
-              Download Official Handover PDF Report
-            </button>
+            {inspectionReport && (
+              <button
+                type="button"
+                onClick={() => setIsPdfModalOpen(true)}
+                className="cp-btn-primary"
+              >
+                <FileText size={18} />
+                Download Official Handover PDF Report
+              </button>
+            )}
 
             <Link
               to={`/customer/bookings/${bookingSuccess.id}`}
@@ -882,7 +876,7 @@ export function CustomerCheckoutPage() {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px' }}>
                     <div>
                       <label className="cp-label">CVC / CVV</label>
                       <input
@@ -1085,12 +1079,9 @@ export function CustomerCheckoutPage() {
                 }}
               >
                 <img
-                  src={
-                    vehicle?.primaryImageUrl ||
-                    'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=400&q=80'
-                  }
-                  alt={vehicle?.brand}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  src={getCarImage(vehicle)}
+                  alt={`${vehicle?.brand || ''} ${vehicle?.model || ''}`.trim() || 'Vehicle'}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#24052E' }}
                 />
               </div>
               <div>

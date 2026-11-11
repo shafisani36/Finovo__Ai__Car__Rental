@@ -26,21 +26,21 @@ export function RegisterPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!fullName.trim() || fullName.trim().length < 2) {
-      newErrors.fullName = 'Please enter your full name (minimum 2 characters)';
+      newErrors.fullName = t('auth.errors.fullNameMin');
     }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('auth.errors.validEmail');
     }
     if (!password || password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
+      newErrors.password = t('auth.errors.passwordMin');
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      newErrors.password = 'Password requires uppercase, lowercase, and numbers';
+      newErrors.password = t('auth.errors.passwordComplexity');
     }
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth.errors.passwordMismatch');
     }
     if (!agreedToTerms) {
-      newErrors.terms = 'You must agree to the Terms of Service and Privacy Policy';
+      newErrors.terms = t('auth.errors.acceptTerms');
     }
 
     setErrors(newErrors);
@@ -59,11 +59,11 @@ export function RegisterPage() {
       setIsSuccess(true);
       setTimeout(() => {
         navigate('/login', {
-          state: { message: 'Registration successful! Please sign in with your credentials.' },
+          state: { message: t('auth.registrationSuccessMsg') },
         });
       }, 2500);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Registration failed. Please check your information.';
+      const msg = err instanceof Error ? err.message : t('auth.errors.registerFailed');
       setServerError(msg);
     } finally {
       setIsSubmitting(false);
@@ -75,11 +75,11 @@ export function RegisterPage() {
       variant="register"
       topRightPrompt={{
         text: t('auth.alreadyHaveAccount'),
-        linkText: 'Sign in! →',
+        linkText: t('auth.signInArrow'),
         linkTo: '/login',
       }}
     >
-      <div style={{ textAlign: 'left' }}>
+      <div style={{ textAlign: 'start' }}>
         <h2
           style={{
             fontFamily: 'var(--font-family-display, "Archivo", sans-serif)',
@@ -90,7 +90,7 @@ export function RegisterPage() {
             margin: '0 0 8px 0',
           }}
         >
-          Create Your Account
+          {t('auth.createYourAccount')}
         </h2>
         <p
           style={{
@@ -99,7 +99,7 @@ export function RegisterPage() {
             margin: '0 0 24px 0',
           }}
         >
-          Getting started is easy
+          {t('auth.gettingStarted')}
         </p>
 
         {serverError && (
@@ -132,10 +132,10 @@ export function RegisterPage() {
           >
             <CheckCircle2 size={44} color="#0E9F6E" style={{ margin: '0 auto 12px' }} />
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 6px 0' }}>
-              Account Created!
+              {t('auth.accountCreated')}
             </h3>
             <p style={{ fontSize: '0.9rem', margin: 0 }}>
-              Redirecting you to sign in...
+              {t('auth.redirectingSignIn')}
             </p>
           </div>
         ) : (
@@ -143,7 +143,7 @@ export function RegisterPage() {
             <AuthInput
               label={t('auth.fullName')}
               icon={<User size={18} />}
-              placeholder="Robin"
+              placeholder={t('auth.fullNamePlaceholder')}
               value={fullName}
               onChange={(e) => {
                 setFullName(e.target.value);
@@ -154,10 +154,10 @@ export function RegisterPage() {
             />
 
             <AuthInput
-              label="Enter Email"
+              label={t('auth.enterEmailLabel')}
               type="email"
               icon={<Mail size={18} />}
-              placeholder="Enter Email"
+              placeholder={t('auth.enterEmailPlaceholder')}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -171,7 +171,7 @@ export function RegisterPage() {
               label={t('auth.password')}
               isPassword
               icon={<Lock size={18} />}
-              placeholder="Password"
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -185,7 +185,7 @@ export function RegisterPage() {
               label={t('auth.confirmPassword')}
               isPassword
               icon={<Lock size={18} />}
-              placeholder="Confirm Password"
+              placeholder={t('auth.confirmPasswordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
@@ -221,21 +221,22 @@ export function RegisterPage() {
                     accentColor: '#6C1E84',
                     cursor: 'pointer',
                     borderRadius: '4px',
+                    flexShrink: 0,
                   }}
                 />
                 <span>
-                  I agree to the{' '}
+                  {t('auth.agreeTermsPrefix')}{' '}
                   <Link to="/terms" style={{ color: '#6C1E84', fontWeight: 600, textDecoration: 'none' }}>
-                    Terms & Conditions
+                    {t('auth.termsConditions')}
                   </Link>{' '}
-                  and{' '}
+                  {t('auth.and')}{' '}
                   <Link to="/privacy" style={{ color: '#6C1E84', fontWeight: 600, textDecoration: 'none' }}>
-                    Privacy Policy
+                    {t('auth.privacyPolicy')}
                   </Link>
                 </span>
               </label>
               {errors.terms && (
-                <p style={{ fontSize: '0.8rem', color: '#E53935', marginTop: '4px', margin: 0 }}>
+                <p style={{ fontSize: '0.8rem', color: '#E53935', marginTop: '4px', marginBottom: 0 }}>
                   {errors.terms}
                 </p>
               )}
@@ -264,23 +265,11 @@ export function RegisterPage() {
                 transition: 'background-color 0.2s, transform 0.15s, box-shadow 0.2s',
                 opacity: isSubmitting ? 0.8 : 1,
               }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting) {
-                  e.currentTarget.style.backgroundColor = '#E5A61F';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(250, 184, 38, 0.45)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#FAB826';
-                e.currentTarget.style.transform = 'none';
-                e.currentTarget.style.boxShadow = '0 4px 14px rgba(250, 184, 38, 0.35)';
-              }}
             >
-              <span>{isSubmitting ? 'Creating Account...' : 'Create Account'}</span>
+              <span>{isSubmitting ? t('auth.creatingAccount') : t('auth.createAccountBtn')}</span>
             </button>
 
-            <SocialAuthRow label="or continue with" />
+            <SocialAuthRow label={t('auth.orContinueWith')} />
           </form>
         )}
       </div>

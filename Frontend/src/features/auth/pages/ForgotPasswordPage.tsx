@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthSplitLayout } from '../layouts/AuthSplitLayout';
 import { AuthInput } from '../components/AuthInput';
 import { useAuth } from '../context';
 import { Mail, ArrowLeft } from 'lucide-react';
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { requestPasswordReset } = useAuth();
 
@@ -18,19 +20,18 @@ export function ForgotPasswordPage() {
     setError(null);
 
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+      setError(t('auth.errors.validEmail'));
       return;
     }
 
     setIsSubmitting(true);
     try {
       await requestPasswordReset(email.trim());
-      // Navigate to verification page with email prepopulated in state
       navigate(`/verify-code?email=${encodeURIComponent(email.trim())}`, {
         state: { email: email.trim() },
       });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to request reset code. Please try again.';
+      const msg = err instanceof Error ? err.message : t('auth.errors.requestResetFailed');
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -41,12 +42,12 @@ export function ForgotPasswordPage() {
     <AuthSplitLayout
       variant="login"
       topRightPrompt={{
-        text: 'Remember your password?',
-        linkText: 'Sign In →',
+        text: t('auth.rememberPassword'),
+        linkText: t('auth.signInSimpleArrow'),
         linkTo: '/login',
       }}
     >
-      <div style={{ textAlign: 'left' }}>
+      <div style={{ textAlign: 'start' }}>
         <Link
           to="/login"
           style={{
@@ -60,8 +61,8 @@ export function ForgotPasswordPage() {
             marginBottom: '20px',
           }}
         >
-          <ArrowLeft size={16} />
-          <span>Back to sign in</span>
+          <ArrowLeft size={16} className="rtl-mirror-arrow" />
+          <span>{t('auth.backToLogin')}</span>
         </Link>
 
         <h2
@@ -74,7 +75,7 @@ export function ForgotPasswordPage() {
             margin: '0 0 10px 0',
           }}
         >
-          Forgot Password
+          {t('auth.resetPasswordTitle')}
         </h2>
         <p
           style={{
@@ -84,7 +85,7 @@ export function ForgotPasswordPage() {
             margin: '0 0 28px 0',
           }}
         >
-          Type your authorised email address to receive reset password link.
+          {t('auth.resetPasswordDescription')}
         </p>
 
         {error && (
@@ -106,10 +107,10 @@ export function ForgotPasswordPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <AuthInput
-            label="Email"
+            label={t('auth.emailShort')}
             type="email"
             icon={<Mail size={18} />}
-            placeholder="Robin@gmail.com"
+            placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -142,24 +143,14 @@ export function ForgotPasswordPage() {
               marginTop: '10px',
               opacity: isSubmitting ? 0.8 : 1,
             }}
-            onMouseEnter={(e) => {
-              if (!isSubmitting) {
-                e.currentTarget.style.backgroundColor = '#E5A61F';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#FAB826';
-              e.currentTarget.style.transform = 'none';
-            }}
           >
-            <span>{isSubmitting ? 'Sending Code...' : 'Reset Password Code'}</span>
+            <span>{isSubmitting ? t('auth.sendingCode') : t('auth.sendResetCode')}</span>
           </button>
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '28px' }}>
           <span style={{ fontSize: '0.875rem', color: '#66566A' }}>
-            Remember your password?{' '}
+            {t('auth.rememberPassword')}{' '}
           </span>
           <Link
             to="/login"
@@ -170,7 +161,7 @@ export function ForgotPasswordPage() {
               textDecoration: 'none',
             }}
           >
-            Sign In
+            {t('auth.signInBtn')}
           </Link>
         </div>
       </div>

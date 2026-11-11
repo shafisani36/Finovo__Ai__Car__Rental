@@ -87,7 +87,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Sports Exhaust with Active Bypass Valves',
       'Electro-Hydraulic Soft-Top Roof',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/orange-car.jpg',
   },
   {
     brand: 'BMW',
@@ -133,7 +133,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Head-Up Display with M-Specific View',
       'Harman Kardon Surround Sound System',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/studio-bmw-m4.jpg',
   },
   {
     brand: 'BMW',
@@ -177,7 +177,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Driving Assistant Professional with Lane Keep',
       'Parking Assistant Plus 360° Surround Camera',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/bmw.png',
   },
   {
     brand: 'Mercedes-Benz',
@@ -220,7 +220,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Rear Executive Lounge Seating with Hot Stone Massage',
       'E-Active Body Control Predictive Air Suspension',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/studio-bmw-740i.jpg',
   },
   {
     brand: 'Toyota',
@@ -263,7 +263,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'JBL 14-Speaker Premium Sound System',
       'Cool Box Center Console Refrigerator',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1594502184342-2e12f877aa73?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/studio-bmw-x5.jpg',
   },
 ];
 

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { FeaturedCar } from '../../../types';
 import { Fuel, Gauge, Star } from 'lucide-react';
+import { isFullBleedCarPhoto } from '../../../utils/carImageHelper';
 
 interface CarCardProps {
   car: FeaturedCar;
@@ -68,10 +70,27 @@ function DrivetrainChassisIcon({ size = 16, color = '#D9C7E6' }: { size?: number
 
 export function CarCard({ car, onRent }: CarCardProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
 
+  const translateTransmission = (val?: string) => {
+    const key = val?.toLowerCase();
+    if (key === 'automatic') return t('cars.specs.automatic');
+    if (key === 'manual') return t('cars.specs.manual');
+    return val || t('home.browseCars.automatic');
+  };
+
+  const translateFuel = (val?: string) => {
+    const key = val?.toLowerCase();
+    if (key === 'petrol') return t('cars.specs.petrol');
+    if (key === 'diesel') return t('cars.specs.diesel');
+    if (key === 'hybrid') return t('cars.specs.hybrid');
+    if (key === 'electric') return t('cars.specs.electric');
+    return val || t('home.browseCars.petrol');
+  };
+
   const subtitle = car.subtitle || car.type.toUpperCase();
-  const priceDisplay = car.priceDisplay || `$${car.dailyRate} / day`;
+  const priceDisplay = car.priceDisplay || `$${car.dailyRate} ${t('common.perDay')}`;
   const rating = car.rating || 5;
 
   const handleAction = () => {
@@ -105,7 +124,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
         transform: isHovered ? 'translateY(-6px)' : 'translateY(0)',
       }}
     >
-      {/* Vehicle Cutout with Floor Shadow */}
+      {/* Vehicle Cutout or Studio Photo */}
       <div
         style={{
           position: 'relative',
@@ -115,20 +134,33 @@ export function CarCard({ car, onRent }: CarCardProps) {
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: '16px',
+          overflow: 'hidden',
+          borderRadius: isFullBleedCarPhoto(car.image) ? '14px' : '0px',
+          border: isFullBleedCarPhoto(car.image) ? '1px solid rgba(255, 255, 255, 0.14)' : 'none',
         }}
       >
         <img
           src={car.image}
           alt={`${car.name} ${subtitle}`}
           loading="lazy"
-          style={{
-            maxWidth: '240px',
-            width: '92%',
-            maxHeight: '135px',
-            objectFit: 'contain',
-            transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
-            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-          }}
+          style={
+            isFullBleedCarPhoto(car.image)
+              ? {
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  transform: isHovered ? 'scale(1.06)' : 'scale(1)',
+                }
+              : {
+                  maxWidth: '240px',
+                  width: '92%',
+                  maxHeight: '135px',
+                  objectFit: 'contain',
+                  transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                }
+          }
         />
       </div>
 
@@ -166,7 +198,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 110px), 1fr))',
           gap: '8px',
           marginBottom: '18px',
         }}
@@ -190,7 +222,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
         >
           <AutomaticShifterIcon size={16} color="#E6D2F4" />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {car.specs.transmission || 'Automatic'}
+            {translateTransmission(car.specs.transmission)}
           </span>
         </div>
 
@@ -213,7 +245,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
         >
           <Fuel size={15} color="#E6D2F4" strokeWidth={1.8} style={{ flexShrink: 0 }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {car.specs.fuelType || 'Petrol'}
+            {translateFuel(car.specs.fuelType)}
           </span>
         </div>
 
@@ -330,7 +362,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
           e.currentTarget.style.boxShadow = '0 4px 14px rgba(245, 183, 22, 0.35)';
         }}
       >
-        Book Now
+        {t('home.browseCars.bookNow')}
       </button>
     </div>
   );

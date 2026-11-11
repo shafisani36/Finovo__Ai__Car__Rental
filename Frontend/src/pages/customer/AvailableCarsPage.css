@@ -162,12 +162,16 @@
 .cars-hero-visual {
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   width: 58%;
   height: 100%;
   pointer-events: none;
   overflow: hidden;
   z-index: 2;
+}
+
+[dir='rtl'] .cars-hero-car-img {
+  transform: scaleX(-1);
 }
 
 .cars-hero-car-img {
@@ -181,7 +185,7 @@
 .cars-hero-handwritten-tag {
   position: absolute;
   bottom: 24px;
-  right: 42px;
+  inset-inline-end: 42px;
   font-family: var(--finovo-font-script);
   font-size: 38px;
   font-weight: 700;
@@ -229,7 +233,7 @@
 
 .cars-search-icon {
   position: absolute;
-  left: 16px;
+  inset-inline-start: 16px;
   color: #9CA3AF;
   pointer-events: none;
 }
@@ -240,7 +244,9 @@
   background: #F7F5FA;
   border: 1px solid #ECE7F2;
   border-radius: 14px;
-  padding: 0 42px 0 46px;
+  padding-block: 0;
+  padding-inline-start: 46px;
+  padding-inline-end: 42px;
   font-size: 13.5px;
   color: var(--finovo-text-primary);
   font-family: var(--finovo-font-sans);
@@ -257,7 +263,7 @@
 
 .cars-search-clear-btn {
   position: absolute;
-  right: 12px;
+  inset-inline-end: 12px;
   background: none;
   border: none;
   color: #9CA3AF;
@@ -369,7 +375,7 @@
   cursor: pointer;
   transition: all 0.2s;
   box-sizing: border-box;
-  text-align: left;
+  text-align: start;
 }
 
 .cars-dropdown-trigger:hover,
@@ -403,7 +409,7 @@
 .cars-dropdown-arrow {
   color: #8C8299;
   transition: transform 0.2s ease;
-  margin-left: 6px;
+  margin-inline-start: 6px;
   flex-shrink: 0;
 }
 
@@ -415,7 +421,7 @@
 .cars-dropdown-menu {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  inset-inline-start: 0;
   min-width: 190px;
   max-height: 260px;
   overflow-y: auto;
@@ -446,7 +452,7 @@
   background: transparent;
   border-radius: 8px;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   transition: all 0.15s;
   box-sizing: border-box;
 }
@@ -623,7 +629,7 @@
 .car-available-pill-badge {
   position: absolute;
   top: 14px;
-  right: 14px;
+  inset-inline-end: 14px;
   z-index: 6;
   background: var(--finovo-green-badge-bg);
   color: var(--finovo-green-badge-text);
@@ -1043,7 +1049,7 @@
 }
 
 .car-card-list-price {
-  text-align: right;
+  text-align: end;
 }
 
 .car-card-list-price h4 {
@@ -1153,7 +1159,7 @@
 }
 
 .cars-footer-tagline {
-  text-align: right;
+  text-align: end;
 }
 
 .cars-footer-tagline h5 {
@@ -1197,11 +1203,11 @@
   background: #FFFFFF;
   border-radius: 24px;
   width: 100%;
-  max-width: 580px;
-  max-height: 90vh;
+  max-width: min(100%, 580px);
+  max-height: calc(100dvh - 24px);
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-  padding: 28px 32px;
+  padding: clamp(18px, 3vw, 28px) clamp(16px, 3.5vw, 32px);
   box-sizing: border-box;
 }
 
@@ -1367,7 +1373,7 @@
   .cars-hero-handwritten-tag {
     font-size: 28px;
     bottom: 14px;
-    right: 20px;
+    inset-inline-end: 20px;
   }
 
   .cars-hero-badges {
@@ -1466,7 +1472,7 @@
 
   .cars-eco-badge {
     justify-content: center;
-    text-align: left;
+    text-align: start;
   }
 
   .cars-footer-tagline {

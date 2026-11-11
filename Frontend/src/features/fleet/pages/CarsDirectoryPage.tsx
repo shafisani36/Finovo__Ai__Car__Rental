@@ -33,64 +33,31 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import { getCarImage, isFullBleedCarPhoto, resolveVehiclePricing } from '../../../utils/carImageHelper';
 import redCar from '../../../assets/cars/finovo-red-car.png';
 import grayCar from '../../../assets/cars/finovo-gray-car.png';
 import blueCar from '../../../assets/cars/finovo-blue-car.png';
 import whiteCar from '../../../assets/cars/finovo-white-car.png';
 import yellowCar from '../../../assets/cars/finovo-yellow-car.png';
 import greenCar from '../../../assets/cars/finovo-green-car.png';
-import heroCarImg from '../../../assets/cars/finovo-available-hero-car.png';
 import bmwLogo from '../../../assets/cars/finovo-bmw-logo.png';
 import lamboLogo from '../../../assets/cars/finovo-lamborghini-logo.png';
 
 function getFleetCarAssets(v: Vehicle) {
-  if (v.primaryImageUrl && !v.primaryImageUrl.includes('car-3-corolla') && !v.primaryImageUrl.includes('corolla')) {
+  const resolved = getCarImage(v);
+  if (resolved) {
     return {
-      image: v.primaryImageUrl,
+      image: resolved,
       logo: v.brand?.toLowerCase().includes('lambo') ? lamboLogo : bmwLogo,
     };
   }
 
-  const modelLower = (v.model || '').toLowerCase();
   const brandLower = (v.brand || '').toLowerCase();
-  const reg = (v.registrationNumber || '').toUpperCase();
-
-  if (modelLower.includes('hurac') || reg.includes('01')) {
-    return { image: redCar, logo: lamboLogo };
-  }
-  if (modelLower.includes('m4') || reg.includes('12')) {
-    return { image: heroCarImg, logo: bmwLogo };
-  }
-  if (modelLower.includes('urus') || reg.includes('11')) {
-    return { image: yellowCar, logo: lamboLogo };
-  }
-  if (modelLower.includes('cooper') || modelLower.includes('works') || reg.includes('08')) {
-    return { image: greenCar, logo: lamboLogo };
-  }
-  if (modelLower.includes('740') || reg.includes('10')) {
-    return { image: whiteCar, logo: bmwLogo };
-  }
-  if (reg.includes('09') || (v.category?.slug === 'suv' && brandLower.includes('bmw'))) {
-    return { image: blueCar, logo: bmwLogo };
-  }
-  if (reg.includes('07') || modelLower.includes('focus')) {
-    return { image: yellowCar, logo: lamboLogo };
-  }
-  if (reg.includes('05') || v.fuelType === 'HYBRID') {
-    return { image: whiteCar, logo: bmwLogo };
-  }
-  if (reg.includes('06')) {
-    return { image: blueCar, logo: bmwLogo };
-  }
-  if (brandLower.includes('bmw')) {
-    return { image: grayCar, logo: bmwLogo };
-  }
   if (brandLower.includes('lambo')) {
-    return { image: redCar, logo: lamboLogo };
+    return { image: '/cars/orange-car.jpg', logo: lamboLogo };
   }
-
   return {
-    image: v.primaryImageUrl || grayCar,
+    image: v.primaryImageUrl || grayCar || redCar || blueCar || whiteCar || yellowCar || greenCar,
     logo: bmwLogo,
   };
 }
@@ -590,7 +557,11 @@ export function CarsDirectoryPage() {
                           <img
                             src={getFleetCarAssets(v).image}
                             alt={v.model}
-                            style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }}
+                            style={
+                              isFullBleedCarPhoto(getFleetCarAssets(v).image)
+                                ? { width: '100%', height: '100%', objectFit: 'cover' }
+                                : { maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }
+                            }
                           />
                         </div>
                         <div>
@@ -619,7 +590,7 @@ export function CarsDirectoryPage() {
 
                     {/* Pricing */}
                     <td style={{ padding: '16px', fontWeight: 700, color: '#1A0322' }}>
-                      ${Number(v.dailyRate).toFixed(0)} / day
+                      ${resolveVehiclePricing(v).dailyRate} / day
                     </td>
 
                     {/* Status Badge */}
@@ -768,6 +739,7 @@ export function CarsDirectoryPage() {
           >
             {vehicles.map((v) => {
               const assets = getFleetCarAssets(v);
+              const fullBleed = isFullBleedCarPhoto(assets.image);
               return (
                 <div
                   key={v.id}
@@ -797,17 +769,19 @@ export function CarsDirectoryPage() {
                     style={{
                       position: 'relative',
                       height: '190px',
-                      background: 'radial-gradient(circle at 50% 60%, #FAF7FC 0%, #F1E9F6 100%)',
+                      background: fullBleed
+                        ? '#1E0432'
+                        : 'radial-gradient(circle at 50% 60%, #FAF7FC 0%, #F1E9F6 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      padding: '16px 20px',
+                      padding: fullBleed ? 0 : '16px 20px',
                       borderBottom: '1px solid #ECE7ED',
                       overflow: 'hidden',
                     }}
                   >
                     {/* Brand watermark logo in backdrop */}
-                    {assets.logo && (
+                    {assets.logo && !fullBleed && (
                       <img
                         src={assets.logo}
                         alt=""
@@ -862,17 +836,26 @@ export function CarsDirectoryPage() {
                       {renderStatusBadge(v.status)}
                     </div>
 
-                    {/* High-Resolution Vehicle Showcase Cutout */}
+                    {/* High-Resolution Vehicle Showcase Cutout or Studio Shot */}
                     <img
                       src={assets.image}
                       alt={`${v.brand} ${v.model}`}
-                      style={{
-                        maxWidth: '94%',
-                        maxHeight: '140px',
-                        objectFit: 'contain',
-                        filter: 'drop-shadow(0 10px 14px rgba(30, 4, 38, 0.15))',
-                        transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                      }}
+                      style={
+                        fullBleed
+                          ? {
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            }
+                          : {
+                              maxWidth: '94%',
+                              maxHeight: '140px',
+                              objectFit: 'contain',
+                              filter: 'drop-shadow(0 10px 14px rgba(30, 4, 38, 0.15))',
+                              transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            }
+                      }
                       onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                     />
@@ -945,7 +928,7 @@ export function CarsDirectoryPage() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 96px), 1fr))',
                         gap: '6px',
                         padding: '10px 0',
                         borderTop: '1px solid #F3F0F5',
@@ -1024,7 +1007,7 @@ export function CarsDirectoryPage() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
                           <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1A0322', lineHeight: 1.1 }}>
-                            ${Number(v.dailyRate).toFixed(0)}
+                            ${resolveVehiclePricing(v).dailyRate}
                           </span>
                           <span style={{ fontSize: '0.78rem', color: '#8A7090' }}>/ day</span>
                         </div>

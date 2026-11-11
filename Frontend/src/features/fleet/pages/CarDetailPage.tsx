@@ -2760,7 +2760,7 @@ function AddDocumentModal({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
                 <label className="car-field-label">Issued Date</label>
                 <input
@@ -2908,7 +2908,7 @@ function AddMaintenanceModal({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
                 <label className="car-field-label">Service Provider</label>
                 <input
@@ -2932,7 +2932,7 @@ function AddMaintenanceModal({
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
                 <label className="car-field-label">Scheduled Date</label>
                 <input
@@ -3054,7 +3054,7 @@ function AddDamageModal({
 
         <form onSubmit={handleSubmit}>
           <div className="car-modal-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
                 <label className="car-field-label">Damage Type *</label>
                 <CustomSelect
@@ -3099,7 +3099,7 @@ function AddDamageModal({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
                 <label className="car-field-label">Estimated Repair Cost ($)</label>
                 <input
@@ -3336,7 +3336,7 @@ function AddPricingTierModal({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
                 <label className="car-field-label">Pricing Method *</label>
                 <CustomSelect
@@ -3367,7 +3367,7 @@ function AddPricingTierModal({
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
                 <label className="car-field-label">Base Rate ({currency}) *</label>
                 <input
@@ -3393,7 +3393,7 @@ function AddPricingTierModal({
             </div>
 
             {(pricingMethod === 'daily' || pricingMethod === 'daily_extra_km') && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div className="car-field-group">
                   <label className="car-field-label">Included KM / Day</label>
                   <input

@@ -44,7 +44,17 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     gsap.ticker.add(tickerCallback);
     gsap.ticker.lagSmoothing(0);
 
+    const handleLanguageChanged = () => {
+      requestAnimationFrame(() => {
+        lenis.resize();
+        ScrollTrigger.refresh();
+      });
+    };
+
+    window.addEventListener('finovo:language_changed', handleLanguageChanged);
+
     return () => {
+      window.removeEventListener('finovo:language_changed', handleLanguageChanged);
       gsap.ticker.remove(tickerCallback);
       lenis.off('scroll', handleScroll);
       lenis.destroy();

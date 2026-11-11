@@ -93,14 +93,14 @@ export function AdminLayout() {
           top: 0,
           left: 0,
           bottom: 0,
-          height: '100vh',
-          overflowY: 'auto',
+          height: '100dvh',
+          overflow: 'hidden',
           zIndex: 50,
           transition: 'transform 0.3s ease',
         }}
       >
         {/* Top: Logo & Nav items */}
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Logo Area */}
           <div
             style={{
@@ -139,8 +139,11 @@ export function AdminLayout() {
               display: 'flex',
               flexDirection: 'column',
               gap: '4px',
+              flex: 1,
+              minHeight: 0,
               overflowY: 'auto',
               paddingRight: '4px',
+              paddingBottom: '12px',
             }}
           >
             {[
@@ -216,7 +219,7 @@ export function AdminLayout() {
         </div>
 
         {/* Bottom Controls: Theme Toggle & Logout */}
-        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '20px' }}>
+        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px', flexShrink: 0 }}>
           {/* Light mode toggle */}
           <div
             style={{
@@ -288,7 +291,7 @@ export function AdminLayout() {
               cursor: 'pointer',
               borderRadius: '8px',
               transition: 'all 0.2s ease',
-              textAlign: 'left',
+              textAlign: 'start',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = '#FFFFFF';
@@ -300,7 +303,7 @@ export function AdminLayout() {
             }}
           >
             <LogOut size={18} />
-            <span>Log out</span>
+            <span>{t('nav.logout')}</span>
           </button>
         </div>
       </aside>
@@ -335,12 +338,13 @@ export function AdminLayout() {
               <Search
                 size={16}
                 color="#8A7090"
-                style={{ position: 'absolute', left: '14px', pointerEvents: 'none' }}
+                className="finovo-admin-search-icon"
+                style={{ position: 'absolute', insetInlineStart: '14px', pointerEvents: 'none' }}
               />
               <input
                 type="text"
-                placeholder={isMobile ? 'Search...' : 'Search cars, bookings, items...'}
-                className="admin-header-search-input"
+                placeholder={isMobile ? t('nav.adminSearchShort') : t('nav.adminSearchPlaceholder')}
+                className="admin-header-search-input finovo-admin-search-input"
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = '#6C1E84';
                   e.currentTarget.style.backgroundColor = '#FFFFFF';
@@ -479,8 +483,8 @@ export function AdminLayout() {
         .admin-header-search-input {
           width: 100%;
           height: 42px;
-          padding-left: 40px;
-          padding-right: 36px;
+          padding-inline-start: 40px;
+          padding-inline-end: 36px;
           font-size: 0.875rem;
           background-color: #F8F6F9;
           border: 1px solid #EBE5ED;
@@ -493,7 +497,7 @@ export function AdminLayout() {
 
         .admin-header-shortcut-badge {
           position: absolute;
-          right: 12px;
+          inset-inline-end: 12px;
           font-size: 0.75rem;
           font-weight: 600;
           color: #8A7090;
@@ -531,7 +535,7 @@ export function AdminLayout() {
         .admin-header-badge-dot {
           position: absolute;
           top: 6px;
-          right: 6px;
+          inset-inline-end: 6px;
           width: 8px;
           height: 8px;
           background-color: #FAB826;
@@ -635,8 +639,8 @@ export function AdminLayout() {
           .admin-header-search-input {
             height: 38px;
             font-size: 0.82rem;
-            padding-left: 36px;
-            padding-right: 10px;
+            padding-inline-start: 36px;
+            padding-inline-end: 10px;
             border-radius: 10px;
           }
           .admin-header-shortcut-badge {
@@ -682,7 +686,7 @@ export function AdminLayout() {
           .admin-header-search-input {
             height: 34px;
             font-size: 0.78rem;
-            padding-left: 30px;
+            padding-inline-start: 30px;
           }
           .admin-header-right {
             gap: 4px;

@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthSplitLayout } from '../layouts/AuthSplitLayout';
 import { useAuth } from '../context';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export function VerifyCodePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -13,7 +15,6 @@ export function VerifyCodePage() {
   const emailParam = searchParams.get('email') || (location.state as { email?: string })?.email || '';
   const [email] = useState(emailParam);
 
-  // 6-digit OTP code array
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -25,12 +26,10 @@ export function VerifyCodePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Focus the first input on mount
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
-  // Countdown timer for resend
   useEffect(() => {
     if (resendTimer <= 0) return;
     const interval = setInterval(() => {
@@ -40,7 +39,6 @@ export function VerifyCodePage() {
   }, [resendTimer]);
 
   const handleDigitChange = (index: number, val: string) => {
-    // Only accept numeric
     const clean = val.replace(/\D/g, '');
     if (!clean) {
       const copy = [...digits];
@@ -49,7 +47,6 @@ export function VerifyCodePage() {
       return;
     }
 
-    // Handle single digit
     const char = clean[clean.length - 1];
     const copy = [...digits];
     copy[index] = char;
@@ -57,7 +54,6 @@ export function VerifyCodePage() {
 
     if (errors.code) setErrors((prev) => ({ ...prev, code: '' }));
 
-    // Auto advance focus
     if (index < 5 && char) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -91,7 +87,7 @@ export function VerifyCodePage() {
       setResendTimer(60);
       setServerError(null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to resend code';
+      const msg = err instanceof Error ? err.message : t('auth.errors.resendFailed');
       setServerError(msg);
     }
   };
@@ -100,7 +96,7 @@ export function VerifyCodePage() {
     const newErrors: Record<string, string> = {};
     const code = digits.join('');
     if (code.length !== 6) {
-      newErrors.code = 'Please enter all 6 digits of the verification code';
+      newErrors.code = t('auth.errors.enter6Digits');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -118,17 +114,16 @@ export function VerifyCodePage() {
       const isValid = await verifyResetCode(email, code);
       if (isValid) {
         setIsSuccess(true);
-        // Navigate to dedicated /reset-password page with verified code and email
         setTimeout(() => {
           navigate(`/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`, {
             state: { email, code },
           });
         }, 500);
       } else {
-        setServerError('Invalid verification code. Please check and try again.');
+        setServerError(t('auth.errors.invalidCode'));
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid verification code. Please check and try again.';
+      const msg = err instanceof Error ? err.message : t('auth.errors.invalidCode');
       setServerError(msg);
     } finally {
       setIsSubmitting(false);
@@ -143,12 +138,12 @@ export function VerifyCodePage() {
     <AuthSplitLayout
       variant="login"
       topRightPrompt={{
-        text: 'Remember your password?',
-        linkText: 'Sign In →',
+        text: t('auth.rememberPassword'),
+        linkText: t('auth.signInSimpleArrow'),
         linkTo: '/login',
       }}
     >
-      <div style={{ textAlign: 'left' }}>
+      <div style={{ textAlign: 'start' }}>
         <Link
           to="/forgot-password"
           style={{
@@ -162,8 +157,8 @@ export function VerifyCodePage() {
             marginBottom: '20px',
           }}
         >
-          <ArrowLeft size={16} />
-          <span>Back to email entry</span>
+          <ArrowLeft size={16} className="rtl-mirror-arrow" />
+          <span>{t('auth.backToEmail')}</span>
         </Link>
 
         <h2
@@ -176,7 +171,7 @@ export function VerifyCodePage() {
             margin: '0 0 10px 0',
           }}
         >
-          Verify your code
+          {t('auth.verifyCodeTitle')}
         </h2>
         <p
           style={{
@@ -186,7 +181,7 @@ export function VerifyCodePage() {
             margin: '0 0 28px 0',
           }}
         >
-          Enter the passcode you just received on your email address ending with{' '}
+          {t('auth.verifyCodeDescription')}{' '}
           <strong style={{ color: '#230528' }}>{maskedEmail}</strong>
         </p>
 
@@ -220,17 +215,19 @@ export function VerifyCodePage() {
           >
             <CheckCircle2 size={44} color="#0E9F6E" style={{ margin: '0 auto 12px' }} />
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 6px 0' }}>
-              Code Verified!
+              {t('auth.codeVerified')}
             </h3>
             <p style={{ fontSize: '0.9rem', margin: 0 }}>
-              Redirecting you to create your new password...
+              {t('auth.redirectingReset')}
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate>
-            {/* 6 Individual OTP Code Boxes */}
+            {/* 6 Individual OTP Code Boxes — kept strictly LTR so digits enter 1->6 */}
             <div style={{ marginBottom: '24px' }}>
               <div
+                dir="ltr"
+                className="auth-otp-row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(6, 1fr)',
@@ -273,29 +270,13 @@ export function VerifyCodePage() {
                         transition: 'all 0.2s ease',
                         boxShadow: isFilled ? '0 2px 6px rgba(108, 30, 132, 0.08)' : 'none',
                       }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = '#6C1E84';
-                        e.currentTarget.style.backgroundColor = '#FAF5FB';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(108, 30, 132, 0.15)';
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = errors.code
-                          ? '#E53935'
-                          : digit
-                          ? '#6C1E84'
-                          : '#D1D5DB';
-                        e.currentTarget.style.backgroundColor = digit ? '#FAF5FB' : '#FFFFFF';
-                        e.currentTarget.style.boxShadow = digit
-                          ? '0 2px 6px rgba(108, 30, 132, 0.08)'
-                          : 'none';
-                      }}
                     />
                   );
                 })}
               </div>
 
               {errors.code && (
-                <p style={{ fontSize: '0.8rem', color: '#E53935', marginTop: '8px', margin: 0 }}>
+                <p style={{ fontSize: '0.8rem', color: '#E53935', marginTop: '8px', marginBottom: 0 }}>
                   {errors.code}
                 </p>
               )}
@@ -307,11 +288,13 @@ export function VerifyCodePage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px',
                 marginBottom: '28px',
                 fontSize: '0.875rem',
               }}
             >
-              <span style={{ color: '#66566A' }}>Didn't receive code?</span>
+              <span style={{ color: '#66566A' }}>{t('auth.didntReceiveCode')}</span>
               {canResend ? (
                 <button
                   type="button"
@@ -326,11 +309,11 @@ export function VerifyCodePage() {
                     textDecoration: 'underline',
                   }}
                 >
-                  Resend Code
+                  {t('auth.resendCode')}
                 </button>
               ) : (
                 <span style={{ color: '#8A7090', fontWeight: 600 }}>
-                  Resend in 00:{resendTimer.toString().padStart(2, '0')}
+                  {t('auth.resendIn')} 00:{resendTimer.toString().padStart(2, '0')}
                 </span>
               )}
             </div>
@@ -357,18 +340,8 @@ export function VerifyCodePage() {
                 transition: 'background-color 0.2s, transform 0.15s, box-shadow 0.2s',
                 opacity: isSubmitting ? 0.8 : 1,
               }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting) {
-                  e.currentTarget.style.backgroundColor = '#E5A61F';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#FAB826';
-                e.currentTarget.style.transform = 'none';
-              }}
             >
-              <span>{isSubmitting ? 'Verifying...' : 'Verify Code'}</span>
+              <span>{isSubmitting ? t('auth.verifying') : t('auth.verifyBtn')}</span>
             </button>
           </form>
         )}

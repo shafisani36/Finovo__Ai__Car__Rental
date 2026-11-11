@@ -264,7 +264,7 @@ export function CustomerSupportPage() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div className="cp-form-group">
                   <label className="cp-label">Category</label>
                   <CustomSelect
@@ -325,7 +325,7 @@ export function CustomerSupportPage() {
       {/* Ticket Conversation Modal / Drawer */}
       {selectedTicket && (
         <div className="cp-modal-backdrop">
-          <div className="cp-modal-box" style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', height: '80vh' }}>
+          <div className="cp-modal-box" style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', height: 'min(82dvh, 640px)', maxHeight: 'calc(100dvh - 24px)' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--cp-border)', paddingBottom: '16px' }}>
               <div>

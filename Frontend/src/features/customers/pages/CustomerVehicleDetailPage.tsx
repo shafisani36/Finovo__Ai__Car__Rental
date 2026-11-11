@@ -13,6 +13,13 @@ import {
   Car,
 } from 'lucide-react';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
+import {
+  getCarImage,
+  getCarGallery,
+  getCarGalleryEntries,
+  isFullBleedCarPhoto,
+  resolveVehiclePricing,
+} from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerVehicleDetailPage() {
@@ -40,57 +47,61 @@ export function CustomerVehicleDetailPage() {
         const res = await vehiclesApi.getById(vehicleId);
         if (isMounted && res.success && res.vehicle) {
           const v = res.vehicle as any;
+          const pricing = resolveVehiclePricing(v);
+          const gallery = getCarGallery(v);
+          let parsedFeatures: string[] = [];
+          try {
+            if (typeof v.features === 'string' && v.features.trim().startsWith('[')) {
+              parsedFeatures = JSON.parse(v.features);
+            } else if (Array.isArray(v.features)) {
+              parsedFeatures = v.features;
+            }
+          } catch {
+            parsedFeatures = [];
+          }
           setVehicle({
             id: v.id,
             brand: v.brand?.name || v.brand || 'Luxury',
             model: v.model?.name || v.model || 'Performance',
-            year: v.year || 2024,
+            year: v.year || 2026,
             categoryName: v.category?.name || v.category || 'Executive Sedan',
-            dailyRate: Number(v.pricing?.dailyRate || v.dailyRate || 199),
-            depositAmount: Number(v.pricing?.depositAmount || 500),
+            dailyRate: pricing.dailyRate,
+            depositAmount: pricing.securityDeposit,
             seats: v.seats || 5,
             transmission: v.transmission || 'AUTOMATIC',
             fuelType: v.fuelType || 'PETROL',
-            engineCapacity: v.engineCapacity || '3.0L Twin-Turbo',
-            horsepower: v.horsepower || v.horsePower || 382,
-            primaryImageUrl:
-              v.media?.find((m: any) => m.isPrimary)?.fileUrl ||
-              v.primaryImageUrl ||
-              'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-            images: v.media?.map((m: any) => m.fileUrl) || [
-              'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-              'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
-              'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80',
-            ],
-            features: [
-              'AI Pre-Trip & Post-Trip Inspection Protection',
-              'Apple CarPlay & Android Auto Wireless',
-              'Adaptive Cruise Control & Lane Assist',
-              'Full Leather Interior & Ambient Lighting',
-              'Unlimited Fast-Pass Toll Coverage Included',
-              '24/7 Roadside VIP Concierge Support',
-            ],
+            engineCapacity: v.engineSize || v.engineCapacity || '2.0L TwinPower Turbo',
+            horsepower: v.horsepower || v.horsePower || 320,
+            primaryImageUrl: getCarImage(v),
+            images: gallery,
+            features:
+              parsedFeatures.length > 0
+                ? parsedFeatures
+                : [
+                    'AI Pre-Trip & Post-Trip Inspection Protection',
+                    'Apple CarPlay & Android Auto Wireless',
+                    'Adaptive Cruise Control & Lane Assist',
+                    'Full Leather Interior & Ambient Lighting',
+                    'Unlimited Fast-Pass Toll Coverage Included',
+                    '24/7 Roadside VIP Concierge Support',
+                  ],
           });
         } else if (isMounted) {
           setVehicle({
             id: vehicleId,
             brand: 'BMW',
             model: 'M4 Competition Coupe',
-            year: 2025,
-            categoryName: 'Sports Coupe',
-            dailyRate: 299,
-            depositAmount: 500,
+            year: 2026,
+            categoryName: 'Coupe / Sports',
+            dailyRate: 480,
+            depositAmount: 800,
             seats: 4,
             transmission: 'AUTOMATIC',
             fuelType: 'PETROL',
             engineCapacity: '3.0L M TwinPower Turbo',
             horsepower: 503,
-            primaryImageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-            images: [
-              'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-              'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
-              'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80',
-            ],
+            primaryImageUrl: '/cars/studio-bmw-m4.jpg',
+            images: getCarGallery({ brand: 'BMW', model: 'M4 Competition Coupe', primaryImageUrl: '/cars/studio-bmw-m4.jpg' }),
             features: [
               'AI Pre-Trip & Post-Trip Inspection Protection',
               'Apple CarPlay & Android Auto Wireless',
@@ -169,54 +180,117 @@ export function CustomerVehicleDetailPage() {
         {/* Left Column: Media & Specifications */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Main Visual Showcase */}
-          <div className="cp-card" style={{ padding: '0', overflow: 'hidden' }}>
-            <div
-              style={{
-                height: 'clamp(260px, 42vw, 420px)',
-                width: '100%',
-                position: 'relative',
-                background: 'linear-gradient(135deg, #24052E 0%, #3B094E 55%, #551270 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-              }}
-            >
-              <img
-                src={vehicle.primaryImageUrl}
-                alt={`${vehicle.brand} ${vehicle.model}`}
-                style={{ width: '90%', height: '85%', objectFit: 'contain' }}
-                onError={(e) => {
-                  e.currentTarget.src = '/cars/car-4-tucson.png';
-                }}
-              />
-              <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', gap: '8px', zIndex: 3 }}>
-                <span className="cp-badge cp-badge-primary">{vehicle.categoryName}</span>
-                <span className="cp-badge cp-badge-accent">Finovo Certified</span>
-              </div>
-            </div>
-            {/* Gallery Thumbnails */}
-            {vehicle.images && vehicle.images.length > 1 && (
-              <div style={{ display: 'flex', gap: '12px', padding: '16px', background: '#FFFFFF', borderTop: '1px solid var(--cp-border)' }}>
-                {vehicle.images.map((img: string, idx: number) => (
-                  <div
-                    key={idx}
-                    style={{
-                      width: '90px',
-                      height: '60px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      border: '2px solid rgba(30, 5, 40, 0.1)',
-                      cursor: 'pointer',
+          {(() => {
+            const galleryEntries = getCarGalleryEntries(vehicle);
+            const activeEntry =
+              galleryEntries.find((entry) => entry.url === vehicle.primaryImageUrl) || galleryEntries[0];
+            const activeUrl = activeEntry?.url || vehicle.primaryImageUrl;
+            const activeCaption = activeEntry?.caption || `${vehicle.brand} ${vehicle.model}`;
+
+            return (
+              <div className="cp-card" style={{ padding: '0', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: 'clamp(260px, 42vw, 420px)',
+                    width: '100%',
+                    position: 'relative',
+                    background: 'linear-gradient(135deg, #24052E 0%, #3B094E 55%, #551270 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={activeUrl}
+                    alt={activeCaption}
+                    style={
+                      isFullBleedCarPhoto(activeUrl)
+                        ? { width: '100%', height: '100%', objectFit: 'cover' }
+                        : { width: '90%', height: '85%', objectFit: 'contain' }
+                    }
+                    onError={(e) => {
+                      e.currentTarget.src = getCarImage({ ...vehicle, primaryImageUrl: undefined });
                     }}
-                    onClick={() => setVehicle({ ...vehicle, primaryImageUrl: img })}
-                  >
-                    <img src={img} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  />
+                  <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', gap: '8px', zIndex: 3 }}>
+                    <span className="cp-badge cp-badge-primary">{vehicle.categoryName}</span>
+                    <span className="cp-badge cp-badge-accent">Finovo Certified</span>
                   </div>
-                ))}
+                  {galleryEntries.length > 1 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '16px',
+                        left: '20px',
+                        padding: '6px 12px',
+                        borderRadius: '999px',
+                        background: 'rgba(18, 4, 24, 0.72)',
+                        border: '1px solid rgba(255, 255, 255, 0.16)',
+                        color: '#FFFFFF',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        backdropFilter: 'blur(6px)',
+                        zIndex: 3,
+                      }}
+                    >
+                      {activeCaption}
+                    </div>
+                  )}
+                </div>
+                {/* Authentic Per-Model Gallery Thumbnails */}
+                {galleryEntries.length > 1 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      padding: '16px',
+                      background: '#FFFFFF',
+                      borderTop: '1px solid var(--cp-border)',
+                    }}
+                  >
+                    {galleryEntries.map((entry, idx) => {
+                      const isActive = activeUrl === entry.url;
+                      return (
+                        <button
+                          key={`${entry.url}-${idx}`}
+                          type="button"
+                          title={entry.caption}
+                          aria-label={entry.caption}
+                          style={{
+                            width: '96px',
+                            height: '64px',
+                            borderRadius: '10px',
+                            overflow: 'hidden',
+                            background: 'linear-gradient(135deg, #24052E 0%, #3B094E 100%)',
+                            border: isActive ? '2px solid var(--cp-accent)' : '2px solid rgba(30, 5, 40, 0.14)',
+                            boxShadow: isActive ? '0 4px 12px rgba(250, 184, 38, 0.28)' : 'none',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setVehicle({ ...vehicle, primaryImageUrl: entry.url })}
+                        >
+                          <img
+                            src={entry.url}
+                            alt={entry.caption}
+                            style={
+                              isFullBleedCarPhoto(entry.url)
+                                ? { width: '100%', height: '100%', objectFit: 'cover' }
+                                : { width: '90%', height: '90%', objectFit: 'contain' }
+                            }
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* Vehicle Specifications Grid */}
           <div className="cp-card">

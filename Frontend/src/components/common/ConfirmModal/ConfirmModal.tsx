@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Trash2, HelpCircle, CheckCircle2, X } from 'lucide-react';
 import type { ConfirmOptions } from './types';
 import './ConfirmModal.css';
@@ -14,17 +15,20 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useTranslation();
   const {
     title,
     message,
-    confirmText = 'Confirm',
-    cancelText = 'Cancel',
+    confirmText,
+    cancelText,
     variant = 'danger',
     icon,
     note,
     closeOnBackdrop = true,
     closeOnEscape = true,
   } = options;
+  const resolvedConfirmText = confirmText ?? t('common.actions.confirm');
+  const resolvedCancelText = cancelText ?? t('common.actions.cancel');
 
   const confirmBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -119,7 +123,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 {title}
               </h3>
               <span className={`confirm-badge-tag variant-${variant}`}>
-                {variant} action
+                {variant} {t('common.actionTag')}
               </span>
             </div>
           </div>
@@ -145,7 +149,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               className="confirm-btn confirm-btn-cancel"
               onClick={onCancel}
             >
-              {cancelText}
+              {resolvedCancelText}
             </button>
             <button
               ref={confirmBtnRef}
@@ -153,7 +157,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               className={`confirm-btn confirm-btn-action variant-${variant}`}
               onClick={onConfirm}
             >
-              {confirmText}
+              {resolvedConfirmText}
             </button>
           </div>
         </div>

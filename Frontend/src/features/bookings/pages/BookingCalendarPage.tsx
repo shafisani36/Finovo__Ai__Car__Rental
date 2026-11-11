@@ -165,6 +165,8 @@ export function BookingCalendarPage() {
           overflow: 'hidden',
         }}
       >
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ minWidth: '640px' }}>
         {/* Days of week header */}
         <div
           style={{
@@ -271,6 +273,8 @@ export function BookingCalendarPage() {
               </div>
             );
           })}
+        </div>
+          </div>
         </div>
       </div>
     </div>

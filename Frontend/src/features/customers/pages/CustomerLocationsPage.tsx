@@ -110,7 +110,7 @@ export function CustomerLocationsPage() {
           </p>
         </div>
 
-        <div className="cp-header-actions" style={{ minWidth: '280px' }}>
+        <div className="cp-header-actions" style={{ minWidth: 'min(100%, 240px)', flex: '1 1 240px' }}>
           <div style={{ position: 'relative', width: '100%' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--cp-text-muted)' }} />
             <input
@@ -172,7 +172,7 @@ export function CustomerLocationsPage() {
 
       {/* Grid of Branches */}
       {isLoading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '24px' }}>
           {[1, 2, 3].map((i) => (
             <div key={i} className="cp-card cp-skeleton" style={{ height: '240px' }} />
           ))}
@@ -187,7 +187,7 @@ export function CustomerLocationsPage() {
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '24px' }}>
           {filteredBranches.map((branch) => (
             <div key={branch.id} className="cp-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>

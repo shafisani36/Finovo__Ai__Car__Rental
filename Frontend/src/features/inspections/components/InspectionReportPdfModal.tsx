@@ -50,7 +50,7 @@ export function InspectionReportPdfModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: 'clamp(10px, 2.5vw, 20px)',
       }}
     >
       <div
@@ -59,7 +59,7 @@ export function InspectionReportPdfModal({
           borderRadius: '16px',
           width: '100%',
           maxWidth: '960px',
-          maxHeight: '94vh',
+          maxHeight: 'calc(100dvh - 20px)',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
@@ -70,12 +70,14 @@ export function InspectionReportPdfModal({
         <div
           className="no-print"
           style={{
-            padding: '16px 24px',
+            flexShrink: 0,
+            padding: 'clamp(12px, 2vw, 16px) clamp(14px, 3vw, 24px)',
             background: 'linear-gradient(135deg, #1E0432 0%, #2E0949 100%)',
             color: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
             gap: '12px',
           }}
         >
@@ -186,9 +188,14 @@ export function InspectionReportPdfModal({
               <div style={{ textAlign: 'right' }}>
                 <span
                   style={{
-                    backgroundColor: isComparison ? '#FEE2E2' : '#E8F9F0',
-                    color: isComparison ? '#B91C1C' : '#057A55',
-                    border: isComparison ? '1px solid #FECACA' : '1px solid #A7F3D0',
+                    backgroundColor:
+                      comparisonReport && comparisonReport.newDamageCount > 0 ? '#FEE2E2' : '#E8F9F0',
+                    color:
+                      comparisonReport && comparisonReport.newDamageCount > 0 ? '#B91C1C' : '#057A55',
+                    border:
+                      comparisonReport && comparisonReport.newDamageCount > 0
+                        ? '1px solid #FECACA'
+                        : '1px solid #A7F3D0',
                     fontWeight: 800,
                     fontSize: '12px',
                     padding: '6px 14px',
@@ -199,7 +206,11 @@ export function InspectionReportPdfModal({
                     letterSpacing: '0.04em',
                   }}
                 >
-                  {isComparison ? 'Return Damage Delta Audit' : 'Certified Pickup Baseline'}
+                  {isComparison
+                    ? comparisonReport && comparisonReport.newDamageCount > 0
+                      ? 'Return Damage Delta Audit'
+                      : 'Verified Clean Return Audit'
+                    : 'Certified Pickup Baseline'}
                 </span>
                 <div style={{ fontSize: '12px', color: '#4A315A' }}>
                   Certificate ID: <strong>#{activeReport.id}</strong>
@@ -212,10 +223,10 @@ export function InspectionReportPdfModal({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
                 gap: '20px',
                 backgroundColor: '#FAF7FA',
-                padding: '20px',
+                padding: 'clamp(14px, 2.5vw, 20px)',
                 borderRadius: '14px',
                 marginBottom: '28px',
                 border: '1px solid #EFEAEF',
@@ -225,7 +236,7 @@ export function InspectionReportPdfModal({
                 <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 10px', color: '#1E0432' }}>
                   {activeReport.vehicle.brand} {activeReport.vehicle.model} ({activeReport.vehicle.year})
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 155px), 1fr))', gap: '8px', fontSize: '12px' }}>
                   <div>
                     <span style={{ color: '#8A7090' }}>Plate #:</span>{' '}
                     <strong>{activeReport.vehicle.registrationNumber}</strong>
@@ -257,10 +268,14 @@ export function InspectionReportPdfModal({
               <div
                 style={{
                   display: 'flex',
+                  flexWrap: 'wrap',
                   alignItems: 'center',
                   justifyContent: 'space-around',
-                  borderLeft: '1px solid #E0D8E3',
-                  paddingLeft: '16px',
+                  gap: '12px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0D8E3',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
                 }}
               >
                 <div style={{ textAlign: 'center' }}>
@@ -324,7 +339,7 @@ export function InspectionReportPdfModal({
                   Return Damage Comparison & Liability Settlement
                 </h4>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '14px', marginBottom: '16px' }}>
                   <div
                     style={{
                       padding: '16px',
@@ -415,7 +430,7 @@ export function InspectionReportPdfModal({
                   letterSpacing: '0.5px',
                 }}
               >
-                Itemized Damage Schedule & Bounding Bounding Box Coordinates
+                Itemized Damage Schedule & Bounding Box Coordinates
               </h4>
 
               {activeReport.findings.length === 0 ? (
@@ -497,7 +512,7 @@ export function InspectionReportPdfModal({
                 Multi-Angle High-Resolution Visual Evidence Matrix
               </h4>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px' }}>
                 {activeReport.photos.slice(0, 4).map((p, i) => (
                   <div
                     key={i}

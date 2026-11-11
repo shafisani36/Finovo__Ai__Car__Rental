@@ -12,6 +12,7 @@ export interface AuthContextValue {
   verifyResetCode: (email: string, code: string) => Promise<boolean>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<AuthResponse>;
   refreshProfile: () => Promise<void>;
+  updatePreferredLanguage: (preferredLanguage: string) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

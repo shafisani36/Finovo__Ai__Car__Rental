@@ -2,6 +2,7 @@ import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { RentalPricingService } from '../fleet/rental-pricing.service';
 import { InspectionService } from '../inspections/inspection.service';
+import { InspectionAiEngine } from '../inspections/inspection-ai.engine';
 
 export interface HandoverPickupInspectionDTO {
   overallScore?: number;
@@ -11,6 +12,8 @@ export interface HandoverPickupInspectionDTO {
   photos?: Array<{
     view: string;
     imageUrl: string;
+    qualityScore?: number;
+    pixelTelemetry?: Record<string, unknown>;
   }>;
   findings?: Array<{
     damageType: string;
@@ -298,7 +301,12 @@ export class RentalService {
         },
       });
 
-      const pickupPhotos =
+      const pickupPhotos: Array<{
+        view: string;
+        imageUrl: string;
+        qualityScore?: number;
+        pixelTelemetry?: Record<string, unknown>;
+      }> =
         pickupData?.photos && pickupData.photos.length > 0
           ? pickupData.photos
           : [
@@ -308,13 +316,45 @@ export class RentalService {
               },
             ];
 
-      for (const p of pickupPhotos) {
+      const resolvedPhotoMeta = await Promise.all(
+        pickupPhotos.map((p) => InspectionAiEngine.loadPhotoBinary(p.imageUrl))
+      );
+
+      for (let i = 0; i < pickupPhotos.length; i++) {
+        const p = pickupPhotos[i];
+        const loadedBin = resolvedPhotoMeta[i];
+        const tel = (p.pixelTelemetry || {}) as Record<string, unknown>;
+        const qualityScore =
+          typeof p.qualityScore === 'number'
+            ? p.qualityScore
+            : typeof tel.qualityScore === 'number'
+            ? tel.qualityScore
+            : 88.0;
+        const dimensions =
+          typeof tel.width === 'number' && typeof tel.height === 'number' && tel.width > 0
+            ? `${tel.width}x${tel.height}`
+            : undefined;
+        const qualityDetails =
+          Object.keys(tel).length > 0
+            ? JSON.stringify({
+                dHash64: tel.dHash64 || '',
+                byteHash: tel.byteHash || loadedBin?.sha256Hash || '',
+                meanLuma: tel.meanLuma ?? 128,
+                dominantColor: tel.dominantColor,
+                patchGridB64: tel.patchGridB64,
+              })
+            : undefined;
+
         await tx.inspectionPhoto.create({
           data: {
             inspectionId: createdPickup.id,
             view: p.view || 'FRONT',
             imageUrl: InspectionService.persistPhotoUrl(p.imageUrl, `pickup-${(p.view || 'front').toLowerCase()}`),
-            qualityScore: 99.2,
+            qualityScore,
+            sha256Hash: loadedBin?.sha256Hash,
+            fileSizeBytes: loadedBin ? loadedBin.buffer.length : undefined,
+            dimensions,
+            qualityDetails,
           },
         });
       }
@@ -323,9 +363,9 @@ export class RentalService {
         await tx.damageFinding.create({
           data: {
             inspectionId: createdPickup.id,
-            damageType: f.damageType,
+            damageType: f.damageType.slice(0, 64),
             severity: f.severity || 'LOW',
-            location: f.location,
+            location: f.location.slice(0, 64),
             region: f.view || 'FRONT',
             confidence: f.confidence > 1 ? f.confidence / 100 : f.confidence,
             boundingBox: f.boundingBox ? JSON.stringify(f.boundingBox) : null,

@@ -309,9 +309,9 @@ export function UsersManagementPage() {
         </div>
 
         {/* Search & Add User CTA */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px' }}>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', width: 'min(100%, 460px)' }}>
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: '1 1 220px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: '1 1 180px', minWidth: 0 }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', color: '#8A7090' }} />
               <input
                 type="text"
@@ -326,7 +326,9 @@ export function UsersManagementPage() {
                   fontSize: '0.875rem',
                   color: '#1E0426',
                   outline: 'none',
-                  minWidth: '220px',
+                  width: '100%',
+                  minWidth: 'min(100%, 160px)',
+                  boxSizing: 'border-box',
                 }}
               />
             </div>

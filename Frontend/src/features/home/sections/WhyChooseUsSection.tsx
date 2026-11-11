@@ -155,7 +155,7 @@ export function WhyChooseUsSection() {
         }
         @media (max-width: 768px) {
           .why-choose-us-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             gap: 12px !important;
           }
           .why-choose-us-header {
@@ -163,6 +163,11 @@ export function WhyChooseUsSection() {
             align-items: flex-start !important;
             gap: 12px !important;
             margin-bottom: 24px !important;
+          }
+        }
+        @media (max-width: 400px) {
+          .why-choose-us-grid {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>

@@ -107,6 +107,11 @@ export class VehicleService {
           photos: {
             orderBy: { order: 'asc' },
           },
+          pricingTiers: {
+            where: { isActive: true },
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+          },
           vehicleFeatures: {
             include: {
               feature: true,

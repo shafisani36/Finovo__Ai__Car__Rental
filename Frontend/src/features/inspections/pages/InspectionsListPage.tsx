@@ -185,7 +185,8 @@ export function InspectionsListPage() {
             borderRadius: '10px',
             padding: '8px 14px',
             border: '1px solid #ECEAEF',
-            width: '320px',
+            width: 'min(100%, 320px)',
+            flex: '1 1 220px',
           }}
         >
           <Search size={16} color="#685D73" />

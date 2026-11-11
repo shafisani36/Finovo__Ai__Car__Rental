@@ -22,7 +22,7 @@ export function AuthInput({
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
   return (
-    <div style={{ marginBottom: '18px', width: '100%', textAlign: 'left' }}>
+    <div style={{ marginBottom: '18px', width: '100%', textAlign: 'start' }}>
       <label
         htmlFor={inputId}
         style={{
@@ -49,7 +49,7 @@ export function AuthInput({
           <div
             style={{
               position: 'absolute',
-              left: '14px',
+              insetInlineStart: '14px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -68,8 +68,8 @@ export function AuthInput({
           style={{
             width: '100%',
             height: '48px',
-            paddingLeft: icon ? '44px' : '16px',
-            paddingRight: isPassword ? '44px' : '16px',
+            paddingInlineStart: icon ? '44px' : '16px',
+            paddingInlineEnd: isPassword ? '44px' : '16px',
             fontSize: '0.95rem',
             fontFamily: 'var(--font-family-sans, "Manrope", sans-serif)',
             color: '#1C0324',
@@ -101,7 +101,7 @@ export function AuthInput({
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             style={{
               position: 'absolute',
-              right: '12px',
+              insetInlineEnd: '12px',
               background: 'none',
               border: 'none',
               padding: '6px',

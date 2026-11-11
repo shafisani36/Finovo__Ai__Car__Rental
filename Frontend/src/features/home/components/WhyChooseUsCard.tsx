@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { WhyChooseUsItem } from '../../../types';
 import { MapPin, ShieldCheck, Sparkles, Headphones } from 'lucide-react';
 
@@ -8,31 +9,31 @@ interface WhyChooseUsCardProps {
 }
 
 export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
 
-  // Desktop asymmetrical corner radii per card matching Figma organic container silhouette
+  const cardNum = index + 1;
+  const title = t(`home.whyChooseUs.feature${cardNum}Title`, { defaultValue: item.title });
+  const description = t(`home.whyChooseUs.feature${cardNum}Desc`, { defaultValue: item.description });
+
+  // Desktop asymmetrical corner radii per card using logical corners so RTL mirrors organically
   const desktopRadius = [
-    '56px 20px 20px 20px', // Card 1 (Top-Left)
-    '20px 76px 20px 20px', // Card 2 (Top-Right)
-    '20px 20px 20px 72px', // Card 3 (Bottom-Left)
-    '20px 20px 48px 20px', // Card 4 (Bottom-Right)
+    '56px 20px 20px 20px',
+    '20px 76px 20px 20px',
+    '20px 20px 20px 72px',
+    '20px 20px 48px 20px',
   ][index] || '24px';
 
-  // Base card multi-layer gradients matching Figma
   const cardBackgrounds = [
-    // Card 1: deep plum to warm champagne mist with radial glow
     `radial-gradient(circle at 26% 88%, rgba(228, 208, 196, 0.45) 0%, rgba(186, 155, 158, 0.2) 35%, transparent 70%), linear-gradient(135deg, #2A0230 0%, #3B0543 40%, #5B2B50 65%, #DFCDC0 100%)`,
-    // Card 2: diagonal subtle translucent stripes over plum to champagne gradient
     `repeating-linear-gradient(45deg, transparent, transparent 32px, rgba(255, 255, 255, 0.035) 32px, rgba(255, 255, 255, 0.035) 64px), linear-gradient(135deg, #2E0334 0%, #460A50 42%, #7B4972 68%, #DFCCC0 100%)`,
-    // Card 3: plum fading into warm sand with concentric radar halo
     `radial-gradient(circle at 62% 95%, rgba(225, 203, 190, 0.95) 0%, rgba(180, 148, 150, 0.65) 45%, rgba(48, 5, 54, 0.98) 78%), linear-gradient(180deg, #2E0334 0%, #3B0643 45%, #E6D2C6 100%)`,
-    // Card 4: plum fading down-left to champagne
     `radial-gradient(circle at 35% 85%, rgba(224, 205, 194, 0.95) 0%, rgba(175, 142, 148, 0.65) 45%, rgba(46, 4, 52, 0.98) 78%), linear-gradient(135deg, #2E0334 0%, #3B0643 50%, #DFCDC0 100%)`,
   ][index] || '#2E0334';
 
   return (
     <div
-      className={`why-us-card why-us-card-${index + 1}`}
+      className={`why-us-card why-us-card-${cardNum}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
@@ -47,21 +48,18 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
           : '0 8px 24px rgba(32, 4, 40, 0.12)',
       }}
     >
-      {/* ============================================================== */}
-      {/* CARD 1: Find cars near you instantly (Right-shifted header)     */}
-      {/* ============================================================== */}
+      {/* CARD 1: Find cars near you instantly */}
       {index === 0 && (
         <>
-          {/* Header text right-aligned/shifted to accommodate left curve & Zion pill */}
           <div
             className="card-1-header"
             style={{
               position: 'absolute',
               top: '20px',
-              right: '24px',
+              insetInlineEnd: '24px',
               maxWidth: '335px',
               zIndex: 10,
-              textAlign: 'left',
+              textAlign: 'start',
             }}
           >
             <h3
@@ -75,7 +73,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: '0 0 6px 0',
               }}
             >
-              {item.title}
+              {title}
             </h3>
             <p
               style={{
@@ -85,18 +83,17 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: 0,
               }}
             >
-              Browse available vehicles by city, date, and budget in just a few taps.
+              {description}
             </p>
           </div>
 
-          {/* Radar Concentric Rings */}
           <svg
             width="260"
             height="180"
             viewBox="0 0 260 180"
             style={{
               position: 'absolute',
-              left: '10px',
+              insetInlineStart: '10px',
               bottom: '-25px',
               pointerEvents: 'none',
               opacity: 0.85,
@@ -108,11 +105,10 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             <circle cx="120" cy="120" r="140" fill="none" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1.2" />
           </svg>
 
-          {/* Center Map Pin Circle Badge */}
           <div
             style={{
               position: 'absolute',
-              left: '118px',
+              insetInlineStart: '118px',
               bottom: '22px',
               width: '24px',
               height: '24px',
@@ -131,16 +127,17 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             </svg>
           </div>
 
-          {/* Pill 1: Zion Lark */}
           <div
             className="user-pill user-pill-1"
             style={{
               position: 'absolute',
               top: '80px',
-              left: '20px',
+              insetInlineStart: '20px',
               background: '#FFFFFF',
               borderRadius: '9999px',
-              padding: '3px 12px 3px 3px',
+              paddingBlock: '3px',
+              paddingInlineStart: '3px',
+              paddingInlineEnd: '12px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '7px',
@@ -155,24 +152,26 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               alt="Zion Lark"
               style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
             />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>Zion Lark</span>
               <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
-                <span style={{ color: '#FF8A00', marginRight: '3px' }}>•</span>5km Away
+                <span style={{ color: '#FF8A00', marginInlineEnd: '3px' }}>•</span>
+                {t('home.whyChooseUs.away5km')}
               </span>
             </div>
           </div>
 
-          {/* Pill 2: Larkin */}
           <div
             className="user-pill user-pill-2"
             style={{
               position: 'absolute',
               top: '118px',
-              left: 'clamp(145px, 32%, 175px)',
+              insetInlineStart: 'clamp(145px, 32%, 175px)',
               background: '#FFFFFF',
               borderRadius: '9999px',
-              padding: '3px 12px 3px 3px',
+              paddingBlock: '3px',
+              paddingInlineStart: '3px',
+              paddingInlineEnd: '12px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '7px',
@@ -187,24 +186,26 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               alt="Larkin"
               style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
             />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>Larkin</span>
               <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
-                <span style={{ color: '#FF8A00', marginRight: '3px' }}>•</span>35m Away
+                <span style={{ color: '#FF8A00', marginInlineEnd: '3px' }}>•</span>
+                {t('home.whyChooseUs.away35m')}
               </span>
             </div>
           </div>
 
-          {/* Pill 3: Remi */}
           <div
             className="user-pill user-pill-3"
             style={{
               position: 'absolute',
               bottom: '18px',
-              left: '16px',
+              insetInlineStart: '16px',
               background: '#FFFFFF',
               borderRadius: '9999px',
-              padding: '3px 12px 3px 3px',
+              paddingBlock: '3px',
+              paddingInlineStart: '3px',
+              paddingInlineEnd: '12px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '7px',
@@ -219,30 +220,32 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               alt="Remi"
               style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
             />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>Remi</span>
               <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
-                <span style={{ color: '#FF8A00', marginRight: '3px' }}>•</span>55m Away
+                <span style={{ color: '#FF8A00', marginInlineEnd: '3px' }}>•</span>
+                {t('home.whyChooseUs.away55m')}
               </span>
             </div>
           </div>
 
-          {/* White Sedan (Toyota Corolla) */}
           <div
+            className="why-us-car-wrap"
             style={{
               position: 'absolute',
-              right: '-12px',
+              insetInlineEnd: '-12px',
               bottom: '0px',
               width: 'clamp(210px, 48%, 270px)',
               pointerEvents: 'none',
               zIndex: 5,
               transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              transform: isHovered ? 'scale(1.04) translateX(-4px)' : 'scale(1)',
+              transform: isHovered ? 'scale(1.04)' : 'scale(1)',
             }}
           >
             <img
               src="/cars/car-3-corolla-transparent.png"
               alt="Toyota Corolla"
+              className="why-us-car-img"
               style={{
                 width: '100%',
                 height: 'auto',
@@ -254,19 +257,17 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
         </>
       )}
 
-      {/* ============================================================== */}
-      {/* CARD 2: Simple plans with no hidden fees                        */}
-      {/* ============================================================== */}
+      {/* CARD 2: Simple plans with no hidden fees */}
       {index === 1 && (
         <>
-          {/* Header Text */}
           <div
             style={{
               position: 'absolute',
               top: '20px',
-              left: '26px',
-              maxWidth: '440px',
+              insetInlineStart: '26px',
+              insetInlineEnd: '26px',
               zIndex: 10,
+              textAlign: 'start',
             }}
           >
             <h3
@@ -280,7 +281,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: '0 0 6px 0',
               }}
             >
-              {item.title}
+              {title}
             </h3>
             <p
               style={{
@@ -290,7 +291,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: 0,
               }}
             >
-              Choose daily, weekly, or monthly rentals with clear pricing every time.
+              {description}
             </p>
           </div>
 
@@ -300,11 +301,13 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             style={{
               position: 'absolute',
               top: '102px',
-              left: '26px',
+              insetInlineStart: '26px',
               background: 'rgba(255, 255, 255, 0.94)',
               backdropFilter: 'blur(10px)',
               borderRadius: '18px',
-              padding: '8px 18px 8px 10px',
+              paddingBlock: '8px',
+              paddingInlineStart: '10px',
+              paddingInlineEnd: '18px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '12px',
@@ -335,9 +338,13 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 <path d="M9 16l3-2 3 2" />
               </svg>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>Transparent Pricing</span>
-              <span style={{ fontSize: '11px', color: '#66436C', lineHeight: 1.25 }}>What you see is what you pay.</span>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>
+                {t('home.whyChooseUs.feature2Sub1Title')}
+              </span>
+              <span style={{ fontSize: '11px', color: '#66436C', lineHeight: 1.25 }}>
+                {t('home.whyChooseUs.feature2Sub1Desc')}
+              </span>
             </div>
           </div>
 
@@ -347,11 +354,13 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             style={{
               position: 'absolute',
               top: '162px',
-              right: '26px',
+              insetInlineEnd: '26px',
               background: 'rgba(255, 255, 255, 0.94)',
               backdropFilter: 'blur(10px)',
               borderRadius: '18px',
-              padding: '8px 18px 8px 10px',
+              paddingBlock: '8px',
+              paddingInlineStart: '10px',
+              paddingInlineEnd: '18px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '12px',
@@ -388,27 +397,29 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 <circle cx="15.5" cy="17" r="1" fill="#FFFFFF" />
               </svg>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>Flexible Plans</span>
-              <span style={{ fontSize: '11px', color: '#66436C', lineHeight: 1.25 }}>Daily, weekly or monthly rentals.</span>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>
+                {t('home.whyChooseUs.feature2Sub2Title')}
+              </span>
+              <span style={{ fontSize: '11px', color: '#66436C', lineHeight: 1.25 }}>
+                {t('home.whyChooseUs.feature2Sub2Desc')}
+              </span>
             </div>
           </div>
         </>
       )}
 
-      {/* ============================================================== */}
-      {/* CARD 3: Drive verified, well-maintained cars                   */}
-      {/* ============================================================== */}
+      {/* CARD 3: Drive verified, well-maintained cars */}
       {index === 2 && (
         <>
-          {/* Header Text */}
           <div
             style={{
               position: 'absolute',
               top: '20px',
-              left: '26px',
-              right: '26px',
+              insetInlineStart: '26px',
+              insetInlineEnd: '26px',
               zIndex: 10,
+              textAlign: 'start',
             }}
           >
             <h3
@@ -422,7 +433,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: '0 0 6px 0',
               }}
             >
-              {item.title}
+              {title}
             </h3>
             <p
               style={{
@@ -432,36 +443,41 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: 0,
               }}
             >
-              Every vehicle is quality-checked, cleaned, and ready for your trip.
+              {description}
             </p>
           </div>
 
-          {/* 3 Vertically Stacked Checkmark Pills */}
           <div
             style={{
               position: 'absolute',
               top: '95px',
-              left: '26px',
+              insetInlineStart: '26px',
               display: 'flex',
               flexDirection: 'column',
               gap: '9px',
               zIndex: 8,
             }}
           >
-            {['Inspected', 'Cleaned', 'Road-ready'].map((text, i) => (
+            {[
+              t('home.whyChooseUs.feature3Tag1'),
+              t('home.whyChooseUs.feature3Tag2'),
+              t('home.whyChooseUs.feature3Tag3'),
+            ].map((text, i) => (
               <div
-                key={text}
+                key={i}
                 style={{
                   background: 'rgba(255, 255, 255, 0.96)',
                   borderRadius: '9999px',
-                  padding: '5px 16px 5px 6px',
+                  paddingBlock: '5px',
+                  paddingInlineStart: '6px',
+                  paddingInlineEnd: '16px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
                   width: 'fit-content',
                   transition: 'transform 0.3s ease',
-                  transform: isHovered ? `translateX(${i * 2}px)` : 'translateX(0)',
+                  transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                 }}
               >
                 <div
@@ -485,14 +501,13 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             ))}
           </div>
 
-          {/* Concentric Radar Rings Halo behind bronze car */}
           <svg
             width="280"
             height="200"
             viewBox="0 0 280 200"
             style={{
               position: 'absolute',
-              left: 'clamp(44%, 52%, 58%)',
+              insetInlineStart: 'clamp(44%, 52%, 58%)',
               bottom: '-30px',
               pointerEvents: 'none',
               opacity: 0.85,
@@ -504,11 +519,10 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             <circle cx="100" cy="130" r="125" fill="none" stroke="rgba(255, 255, 255, 0.1)" strokeWidth="1.2" />
           </svg>
 
-          {/* Top-Down Bronze Car (from User Figma asset) */}
           <div
             style={{
               position: 'absolute',
-              left: 'clamp(46%, 54%, 60%)',
+              insetInlineStart: 'clamp(46%, 54%, 60%)',
               bottom: '0px',
               width: 'clamp(145px, 32%, 180px)',
               pointerEvents: 'none',
@@ -520,7 +534,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             <img
               src="/why-choose-us/car-top-view-figma.png"
               srcSet="/why-choose-us/car-top-view-figma.png 1x, /why-choose-us/car-top-view-figma@2x.png 2x"
-              alt="Verified luxury sedan top view"
+              alt={title}
               style={{
                 width: '100%',
                 height: 'auto',
@@ -531,19 +545,17 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
         </>
       )}
 
-      {/* ============================================================== */}
-      {/* CARD 4: Get support before and during your trip                */}
-      {/* ============================================================== */}
+      {/* CARD 4: Get support before and during your trip */}
       {index === 3 && (
         <>
-          {/* Header Text */}
           <div
             style={{
               position: 'absolute',
               top: '20px',
-              left: '26px',
-              maxWidth: '440px',
+              insetInlineStart: '26px',
+              insetInlineEnd: '26px',
               zIndex: 10,
+              textAlign: 'start',
             }}
           >
             <h3
@@ -557,7 +569,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: '0 0 6px 0',
               }}
             >
-              {item.title}
+              {title}
             </h3>
             <p
               style={{
@@ -567,28 +579,28 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 margin: 0,
               }}
             >
-              Book with confidence and get help anytime with 24/7 customer support.
+              {description}
             </p>
           </div>
 
-          {/* 2 Support Pills (Left Side) */}
           <div
             style={{
               position: 'absolute',
               top: '108px',
-              left: '26px',
+              insetInlineStart: '26px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',
               zIndex: 8,
             }}
           >
-            {/* Support Pill 1: 24/7 Support */}
             <div
               style={{
                 background: 'rgba(255, 255, 255, 0.95)',
                 borderRadius: '9999px',
-                padding: '5px 16px 5px 5px',
+                paddingBlock: '5px',
+                paddingInlineStart: '5px',
+                paddingInlineEnd: '16px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '10px',
@@ -614,18 +626,23 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                   <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
                 </svg>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>24/7 Customer Support</span>
-                <span style={{ fontSize: '10px', color: '#66436C', lineHeight: 1.25 }}>We're here for you.</span>
+              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>
+                  {t('home.whyChooseUs.feature4Sub1Title')}
+                </span>
+                <span style={{ fontSize: '10px', color: '#66436C', lineHeight: 1.25 }}>
+                  {t('home.whyChooseUs.feature4Sub1Desc')}
+                </span>
               </div>
             </div>
 
-            {/* Support Pill 2: Assistance On The Road */}
             <div
               style={{
                 background: 'rgba(255, 255, 255, 0.95)',
                 borderRadius: '9999px',
-                padding: '5px 16px 5px 5px',
+                paddingBlock: '5px',
+                paddingInlineStart: '5px',
+                paddingInlineEnd: '16px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '10px',
@@ -652,19 +669,23 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                   <line x1="8" y1="13" x2="13" y2="13" />
                 </svg>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>Assistance On The Road</span>
-                <span style={{ fontSize: '10px', color: '#66436C', lineHeight: 1.25 }}>Help whenever you need it.</span>
+              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#26042E', lineHeight: 1.25 }}>
+                  {t('home.whyChooseUs.feature4Sub2Title')}
+                </span>
+                <span style={{ fontSize: '10px', color: '#66436C', lineHeight: 1.25 }}>
+                  {t('home.whyChooseUs.feature4Sub2Desc')}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Speech Bubble: "We're here to help!" */}
+          {/* Speech Bubble */}
           <div
             style={{
               position: 'absolute',
               top: '90px',
-              right: 'clamp(118px, 28%, 155px)',
+              insetInlineEnd: 'clamp(118px, 28%, 155px)',
               zIndex: 9,
               transition: 'transform 0.3s ease',
               transform: isHovered ? 'scale(1.06)' : 'scale(1)',
@@ -684,14 +705,15 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
                 whiteSpace: 'nowrap',
               }}
             >
-              We're here<br />to help!
+              {t('home.whyChooseUs.speechBubbleLine1')}
+              <br />
+              {t('home.whyChooseUs.speechBubbleLine2')}
             </div>
-            {/* Pointer Tail */}
             <div
               style={{
                 position: 'absolute',
                 bottom: '-5px',
-                left: '42%',
+                insetInlineStart: '42%',
                 width: 0,
                 height: 0,
                 borderLeft: '4px solid transparent',
@@ -701,22 +723,23 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             />
           </div>
 
-          {/* Red Sedan (Hyundai Elantra) */}
           <div
+            className="why-us-car-wrap"
             style={{
               position: 'absolute',
-              right: '-8px',
+              insetInlineEnd: '-8px',
               bottom: '0px',
               width: 'clamp(210px, 48%, 265px)',
               pointerEvents: 'none',
               zIndex: 5,
               transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              transform: isHovered ? 'scale(1.04) translateX(-4px)' : 'scale(1)',
+              transform: isHovered ? 'scale(1.04)' : 'scale(1)',
             }}
           >
             <img
               src="/cars/car-2-elantra-transparent.png"
               alt="Hyundai Elantra"
+              className="why-us-car-img"
               style={{
                 width: '100%',
                 height: 'auto',
@@ -728,44 +751,43 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
         </>
       )}
 
-      {/* Mobile 2x2 Clean Content matching Figma chunk-2 */}
-      <div className="why-us-card-mobile-content">
+      {/* Mobile Clean Content */}
+      <div className="why-us-card-mobile-content" style={{ textAlign: 'start' }}>
         <div className="why-us-mobile-icon-circle">
           {index === 0 && <MapPin size={16} color="#FAB826" />}
           {index === 1 && <ShieldCheck size={16} color="#FAB826" />}
           {index === 2 && <Sparkles size={16} color="#FAB826" />}
           {index === 3 && <Headphones size={16} color="#FAB826" />}
         </div>
-        <h3 className="why-us-mobile-title">
-          {item.title}
-        </h3>
-        <p className="why-us-mobile-desc">
-          {item.description}
-        </p>
+        <h3 className="why-us-mobile-title">{title}</h3>
+        <p className="why-us-mobile-desc">{description}</p>
       </div>
 
       <style>{`
+        [dir='rtl'] .why-us-car-img {
+          transform: scaleX(-1);
+        }
         .why-us-card-mobile-content {
           display: none;
         }
-        .why-us-card-${index + 1} {
+        .why-us-card-${cardNum} {
           border-radius: ${desktopRadius};
         }
         @media (max-width: 900px) and (min-width: 769px) {
-          .why-us-card-${index + 1} {
+          .why-us-card-${cardNum} {
             border-radius: 24px !important;
             height: 280px !important;
           }
           .card-1-header {
             position: absolute !important;
             top: 20px !important;
-            left: 20px !important;
-            right: 20px !important;
+            inset-inline-start: 20px !important;
+            inset-inline-end: 20px !important;
             max-width: 100% !important;
           }
         }
         @media (max-width: 768px) {
-          .why-us-card-${index + 1} {
+          .why-us-card-${cardNum} {
             border-radius: 18px !important;
             height: auto !important;
             min-height: 175px !important;
@@ -774,7 +796,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             flex-direction: column !important;
             justify-content: flex-start !important;
           }
-          .why-us-card-${index + 1} > *:not(.why-us-card-mobile-content):not(style) {
+          .why-us-card-${cardNum} > *:not(.why-us-card-mobile-content):not(style) {
             display: none !important;
           }
           .why-us-card-mobile-content {
@@ -800,7 +822,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             font-weight: 700;
             color: #FFFFFF;
             line-height: 1.25;
-            letterSpacing: -0.015em;
+            letter-spacing: -0.015em;
             margin: 0 0 6px 0;
           }
           .why-us-mobile-desc {

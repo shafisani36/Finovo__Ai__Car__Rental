@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type StatusCategory =
   | 'AVAILABLE'
@@ -141,6 +142,30 @@ const STATUS_DICTIONARY: Record<string, StatusVisualConfig> = {
   },
 };
 
+const STATUS_KEY_MAP: Record<string, string> = {
+  AVAILABLE: 'common.status.available',
+  RENTED: 'common.status.rented',
+  MAINTENANCE: 'common.status.maintenance',
+  RESERVED: 'common.status.reserved',
+  ARCHIVED: 'common.status.archived',
+  CONFIRMED: 'common.status.confirmed',
+  ACTIVE: 'common.status.active',
+  COMPLETED: 'common.status.completed',
+  RETURNED: 'common.status.returned',
+  CANCELLED: 'common.status.cancelled',
+  REJECTED: 'common.status.rejected',
+  PENDING: 'common.status.pending',
+  PAID: 'common.status.paid',
+  OVERDUE: 'common.status.overdue',
+  PRISTINE: 'common.status.pristine',
+  DAMAGE_DETECTED: 'common.status.damageDetected',
+  PENDING_REVIEW: 'common.status.pendingReview',
+  APPROVED_CLAIM: 'common.status.approvedClaim',
+  VERIFIED: 'common.status.verified',
+  SUSPENDED: 'common.status.suspended',
+  INACTIVE: 'common.status.inactive',
+};
+
 export function StatusBadge({
   status,
   label,
@@ -149,6 +174,7 @@ export function StatusBadge({
   className = '',
   style = {},
 }: StatusBadgeProps) {
+  const { t } = useTranslation();
   const normalizedKey = (status || '').toUpperCase().trim();
   const config: StatusVisualConfig = STATUS_DICTIONARY[normalizedKey] || {
     bg: '#F3F4F6',
@@ -157,7 +183,9 @@ export function StatusBadge({
     label: status || 'Unknown',
   };
 
-  const displayText = label ?? config.label;
+  const i18nKey = STATUS_KEY_MAP[normalizedKey];
+  const translatedStatus = i18nKey ? t(i18nKey, { defaultValue: config.label }) : config.label;
+  const displayText = label ?? translatedStatus;
   const isSmall = size === 'sm';
 
   return (

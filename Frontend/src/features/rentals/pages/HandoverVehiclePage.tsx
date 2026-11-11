@@ -105,6 +105,8 @@ export function HandoverVehiclePage() {
           photos: pickupReport.photos.map((p) => ({
             view: p.view,
             imageUrl: p.imageUrl,
+            qualityScore: p.qualityScore,
+            pixelTelemetry: p.pixelTelemetry,
           })),
           findings: pickupReport.findings.map((f) => ({
             damageType: f.damageType,
@@ -201,7 +203,7 @@ export function HandoverVehiclePage() {
             padding: '24px',
             border: '1px solid #ECEAEF',
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
             gap: '24px',
           }}
         >

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Camera,
   Cpu,
@@ -11,29 +12,31 @@ import {
 import carMain from '../../assets/car-detail/car-main.jpg';
 
 export function AiInspectionPage() {
+  const { t } = useTranslation();
+
   const steps = [
     {
       num: '01',
-      title: 'Guided 360° Photo Capture',
-      desc: 'At vehicle handover, take 6 rapid guided photos around the perimeter using our progressive web app.',
+      title: t('aiInspection.step1Title'),
+      desc: t('aiInspection.step1Desc'),
       icon: Camera,
     },
     {
       num: '02',
-      title: 'Deep Neural Visual Analysis',
-      desc: 'Our proprietary computer vision models segment vehicle body panels, isolating scratches, paint scuffs, and panel gaps down to millimeter precision.',
+      title: t('aiInspection.step2Title'),
+      desc: t('aiInspection.step2Desc'),
       icon: Cpu,
     },
     {
       num: '03',
-      title: 'Immutable Baseline Certificate',
-      desc: 'A cryptographic condition report is saved to your account. Both customer and fleet manager receive identical timestamps.',
+      title: t('aiInspection.step3Title'),
+      desc: t('aiInspection.step3Desc'),
       icon: Lock,
     },
     {
       num: '04',
-      title: 'Zero-Dispute Return & Refund',
-      desc: 'Upon drop-off, a second 30-second scan verifies condition against the baseline. Your security deposit is unblocked instantly.',
+      title: t('aiInspection.step4Title'),
+      desc: t('aiInspection.step4Desc'),
       icon: Zap,
     },
   ];
@@ -48,7 +51,7 @@ export function AiInspectionPage() {
           padding: '60px 6% 70px',
         }}
       >
-        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '48px', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '48px', alignItems: 'center' }}>
           <div>
             <div
               style={{
@@ -66,15 +69,14 @@ export function AiInspectionPage() {
               }}
             >
               <Sparkles size={14} />
-              <span>FINOVO COMPUTER VISION 3.0</span>
+              <span>{t('aiInspection.badge')}</span>
             </div>
 
-            <h1 style={{ fontSize: '46px', fontWeight: 800, lineHeight: 1.15, margin: '0 0 16px' }}>
-              Say Goodbye to Rental Deposit Disputes.
+            <h1 style={{ fontSize: 'clamp(1.9rem, 4.5vw, 2.85rem)', fontWeight: 800, lineHeight: 1.15, margin: '0 0 16px' }}>
+              {t('aiInspection.heroTitle')}
             </h1>
             <p style={{ fontSize: '16px', lineHeight: 1.6, opacity: 0.9, margin: '0 0 32px' }}>
-              Finovo replaces subjective human walk-arounds with automated AI computer-vision damage scanning.
-              Your car condition is scientifically verified before you drive away and at return.
+              {t('aiInspection.heroDesc')}
             </p>
 
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -94,7 +96,8 @@ export function AiInspectionPage() {
                   boxShadow: '0 4px 15px rgba(250, 184, 38, 0.4)',
                 }}
               >
-                Book AI-Verified Car <ArrowRight size={16} />
+                <span>{t('aiInspection.ctaButton')}</span>
+                <ArrowRight size={16} className="rtl-mirror-arrow" />
               </Link>
             </div>
           </div>
@@ -110,7 +113,7 @@ export function AiInspectionPage() {
               backgroundColor: '#0A010D',
             }}
           >
-            <img src={carMain} alt="AI Inspection Visual Scan" style={{ width: '100%', height: '380px', objectFit: 'cover', opacity: 0.85 }} />
+            <img src={carMain} alt="AI Inspection Visual Scan" style={{ width: '100%', height: 'clamp(240px, 42vw, 380px)', objectFit: 'cover', opacity: 0.85 }} />
 
             {/* Scanning line animation */}
             <div
@@ -129,10 +132,10 @@ export function AiInspectionPage() {
             <div
               style={{
                 position: 'absolute',
-                top: '42%',
-                left: '25%',
-                width: '90px',
-                height: '70px',
+                top: '36%',
+                insetInlineStart: '12%',
+                width: '100px',
+                height: '72px',
                 border: '2px dashed #FAB826',
                 borderRadius: '8px',
                 backgroundColor: 'rgba(250, 184, 38, 0.1)',
@@ -143,18 +146,18 @@ export function AiInspectionPage() {
               }}
             >
               <span style={{ fontSize: '9px', fontWeight: 800, backgroundColor: '#FAB826', color: '#1E0426', padding: '1px 4px', borderRadius: '4px', alignSelf: 'flex-start' }}>
-                HOOD: OK
+                {t('aiInspection.hudHood')}
               </span>
-              <span style={{ fontSize: '8px', color: '#FAB826', fontWeight: 700 }}>CONFIDENCE 99.8%</span>
+              <span style={{ fontSize: '8px', color: '#FAB826', fontWeight: 700 }}>{t('aiInspection.hudConfidence')}</span>
             </div>
 
             {/* Detection Box 2 */}
             <div
               style={{
                 position: 'absolute',
-                top: '55%',
-                right: '28%',
-                width: '110px',
+                top: '50%',
+                insetInlineEnd: '14%',
+                width: '115px',
                 height: '65px',
                 border: '2px solid #10B981',
                 borderRadius: '8px',
@@ -166,9 +169,9 @@ export function AiInspectionPage() {
               }}
             >
               <span style={{ fontSize: '9px', fontWeight: 800, backgroundColor: '#10B981', color: '#FFFFFF', padding: '1px 4px', borderRadius: '4px', alignSelf: 'flex-start' }}>
-                BUMPER: VERIFIED
+                {t('aiInspection.hudBumper')}
               </span>
-              <span style={{ fontSize: '8px', color: '#10B981', fontWeight: 700 }}>NO DEFECTS FOUND</span>
+              <span style={{ fontSize: '8px', color: '#10B981', fontWeight: 700 }}>{t('aiInspection.hudNoDefects')}</span>
             </div>
 
             {/* Bottom HUD */}
@@ -178,10 +181,12 @@ export function AiInspectionPage() {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                padding: '16px 20px',
+                padding: '14px 18px',
                 backgroundColor: 'rgba(30, 4, 38, 0.85)',
                 backdropFilter: 'blur(10px)',
                 display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 color: '#FFFFFF',
@@ -189,29 +194,29 @@ export function AiInspectionPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Activity size={16} color="#10B981" />
-                <span style={{ fontSize: '12px', fontWeight: 700 }}>Vision Engine Active · 6 Angles Verified</span>
+                <span style={{ fontSize: '12px', fontWeight: 700 }}>{t('aiInspection.hudActive')}</span>
               </div>
-              <span style={{ fontSize: '11px', color: '#FAB826', fontWeight: 800 }}>DEFECT SCORE: 0.0</span>
+              <span style={{ fontSize: '11px', color: '#FAB826', fontWeight: 800 }}>{t('aiInspection.hudScore')}</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* How it Works 4 Steps */}
-      <section style={{ maxWidth: '1240px', margin: '70px auto', padding: '0 24px' }}>
+      <section style={{ maxWidth: '1240px', margin: '70px auto', padding: '0 clamp(16px, 4vw, 24px)' }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', color: '#FAB826', textTransform: 'uppercase' }}>
-            TRANSPARENT INSPECTION LIFECYCLE
+            {t('aiInspection.lifecycleEyebrow')}
           </p>
-          <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#1E0426', margin: '4px 0 0' }}>
-            How AI Vehicle Inspection Works
+          <h2 style={{ fontSize: 'clamp(1.6rem, 3.8vw, 2.25rem)', fontWeight: 800, color: '#1E0426', margin: '4px 0 0' }}>
+            {t('aiInspection.lifecycleTitle')}
           </h2>
           <p style={{ fontSize: '15px', color: '#6B7280', margin: '8px 0 0' }}>
-            From departure to return, the entire inspection workflow takes under 60 seconds.
+            {t('aiInspection.lifecycleSubtitle')}
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '24px' }}>
           {steps.map((s) => {
             const Icon = s.icon;
             return (
@@ -245,30 +250,29 @@ export function AiInspectionPage() {
       </section>
 
       {/* Customer Trust Callout */}
-      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 24px' }}>
+      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 clamp(16px, 4vw, 24px)' }}>
         <div
           style={{
             backgroundColor: '#1E0426',
             color: '#FFFFFF',
             borderRadius: '24px',
-            padding: '48px',
+            padding: 'clamp(24px, 5vw, 48px)',
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
             gap: '32px',
             alignItems: 'center',
           }}
         >
           <div>
-            <h3 style={{ fontSize: '30px', fontWeight: 800, margin: '0 0 12px' }}>
-              Never Argue Over a Rental Car Scratch Again.
+            <h3 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 1.875rem)', fontWeight: 800, margin: '0 0 12px' }}>
+              {t('aiInspection.trustTitle')}
             </h3>
             <p style={{ fontSize: '15px', opacity: 0.85, margin: 0, lineHeight: 1.6 }}>
-              Every vehicle rented with Finovo is safeguarded with objective, mathematically provable condition records.
-              Zero surprises, zero unverified charges.
+              {t('aiInspection.trustDesc')}
             </p>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             <Link
               to="/cars"
               style={{
@@ -285,7 +289,8 @@ export function AiInspectionPage() {
                 boxShadow: '0 4px 15px rgba(250, 184, 38, 0.4)',
               }}
             >
-              Find an Inspected Car <ArrowRight size={16} />
+              <span>{t('aiInspection.findInspectedBtn')}</span>
+              <ArrowRight size={16} className="rtl-mirror-arrow" />
             </Link>
           </div>
         </div>

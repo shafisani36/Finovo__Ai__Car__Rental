@@ -1,10 +1,12 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { TESTIMONIALS } from '../data/homepageData';
 import { TestimonialBubble } from '../components/TestimonialBubble';
 
 export function TestimonialsSection() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
 
   const featured = TESTIMONIALS.find((t) => t.variant === 'featured');
@@ -93,7 +95,7 @@ export function TestimonialsSection() {
               marginBottom: '12px',
             }}
           >
-            What Our Customers Say
+            {t('home.testimonials.title')}
           </h2>
           <p
             style={{
@@ -106,9 +108,9 @@ export function TestimonialsSection() {
               maxWidth: '560px',
             }}
           >
-            See why customers trust us for a smooth, reliable,
+            {t('home.testimonials.subtitleLine1')}
             <br className="testimonial-header-br" />
-            and stress-free rental experience.
+            {t('home.testimonials.subtitleLine2')}
           </p>
         </div>
 
@@ -146,7 +148,7 @@ export function TestimonialsSection() {
           margin: 0 auto 28px auto;
           display: flex;
           justify-content: flex-start;
-          padding-left: 20px;
+          padding-inline-start: 20px;
         }
 
         .mobile-featured-bubble {
@@ -194,7 +196,7 @@ export function TestimonialsSection() {
           }
           .testimonial-top-featured-wrapper {
             justify-content: center;
-            padding-left: 0;
+            padding-inline-start: 0;
             margin-bottom: 24px;
           }
         }
@@ -216,8 +218,8 @@ export function TestimonialsSection() {
             -webkit-overflow-scrolling: touch !important;
             gap: 16px !important;
             padding-bottom: 16px !important;
-            margin-right: -24px;
-            padding-right: 24px;
+            margin-inline-end: -24px;
+            padding-inline-end: 24px;
             scrollbar-width: none !important;
           }
           .testimonials-cards-grid::-webkit-scrollbar {

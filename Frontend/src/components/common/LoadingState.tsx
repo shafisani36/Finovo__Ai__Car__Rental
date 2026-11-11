@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
 export interface LoadingStateProps {
@@ -9,11 +10,13 @@ export interface LoadingStateProps {
 }
 
 export function LoadingState({
-  message = 'Loading...',
+  message,
   minHeight = '320px',
   className = '',
   style = {},
 }: LoadingStateProps) {
+  const { t } = useTranslation();
+  const resolvedMessage = message || t('common.loading');
   return (
     <div
       className={`finovo-loading-state ${className}`}
@@ -42,7 +45,7 @@ export function LoadingState({
           color: '#8A7090',
         }}
       >
-        {message}
+        {resolvedMessage}
       </span>
 
       <style>{`

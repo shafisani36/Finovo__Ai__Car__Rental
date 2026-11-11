@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -7,7 +8,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface StatConfig {
   id: string;
-  label: string;
+  labelKey: string;
   target: number;
   suffix: string;
   displayValue: string;
@@ -17,7 +18,7 @@ interface StatConfig {
 const STATS_DATA: StatConfig[] = [
   {
     id: 'cars',
-    label: 'Cars in Fleet',
+    labelKey: 'home.stats.carsInFleet',
     target: 500,
     suffix: '+',
     displayValue: '500+',
@@ -25,7 +26,7 @@ const STATS_DATA: StatConfig[] = [
   },
   {
     id: 'customers',
-    label: 'Happy Customers',
+    labelKey: 'home.stats.happyCustomers',
     target: 10,
     suffix: 'K+',
     displayValue: '10K+',
@@ -33,7 +34,7 @@ const STATS_DATA: StatConfig[] = [
   },
   {
     id: 'locations',
-    label: 'Locations',
+    labelKey: 'home.stats.locations',
     target: 15,
     suffix: '',
     displayValue: '15',
@@ -41,7 +42,7 @@ const STATS_DATA: StatConfig[] = [
   },
   {
     id: 'support',
-    label: 'Customer Support',
+    labelKey: 'home.stats.customerSupport',
     target: 24,
     suffix: '/7',
     displayValue: '24/7',
@@ -50,6 +51,7 @@ const STATS_DATA: StatConfig[] = [
 ];
 
 export function StatsCounterSection() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const numberRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -137,7 +139,7 @@ export function StatsCounterSection() {
             <div key={stat.id} className="stats-col">
               {/* Perfectly locked Y-axis label container */}
               <div className="stat-label">
-                {stat.label}
+                {t(stat.labelKey)}
               </div>
 
               {/* Perfectly locked Y-axis numeric value container */}
@@ -209,7 +211,7 @@ export function StatsCounterSection() {
         .stats-col:not(:last-child)::after {
           content: '';
           position: absolute;
-          right: 0;
+          inset-inline-end: 0;
           top: 50%;
           transform: translateY(-50%);
           width: 1px;

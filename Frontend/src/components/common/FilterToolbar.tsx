@@ -1,4 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 
 export interface FilterToolbarProps {
@@ -14,13 +15,15 @@ export interface FilterToolbarProps {
 export function FilterToolbar({
   searchValue,
   onSearchChange,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder,
   filters,
   actions,
   className = '',
   style = {},
 }: FilterToolbarProps) {
+  const { t } = useTranslation();
   const showSearch = onSearchChange !== undefined;
+  const resolvedPlaceholder = searchPlaceholder ?? `${t('common.actions.search')}...`;
 
   return (
     <div className={`finovo-filter-toolbar ${className}`} style={style}>
@@ -32,7 +35,7 @@ export function FilterToolbar({
               type="text"
               value={searchValue || ''}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={searchPlaceholder}
+              placeholder={resolvedPlaceholder}
               className="finovo-search-input"
             />
             {searchValue && (

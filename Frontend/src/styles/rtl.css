@@ -69,8 +69,10 @@ html[lang='ur'] .finovo-page-title {
   flex-direction: row;
 }
 
-[dir='rtl'] .header-actions {
-  flex-direction: row-reverse;
+[dir='rtl'] .rtl-mirror-chevron,
+[dir='rtl'] .rtl-mirror-arrow {
+  display: inline-block;
+  transform: scaleX(-1);
 }
 
 [dir='rtl'] .signin-button svg {
@@ -103,14 +105,16 @@ html[lang='ur'] .finovo-page-title {
   margin-right: 0;
 }
 
+[dir='rtl'] .finovo-admin-search-input,
 [dir='rtl'] .admin-header-search-input {
   padding-right: 38px !important;
-  padding-left: 12px !important;
+  padding-left: 14px !important;
   text-align: right;
 }
 
+[dir='rtl'] .finovo-admin-search-icon,
 [dir='rtl'] .admin-header-search-icon {
-  right: 12px !important;
+  right: 14px !important;
   left: auto !important;
 }
 
@@ -119,10 +123,7 @@ html[lang='ur'] .finovo-page-title {
   right: auto !important;
 }
 
-[dir='rtl'] .admin-header-left {
-  flex-direction: row;
-}
-
+[dir='rtl'] .admin-header-left,
 [dir='rtl'] .admin-header-right {
   flex-direction: row;
 }
@@ -163,15 +164,22 @@ html[lang='ur'] .finovo-page-title {
   flex-direction: row;
 }
 
+[dir='rtl'] .finovo-search-input,
 [dir='rtl'] .finovo-filter-search-input {
-  padding-right: 36px !important;
-  padding-left: 12px !important;
+  padding-right: 40px !important;
+  padding-left: 36px !important;
   text-align: right;
 }
 
+[dir='rtl'] .finovo-search-icon,
 [dir='rtl'] .finovo-filter-search-icon {
-  right: 12px !important;
+  right: 14px !important;
   left: auto !important;
+}
+
+[dir='rtl'] .finovo-search-clear {
+  left: 10px !important;
+  right: auto !important;
 }
 
 [dir='rtl'] .data-table th,
@@ -255,11 +263,32 @@ html[lang='ur'] .finovo-page-title {
   background-color: #FAF6FB;
 }
 
+.finovo-lang-short {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .finovo-language-trigger {
+    padding: 6px 9px;
+    gap: 4px;
+    font-size: 0.78rem;
+  }
+  .finovo-lang-native {
+    display: none;
+  }
+  .finovo-lang-short {
+    display: inline;
+    font-weight: 700;
+  }
+}
+
 .finovo-language-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 170px;
+  min-width: 195px;
+  max-height: 300px;
+  overflow-y: auto;
   background-color: #1E0426;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 14px;
@@ -267,7 +296,6 @@ html[lang='ur'] .finovo-page-title {
   padding: 6px;
   z-index: 1000;
   animation: finovoFadeIn 0.18s ease;
-  overflow: hidden;
 }
 
 [dir='rtl'] .finovo-language-dropdown {
@@ -351,17 +379,20 @@ html[lang='ur'] .finovo-page-title {
   background-color: #FFFFFF;
   border: 1px solid #E5DFE7;
   border-radius: 16px;
-  padding: 16px;
+  padding: clamp(12px, 2.5vw, 16px);
   display: flex;
   flex-direction: column;
   gap: 12px;
   box-shadow: 0 2px 10px rgba(30, 4, 50, 0.04);
+  min-width: 0;
 }
 
 .finovo-translator-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   border-bottom: 1px solid #F0EAF1;
   padding-bottom: 10px;
 }
@@ -424,4 +455,30 @@ html[lang='ur'] .finovo-page-title {
   .finovo-translator-swap-btn:hover {
     transform: rotate(270deg);
   }
+}
+
+/* --------------------------------------------------------------------------
+   8. ADDITIONAL GLOBAL RTL MIRRORING & LOGICAL ADJUSTMENTS
+-------------------------------------------------------------------------- */
+[dir='rtl'] .finovo-custom-select-trigger,
+[dir='rtl'] .finovo-custom-select-option {
+  text-align: right;
+}
+
+[dir='rtl'] .auth-otp-row,
+[dir='rtl'] .otp-inputs-container,
+[dir='rtl'] .phone-number {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+[dir='rtl'] .customer-sidebar-badge,
+[dir='rtl'] .nav-pill-badge {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir='rtl'] .notif-badge {
+  left: 6px;
+  right: auto;
 }

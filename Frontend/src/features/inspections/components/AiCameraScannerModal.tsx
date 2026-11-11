@@ -8,12 +8,16 @@ import {
   RefreshCw,
   Sparkles,
   ShieldCheck,
+  Images,
+  Trash2,
+  ScanLine,
 } from 'lucide-react';
 import {
   InspectionAiEngine,
   type ClientInspectionReport,
   type DetectedDamageItem,
 } from '../services/inspectionAiEngine';
+import { compressImageFile } from '../services/pixelVisionAnalyzer';
 
 interface AiCameraScannerModalProps {
   isOpen: boolean;
@@ -29,23 +33,25 @@ interface AiCameraScannerModalProps {
     color?: string;
     primaryImageUrl?: string;
   };
+  baselineReport?: ClientInspectionReport | null;
   onInspectionComplete: (report: ClientInspectionReport) => void;
   onOpenPdfReport: (report: ClientInspectionReport) => void;
 }
 
 const VIEW_ANGLES = [
-  { id: 'FRONT', label: 'Front Angle' },
-  { id: 'DRIVER_SIDE', label: 'Driver Side' },
-  { id: 'PASSENGER_SIDE', label: 'Passenger Side' },
-  { id: 'REAR', label: 'Rear Profile' },
-  { id: 'INTERIOR', label: 'Cabin / Cockpit' },
-];
+  { id: 'FRONT', short: 'Front', label: 'Front Angle', required: true },
+  { id: 'DRIVER_SIDE', short: 'Left Side', label: 'Driver Side', required: true },
+  { id: 'PASSENGER_SIDE', short: 'Right Side', label: 'Passenger Side', required: true },
+  { id: 'REAR', short: 'Rear', label: 'Rear Profile', required: true },
+  { id: 'INTERIOR', short: 'Cabin', label: 'Cabin / Cockpit', required: false },
+] as const;
 
 export function AiCameraScannerModal({
   isOpen,
   onClose,
   inspectionType,
   vehicle,
+  baselineReport,
   onInspectionComplete,
   onOpenPdfReport,
 }: AiCameraScannerModalProps) {
@@ -53,32 +59,27 @@ export function AiCameraScannerModal({
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [inspectionResult, setInspectionResult] = useState<ClientInspectionReport | null>(null);
   const [capturedPhotos, setCapturedPhotos] = useState<Record<string, string>>({});
-  const [, setSelectedDamageItem] = useState<DetectedDamageItem | null>(null);
+  const [selectedDamageItem, setSelectedDamageItem] = useState<DetectedDamageItem | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const batchInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize photos with vehicle image or placeholders
   useEffect(() => {
     if (isOpen) {
-      const defaultImg =
-        vehicle.primaryImageUrl ||
-        'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=1200&q=80';
-      setCapturedPhotos({
-        FRONT: defaultImg,
-        DRIVER_SIDE: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80',
-        PASSENGER_SIDE: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
-        REAR: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80',
-        INTERIOR: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=80',
-      });
+      setCapturedPhotos({});
       setInspectionResult(null);
+      setSelectedDamageItem(null);
+      setScanError(null);
+      setActiveAngleIndex(0);
     }
-  }, [isOpen, vehicle]);
+  }, [isOpen, vehicle.id, inspectionType]);
 
-  // Clean up camera stream on close
   useEffect(() => {
     return () => {
       if (cameraStream) {
@@ -87,12 +88,24 @@ export function AiCameraScannerModal({
     };
   }, [cameraStream]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const currentAngle = VIEW_ANGLES[activeAngleIndex];
   const currentPhotoUrl = capturedPhotos[currentAngle.id];
+  const uploadedAnglesCount = VIEW_ANGLES.filter((a) => Boolean(capturedPhotos[a.id])).length;
+  const exteriorUploadedCount = ['FRONT', 'DRIVER_SIDE', 'PASSENGER_SIDE', 'REAR'].filter((id) =>
+    Boolean(capturedPhotos[id])
+  ).length;
 
-  // Start live camera stream
   const startCamera = async () => {
     try {
       if (cameraStream) {
@@ -103,30 +116,35 @@ export function AiCameraScannerModal({
       });
       setCameraStream(stream);
       setIsCameraActive(true);
+      setScanError(null);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
     } catch (err) {
-      console.warn('Live camera unavailable, using photo upload/simulated camera mode:', err);
-      alert('Camera access unavailable or blocked. You can upload photos or use high-res samples.');
+      console.warn('Live camera unavailable:', err);
+      setScanError('Camera access unavailable or blocked. Please upload real vehicle photos from your device.');
     }
   };
 
-  // Capture frame from live video
   const captureFrame = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 1280;
-      canvas.height = video.videoHeight || 720;
+      const w = video.videoWidth || 1280;
+      const h = video.videoHeight || 720;
+      const scale = Math.min(1, 1280 / Math.max(w, h));
+      canvas.width = Math.max(1, Math.round(w * scale));
+      canvas.height = Math.max(1, Math.round(h * scale));
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         setCapturedPhotos((prev) => ({ ...prev, [currentAngle.id]: dataUrl }));
+        setInspectionResult(null);
+        setSelectedDamageItem(null);
+        setScanError(null);
       }
-      // Stop stream after capture
       if (cameraStream) {
         cameraStream.getTracks().forEach((t) => t.stop());
         setCameraStream(null);
@@ -135,33 +153,105 @@ export function AiCameraScannerModal({
     }
   };
 
-  // Upload local photo file
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setCapturedPhotos((prev) => ({
-            ...prev,
-            [currentAngle.id]: event.target!.result as string,
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
+  const processSingleFile = async (file?: File | null) => {
+    if (!file) return;
+    try {
+      const dataUrl = await compressImageFile(file, 1280);
+      setCapturedPhotos((prev) => ({
+        ...prev,
+        [currentAngle.id]: dataUrl,
+      }));
+      setInspectionResult(null);
+      setSelectedDamageItem(null);
+      setScanError(null);
+    } catch {
+      setScanError('Could not read uploaded image file. Please try PNG, JPG, or WebP.');
     }
   };
 
-  // Run the pre-trained neural damage and color inspection
-  const handleRunAiInspection = () => {
-    setIsScanning(true);
-    setTimeout(() => {
-      const photosList = VIEW_ANGLES.map((a) => ({
-        view: a.id,
-        imageUrl: capturedPhotos[a.id] || vehicle.primaryImageUrl || '',
-      }));
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    await processSingleFile(file);
+  };
 
-      const report = InspectionAiEngine.runInspection({
+  const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, VIEW_ANGLES.length);
+    e.target.value = '';
+    if (files.length === 0) return;
+    try {
+      const encoded = await Promise.all(files.map((f) => compressImageFile(f, 1280)));
+      setCapturedPhotos((prev) => {
+        const next = { ...prev };
+        encoded.forEach((dataUrl, idx) => {
+          const targetAngle = VIEW_ANGLES[idx];
+          if (targetAngle) {
+            next[targetAngle.id] = dataUrl;
+          }
+        });
+        return next;
+      });
+      setInspectionResult(null);
+      setSelectedDamageItem(null);
+      setScanError(null);
+    } catch {
+      setScanError('Failed to decode one or more selected images.');
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files || []).filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+    if (files.length === 1) {
+      await processSingleFile(files[0]);
+      return;
+    }
+    try {
+      const encoded = await Promise.all(files.slice(0, VIEW_ANGLES.length).map((f) => compressImageFile(f, 1280)));
+      setCapturedPhotos((prev) => {
+        const next = { ...prev };
+        encoded.forEach((url, idx) => {
+          const targetAngle = VIEW_ANGLES[idx];
+          if (targetAngle) next[targetAngle.id] = url;
+        });
+        return next;
+      });
+      setInspectionResult(null);
+      setSelectedDamageItem(null);
+      setScanError(null);
+    } catch {
+      setScanError('Failed to read dropped images.');
+    }
+  };
+
+  const handleRemoveAnglePhoto = () => {
+    setCapturedPhotos((prev) => {
+      const next = { ...prev };
+      delete next[currentAngle.id];
+      return next;
+    });
+    setInspectionResult(null);
+    setSelectedDamageItem(null);
+  };
+
+  const handleRunAiInspection = async () => {
+    const photosList = VIEW_ANGLES.filter((a) => Boolean(capturedPhotos[a.id])).map((a) => ({
+      view: a.id,
+      imageUrl: capturedPhotos[a.id],
+    }));
+
+    if (photosList.length === 0) {
+      setScanError('Please upload or capture at least one vehicle photo before running AI inspection.');
+      return;
+    }
+
+    try {
+      setIsScanning(true);
+      setScanError(null);
+
+      const report = await InspectionAiEngine.runInspectionAsync({
         type: inspectionType,
         vehicle: {
           brand: vehicle.brand,
@@ -172,670 +262,1018 @@ export function AiCameraScannerModal({
           color: vehicle.color,
         },
         photos: photosList,
-        simulateDamage: inspectionType === 'RETURN',
+        baselineReport: inspectionType === 'RETURN' ? baselineReport : null,
       });
 
       setInspectionResult(report);
-      setIsScanning(false);
+      setSelectedDamageItem(report.findings[0] || null);
       onInspectionComplete(report);
-    }, 1800);
+    } catch (err) {
+      console.error('AI CV analysis error:', err);
+      setScanError('Failed to analyze uploaded images. Please verify valid image formats and retry.');
+    } finally {
+      setIsScanning(false);
+    }
   };
 
-  const currentFindings = inspectionResult?.findings.filter((f) => f.view === currentAngle.id) || [];
+  const currentFindings =
+    inspectionResult?.findings.filter((f) => f.view === currentAngle.id) || [];
+  const currentAnalyzedMeta = inspectionResult?.photos.find((p) => p.view === currentAngle.id);
 
   return (
     <div
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(20, 2, 32, 0.84)',
-        backdropFilter: 'blur(8px)',
+        backgroundColor: 'rgba(13, 2, 22, 0.85)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: 'clamp(8px, 2.4vw, 24px)',
+        boxSizing: 'border-box',
       }}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(180deg, #1E0432 0%, #140220 100%)',
+          background: 'linear-gradient(165deg, #210538 0%, #160224 55%, #11021B 100%)',
           color: '#FFFFFF',
-          borderRadius: '22px',
+          borderRadius: '20px',
           width: '100%',
-          maxWidth: '1100px',
-          maxHeight: '94vh',
-          overflowY: 'auto',
-          boxShadow: '0 24px 60px rgba(18, 2, 30, 0.55)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          maxWidth: '1080px',
+          maxHeight: 'calc(100dvh - 16px)',
+          overflow: 'hidden',
+          boxShadow: '0 28px 70px rgba(8, 1, 14, 0.65), 0 0 0 1px rgba(250, 184, 38, 0.18)',
           display: 'flex',
           flexDirection: 'column',
+          boxSizing: 'border-box',
           fontFamily: "var(--font-family-sans, 'Manrope', sans-serif)",
         }}
       >
-        {/* Header */}
+        {/* Fixed Modal Header */}
         <div
           style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+            flexShrink: 0,
+            padding: 'clamp(12px, 2.2vw, 18px) clamp(14px, 3vw, 24px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'rgba(255, 255, 255, 0.02)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '12px',
+            flexWrap: 'wrap',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             <div
               style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '12px',
+                width: '40px',
+                height: '40px',
+                borderRadius: '11px',
                 background: 'linear-gradient(135deg, #FAB826 0%, #E5A417 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#1E0432',
-                boxShadow: '0 4px 14px rgba(250, 184, 38, 0.3)',
+                boxShadow: '0 6px 16px rgba(250, 184, 38, 0.3)',
                 flexShrink: 0,
               }}
             >
-              <Sparkles size={22} />
+              <ScanLine size={21} />
             </div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <h3
                   style={{
                     fontFamily: "var(--font-family-display, 'Archivo', sans-serif)",
-                    fontSize: '1.25rem',
+                    fontSize: 'clamp(1rem, 2.2vw, 1.2rem)',
                     fontWeight: 800,
                     margin: 0,
+                    lineHeight: 1.2,
                   }}
                 >
-                  Pre-Trained AI Inspection Scanner
+                  AI Computer Vision Scanner
                 </h3>
                 <span
                   style={{
                     backgroundColor:
                       inspectionType === 'PICKUP'
-                        ? 'rgba(16, 185, 129, 0.18)'
-                        : 'rgba(239, 68, 68, 0.2)',
-                    color: inspectionType === 'PICKUP' ? '#6EE7B7' : '#FCA5A5',
+                        ? 'rgba(16, 185, 129, 0.16)'
+                        : 'rgba(250, 184, 38, 0.16)',
+                    color: inspectionType === 'PICKUP' ? '#6EE7B7' : '#FDE68A',
                     border:
                       inspectionType === 'PICKUP'
-                        ? '1px solid rgba(110, 231, 183, 0.35)'
-                        : '1px solid rgba(252, 165, 165, 0.35)',
-                    fontSize: '11px',
+                        ? '1px solid rgba(110, 231, 183, 0.32)'
+                        : '1px solid rgba(250, 184, 38, 0.35)',
+                    fontSize: '10px',
                     fontWeight: 800,
-                    padding: '3px 10px',
+                    padding: '3px 9px',
                     borderRadius: '9999px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {inspectionType === 'PICKUP' ? 'Handover Baseline' : 'Return Verification'}
+                  {inspectionType === 'PICKUP' ? 'Handover Baseline' : 'Return Check-in'}
                 </span>
               </div>
-              <p style={{ margin: '3px 0 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <p
+                style={{
+                  margin: '3px 0 0',
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {vehicle.brand} {vehicle.model} ({vehicle.year}) • Plate #{vehicle.registrationNumber}
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close AI scanner"
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.14)',
-              borderRadius: '10px',
-              color: 'rgba(255, 255, 255, 0.8)',
-              cursor: 'pointer',
-              padding: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* View Angle Ribbon */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            padding: '12px 24px',
-            backgroundColor: 'rgba(255, 255, 255, 0.04)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            overflowX: 'auto',
-          }}
-        >
-          {VIEW_ANGLES.map((angle, idx) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
-              key={angle.id}
-              onClick={() => {
-                setActiveAngleIndex(idx);
-                if (isCameraActive && cameraStream) {
-                  cameraStream.getTracks().forEach((t) => t.stop());
-                  setIsCameraActive(false);
-                }
-              }}
+              onClick={() => batchInputRef.current?.click()}
               style={{
-                padding: '8px 16px',
+                background: 'rgba(250, 184, 38, 0.14)',
+                border: '1px solid rgba(250, 184, 38, 0.45)',
                 borderRadius: '10px',
-                fontSize: '13px',
-                fontWeight: 700,
+                color: '#FAB826',
                 cursor: 'pointer',
-                border:
-                  activeAngleIndex === idx
-                    ? '1px solid #FAB826'
-                    : '1px solid rgba(255, 255, 255, 0.12)',
-                backgroundColor:
-                  activeAngleIndex === idx
-                    ? 'rgba(250, 184, 38, 0.16)'
-                    : 'rgba(255, 255, 255, 0.05)',
-                color: activeAngleIndex === idx ? '#FAB826' : 'rgba(255, 255, 255, 0.76)',
-                display: 'flex',
+                padding: '8px 13px',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
                 whiteSpace: 'nowrap',
-                transition: 'all 0.18s ease',
               }}
             >
-              <span>{angle.label}</span>
-              {capturedPhotos[angle.id] && <CheckCircle2 size={14} color="#34D399" />}
+              <Images size={15} />
+              <span>Upload 4 Sides</span>
             </button>
-          ))}
-        </div>
+            <input
+              ref={batchInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleBatchUpload}
+              style={{ display: 'none' }}
+            />
 
-        {/* Main Content Area: Viewport + AI Findings */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
-            gap: '24px',
-            padding: '24px',
-          }}
-        >
-          {/* Left: Viewport (Camera / Static Image with Bounding Box overlays) */}
-          <div>
-            <div
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close AI scanner"
               style={{
-                position: 'relative',
-                width: '100%',
-                height: 'clamp(280px, 44vw, 420px)',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                backgroundColor: '#12021D',
-                border: '2px solid rgba(250, 184, 38, 0.28)',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.16)',
+                borderRadius: '10px',
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                width: '36px',
+                height: '36px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              {isCameraActive ? (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <img
-                  src={currentPhotoUrl}
-                  alt={currentAngle.label}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              )}
+              <X size={18} />
+            </button>
+          </div>
+        </div>
 
-              {/* Scanning Laser Overlay Animation */}
-              {isScanning && (
+        {/* Fixed Angle Navigation Tabs (Never squished vertically) */}
+        <div
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px clamp(14px, 3vw, 24px)',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {VIEW_ANGLES.map((angle, idx) => {
+            const isActive = activeAngleIndex === idx;
+            const hasPhoto = Boolean(capturedPhotos[angle.id]);
+            return (
+              <button
+                type="button"
+                key={angle.id}
+                onClick={() => {
+                  setActiveAngleIndex(idx);
+                  if (isCameraActive && cameraStream) {
+                    cameraStream.getTracks().forEach((t) => t.stop());
+                    setIsCameraActive(false);
+                  }
+                }}
+                style={{
+                  minHeight: '38px',
+                  padding: '7px 14px',
+                  borderRadius: '10px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: isActive
+                    ? '1.5px solid #FAB826'
+                    : hasPhoto
+                    ? '1px solid rgba(52, 211, 153, 0.35)'
+                    : '1px solid rgba(255, 255, 255, 0.12)',
+                  backgroundColor: isActive
+                    ? 'rgba(250, 184, 38, 0.16)'
+                    : hasPhoto
+                    ? 'rgba(16, 185, 129, 0.09)'
+                    : 'rgba(255, 255, 255, 0.05)',
+                  color: isActive ? '#FAB826' : hasPhoto ? '#A7F3D0' : 'rgba(255, 255, 255, 0.78)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  transition: 'all 0.18s ease',
+                }}
+              >
+                <span
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: isActive ? '#FAB826' : 'rgba(255, 255, 255, 0.12)',
+                    color: isActive ? '#1E0432' : '#FFFFFF',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {idx + 1}
+                </span>
+                <span>{angle.label}</span>
+                {hasPhoto && <CheckCircle2 size={14} color="#34D399" />}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Independently Scrollable Modal Workspace */}
+        <div
+          className="custom-scrollbar"
+          style={{
+            flex: '1 1 auto',
+            minHeight: 0,
+            overflowY: 'auto',
+            padding: 'clamp(14px, 2.5vw, 22px) clamp(14px, 3vw, 24px)',
+          }}
+        >
+          {scanError && (
+            <div
+              style={{
+                marginBottom: '16px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(239, 68, 68, 0.16)',
+                border: '1px solid rgba(248, 113, 113, 0.45)',
+                color: '#FECACA',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              {scanError}
+            </div>
+          )}
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 330px), 1fr))',
+              gap: '20px',
+              alignItems: 'start',
+            }}
+          >
+            {/* Left Studio Viewport Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: 'clamp(220px, 36vh, 350px)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  background: isDragging
+                    ? 'radial-gradient(circle at center, rgba(250, 184, 38, 0.16) 0%, #11021B 75%)'
+                    : 'radial-gradient(circle at 50% 40%, rgba(108, 30, 132, 0.24) 0%, #0F0219 75%)',
+                  border: isDragging
+                    ? '2px dashed #FAB826'
+                    : currentPhotoUrl
+                    ? '1.5px solid rgba(250, 184, 38, 0.35)'
+                    : '1.5px dashed rgba(255, 255, 255, 0.22)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'border-color 0.2s ease, background 0.2s ease',
+                }}
+              >
+                {isCameraActive ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : currentPhotoUrl ? (
+                  <img
+                    src={currentPhotoUrl}
+                    alt={currentAngle.label}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#0C0114' }}
+                  />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px', maxWidth: '340px' }}>
+                    <div
+                      style={{
+                        width: '54px',
+                        height: '54px',
+                        borderRadius: '14px',
+                        background: 'rgba(250, 184, 38, 0.14)',
+                        border: '1px solid rgba(250, 184, 38, 0.35)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 12px',
+                        color: '#FAB826',
+                      }}
+                    >
+                      <Upload size={24} />
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: '15px', color: '#FFFFFF', marginBottom: '6px' }}>
+                      Upload {currentAngle.label} Photo
+                    </div>
+                    <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255, 255, 255, 0.68)', lineHeight: 1.5 }}>
+                      Drag & drop car images here, click Upload below, or use your device camera ({exteriorUploadedCount}/4 exterior sides ready).
+                    </p>
+                    {currentAngle.id === 'FRONT' && vehicle.primaryImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCapturedPhotos((prev) => ({
+                            ...prev,
+                            FRONT: vehicle.primaryImageUrl || '',
+                          }))
+                        }
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.24)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          color: '#FFFFFF',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Load Vehicle Catalog Photo
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Laser scan animation */}
+                {isScanning && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background:
+                        'linear-gradient(180deg, transparent 0%, rgba(250, 184, 38, 0.3) 50%, transparent 100%)',
+                      animation: 'aiLaserScan 1.5s infinite ease-in-out',
+                      borderBottom: '3px solid #FAB826',
+                      boxShadow: '0 0 20px #FAB826',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+
+                {/* Real detected defect bounding boxes */}
+                {!isScanning &&
+                  currentPhotoUrl &&
+                  currentFindings.map((finding) => {
+                    const isSelected = selectedDamageItem?.id === finding.id;
+                    return (
+                      <div
+                        key={finding.id}
+                        onClick={() => setSelectedDamageItem(finding)}
+                        style={{
+                          position: 'absolute',
+                          left: `${finding.boundingBox.x * 100}%`,
+                          top: `${finding.boundingBox.y * 100}%`,
+                          width: `${finding.boundingBox.width * 100}%`,
+                          height: `${finding.boundingBox.height * 100}%`,
+                          border: finding.category === 'SCRATCH' ? '2px solid #F59E0B' : '2px solid #EF4444',
+                          backgroundColor:
+                            finding.category === 'SCRATCH'
+                              ? 'rgba(245, 158, 11, 0.24)'
+                              : 'rgba(239, 68, 68, 0.24)',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          boxShadow: isSelected
+                            ? '0 0 0 3px rgba(250, 184, 38, 0.65), 0 0 14px rgba(239, 68, 68, 0.75)'
+                            : '0 0 10px rgba(239, 68, 68, 0.5)',
+                          zIndex: 10,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '-22px',
+                            left: 0,
+                            backgroundColor: finding.category === 'SCRATCH' ? '#D97706' : '#DC2626',
+                            color: '#FFFFFF',
+                            fontSize: '10px',
+                            fontWeight: 800,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.45)',
+                          }}
+                        >
+                          {finding.category}: {finding.damageType} ({finding.confidence}%)
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                {/* Compact top telemetry chip — zero collision with bottom controls */}
                 <div
                   style={{
                     position: 'absolute',
-                    inset: 0,
-                    background:
-                      'linear-gradient(180deg, transparent 0%, rgba(250, 184, 38, 0.3) 50%, transparent 100%)',
-                    animation: 'aiLaserScan 1.6s infinite ease-in-out',
-                    borderBottom: '3px solid #FAB826',
-                    boxShadow: '0 0 20px #FAB826',
+                    top: '10px',
+                    left: '10px',
+                    backgroundColor: 'rgba(15, 2, 25, 0.84)',
+                    backdropFilter: 'blur(6px)',
+                    padding: '5px 10px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
                     pointerEvents: 'none',
                   }}
-                />
-              )}
+                >
+                  {currentAngle.label} ({activeAngleIndex + 1}/{VIEW_ANGLES.length})
+                  {currentAnalyzedMeta?.qualityScore ? ` • Q: ${currentAnalyzedMeta.qualityScore}%` : ''}
+                  {typeof currentAnalyzedMeta?.baselineSimilarity === 'number'
+                    ? ` • Match: ${currentAnalyzedMeta.baselineSimilarity}%`
+                    : ''}
+                </div>
+              </div>
 
-              {/* HUD Target Framing */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: '20px',
-                  border: '1px dashed rgba(250, 184, 38, 0.4)',
-                  borderRadius: '12px',
-                  pointerEvents: 'none',
-                }}
-              />
-
-              {/* Bounding Box Overlays for detected Scratches & Dents */}
-              {!isScanning &&
-                currentFindings.map((finding) => (
-                  <div
-                    key={finding.id}
-                    onClick={() => setSelectedDamageItem(finding)}
+              {/* Clean Non-Overlapping Controls Bar directly below Viewport */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flex: '1 1 auto' }}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
                     style={{
-                      position: 'absolute',
-                      left: `${finding.boundingBox.x * 100}%`,
-                      top: `${finding.boundingBox.y * 100}%`,
-                      width: `${finding.boundingBox.width * 100}%`,
-                      height: `${finding.boundingBox.height * 100}%`,
-                      border: finding.category === 'SCRATCH' ? '2px solid #F59E0B' : '2px solid #EF4444',
-                      backgroundColor:
-                        finding.category === 'SCRATCH' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                      borderRadius: '6px',
+                      padding: '9px 15px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#1E0432',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '12.5px',
                       cursor: 'pointer',
-                      boxShadow: '0 0 12px rgba(239, 68, 68, 0.6)',
-                      transition: 'all 0.2s ease',
-                      zIndex: 10,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                     }}
                   >
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: '-24px',
-                        left: 0,
-                        backgroundColor: finding.category === 'SCRATCH' ? '#D97706' : '#DC2626',
-                        color: '#FFFFFF',
-                        fontSize: '10px',
-                        fontWeight: 800,
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
-                      }}
-                    >
-                      {finding.category}: {finding.damageType} ({finding.confidence}%)
-                    </span>
-                  </div>
-                ))}
+                    <Upload size={15} />
+                    <span>{currentPhotoUrl ? 'Replace Photo' : 'Upload Photo'}</span>
+                  </button>
 
-              {/* Viewport Floating Controls */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '16px',
-                  left: '16px',
-                  right: '16px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div style={{ display: 'flex', gap: '8px' }}>
                   {isCameraActive ? (
                     <button
+                      type="button"
                       onClick={captureFrame}
                       style={{
-                        padding: '10px 18px',
+                        padding: '9px 15px',
                         backgroundColor: '#10B981',
                         color: '#FFFFFF',
                         border: 'none',
                         borderRadius: '10px',
                         fontWeight: 700,
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         cursor: 'pointer',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
                       }}
                     >
-                      <Camera size={16} /> Capture Frame
+                      <Camera size={15} /> Capture Frame
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={startCamera}
                       style={{
-                        padding: '10px 16px',
-                        backgroundColor: 'rgba(30, 4, 50, 0.88)',
+                        padding: '9px 15px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
                         color: '#FFFFFF',
-                        border: '1px solid rgba(255, 255, 255, 0.22)',
+                        border: '1px solid rgba(255, 255, 255, 0.18)',
                         borderRadius: '10px',
                         fontWeight: 700,
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         cursor: 'pointer',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        backdropFilter: 'blur(6px)',
                       }}
                     >
-                      <Camera size={16} /> Open Live Camera
+                      <Camera size={15} /> Live Camera
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{
-                      padding: '10px 16px',
-                      backgroundColor: 'rgba(30, 4, 50, 0.88)',
-                      color: '#FFFFFF',
-                      border: '1px solid rgba(255, 255, 255, 0.22)',
-                      borderRadius: '10px',
-                      fontWeight: 700,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      backdropFilter: 'blur(6px)',
-                    }}
-                  >
-                    <Upload size={16} /> Upload Photo
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                  />
-                </div>
-
-                <span
-                  style={{
-                    backgroundColor: 'rgba(20, 2, 32, 0.88)',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    color: 'rgba(255, 255, 255, 0.85)',
-                    border: '1px solid rgba(250, 184, 38, 0.3)',
-                  }}
-                >
-                  {currentAngle.label} (Angle {activeAngleIndex + 1}/{VIEW_ANGLES.length})
-                </span>
-              </div>
-            </div>
-
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-          </div>
-
-          {/* Right: AI Neural Diagnostics & Damage Breakdown */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Action Bar */}
-            <button
-              type="button"
-              onClick={handleRunAiInspection}
-              disabled={isScanning}
-              className="cp-btn-primary"
-              style={{
-                width: '100%',
-                padding: '14px',
-                fontSize: '15px',
-                cursor: isScanning ? 'wait' : 'pointer',
-              }}
-            >
-              {isScanning ? (
-                <>
-                  <RefreshCw size={18} className="animate-spin" />
-                  Running Pre-Trained AI Inspection...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  Run Pre-Trained AI Neural Scan
-                </>
-              )}
-            </button>
-
-            {/* AI Diagnostics Card */}
-            {inspectionResult ? (
-              <div
-                style={{
-                  backgroundColor: '#2B0744',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#FFFFFF' }}>
-                    Neural Diagnostics Result
-                  </h4>
-                  <span
-                    style={{
-                      backgroundColor: 'rgba(16, 185, 129, 0.16)',
-                      color: '#6EE7B7',
-                      border: '1px solid rgba(110, 231, 183, 0.3)',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      padding: '3px 10px',
-                      borderRadius: '9999px',
-                    }}
-                  >
-                    99.4% Accuracy Calibrated
-                  </span>
-                </div>
-
-                {/* Detected Car Color Pill */}
-                <div
-                  style={{
-                    backgroundColor: '#1E0432',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '10px',
-                  }}
-                >
-                  <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.72)' }}>AI Detected Vehicle Color:</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div
+                  {currentPhotoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAnglePhoto}
+                      title="Remove current angle photo"
                       style={{
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        backgroundColor: inspectionResult.detectedColor.hexCode,
-                        border: '2px solid #FFFFFF',
-                      }}
-                    />
-                    <strong style={{ fontSize: '13px', color: '#FFFFFF' }}>
-                      {inspectionResult.detectedColor.colorName}
-                    </strong>
-                    <span style={{ fontSize: '11px', color: '#FAB826', fontWeight: 700 }}>
-                      ({inspectionResult.detectedColor.confidence}%)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Score & Counters Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                  <div
-                    style={{
-                      backgroundColor: '#1E0432',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34D399' }}>
-                      {inspectionResult.overallScore}%
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Body Integrity</div>
-                  </div>
-
-                  <div
-                    style={{
-                      backgroundColor: '#1E0432',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FAB826' }}>
-                      {inspectionResult.scratchesCount}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Scratches</div>
-                  </div>
-
-                  <div
-                    style={{
-                      backgroundColor: '#1E0432',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#F87171' }}>
-                      {inspectionResult.dentsCount}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Dents</div>
-                  </div>
-                </div>
-
-                {/* Detected Damage Schedule */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: 'rgba(255, 255, 255, 0.7)',
-                      textTransform: 'uppercase',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    Surface Anomaly Schedule
-                  </div>
-                  {inspectionResult.findings.length === 0 ? (
-                    <div
-                      style={{
-                        padding: '14px',
-                        backgroundColor: 'rgba(16, 185, 129, 0.16)',
-                        border: '1px solid rgba(110, 231, 183, 0.25)',
-                        color: '#A7F3D0',
+                        padding: '9px 12px',
+                        backgroundColor: 'rgba(239, 68, 68, 0.16)',
+                        color: '#FCA5A5',
+                        border: '1px solid rgba(248, 113, 113, 0.3)',
                         borderRadius: '10px',
-                        fontSize: '13px',
-                        textAlign: 'center',
-                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
                       }}
                     >
-                      Pristine condition: 0 exterior scratches or dents detected.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {inspectionResult.findings.map((f) => (
-                        <div
-                          key={f.id}
-                          style={{
-                            padding: '10px 12px',
-                            backgroundColor: '#1E0432',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '10px',
-                            borderLeft: f.category === 'SCRATCH' ? '3px solid #FAB826' : '3px solid #EF4444',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            fontSize: '12px',
-                          }}
-                        >
-                          <div>
-                            <strong style={{ color: '#FFFFFF' }}>{f.damageType}</strong>
-                            <div style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '11px' }}>
-                              {f.location} • Conf: {f.confidence}%
-                            </div>
-                          </div>
-                          <span style={{ fontWeight: 700, color: '#FAB826' }}>PKR {f.estimatedRepairCost}</span>
-                        </div>
-                      ))}
-                    </div>
+                      <Trash2 size={14} />
+                      <span>Remove</span>
+                    </button>
                   )}
                 </div>
 
-                {/* Generate / Open PDF Report Button */}
-                <button
-                  type="button"
-                  onClick={() => onOpenPdfReport(inspectionResult)}
-                  style={{
-                    padding: '12px',
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    border: '1px solid rgba(250, 184, 38, 0.5)',
-                    color: '#FAB826',
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    marginTop: '4px',
-                  }}
-                >
-                  <FileText size={18} />
-                  View & Download Official PDF Report
-                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
               </div>
-            ) : (
-              <div
+
+              {/* 5-Angle Compact Status Thumbnail Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '8px' }}>
+                {VIEW_ANGLES.map((angle, idx) => {
+                  const thumb = capturedPhotos[angle.id];
+                  const active = activeAngleIndex === idx;
+                  return (
+                    <button
+                      key={angle.id}
+                      type="button"
+                      onClick={() => setActiveAngleIndex(idx)}
+                      style={{
+                        padding: '4px',
+                        borderRadius: '10px',
+                        border: active
+                          ? '1.5px solid #FAB826'
+                          : thumb
+                          ? '1px solid rgba(52, 211, 153, 0.4)'
+                          : '1px solid rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        alignItems: 'center',
+                        minWidth: 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '42px',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          backgroundColor: '#0E0218',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'rgba(255, 255, 255, 0.45)',
+                        }}
+                      >
+                        {thumb ? (
+                          <img src={thumb} alt={angle.short} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <Upload size={13} />
+                        )}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          color: active ? '#FAB826' : thumb ? '#A7F3D0' : 'rgba(255, 255, 255, 0.65)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '100%',
+                        }}
+                      >
+                        {angle.short}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <canvas ref={canvasRef} style={{ display: 'none' }} />
+            </div>
+
+            {/* Right Analysis & Control Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minWidth: 0 }}>
+              <button
+                type="button"
+                onClick={handleRunAiInspection}
+                disabled={isScanning || uploadedAnglesCount === 0}
                 style={{
-                  backgroundColor: '#2B0744',
-                  borderRadius: '16px',
-                  padding: '32px 20px',
-                  textAlign: 'center',
-                  border: '1px dashed rgba(250, 184, 38, 0.35)',
-                  color: 'rgba(255, 255, 255, 0.72)',
+                  width: '100%',
+                  padding: '13px 18px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease',
+                  background:
+                    uploadedAnglesCount === 0
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'linear-gradient(135deg, #FAB826 0%, #E5A417 100%)',
+                  color: uploadedAnglesCount === 0 ? 'rgba(255, 255, 255, 0.65)' : '#1E0432',
+                  border:
+                    uploadedAnglesCount === 0
+                      ? '1px dashed rgba(250, 184, 38, 0.4)'
+                      : 'none',
+                  boxShadow:
+                    uploadedAnglesCount > 0 ? '0 8px 24px rgba(250, 184, 38, 0.28)' : 'none',
+                  cursor: isScanning || uploadedAnglesCount === 0 ? 'not-allowed' : 'pointer',
                 }}
               >
-                <ShieldCheck size={40} color="#FAB826" style={{ margin: '0 auto 12px' }} />
-                <h5 style={{ color: '#FFFFFF', margin: '0 0 6px', fontSize: '15px', fontWeight: 700 }}>
-                  Pre-Trained AI Inspection Ready
-                </h5>
-                <p style={{ fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
-                  Capture or select inspection photos across all 5 key angles, then click "Run Pre-Trained AI Neural
-                  Scan" to evaluate color, scratches, and dents.
-                </p>
-              </div>
-            )}
+                {isScanning ? (
+                  <>
+                    <RefreshCw size={17} className="animate-spin" />
+                    <span>Analyzing {uploadedAnglesCount} Real Photo(s)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={17} />
+                    <span>
+                      {uploadedAnglesCount === 0
+                        ? 'Upload Vehicle Photos to Enable Scan'
+                        : `Run AI Vision Inspection (${uploadedAnglesCount}/5 Angles)`}
+                    </span>
+                  </>
+                )}
+              </button>
+
+              {inspectionResult ? (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                    borderRadius: '16px',
+                    padding: '18px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '14px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#FFFFFF' }}>
+                      Vision Diagnostics Report
+                    </h4>
+                    <span
+                      style={{
+                        backgroundColor: 'rgba(16, 185, 129, 0.16)',
+                        color: '#6EE7B7',
+                        border: '1px solid rgba(110, 231, 183, 0.3)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '3px 10px',
+                        borderRadius: '9999px',
+                      }}
+                    >
+                      {inspectionResult.engineMode === 'BASELINE_DELTA_CV'
+                        ? `Baseline Delta • ${inspectionResult.parityScore ?? 100}% Match`
+                        : `Pixel CV • ${inspectionResult.coverageScore}% Coverage`}
+                    </span>
+                  </div>
+
+                  {/* Paint Swatch Card */}
+                  <div
+                    style={{
+                      backgroundColor: 'rgba(15, 2, 25, 0.6)',
+                      border: '1px solid rgba(255, 255, 255, 0.09)',
+                      padding: '11px 14px',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                    }}
+                  >
+                    <span style={{ fontSize: '12.5px', color: 'rgba(255, 255, 255, 0.72)' }}>
+                      Detected Exterior Color:
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          backgroundColor: inspectionResult.detectedColor.hexCode,
+                          border: '2px solid #FFFFFF',
+                        }}
+                      />
+                      <strong style={{ fontSize: '13px', color: '#FFFFFF' }}>
+                        {inspectionResult.detectedColor.colorName}
+                      </strong>
+                      <span style={{ fontSize: '11px', color: '#FAB826', fontWeight: 700 }}>
+                        ({Math.round(
+                          inspectionResult.detectedColor.confidence <= 1
+                            ? inspectionResult.detectedColor.confidence * 100
+                            : inspectionResult.detectedColor.confidence
+                        )}%)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Responsive Score & Anomaly Metrics */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 95px), 1fr))', gap: '10px' }}>
+                    <div
+                      style={{
+                        backgroundColor: 'rgba(15, 2, 25, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.09)',
+                        padding: '10px',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: inspectionResult.overallScore >= 90 ? '#34D399' : '#FAB826' }}>
+                        {inspectionResult.overallScore}%
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Body Integrity</div>
+                    </div>
+
+                    <div
+                      style={{
+                        backgroundColor: 'rgba(15, 2, 25, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.09)',
+                        padding: '10px',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FAB826' }}>
+                        {inspectionResult.scratchesCount}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Scratches</div>
+                    </div>
+
+                    <div
+                      style={{
+                        backgroundColor: 'rgba(15, 2, 25, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.09)',
+                        padding: '10px',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F87171' }}>
+                        {inspectionResult.dentsCount}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Dents</div>
+                    </div>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255, 255, 255, 0.78)', lineHeight: 1.5 }}>
+                    {inspectionResult.summary}
+                  </p>
+
+                  <div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: 'rgba(255, 255, 255, 0.68)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      Detected Anomalies ({inspectionResult.findings.length})
+                    </div>
+                    {inspectionResult.findings.length === 0 ? (
+                      <div
+                        style={{
+                          padding: '12px',
+                          backgroundColor: 'rgba(16, 185, 129, 0.14)',
+                          border: '1px solid rgba(110, 231, 183, 0.28)',
+                          color: '#A7F3D0',
+                          borderRadius: '10px',
+                          fontSize: '12.5px',
+                          textAlign: 'center',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Clean exterior verified: 0 scratches, dents, or new surface defects detected.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '190px', overflowY: 'auto' }}>
+                        {inspectionResult.findings.map((f) => (
+                          <div
+                            key={f.id}
+                            onClick={() => {
+                              const idx = VIEW_ANGLES.findIndex((v) => v.id === f.view);
+                              if (idx >= 0) setActiveAngleIndex(idx);
+                              setSelectedDamageItem(f);
+                            }}
+                            style={{
+                              padding: '10px 12px',
+                              backgroundColor: 'rgba(15, 2, 25, 0.72)',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              borderRadius: '10px',
+                              borderLeft: f.category === 'SCRATCH' ? '3px solid #FAB826' : '3px solid #EF4444',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <strong style={{ color: '#FFFFFF', display: 'block' }}>{f.damageType}</strong>
+                              <div style={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '11px' }}>
+                                {f.location} ({f.view}) • Conf: {f.confidence}%
+                              </div>
+                            </div>
+                            <span style={{ fontWeight: 700, color: '#FAB826', whiteSpace: 'nowrap' }}>
+                              PKR {f.estimatedRepairCost}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenPdfReport(inspectionResult)}
+                    style={{
+                      padding: '11px 16px',
+                      borderRadius: '11px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.07)',
+                      border: '1px solid rgba(250, 184, 38, 0.45)',
+                      color: '#FAB826',
+                      fontWeight: 700,
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <FileText size={17} />
+                    <span>View & Download Official PDF Report</span>
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '14px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '11px',
+                        backgroundColor: 'rgba(250, 184, 38, 0.14)',
+                        border: '1px solid rgba(250, 184, 38, 0.35)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#FAB826',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <h5 style={{ color: '#FFFFFF', margin: 0, fontSize: '14.5px', fontWeight: 800 }}>
+                        Real-Image Inspection Ready
+                      </h5>
+                      <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.68)', marginTop: '2px' }}>
+                        {exteriorUploadedCount} of 4 exterior viewpoints uploaded
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Coverage Progress Bar */}
+                  <div style={{ width: '100%', height: '6px', borderRadius: '999px', backgroundColor: 'rgba(255, 255, 255, 0.1)', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${Math.round((exteriorUploadedCount / 4) * 100)}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #FAB826 0%, #34D399 100%)',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12.5px', color: 'rgba(255, 255, 255, 0.78)' }}>
+                    <div style={{ padding: '10px 12px', borderRadius: '10px', backgroundColor: 'rgba(15, 2, 25, 0.5)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                      <strong style={{ color: '#FAB826' }}>1. Upload 4 Exterior Sides:</strong> Front, Driver Side, Passenger Side, and Rear photos for any car make or model.
+                    </div>
+                    <div style={{ padding: '10px 12px', borderRadius: '10px', backgroundColor: 'rgba(15, 2, 25, 0.5)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                      <strong style={{ color: '#FAB826' }}>2. Pixel Anomaly Scan:</strong> Detects paint color, surface scratches, panel dents, and paint chips directly from uploaded pixels.
+                    </div>
+                    <div style={{ padding: '10px 12px', borderRadius: '10px', backgroundColor: 'rgba(15, 2, 25, 0.5)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                      <strong style={{ color: '#FAB826' }}>3. Dispute-Free Comparison:</strong>{' '}
+                      {inspectionType === 'RETURN' && baselineReport
+                        ? 'Automatically compares return angles against your saved pickup baseline.'
+                        : 'Generates a verifiable digital baseline certificate before key release.'}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Modal Footer */}
+        {/* Fixed Non-Clipping Footer */}
         <div
           style={{
-            padding: '16px 24px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+            flexShrink: 0,
+            padding: '12px clamp(14px, 3vw, 24px)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'rgba(15, 2, 25, 0.75)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '12px',
+            gap: '10px',
           }}
         >
-          <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.56)' }}>
-            Finovo Pre-Trained Neural Computer Vision v3.8 • Calibrated for Zero False Claims
+          <span style={{ fontSize: '11.5px', color: 'rgba(255, 255, 255, 0.6)' }}>
+            Finovo Dynamic Computer Vision Engine v4.0 • Pixel-Level & Baseline-Delta Verified
           </span>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginInlineStart: 'auto' }}>
             <button
               type="button"
               onClick={onClose}
               style={{
-                padding: '10px 18px',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                color: 'rgba(255, 255, 255, 0.82)',
+                padding: '9px 18px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                backgroundColor: 'rgba(255, 255, 255, 0.07)',
+                color: '#FFFFFF',
                 fontSize: '13px',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -845,9 +1283,10 @@ export function AiCameraScannerModal({
             </button>
             {inspectionResult && (
               <button
+                type="button"
                 onClick={onClose}
                 style={{
-                  padding: '10px 20px',
+                  padding: '9px 20px',
                   borderRadius: '10px',
                   border: 'none',
                   backgroundColor: '#10B981',
@@ -855,12 +1294,12 @@ export function AiCameraScannerModal({
                   fontSize: '13px',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
                 }}
               >
-                <CheckCircle2 size={16} /> Confirm Certified Inspection
+                <CheckCircle2 size={16} /> Confirm Certified Scan
               </button>
             )}
           </div>

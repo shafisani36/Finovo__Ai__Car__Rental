@@ -186,7 +186,8 @@ export function RentalsListPage() {
             borderRadius: '10px',
             padding: '8px 14px',
             border: '1px solid #ECEAEF',
-            width: '320px',
+            width: 'min(100%, 320px)',
+            flex: '1 1 220px',
           }}
         >
           <Search size={16} color="#685D73" />
@@ -385,7 +386,7 @@ export function RentalsListPage() {
           subtitle={`Status: ${selectedRental.status} • Rental ID: ${selectedRental.id}`}
           maxWidth="640px"
         >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '16px', marginBottom: '20px' }}>
             <div style={{ padding: '14px', backgroundColor: '#FAF9FB', borderRadius: '10px' }}>
               <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>CUSTOMER</div>
               <div style={{ fontWeight: 700, color: '#1E0426', marginTop: '4px' }}>
@@ -410,7 +411,7 @@ export function RentalsListPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '12px', marginBottom: '20px' }}>
             <div style={{ padding: '12px', border: '1px solid #ECEAEF', borderRadius: '8px' }}>
               <div style={{ fontSize: '0.75rem', color: '#685D73' }}>Start Mileage</div>
               <div style={{ fontWeight: 700, fontSize: '1rem', color: '#1E0426', marginTop: '2px' }}>

@@ -89,7 +89,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Electro-Hydraulic Soft-Top Roof (17s Deployment)',
       'Telemetry & On-Board Performance Recorder',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/orange-car.jpg',
   },
   {
     brand: 'BMW',
@@ -137,7 +137,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Active M Differential & Adaptive M Suspension',
       'Wireless Apple CarPlay & Android Auto',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/studio-bmw-m4.jpg',
   },
   {
     brand: 'BMW',
@@ -184,7 +184,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Ambient Interior Lighting (64 Colors)',
       'Wireless Phone Charging',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/bmw.png',
   },
   {
     brand: 'Mercedes-Benz',
@@ -231,7 +231,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'MBUX Hyperscreen with Rear Dual Tablets',
       'Soft-Close Doors & Electric Rear Sunshades',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/studio-bmw-740i.jpg',
   },
   {
     brand: 'Mercedes-Benz',
@@ -278,7 +278,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Multibeam LED Headlamps',
       'AMG Track Pace Telemetry',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/studio-bmw-x5.jpg',
   },
   {
     brand: 'Porsche',
@@ -325,7 +325,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Bose High-Fidelity Audio System',
       'Porsche Dynamic Light System Plus (PDLS+)',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/thumb-20.jpg',
   },
   {
     brand: 'Tesla',
@@ -373,7 +373,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Tri-Zone Climate Control with HEPA Filtration',
       'Supercharger Network Access Enabled',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/finovo-gray-car.png',
   },
   {
     brand: 'Toyota',
@@ -420,7 +420,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Toyota Safety Sense 2.0 (Pre-Collision, Radar Cruise)',
       'Ventilated First & Second Row Leather Seats',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1594502184342-2e12f877aa73?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/finovo-blue-car.png',
   },
   {
     brand: 'Range Rover',
@@ -467,7 +467,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Cabin Air Purification Pro with PM2.5 Filtration',
       'Deployable Side Steps & Soft-Close Doors',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/studio-lambo-urus.jpg',
   },
   {
     brand: 'Audi',
@@ -514,7 +514,7 @@ export const PRETRAINED_VEHICLE_DATABASE: PretrainedVehicleSpec[] = [
       'Audi Virtual Cockpit Plus with RS Displays',
       'Valcona Leather Sport Seats with Honeycomb Stitching',
     ],
-    imageUrl: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '/cars/finovo-red-car.png',
   },
 ];
 

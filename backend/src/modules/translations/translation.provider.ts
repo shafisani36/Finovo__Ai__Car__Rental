@@ -15,65 +15,94 @@ export interface ITranslationProvider {
   ): Promise<TranslationResult>;
 }
 
-// Built-in high-accuracy linguistic dictionary for automotive & car rental terminology
-const LEXICON: Record<string, { ur: string; ar: string }> = {
-  // Common terms
-  'luxury car rental': { ur: 'لگژری کار رینٹل', ar: 'تأجير السيارات الفاخرة' },
-  'car rental': { ur: 'گاڑیوں کا کرایہ', ar: 'تأجير السيارات' },
-  'car': { ur: 'گاڑی', ar: 'سيارة' },
-  'vehicle': { ur: 'گاڑی / گاڑیوں', ar: 'مركبة' },
-  'fleet': { ur: 'گاڑیوں کا بیڑا', ar: 'الأسطول' },
-  'booking': { ur: 'بکنگ', ar: 'حجز' },
-  'reservation': { ur: 'ریزرویشن', ar: 'حجز' },
-  'inspection': { ur: 'معائنہ', ar: 'فحص' },
-  'ai inspection': { ur: 'اے آئی معائنہ', ar: 'فحص بالذكاء الاصطناعي' },
-  'pickup': { ur: 'پک اپ', ar: 'استلام' },
-  'return': { ur: 'واپسی', ar: 'إرجاع' },
-  'dropoff': { ur: 'واپسی کا مقام', ar: 'موقع التسليم' },
-  'price': { ur: 'قیمت', ar: 'السعر' },
-  'daily rate': { ur: 'یومیہ کرایہ', ar: 'السعر اليومي' },
-  'security deposit': { ur: 'سیکیورٹی ڈپازٹ', ar: 'الوديعة التأمينية' },
-  'insurance': { ur: 'انشورنس', ar: 'تأمين' },
-  'driver': { ur: 'ڈرائیور', ar: 'سائق' },
-  'customer': { ur: 'گاہک / صارف', ar: 'عميل' },
-  'branch': { ur: 'شاخ', ar: 'فرع' },
-  'status': { ur: 'حیثیت', ar: 'الحالة' },
-  'active': { ur: 'فعال', ar: 'نشط' },
-  'pending': { ur: 'زیر التواء', ar: 'قيد الانتظار' },
-  'completed': { ur: 'مکمل', ar: 'مكتمل' },
-  'cancelled': { ur: 'منسوخ', ar: 'ملغى' },
-  'available': { ur: 'دستیاب', ar: 'متاح' },
-  'rented': { ur: 'کرائے پر', ar: 'مؤجر' },
-  'maintenance': { ur: 'مرمت', ar: 'صيانة' },
-  'hello': { ur: 'ہیلو / السلام علیکم', ar: 'مرحباً / أهلاً وسهلاً' },
-  'welcome': { ur: 'خوش آمدید', ar: 'أهلاً بك' },
-  'thank you': { ur: 'شکریہ', ar: 'شكراً جزيلاً' },
+// Built-in high-accuracy linguistic dictionary for automotive & car rental terminology across 6 languages
+type LexiconEntry = { ur: string; ar: string; fr: string; es: string; de: string };
+
+const LEXICON: Record<string, LexiconEntry> = {
+  'luxury car rental': {
+    ur: 'لگژری کار رینٹل',
+    ar: 'تأجير السيارات الفاخرة',
+    fr: 'Location de voitures de luxe',
+    es: 'Alquiler de coches de lujo',
+    de: 'Luxusautovermietung',
+  },
+  'car rental': {
+    ur: 'گاڑیوں کا کرایہ',
+    ar: 'تأجير السيارات',
+    fr: 'Location de voiture',
+    es: 'Alquiler de coches',
+    de: 'Autovermietung',
+  },
+  car: { ur: 'گاڑی', ar: 'سيارة', fr: 'voiture', es: 'coche', de: 'Auto' },
+  vehicle: { ur: 'گاڑی / گاڑیوں', ar: 'مركبة', fr: 'véhicule', es: 'vehículo', de: 'Fahrzeug' },
+  fleet: { ur: 'گاڑیوں کا بیڑا', ar: 'الأسطول', fr: 'flotte', es: 'flota', de: 'Flotte' },
+  booking: { ur: 'بکنگ', ar: 'حجز', fr: 'réservation', es: 'reserva', de: 'Buchung' },
+  reservation: { ur: 'ریزرویشن', ar: 'حجز', fr: 'réservation', es: 'reservación', de: 'Reservierung' },
+  inspection: { ur: 'معائنہ', ar: 'فحص', fr: 'inspection', es: 'inspección', de: 'Inspektion' },
+  'ai inspection': {
+    ur: 'اے آئی معائنہ',
+    ar: 'فحص بالذكاء الاصطناعي',
+    fr: 'Inspection par IA',
+    es: 'Inspección por IA',
+    de: 'KI-Inspektion',
+  },
+  pickup: { ur: 'پک اپ', ar: 'استلام', fr: 'prise en charge', es: 'recogida', de: 'Abholung' },
+  return: { ur: 'واپسی', ar: 'إرجاع', fr: 'retour', es: 'devolución', de: 'Rückgabe' },
+  dropoff: { ur: 'واپسی کا مقام', ar: 'موقع التسليم', fr: 'lieu de restitution', es: 'punto de entrega', de: 'Rückgabeort' },
+  price: { ur: 'قیمت', ar: 'السعر', fr: 'prix', es: 'precio', de: 'Preis' },
+  'daily rate': { ur: 'یومیہ کرایہ', ar: 'السعر اليومي', fr: 'tarif journalier', es: 'tarifa diaria', de: 'Tagespreis' },
+  'security deposit': { ur: 'سیکیورٹی ڈپازٹ', ar: 'الوديعة التأمينية', fr: 'dépôt de garantie', es: 'depósito de seguridad', de: 'Kaution' },
+  insurance: { ur: 'انشورنس', ar: 'تأمين', fr: 'assurance', es: 'seguro', de: 'Versicherung' },
+  driver: { ur: 'ڈرائیور', ar: 'سائق', fr: 'conducteur', es: 'conductor', de: 'Fahrer' },
+  customer: { ur: 'گاہک / صارف', ar: 'عميل', fr: 'client', es: 'cliente', de: 'Kunde' },
+  branch: { ur: 'شاخ', ar: 'فرع', fr: 'agence', es: 'sucursal', de: 'Filiale' },
+  status: { ur: 'حیثیت', ar: 'الحالة', fr: 'statut', es: 'estado', de: 'Status' },
+  active: { ur: 'فعال', ar: 'نشط', fr: 'actif', es: 'activo', de: 'aktiv' },
+  pending: { ur: 'زیر التواء', ar: 'قيد الانتظار', fr: 'en attente', es: 'pendiente', de: 'ausstehend' },
+  completed: { ur: 'مکمل', ar: 'مكتمل', fr: 'terminé', es: 'completado', de: 'abgeschlossen' },
+  cancelled: { ur: 'منسوخ', ar: 'ملغى', fr: 'annulé', es: 'cancelado', de: 'storniert' },
+  available: { ur: 'دستیاب', ar: 'متاح', fr: 'disponible', es: 'disponible', de: 'verfügbar' },
+  rented: { ur: 'کرائے پر', ar: 'مؤجر', fr: 'loué', es: 'alquilado', de: 'vermietet' },
+  maintenance: { ur: 'مرمت', ar: 'صيانة', fr: 'maintenance', es: 'mantenimiento', de: 'Wartung' },
+  hello: { ur: 'ہیلو / السلام علیکم', ar: 'مرحباً / أهلاً وسهلاً', fr: 'bonjour', es: 'hola', de: 'hallo' },
+  welcome: { ur: 'خوش آمدید', ar: 'أهلاً بك', fr: 'bienvenue', es: 'bienvenido', de: 'willkommen' },
+  'thank you': { ur: 'شکریہ', ar: 'شكراً جزيلاً', fr: 'merci', es: 'gracias', de: 'danke' },
 };
 
 /**
- * Detects whether text is predominantly Arabic, Urdu, or Latin (English).
+ * Detects whether text is predominantly Arabic, Urdu, French, Spanish, German, or English.
  */
 export function detectLanguage(text: string): SupportedLanguage {
   // Check for Arabic/Urdu unicode range (\u0600-\u06FF)
   const arabicUrduMatch = text.match(/[\u0600-\u06FF]/g);
-  if (!arabicUrduMatch || arabicUrduMatch.length === 0) {
-    return 'en';
-  }
-
-  // Urdu-specific characters (\u0679 = ٹ, \u0688 = ڈ, \u0691 = ڑ, \u06BA = ں, \u06D2 = ے)
-  const urduSpecificMatch = text.match(/[\u0679\u0688\u0691\u06BA\u06D2\u06C1\u06AF]/g);
-  if (urduSpecificMatch && urduSpecificMatch.length > 0) {
-    return 'ur';
-  }
-
-  // Arabic-specific characters (\u0629 = ة, \u0649 = ى, \u0626 = ئ, \u0624 = ؤ)
-  const arabicSpecificMatch = text.match(/[\u0629\u0649\u0626\u0624\u0630\u0636\u0638]/g);
-  if (arabicSpecificMatch && arabicSpecificMatch.length > 0) {
+  if (arabicUrduMatch && arabicUrduMatch.length > 0) {
+    // Urdu-specific characters (\u0679 = ٹ, \u0688 = ڈ, \u0691 = ڑ, \u06BA = ں, \u06D2 = ے)
+    const urduSpecificMatch = text.match(/[\u0679\u0688\u0691\u06BA\u06D2\u06C1\u06AF]/g);
+    if (urduSpecificMatch && urduSpecificMatch.length > 0) {
+      return 'ur';
+    }
     return 'ar';
   }
 
-  // Ratio comparison or fallback to ar
-  return 'ar';
+  // German specific characters / common keywords
+  if (/[äöüßÄÖÜ]/.test(text) || /\b(und|der|die|das|für|fahrzeug|mietwagen|danke)\b/i.test(text)) {
+    return 'de';
+  }
+
+  // Spanish specific characters / common keywords
+  if (/[ñ¿¡áíóúü]/i.test(text) && /\b(el|la|los|las|de|alquiler|coche|gracias|hola)\b/i.test(text)) {
+    return 'es';
+  }
+  if (/\b(alquiler|coche|vehículo|hola|gracias|reserva)\b/i.test(text)) {
+    return 'es';
+  }
+
+  // French specific characters / common keywords
+  if (/[àâçéèêëîïôùûüÿœæ]/i.test(text) || /\b(bonjour|merci|voiture|location|réservation|véhicule)\b/i.test(text)) {
+    return 'fr';
+  }
+
+  return 'en';
 }
 
 /**
@@ -167,36 +196,52 @@ export class EnterpriseLinguisticProvider implements ITranslationProvider {
     const lower = text.trim().toLowerCase();
     if (LEXICON[lower]) {
       const entry = LEXICON[lower];
-      if (targetLang === 'ur') {
-        return { translatedText: entry.ur, detectedSourceLanguage: resolvedSource, provider: this.name };
-      }
-      if (targetLang === 'ar') {
-        return { translatedText: entry.ar, detectedSourceLanguage: resolvedSource, provider: this.name };
+      if (targetLang !== 'en') {
+        return {
+          translatedText: entry[targetLang],
+          detectedSourceLanguage: resolvedSource,
+          provider: this.name,
+        };
       }
     }
 
-    // Word/phrase mapping
-    let translated = text;
-    for (const [enWord, translations] of Object.entries(LEXICON)) {
-      const regex = new RegExp(`\\b${enWord}\\b`, 'gi');
-      if (resolvedSource === 'en') {
-        if (targetLang === 'ur' && regex.test(translated)) {
-          translated = translated.replace(regex, translations.ur);
-        } else if (targetLang === 'ar' && regex.test(translated)) {
-          translated = translated.replace(regex, translations.ar);
+    // Reverse dictionary lookup when translating from another supported language to English or another language
+    if (resolvedSource !== 'en') {
+      for (const [enPhrase, entry] of Object.entries(LEXICON)) {
+        const sourceVal = entry[resolvedSource]?.toLowerCase();
+        if (sourceVal && sourceVal === lower) {
+          return {
+            translatedText: targetLang === 'en' ? enPhrase : entry[targetLang],
+            detectedSourceLanguage: resolvedSource,
+            provider: this.name,
+          };
         }
       }
     }
 
-    // Suffix tag indicating enterprise translated output if phrase remained unchanged
-    if (translated === text) {
-      if (targetLang === 'ur') {
-        translated = `[ترجمہ: ${text}]`;
-      } else if (targetLang === 'ar') {
-        translated = `[ترجمة: ${text}]`;
-      } else {
-        translated = `[Translated: ${text}]`;
+    // Word/phrase mapping (longest phrases first to avoid partial match collisions)
+    let translated = text;
+    if (resolvedSource === 'en' && targetLang !== 'en') {
+      const sortedEntries = Object.entries(LEXICON).sort((a, b) => b[0].length - a[0].length);
+      for (const [enWord, translations] of sortedEntries) {
+        const regex = new RegExp(`\\b${enWord}\\b`, 'gi');
+        if (regex.test(translated)) {
+          translated = translated.replace(regex, translations[targetLang]);
+        }
       }
+    }
+
+    // Fallback prefix tag if phrase remained unchanged
+    if (translated === text) {
+      const prefixMap: Record<SupportedLanguage, string> = {
+        en: 'Translated',
+        ur: 'ترجمہ',
+        ar: 'ترجمة',
+        fr: 'Traduction',
+        es: 'Traducción',
+        de: 'Übersetzung',
+      };
+      translated = `[${prefixMap[targetLang]}: ${text}]`;
     }
 
     return {

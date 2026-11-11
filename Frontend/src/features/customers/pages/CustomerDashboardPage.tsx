@@ -498,7 +498,7 @@ export function CustomerDashboardPage() {
             <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1E0528', margin: '0 0 16px 0' }}>
               Driver License & Identity Verification
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
               <div style={{ padding: '16px', backgroundColor: '#FAF9FB', borderRadius: '12px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 700 }}>DRIVER LICENSE NUMBER</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E0528', marginTop: '4px' }}>

@@ -862,7 +862,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
       </div>
 
       {/* Fleet Status & Catalog Visibility */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px', paddingTop: '16px', borderTop: '1px solid #ECE7ED' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '18px', paddingTop: '16px', borderTop: '1px solid #ECE7ED' }}>
         <div>
           <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
             Fleet Operational Status

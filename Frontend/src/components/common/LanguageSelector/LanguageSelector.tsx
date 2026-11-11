@@ -1,9 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe, ChevronDown, Check } from 'lucide-react';
-import { SUPPORTED_LANGUAGES, type LanguageCode } from '../../../i18n/config';
+import {
+  SUPPORTED_LANGUAGES,
+  STORAGE_KEY_LANGUAGE,
+  applyDocumentLanguage,
+  normalizeLanguageCode,
+  type LanguageCode,
+} from '../../../i18n/config';
 import { useAuth } from '../../../features/auth/context';
 import { apiClient } from '../../../api/client';
+import { API_ENDPOINTS } from '../../../api/endpoints';
 
 export interface LanguageSelectorProps {
   variant?: 'customer' | 'admin';
@@ -12,22 +19,12 @@ export interface LanguageSelectorProps {
 
 export function LanguageSelector({ variant = 'customer', className = '' }: LanguageSelectorProps) {
   const { i18n } = useTranslation();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, updatePreferredLanguage } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const currentLang = (i18n.language?.slice(0, 2) as LanguageCode) || 'en';
+  const currentLang: LanguageCode = normalizeLanguageCode(i18n.language) || 'en';
   const currentConfig = SUPPORTED_LANGUAGES[currentLang] || SUPPORTED_LANGUAGES.en;
-
-  // Sync authenticated user preference on initial load or user change
-  useEffect(() => {
-    const userPref = (user as unknown as { preferredLanguage?: string })?.preferredLanguage;
-    if (userPref && (userPref === 'en' || userPref === 'ur' || userPref === 'ar')) {
-      if (userPref !== currentLang) {
-        i18n.changeLanguage(userPref);
-      }
-    }
-  }, [user, currentLang, i18n]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -46,20 +43,44 @@ export function LanguageSelector({ variant = 'customer', className = '' }: Langu
   }, [isOpen]);
 
   const handleSelectLanguage = async (code: LanguageCode) => {
+    setIsOpen(false);
     if (code === currentLang) {
-      setIsOpen(false);
       return;
     }
 
+    // Update local persistence, DOM direction/attributes, and in-memory AuthContext immediately
+    // so the UI switches live without reverting or requiring a manual browser refresh.
+    try {
+      localStorage.setItem(STORAGE_KEY_LANGUAGE, code);
+    } catch {
+      // Ignore storage access restrictions
+    }
+    applyDocumentLanguage(code);
     await i18n.changeLanguage(code);
-    setIsOpen(false);
 
-    // If authenticated, persist preference to MySQL backend
+    if (isAuthenticated) {
+      updatePreferredLanguage(code);
+    }
+
+    // Recalculate layout measurements (responsive headers, scroll triggers, RTL shifts)
+    if (typeof window !== 'undefined') {
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+    }
+
+    // Persist preference to MySQL backend when authenticated
     if (isAuthenticated) {
       try {
-        await apiClient.put('/auth/profile/language', { preferredLanguage: code });
+        const res = await apiClient.put<{ success?: boolean; user?: { preferredLanguage?: string | null } }>(
+          API_ENDPOINTS.TRANSLATIONS.PREFERENCE,
+          { preferredLanguage: code }
+        );
+        if (res?.user?.preferredLanguage && normalizeLanguageCode(i18n.language) === code) {
+          updatePreferredLanguage(res.user.preferredLanguage);
+        }
       } catch {
-        // Silently preserve client state if network fails
+        // Silently preserve selected client language if network fails
       }
     }
   };
@@ -87,7 +108,8 @@ export function LanguageSelector({ variant = 'customer', className = '' }: Langu
         aria-label="Select display language"
       >
         <Globe size={14} style={{ flexShrink: 0 }} />
-        <span>{currentConfig.nativeName}</span>
+        <span className="finovo-lang-native">{currentConfig.nativeName}</span>
+        <span className="finovo-lang-short">{currentConfig.shortCode}</span>
         <ChevronDown
           size={13}
           style={{

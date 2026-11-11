@@ -1,4 +1,5 @@
 import { authClient } from '../../auth/api/authClient';
+import type { ViewPixelTelemetry } from '../services/pixelVisionAnalyzer';
 
 export interface DamageFinding {
   id: string;
@@ -25,6 +26,8 @@ export interface InspectionPhoto {
   inspectionId: string;
   view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR';
   imageUrl: string;
+  qualityScore?: number | null;
+  qualityDetails?: string | null;
   createdAt: string;
 }
 
@@ -88,12 +91,14 @@ export interface AnalyzePayload {
   vehicleId: string;
   rentalId?: string;
   bookingId?: string;
+  pickupInspectionId?: string;
   type: 'PICKUP' | 'RETURN' | 'ROUTINE';
   summary?: string;
   simulatedDamage?: boolean;
   photos: Array<{
     view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR';
     imageUrl: string;
+    pixelTelemetry?: Partial<ViewPixelTelemetry>;
   }>;
 }
 

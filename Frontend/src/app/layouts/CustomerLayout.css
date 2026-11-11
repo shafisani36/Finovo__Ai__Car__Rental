@@ -21,39 +21,41 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 20px 16px;
+  padding: 16px 14px;
   box-sizing: border-box;
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
-  height: 100vh;
+  height: 100dvh;
   z-index: 60;
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sidebar-top-section {
   display: flex;
   flex-direction: column;
   flex: 1;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.sidebar-top-section::-webkit-scrollbar {
-  display: none;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebar-logo-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 8px 16px 8px;
+  padding: 0 8px 12px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-portal-badge-row {
+  padding: 0 8px 10px 8px;
+  flex-shrink: 0;
 }
 
 .sidebar-close-btn {
@@ -88,20 +90,42 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-inline-end: 4px;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
+  gap: 11px;
+  padding: 7.5px 12px;
   color: rgba(255, 255, 255, 0.72);
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   border-radius: 10px;
   transition: all 0.18s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .sidebar-link:hover {
@@ -155,33 +179,58 @@
 .sidebar-bottom-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-top: 14px;
+  gap: 8px;
+  padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 .concierge-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 8px 11px;
 }
 
 .concierge-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 800;
   color: #FAB826;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .concierge-text {
-  font-size: 0.725rem;
+  font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.65);
-  margin: 0 0 5px 0;
-  line-height: 1.35;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+@media (max-height: 760px) {
+  .customer-sidebar {
+    padding: 12px 14px;
+  }
+
+  .sidebar-logo-container {
+    padding: 0 6px 10px 6px;
+    margin-bottom: 6px;
+  }
+
+  .sidebar-portal-badge-row {
+    padding: 0 6px 8px 6px;
+  }
+
+  .sidebar-link {
+    padding: 6.5px 12px;
+    font-size: 0.82rem;
+  }
+
+  .concierge-text {
+    display: none;
+  }
 }
 
 .concierge-tel {
@@ -314,7 +363,7 @@
 .notif-badge {
   position: absolute;
   top: -4px;
-  right: -4px;
+  inset-inline-end: -4px;
   background-color: #EF4444;
   color: #FFFFFF;
   font-size: 0.65rem;
@@ -361,7 +410,7 @@
 .user-text-info {
   display: flex;
   flex-direction: column;
-  text-align: left;
+  text-align: start;
 }
 
 .user-name {
@@ -384,7 +433,7 @@
 .profile-dropdown-card {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  inset-inline-end: 0;
   width: 220px;
   background: #FFFFFF;
   border-radius: 16px;
@@ -451,7 +500,7 @@
   font-weight: 700;
   border-radius: 8px;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
 }
 
 .dropdown-logout-btn:hover {
@@ -471,7 +520,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
+    height: 100dvh;
     transform: translateX(-100%);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
     z-index: 100;

@@ -306,7 +306,7 @@ export function CustomerDocumentsPage() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div className="cp-form-group">
                   <label className="cp-label">Document / License #</label>
                   <input

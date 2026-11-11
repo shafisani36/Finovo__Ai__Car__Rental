@@ -141,7 +141,7 @@ export function CategoryCard({ category, onSelect }: CategoryCardProps) {
         style={{
           position: 'absolute',
           top: '22px',
-          left: '22px',
+          insetInlineStart: '22px',
           zIndex: 3,
           pointerEvents: 'none',
         }}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Check,
   ArrowRight,
@@ -30,16 +31,16 @@ import {
 import { lookupPretrainedVehicle } from '../../features/fleet/data/pretrainedVehicles';
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import { useAuth } from '../../features/auth/context';
-import { getCarImage } from '../../utils/carImageHelper';
+import {
+  getCarGalleryEntries,
+  isFullBleedCarPhoto,
+  resolveVehiclePricing,
+} from '../../utils/carImageHelper';
 import { parseVehicleNotes } from '../../utils/vehicleNotesHelper';
 import { CustomSelect } from '../../components/common/CustomSelect';
 
 // Assets
 import carMain from '../../assets/car-detail/car-main.jpg';
-import thumb18 from '../../assets/car-detail/thumb-18.jpg';
-import thumb20 from '../../assets/car-detail/thumb-20.jpg';
-import thumb21 from '../../assets/car-detail/thumb-21.jpg';
-import interiorImg from '../../assets/car-detail/interior.jpg';
 import lamboLogo from '../../assets/car-detail/lambo-logo.jpg';
 import orangeCar from '../../assets/car-detail/orange-car.jpg';
 import bmwImg from '../../assets/car-detail/bmw.png';
@@ -65,6 +66,7 @@ const CITY_OPTIONS = [
 ];
 
 export function CarDetailsPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -171,20 +173,21 @@ export function CarDetailsPage() {
     };
   }, [id]);
 
-  // Dynamic gallery items
-  const vehicleMainImg = getCarImage(vehicle) || carMain;
-  const gallery = [
-    { label: 'Exterior Front', src: vehicleMainImg },
-    { label: 'Rear Angle', src: thumb18 },
-    { label: 'Cabin Interior', src: interiorImg },
-    { label: 'Side Profile', src: thumb20 },
-    { label: 'Cockpit Controls', src: thumb21 },
-  ];
+  // Dynamic gallery items strictly matching the active vehicle/model
+  const gallery = getCarGalleryEntries(vehicle).map((entry) => ({
+    label: entry.caption,
+    src: entry.url,
+  }));
+  const safeActiveThumb = activeThumb < gallery.length ? activeThumb : 0;
+  const activePhoto = gallery[safeActiveThumb] || {
+    label: `${vehicle.brand} ${vehicle.model}`,
+    src: carMain,
+  };
 
   const brandName = vehicle?.brand?.name || vehicle?.brand || 'Luxury';
   const modelName = vehicle?.model?.name || vehicle?.model || 'Performance';
   const carName = vehicle ? `${brandName} ${modelName}` : 'Luxury Vehicle';
-  const baseRate = vehicle?.dailyRate ? Number(vehicle.dailyRate) : 500;
+  const baseRate = vehicle ? resolveVehiclePricing(vehicle).dailyRate : 210;
   const days = Math.max(1, Math.ceil((new Date(dropoffDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)) || 2);
   const totalRental = (baseRate + selectedPlan.pricePerDay) * days;
 
@@ -264,21 +267,21 @@ export function CarDetailsPage() {
           padding: '40px 6% 60px',
         }}
       >
-        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '40px' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '40px' }}>
           {/* Left Column: Photos, Badges, Name */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', opacity: 0.8, marginBottom: '12px' }}>
-              <Link to="/" style={{ color: '#FAB826', textDecoration: 'none' }}>Home</Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', opacity: 0.8, marginBottom: '12px', flexWrap: 'wrap' }}>
+              <Link to="/" style={{ color: '#FAB826', textDecoration: 'none' }}>{t('nav.home')}</Link>
               <span>/</span>
-              <Link to="/cars" style={{ color: '#FAB826', textDecoration: 'none' }}>Cars</Link>
+              <Link to="/cars" style={{ color: '#FAB826', textDecoration: 'none' }}>{t('nav.cars')}</Link>
               <span>/</span>
               <span>{carName}</span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
               <div>
-                <h1 style={{ fontSize: '38px', fontWeight: 800, margin: '0 0 6px' }}>{carName}</h1>
-                <p style={{ fontSize: '15px', opacity: 0.85, margin: 0 }}>Unleash extraordinary performance and sheer road dominance.</p>
+                <h1 style={{ fontSize: 'clamp(1.65rem, 4vw, 2.375rem)', fontWeight: 800, margin: '0 0 6px' }}>{carName}</h1>
+                <p style={{ fontSize: '15px', opacity: 0.85, margin: 0 }}>{t('cars.details.tagline')}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
                   <div style={{ display: 'flex', color: '#FAB826' }}>
                     {[...Array(5)].map((_, i) => (
@@ -286,7 +289,7 @@ export function CarDetailsPage() {
                     ))}
                   </div>
                   <strong style={{ fontSize: '14px' }}>4.8</strong>
-                  <span style={{ fontSize: '12px', opacity: 0.75 }}>(120+ verified bookings)</span>
+                  <span style={{ fontSize: '12px', opacity: 0.75 }}>{t('cars.details.verifiedBookings')}</span>
                 </div>
               </div>
 
@@ -300,24 +303,39 @@ export function CarDetailsPage() {
             </div>
 
             <div style={{ marginTop: '20px', marginBottom: '24px' }}>
-              <span style={{ fontSize: '36px', fontWeight: 800, color: '#FAB826' }}>
+              <span style={{ fontSize: 'clamp(1.75rem, 4vw, 2.25rem)', fontWeight: 800, color: '#FAB826' }}>
                 SAR {baseRate.toLocaleString()}
               </span>
-              <span style={{ fontSize: '15px', opacity: 0.8, marginLeft: '8px' }}>/ day</span>
+              <span style={{ fontSize: '15px', opacity: 0.8, marginInlineStart: '8px' }}>{t('common.perDay')}</span>
             </div>
 
             {/* Main Active Image with 360 viewer */}
-            <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', height: '380px', backgroundColor: '#000000' }}>
+            <div
+              style={{
+                position: 'relative',
+                borderRadius: '20px',
+                overflow: 'hidden',
+                height: 'clamp(220px, 42vw, 380px)',
+                background: 'linear-gradient(135deg, #24052E 0%, #3B094E 55%, #551270 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <img
-                src={gallery[activeThumb].src}
-                alt={gallery[activeThumb].label}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                src={activePhoto.src}
+                alt={activePhoto.label}
+                style={
+                  isFullBleedCarPhoto(activePhoto.src)
+                    ? { width: '100%', height: '100%', objectFit: 'cover' }
+                    : { width: '90%', height: '85%', objectFit: 'contain' }
+                }
               />
               <div
                 style={{
                   position: 'absolute',
                   top: '16px',
-                  right: '16px',
+                  insetInlineEnd: '16px',
                   backgroundColor: 'rgba(30, 4, 38, 0.8)',
                   backdropFilter: 'blur(8px)',
                   padding: '8px 14px',
@@ -332,31 +350,51 @@ export function CarDetailsPage() {
                 }}
               >
                 <Rotate3d size={16} />
-                <span>360° Inspection Verified</span>
+                <span>{t('cars.details.inspectionVerified')}</span>
               </div>
             </div>
 
-            {/* Thumbnails row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginTop: '14px' }}>
-              {gallery.map((t, idx) => (
-                <button
-                  key={t.label}
-                  type="button"
-                  onClick={() => setActiveThumb(idx)}
-                  style={{
-                    borderRadius: '10px',
-                    overflow: 'hidden',
-                    border: activeThumb === idx ? '2px solid #FAB826' : '2px solid transparent',
-                    padding: 0,
-                    background: 'none',
-                    cursor: 'pointer',
-                    height: '64px',
-                  }}
-                >
-                  <img src={t.src} alt={t.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </button>
-              ))}
-            </div>
+            {/* Authentic Per-Model Thumbnails row */}
+            {gallery.length > 1 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '14px' }}>
+                {gallery.map((gItem, idx) => {
+                  const isActive = safeActiveThumb === idx;
+                  return (
+                    <button
+                      key={`${gItem.src}-${idx}`}
+                      type="button"
+                      title={gItem.label}
+                      aria-label={gItem.label}
+                      onClick={() => setActiveThumb(idx)}
+                      style={{
+                        width: '96px',
+                        height: '64px',
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        border: isActive ? '2px solid #FAB826' : '2px solid rgba(30, 5, 40, 0.14)',
+                        boxShadow: isActive ? '0 4px 12px rgba(250, 184, 38, 0.25)' : 'none',
+                        padding: 0,
+                        background: 'linear-gradient(135deg, #24052E 0%, #3B094E 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <img
+                        src={gItem.src}
+                        alt={gItem.label}
+                        style={
+                          isFullBleedCarPhoto(gItem.src)
+                            ? { width: '100%', height: '100%', objectFit: 'cover' }
+                            : { width: '90%', height: '90%', objectFit: 'contain' }
+                        }
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Interactive Booking Card */}
@@ -364,7 +402,7 @@ export function CarDetailsPage() {
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               borderRadius: '24px',
-              padding: '30px',
+              padding: 'clamp(18px, 4vw, 30px)',
               border: '1px solid rgba(255, 255, 255, 0.15)',
               backdropFilter: 'blur(16px)',
               display: 'flex',
@@ -374,19 +412,25 @@ export function CarDetailsPage() {
           >
             <div>
               <h2 style={{ fontSize: '22px', fontWeight: 800, margin: '0 0 4px', color: '#FFFFFF' }}>
-                Instant Reservation
+                {t('cars.details.instantReservation')}
               </h2>
               <p style={{ fontSize: '13px', opacity: 0.8, margin: '0 0 20px' }}>
-                Select your schedule and preferred insurance tier.
+                {t('cars.details.selectSchedule')}
               </p>
 
               {/* Insurance Plans Pill Selection */}
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#FAB826', marginBottom: '8px' }}>
-                CHOOSE INSURANCE COVERAGE
+                {t('cars.details.chooseInsurance')}
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 100px), 1fr))', gap: '8px', marginBottom: '20px' }}>
                 {INSURANCE_PLANS.map((plan) => {
                   const isSelected = selectedPlan.id === plan.id;
+                  const localizedPlanName =
+                    plan.id === 'basic'
+                      ? t('cars.details.planBasicName')
+                      : plan.id === 'standard'
+                      ? t('cars.details.planStandardName')
+                      : t('cars.details.planPremiumName');
                   return (
                     <button
                       key={plan.id}
@@ -398,17 +442,17 @@ export function CarDetailsPage() {
                         border: isSelected ? '2px solid #FAB826' : '1px solid rgba(255, 255, 255, 0.2)',
                         backgroundColor: isSelected ? 'rgba(250, 184, 38, 0.15)' : 'rgba(255, 255, 255, 0.04)',
                         color: '#FFFFFF',
-                        textAlign: 'left',
+                        textAlign: 'start',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <strong style={{ fontSize: '13px', color: isSelected ? '#FAB826' : '#FFFFFF' }}>{plan.name}</strong>
+                        <strong style={{ fontSize: '13px', color: isSelected ? '#FAB826' : '#FFFFFF' }}>{localizedPlanName}</strong>
                         {isSelected && <Check size={14} color="#FAB826" />}
                       </div>
                       <span style={{ fontSize: '11px', display: 'block', marginTop: '2px', opacity: 0.85 }}>
-                        +{plan.pricePerDay === 0 ? 'SAR 0' : `SAR ${plan.pricePerDay}`}/day
+                        +{plan.pricePerDay === 0 ? 'SAR 0' : `SAR ${plan.pricePerDay}`}/{t('cars.pricePerDay')}
                       </span>
                     </button>
                   );
@@ -416,10 +460,10 @@ export function CarDetailsPage() {
               </div>
 
               {/* Locations & Dates Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '14px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '6px' }}>
-                    PICK-UP LOCATION
+                    {t('cars.details.pickupBranch')}
                   </label>
                   <CustomSelect
                     value={pickupCity}
@@ -432,7 +476,7 @@ export function CarDetailsPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '6px' }}>
-                    DROP-OFF LOCATION
+                    {t('cars.details.dropoffBranch')}
                   </label>
                   <CustomSelect
                     value={dropoffCity}
@@ -445,7 +489,7 @@ export function CarDetailsPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '4px' }}>
-                    PICK-UP DATE
+                    {t('cars.details.pickupDate')}
                   </label>
                   <input
                     type="date"
@@ -467,7 +511,7 @@ export function CarDetailsPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, opacity: 0.8, marginBottom: '4px' }}>
-                    DROP-OFF DATE
+                    {t('cars.details.dropoffDate')}
                   </label>
                   <input
                     type="date"
@@ -503,12 +547,12 @@ export function CarDetailsPage() {
                 }}
               >
                 <div>
-                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>Estimated Duration</p>
-                  <strong style={{ fontSize: '16px', color: '#FAB826' }}>{days} Days</strong>
+                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>{t('cars.details.estimatedDuration')}</p>
+                  <strong style={{ fontSize: '16px', color: '#FAB826' }}>{days} {t('common.days')}</strong>
                 </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>Total (inc. tax & insurance)</p>
+                <div style={{ textAlign: 'end' }}>
+                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>{t('cars.details.totalWithTax')}</p>
                   <strong style={{ fontSize: '20px', color: '#FAB826', fontWeight: 800 }}>
                     SAR {totalRental.toLocaleString()}
                   </strong>
@@ -537,8 +581,8 @@ export function CarDetailsPage() {
                   boxShadow: '0 4px 15px rgba(250, 184, 38, 0.4)',
                 }}
               >
-                <span>Book This Car</span>
-                <ArrowRight size={16} />
+                <span>{t('cars.details.bookThisCar')}</span>
+                <ArrowRight size={16} className="rtl-mirror-arrow" />
               </button>
 
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -562,7 +606,7 @@ export function CarDetailsPage() {
                   }}
                 >
                   <ShoppingCart size={16} />
-                  <span>{cartAdded ? 'Added to Cart' : 'Add to Cart'}</span>
+                  <span>{cartAdded ? t('cars.details.addedToCart') : t('cars.details.addToCart')}</span>
                 </button>
 
                 <button
@@ -589,31 +633,31 @@ export function CarDetailsPage() {
       </section>
 
       {/* Technical Specifications Grid */}
-      <section style={{ maxWidth: '1240px', margin: '60px auto', padding: '0 24px' }}>
+      <section style={{ maxWidth: '1240px', margin: '60px auto', padding: '0 clamp(16px, 4vw, 24px)' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', color: '#FAB826', textTransform: 'uppercase' }}>
-            PRECISION IN EVERY DETAIL
+            {t('cars.details.specsEyebrow')}
           </p>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#1E0426', margin: '4px 0 0' }}>
-            Car Specifications
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3.4vw, 2rem)', fontWeight: 800, color: '#1E0426', margin: '4px 0 0' }}>
+            {t('cars.details.specsTitle')}
           </h2>
           <p style={{ fontSize: '14px', color: '#6B7280', margin: '6px 0 0' }}>
-            Technical highlights and engineering capabilities
+            {t('cars.details.specsSubtitle')}
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 135px), 1fr))', gap: '16px' }}>
           {[
-            { icon: Cog, label: 'Powertrain', val: engineVal },
-            { icon: Gauge, label: 'Horsepower', val: powerVal },
-            { icon: Zap, label: '0-100 km/h', val: accelVal },
-            { icon: Gauge, label: 'Top Speed', val: speedVal },
-            { icon: Activity, label: 'Torque', val: torqueVal },
-            { icon: Fuel, label: 'Fuel & Economy', val: `${fuelVal} (${fuelEconomyVal})` },
-            { icon: Briefcase, label: 'Luggage Bags', val: luggageVal },
-            { icon: Network, label: 'Drivetrain', val: drivetrainVal },
-            { icon: DoorOpen, label: 'Doors & Seats', val: doorsVal },
-            { icon: Fuel, label: 'Transmission', val: transVal },
+            { icon: Cog, label: t('cars.details.specPowertrain'), val: engineVal },
+            { icon: Gauge, label: t('cars.details.specHorsepower'), val: powerVal },
+            { icon: Zap, label: t('cars.details.specAccel'), val: accelVal },
+            { icon: Gauge, label: t('cars.details.specTopSpeed'), val: speedVal },
+            { icon: Activity, label: t('cars.details.specTorque'), val: torqueVal },
+            { icon: Fuel, label: t('cars.details.specFuelEconomy'), val: `${fuelVal} (${fuelEconomyVal})` },
+            { icon: Briefcase, label: t('cars.details.specLuggage'), val: luggageVal },
+            { icon: Network, label: t('cars.details.specDrivetrain'), val: drivetrainVal },
+            { icon: DoorOpen, label: t('cars.details.specDoorsSeats'), val: doorsVal },
+            { icon: Fuel, label: t('cars.details.specTransmission'), val: transVal },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -653,17 +697,17 @@ export function CarDetailsPage() {
       </section>
 
       {/* Finovo AI Pre-Inspection Guarantee Banner */}
-      <section style={{ maxWidth: '1240px', margin: '0 auto 50px', padding: '0 24px' }}>
+      <section style={{ maxWidth: '1240px', margin: '0 auto 50px', padding: '0 clamp(16px, 4vw, 24px)' }}>
         <div
           style={{
             background: 'linear-gradient(135deg, #1E0426 0%, #3B1149 100%)',
             borderRadius: '24px',
-            padding: '36px',
+            padding: 'clamp(22px, 4vw, 36px)',
             color: '#FFFFFF',
             boxShadow: '0 12px 36px rgba(30, 4, 38, 0.25)',
             border: '1px solid rgba(250, 184, 38, 0.3)',
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
             gap: '30px',
             alignItems: 'center',
           }}
@@ -671,34 +715,34 @@ export function CarDetailsPage() {
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(250, 184, 38, 0.15)', border: '1px solid #FAB826', color: '#FAB826', fontSize: '12px', fontWeight: 800, marginBottom: '16px' }}>
               <ShieldCheck size={16} />
-              <span>CERTIFIED AI VEHICLE INSPECTION GUARANTEE</span>
+              <span>{t('cars.details.aiGuaranteeBadge')}</span>
             </div>
-            <h3 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 12px', lineHeight: 1.3 }}>
-              Zero-Dispute Handover with Computer Vision Verification
+            <h3 style={{ fontSize: 'clamp(1.35rem, 3vw, 1.625rem)', fontWeight: 800, margin: '0 0 12px', lineHeight: 1.3 }}>
+              {t('cars.details.aiGuaranteeTitle')}
             </h3>
             <p style={{ fontSize: '14px', opacity: 0.88, lineHeight: 1.6, margin: 0 }}>
-              Never worry about false damage claims. At pickup confirmation, our pre-trained AI vision model scans the vehicle across 5 angles, auto-detects scratches, dents, and paint color, and generates a digitally stamped <strong>Pickup Inspection Certificate (PDF)</strong>.
+              {t('cars.details.aiGuaranteeDesc')}
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px' }}>
             <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#FAB826', marginBottom: '8px' }}>
                 <Camera size={20} />
-                <strong style={{ fontSize: '14px', color: '#FFFFFF' }}>AI Pickup Scan</strong>
+                <strong style={{ fontSize: '14px', color: '#FFFFFF' }}>{t('cars.details.aiPickupScan')}</strong>
               </div>
               <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>
-                Baseline photo capture maps any pre-existing blemishes before handover.
+                {t('cars.details.aiPickupScanDesc')}
               </p>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#FAB826', marginBottom: '8px' }}>
                 <FileCheck size={20} />
-                <strong style={{ fontSize: '14px', color: '#FFFFFF' }}>Settlement PDF</strong>
+                <strong style={{ fontSize: '14px', color: '#FFFFFF' }}>{t('cars.details.aiSettlementPdf')}</strong>
               </div>
               <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>
-                At return, AI automates comparison. 100% deposit released if identical.
+                {t('cars.details.aiSettlementPdfDesc')}
               </p>
             </div>
           </div>
@@ -706,25 +750,25 @@ export function CarDetailsPage() {
       </section>
 
       {/* Features & Amenities */}
-      <section style={{ maxWidth: '1240px', margin: '0 auto 70px', padding: '0 24px' }}>
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '40px', border: '1px solid #ECEAEF', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)' }}>
+      <section style={{ maxWidth: '1240px', margin: '0 auto 70px', padding: '0 clamp(16px, 4vw, 24px)' }}>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: 'clamp(22px, 4vw, 40px)', border: '1px solid #ECEAEF', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)' }}>
           <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#1E0426', marginBottom: '8px' }}>
-            Features & Amenities
+            {t('cars.details.features')}
           </h3>
           <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '28px' }}>
-            Equipped with modern luxuries, advanced safety suites, and entertainment connectivity.
+            {t('cars.details.featuresDesc')}
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
             {[
-              { icon: Bluetooth, label: 'Bluetooth Audio Streaming', desc: 'Crisp wireless audio for calls & playlists' },
-              { icon: Navigation, label: 'GPS Satellite Navigation', desc: 'Real-time navigation with traffic assistance' },
-              { icon: Video, label: '360° Surround Camera', desc: 'Active parking guide and blind spot monitor' },
-              { icon: Sun, label: 'Panoramic Glass Sunroof', desc: 'Enjoy sunlight and ambient starry night drives' },
-              { icon: Armchair, label: 'Heated Leather Seats', desc: 'Electric 14-way adjustable ergonomic seating' },
-              { icon: CirclePlay, label: 'Apple CarPlay & Android Auto', desc: 'Instant smartphone screen replication' },
-              { icon: Wrench, label: '24/7 Roadside Assistance', desc: 'Dedicated mechanical dispatch across cities' },
-              { icon: CalendarX, label: 'Free Cancellation Guarantee', desc: 'Cancel with full refund up to 24hr prior' },
+              { icon: Bluetooth, label: t('cars.details.feat1Title'), desc: t('cars.details.feat1Desc') },
+              { icon: Navigation, label: t('cars.details.feat2Title'), desc: t('cars.details.feat2Desc') },
+              { icon: Video, label: t('cars.details.feat3Title'), desc: t('cars.details.feat3Desc') },
+              { icon: Sun, label: t('cars.details.feat4Title'), desc: t('cars.details.feat4Desc') },
+              { icon: Armchair, label: t('cars.details.feat5Title'), desc: t('cars.details.feat5Desc') },
+              { icon: CirclePlay, label: t('cars.details.feat6Title'), desc: t('cars.details.feat6Desc') },
+              { icon: Wrench, label: t('cars.details.feat7Title'), desc: t('cars.details.feat7Desc') },
+              { icon: CalendarX, label: t('cars.details.feat8Title'), desc: t('cars.details.feat8Desc') },
             ].map((f) => {
               const Icon = f.icon;
               return (
@@ -755,20 +799,20 @@ export function CarDetailsPage() {
       </section>
 
       {/* Similar Cars Section */}
-      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 24px' }}>
+      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 clamp(16px, 4vw, 24px)' }}>
         <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#1E0426', marginBottom: '24px' }}>
-          Similar Vehicles You Might Like
+          {t('cars.details.similarCars')}
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
           {/* Card 1 */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
             <img src={orangeCar} alt="McLaren 720S" style={{ width: '100%', height: '160px', objectFit: 'contain' }} />
             <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '14px 0 4px' }}>McLaren 720S Spider</h4>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Sports · 2026 · Automatic</p>
+            <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Sports · 2026 · {t('cars.specs.automatic')}</p>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
-              <strong style={{ fontSize: '16px', color: '#1E0426' }}>SAR 1,150 / day</strong>
+              <strong style={{ fontSize: '16px', color: '#1E0426' }}>SAR 1,150 {t('common.perDay')}</strong>
               <Link to="/cars" style={{ color: '#1E0426', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
-                View Car →
+                {t('cars.details.viewCar')}
               </Link>
             </div>
           </div>
@@ -777,11 +821,11 @@ export function CarDetailsPage() {
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
             <img src={bmwImg} alt="BMW M8 Competition" style={{ width: '100%', height: '160px', objectFit: 'contain' }} />
             <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '14px 0 4px' }}>BMW M8 Competition</h4>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Coupe · 2026 · Automatic</p>
+            <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Coupe · 2026 · {t('cars.specs.automatic')}</p>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
-              <strong style={{ fontSize: '16px', color: '#1E0426' }}>SAR 850 / day</strong>
+              <strong style={{ fontSize: '16px', color: '#1E0426' }}>SAR 850 {t('common.perDay')}</strong>
               <Link to="/cars" style={{ color: '#1E0426', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
-                View Car →
+                {t('cars.details.viewCar')}
               </Link>
             </div>
           </div>

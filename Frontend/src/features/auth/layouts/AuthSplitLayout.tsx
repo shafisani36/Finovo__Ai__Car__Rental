@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BrandLogo } from '../../../components/common/BrandLogo';
 import { LanguageSelector } from '../../../components/common/LanguageSelector';
 import { Car, Zap, Headphones } from 'lucide-react';
@@ -19,13 +20,13 @@ export function AuthSplitLayout({
   variant = 'login',
   topRightPrompt,
 }: AuthSplitLayoutProps) {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === 'rtl';
   const isRegister = variant === 'register';
 
-  // Using the clean, high-resolution, text-free stock background photo
-  // so text is rendered cleanly once by React without double-vision/baked-in ghost text!
   const bgImage = '/auth/auth-porsche-sunset.png';
 
-  const scriptText = isRegister ? 'Drive More Possibilities' : 'Good Rides Brighter Days';
+  const scriptText = isRegister ? t('auth.split.registerScript') : t('auth.split.loginScript');
 
   return (
     <div
@@ -45,10 +46,13 @@ export function AuthSplitLayout({
           <clipPath id="finovoAuthCurveClip" clipPathUnits="objectBoundingBox">
             <path d="M 0 0 L 0.943 0 C 0.925 0.08, 1.000 0.22, 1.000 0.42 C 1.000 0.52, 0.880 0.76, 0.825 1.0 L 0 1 Z" />
           </clipPath>
+          <clipPath id="finovoAuthCurveClipRtl" clipPathUnits="objectBoundingBox">
+            <path d="M 1 0 L 0.057 0 C 0.075 0.08, 0.000 0.22, 0.000 0.42 C 0.000 0.52, 0.120 0.76, 0.175 1.0 L 1 1 Z" />
+          </clipPath>
         </defs>
       </svg>
 
-      {/* ================= LEFT BRANDING HERO PANEL (DESKTOP) ================= */}
+      {/* ================= START BRANDING HERO PANEL (DESKTOP) ================= */}
       <div
         className="auth-hero-panel"
         style={{
@@ -59,8 +63,8 @@ export function AuthSplitLayout({
           top: 0,
           flexShrink: 0,
           zIndex: 10,
-          clipPath: 'url(#finovoAuthCurveClip)',
-          WebkitClipPath: 'url(#finovoAuthCurveClip)',
+          clipPath: isRtl ? 'url(#finovoAuthCurveClipRtl)' : 'url(#finovoAuthCurveClip)',
+          WebkitClipPath: isRtl ? 'url(#finovoAuthCurveClipRtl)' : 'url(#finovoAuthCurveClip)',
           backgroundImage: `url(${bgImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
@@ -68,10 +72,13 @@ export function AuthSplitLayout({
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: 'clamp(28px, 3.5vw, 56px) clamp(40px, 4.8vw, 76px) clamp(28px, 3.5vw, 56px) clamp(32px, 4vw, 64px)',
+          paddingBlock: 'clamp(28px, 3.5vw, 56px)',
+          paddingInlineStart: 'clamp(32px, 4vw, 64px)',
+          paddingInlineEnd: 'clamp(40px, 4.8vw, 76px)',
           color: '#FFFFFF',
           boxSizing: 'border-box',
           overflow: 'hidden',
+          textAlign: 'start',
         }}
       >
         {/* Scenic Twilight Purple Gradient Overlay */}
@@ -92,7 +99,7 @@ export function AuthSplitLayout({
           style={{
             position: 'absolute',
             top: '25%',
-            left: '12%',
+            insetInlineStart: '12%',
             width: '320px',
             height: '320px',
             borderRadius: '50%',
@@ -117,7 +124,7 @@ export function AuthSplitLayout({
               marginTop: '8px',
             }}
           >
-            CARS &nbsp;•&nbsp; TRIPS &nbsp;•&nbsp; EXPERIENCES
+            {t('auth.split.tagline')}
           </div>
         </div>
 
@@ -137,17 +144,17 @@ export function AuthSplitLayout({
           >
             {isRegister ? (
               <>
-                Every ride you need,
+                {t('auth.split.registerHeadlineTop')}
                 <br />
-                <span style={{ color: '#D5A7E6' }}>ready to go.</span>
+                <span style={{ color: '#D5A7E6' }}>{t('auth.split.registerHeadlineHighlight')}</span>
               </>
             ) : (
               <>
-                Travel
+                {t('auth.split.loginHeadlineLine1')}
                 <br />
-                <span style={{ color: '#D5A7E6' }}>beyond the</span>
+                <span style={{ color: '#D5A7E6' }}>{t('auth.split.loginHeadlineLine2')}</span>
                 <br />
-                ordinary.
+                {t('auth.split.loginHeadlineLine3')}
               </>
             )}
           </h1>
@@ -163,13 +170,12 @@ export function AuthSplitLayout({
             }}
           >
             {isRegister
-              ? 'Book cars easily for daily travel, business trips, and weekend getaways — all in one place.'
-              : 'From city drives to weekend escapes, Finovo gets you there.'}
+              ? t('auth.split.registerSubtitle')
+              : t('auth.split.loginSubtitle')}
           </p>
 
           {/* Feature Highlights matching each variant */}
           {isRegister ? (
-            /* Register Variant: 3 horizontal badges with vertical dividers */
             <div
               style={{
                 display: 'flex',
@@ -184,7 +190,7 @@ export function AuthSplitLayout({
                   flex: '1 1 0',
                   display: 'flex',
                   flexDirection: 'column',
-                  paddingRight: '14px',
+                  paddingInlineEnd: '14px',
                 }}
               >
                 <div
@@ -214,7 +220,7 @@ export function AuthSplitLayout({
                     marginBottom: '4px',
                   }}
                 >
-                  Wide Selection
+                  {t('auth.split.wideSelection')}
                 </div>
                 <div
                   style={{
@@ -223,7 +229,7 @@ export function AuthSplitLayout({
                     lineHeight: 1.3,
                   }}
                 >
-                  Cars for every need
+                  {t('auth.split.wideSelectionDesc')}
                 </div>
               </div>
 
@@ -243,8 +249,8 @@ export function AuthSplitLayout({
                   flex: '1 1 0',
                   display: 'flex',
                   flexDirection: 'column',
-                  paddingLeft: '14px',
-                  paddingRight: '14px',
+                  paddingInlineStart: '14px',
+                  paddingInlineEnd: '14px',
                 }}
               >
                 <div
@@ -274,7 +280,7 @@ export function AuthSplitLayout({
                     marginBottom: '4px',
                   }}
                 >
-                  Easy Booking
+                  {t('auth.split.easyBooking')}
                 </div>
                 <div
                   style={{
@@ -283,7 +289,7 @@ export function AuthSplitLayout({
                     lineHeight: 1.3,
                   }}
                 >
-                  Fast & hassle-free
+                  {t('auth.split.easyBookingDesc')}
                 </div>
               </div>
 
@@ -303,7 +309,7 @@ export function AuthSplitLayout({
                   flex: '1 1 0',
                   display: 'flex',
                   flexDirection: 'column',
-                  paddingLeft: '14px',
+                  paddingInlineStart: '14px',
                 }}
               >
                 <div
@@ -333,7 +339,7 @@ export function AuthSplitLayout({
                     marginBottom: '4px',
                   }}
                 >
-                  24/7 Support
+                  {t('auth.split.support247')}
                 </div>
                 <div
                   style={{
@@ -342,14 +348,12 @@ export function AuthSplitLayout({
                     lineHeight: 1.3,
                   }}
                 >
-                  Help whenever you need
+                  {t('auth.split.support247Desc')}
                 </div>
               </div>
             </div>
           ) : (
-            /* Login Variant: 3 vertically stacked rows */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px' }}>
-              {/* Row 1 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div
                   style={{
@@ -370,15 +374,14 @@ export function AuthSplitLayout({
                 </div>
                 <div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
-                    Explore More
+                    {t('auth.split.exploreMore')}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.78)', marginTop: '2px' }}>
-                    Top destinations, curated for you
+                    {t('auth.split.exploreMoreDesc')}
                   </div>
                 </div>
               </div>
 
-              {/* Row 2 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div
                   style={{
@@ -399,15 +402,14 @@ export function AuthSplitLayout({
                 </div>
                 <div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
-                    Exclusive Deals
+                    {t('auth.split.exclusiveDeals')}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.78)', marginTop: '2px' }}>
-                    Great rides. Greater journeys.
+                    {t('auth.split.exclusiveDealsDesc')}
                   </div>
                 </div>
               </div>
 
-              {/* Row 3 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div
                   style={{
@@ -428,10 +430,10 @@ export function AuthSplitLayout({
                 </div>
                 <div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
-                    A Smoother You
+                    {t('auth.split.smootherYou')}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.78)', marginTop: '2px' }}>
-                    Reliable, safe and always on the move
+                    {t('auth.split.smootherYouDesc')}
                   </div>
                 </div>
               </div>
@@ -439,7 +441,7 @@ export function AuthSplitLayout({
           )}
         </div>
 
-        {/* 3. BOTTOM SCRIPT ACCENT BADGE WITH HAND-DRAWN UNDERLINE */}
+        {/* 3. BOTTOM SCRIPT ACCENT BADGE */}
         <div style={{ position: 'relative', zIndex: 3, paddingTop: '16px' }}>
           <div
             style={{
@@ -447,7 +449,7 @@ export function AuthSplitLayout({
               flexDirection: 'column',
               alignItems: 'flex-start',
               transform: 'rotate(-5deg)',
-              transformOrigin: 'left bottom',
+              transformOrigin: isRtl ? 'right bottom' : 'left bottom',
             }}
           >
             <span
@@ -496,7 +498,11 @@ export function AuthSplitLayout({
           preserveAspectRatio="none"
         >
           <path
-            d="M 943 0 C 925 80, 1000 220, 1000 420 C 1000 520, 880 760, 825 1000"
+            d={
+              isRtl
+                ? 'M 57 0 C 75 80, 0 220, 0 420 C 0 520, 120 760, 175 1000'
+                : 'M 943 0 C 925 80, 1000 220, 1000 420 C 1000 520, 880 760, 825 1000'
+            }
             fill="none"
             stroke="#7A2292"
             strokeWidth="3.5"
@@ -505,7 +511,7 @@ export function AuthSplitLayout({
         </svg>
       </div>
 
-      {/* ================= RIGHT FORM PANEL ================= */}
+      {/* ================= END FORM PANEL ================= */}
       <div
         className="auth-form-panel"
         style={{
@@ -522,12 +528,14 @@ export function AuthSplitLayout({
           justifyContent: 'space-between',
         }}
       >
-        {/* Top Right Navigation Switch Link */}
+        {/* Top Navigation Switch Link */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
             fontSize: '0.925rem',
             color: '#4A3D4E',
             marginBottom: 'clamp(16px, 3vh, 36px)',
@@ -540,7 +548,7 @@ export function AuthSplitLayout({
             </Link>
           </div>
 
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
             <LanguageSelector variant="admin" />
             {topRightPrompt && (
               <>
@@ -586,12 +594,17 @@ export function AuthSplitLayout({
             marginTop: '24px',
           }}
         >
-          © 2026 Finovo Inc. All rights reserved.
+          {t('auth.split.copyright')}
         </div>
       </div>
 
       {/* Responsive Breakpoint Styles */}
       <style>{`
+        @media (max-width: 1200px) {
+          .auth-hero-panel {
+            width: clamp(380px, 44vw, 520px) !important;
+          }
+        }
         @media (max-width: 1024px) {
           .auth-hero-panel {
             display: none !important;
@@ -602,6 +615,11 @@ export function AuthSplitLayout({
           .auth-form-panel {
             flex: 1 1 100% !important;
             padding: 24px 20px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .auth-form-panel {
+            padding: 20px 16px !important;
           }
         }
       `}</style>

@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowRight, Check } from 'lucide-react';
@@ -41,13 +42,14 @@ function EmbossedBadge({ children }: { children: React.ReactNode }) {
 }
 
 const FLEET_METRICS = [
-  { label: 'Engine', percent: 100 },
-  { label: 'Brakes', percent: 99 },
-  { label: 'Tires', percent: 92 },
-  { label: 'Battery', percent: 98 },
+  { key: 'home.aiInspection.metricEngine', percent: 100 },
+  { key: 'home.aiInspection.metricBrakes', percent: 99 },
+  { key: 'home.aiInspection.metricTires', percent: 92 },
+  { key: 'home.aiInspection.metricBattery', percent: 98 },
 ];
 
 export function AiInspectionBannerSection() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
 
@@ -135,9 +137,10 @@ export function AiInspectionBannerSection() {
             src="/ai-inspection/mountain-fog-road.jpg"
             alt=""
             aria-hidden="true"
+            className="ai-mountain-bg"
             style={{
               position: 'absolute',
-              left: 0,
+              insetInlineStart: 0,
               top: 0,
               bottom: 0,
               width: '46%',
@@ -152,9 +155,9 @@ export function AiInspectionBannerSection() {
             }}
           />
 
-          {/* Banner Layout Split: Left Content + Right 3 Cards */}
+          {/* Banner Layout Split: Start Content + End 3 Cards */}
           <div className="ai-banner-grid">
-            {/* Left Column Content */}
+            {/* Start Column Content */}
             <div className="ai-left-column">
               {/* Powered By AI Badge */}
               <div
@@ -175,7 +178,7 @@ export function AiInspectionBannerSection() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  POWERED BY AI
+                  {t('home.aiInspection.badge')}
                 </span>
               </div>
 
@@ -191,8 +194,8 @@ export function AiInspectionBannerSection() {
                   margin: '0 0 14px 0',
                 }}
               >
-                Smarter Cars <br />
-                Safer Journeys
+                {t('home.aiInspection.titleLine1')} <br />
+                {t('home.aiInspection.titleLine2')}
               </h2>
 
               {/* Description text */}
@@ -205,7 +208,7 @@ export function AiInspectionBannerSection() {
                   margin: '0 0 28px 0',
                 }}
               >
-                Advanced AI solutions to keep your fleet safer, healthier and more efficient.
+                {t('home.aiInspection.description')}
               </p>
 
               {/* Learn More Action Button */}
@@ -233,19 +236,19 @@ export function AiInspectionBannerSection() {
                   width: 'fit-content',
                 }}
               >
-                <span>Learn More</span>
-                <ArrowRight size={14} color="#2B0A33" strokeWidth={2.5} />
+                <span>{t('home.aiInspection.ctaButton')}</span>
+                <ArrowRight size={14} color="#2B0A33" strokeWidth={2.5} className="rtl-mirror-arrow" />
               </button>
             </div>
 
-            {/* Right Column: 3 Feature Cards */}
+            {/* End Column: 3 Feature Cards */}
             <div className="ai-cards-container">
               {/* Card 1: AI Damage */}
               <div className="ai-card-item ai-card-side">
                 {/* Edge-to-edge top image */}
                 <img
                   src="/ai-inspection/card-damage-scan@2x.png"
-                  alt="AI Damage Detection"
+                  alt={t('home.aiInspection.card1Title')}
                   loading="lazy"
                   className="ai-card-top-image"
                 />
@@ -270,12 +273,12 @@ export function AiInspectionBannerSection() {
                         </svg>
                       </EmbossedBadge>
                       <h3 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: '#FFFFFF' }}>
-                        AI Damage
+                        {t('home.aiInspection.card1Title')}
                       </h3>
                     </div>
 
                     <p className="ai-card-desc">
-                      Automatically detect and assess vehicle damages from photos using AI.
+                      {t('home.aiInspection.card1Desc')}
                     </p>
                   </div>
 
@@ -298,8 +301,8 @@ export function AiInspectionBannerSection() {
                       transition: 'all 0.2s ease',
                     }}
                   >
-                    <span>Scan &amp; Detect</span>
-                    <ArrowRight size={11} color="#E6D2F4" strokeWidth={2} />
+                    <span>{t('home.aiInspection.card1Cta')}</span>
+                    <ArrowRight size={11} color="#E6D2F4" strokeWidth={2} className="rtl-mirror-arrow" />
                   </button>
                 </div>
               </div>
@@ -309,7 +312,7 @@ export function AiInspectionBannerSection() {
                 {/* Edge-to-edge top image */}
                 <img
                   src="/ai-inspection/card-fleet-health@2x.png"
-                  alt="Inspection Fleet Health Telemetry"
+                  alt={t('home.aiInspection.card2Title')}
                   loading="lazy"
                   className="ai-card-top-image ai-center-image"
                 />
@@ -332,19 +335,19 @@ export function AiInspectionBannerSection() {
                       </svg>
                     </EmbossedBadge>
                     <h3 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: '#FFFFFF' }}>
-                      Inspection Fleet Health
+                      {t('home.aiInspection.card2Title')}
                     </h3>
                   </div>
 
                   <p className="ai-card-desc">
-                    Monitor fleet condition, service status and overall vehicle health.
+                    {t('home.aiInspection.card2Desc')}
                   </p>
 
                   {/* Telemetry Progress Bars */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: 'auto' }}>
                     {FLEET_METRICS.map((metric) => (
                       <div
-                        key={metric.label}
+                        key={metric.key}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -355,11 +358,11 @@ export function AiInspectionBannerSection() {
                           style={{
                             fontSize: '0.72rem',
                             color: 'rgba(255, 255, 255, 0.65)',
-                            width: '40px',
+                            minWidth: '48px',
                             flexShrink: 0,
                           }}
                         >
-                          {metric.label}
+                          {t(metric.key)}
                         </span>
 
                         <div
@@ -387,8 +390,8 @@ export function AiInspectionBannerSection() {
                             fontSize: '0.72rem',
                             fontWeight: 600,
                             color: 'rgba(255, 255, 255, 0.85)',
-                            width: '30px',
-                            textAlign: 'right',
+                            width: '32px',
+                            textAlign: 'end',
                             flexShrink: 0,
                           }}
                         >
@@ -405,7 +408,7 @@ export function AiInspectionBannerSection() {
                 {/* Edge-to-edge top image */}
                 <img
                   src="/ai-inspection/card-distributor-claimer@2x.png"
-                  alt="Distributor Claimer"
+                  alt={t('home.aiInspection.card3Title')}
                   loading="lazy"
                   className="ai-card-top-image"
                 />
@@ -429,12 +432,12 @@ export function AiInspectionBannerSection() {
                         </svg>
                       </EmbossedBadge>
                       <h3 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: '#FFFFFF' }}>
-                        Distributor Claimer
+                        {t('home.aiInspection.card3Title')}
                       </h3>
                     </div>
 
                     <p className="ai-card-desc">
-                      Simplify and verify distributor or insurance claim processes with AI.
+                      {t('home.aiInspection.card3Desc')}
                     </p>
                   </div>
 
@@ -469,7 +472,7 @@ export function AiInspectionBannerSection() {
                     >
                       <Check size={9} strokeWidth={3} />
                     </span>
-                    <span>Claim Verified</span>
+                    <span>{t('home.aiInspection.card3Status')}</span>
                   </div>
                 </div>
               </div>
@@ -479,6 +482,12 @@ export function AiInspectionBannerSection() {
       </div>
 
       <style>{`
+        [dir='rtl'] .ai-main-banner {
+          background: linear-gradient(-108deg, #EBD5BE 0%, #DEC3AC 33%, #683058 54%, #26042B 72%, #1E0223 100%) !important;
+        }
+        [dir='rtl'] .ai-mountain-bg {
+          transform: scaleX(-1);
+        }
         .ai-banner-grid {
           position: relative;
           z-index: 2;

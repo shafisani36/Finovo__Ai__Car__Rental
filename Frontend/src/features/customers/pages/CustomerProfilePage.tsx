@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   User,
   KeyRound,
@@ -12,9 +13,13 @@ import { customerPortalApi, type CustomerProfile } from '../api/customerPortalAp
 import { authClient } from '../../auth/api/authClient';
 import type { SessionInfo } from '../../auth/types/auth.types';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import { useAuth } from '../../auth/context';
+import { SUPPORTED_LANGUAGES, normalizeLanguageCode } from '../../../i18n/config';
 import './CustomerPortal.css';
 
 export function CustomerProfilePage() {
+  const { i18n } = useTranslation();
+  const { updatePreferredLanguage } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'sessions'>('profile');
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
@@ -88,6 +93,13 @@ export function CustomerProfilePage() {
       if (res.success) {
         setSaveSuccess('Your profile was updated successfully.');
         setCustomer(res.customer);
+        const normalizedLang = normalizeLanguageCode(res.customer?.preferredLanguage || preferredLanguage);
+        if (normalizedLang) {
+          updatePreferredLanguage(normalizedLang);
+          if (normalizeLanguageCode(i18n.language) !== normalizedLang) {
+            await i18n.changeLanguage(normalizedLang);
+          }
+        }
         setTimeout(() => setSaveSuccess(null), 3000);
       }
     } catch (err: any) {
@@ -262,10 +274,11 @@ export function CustomerProfilePage() {
               <CustomSelect
                 value={preferredLanguage}
                 onChange={(val) => setPreferredLanguage(String(val))}
-                options={[
-                  { value: 'en', label: 'English (US)', badge: 'EN' },
-                  { value: 'ar', label: 'Arabic (العربية)', badge: 'AR' },
-                ]}
+                options={Object.values(SUPPORTED_LANGUAGES).map((lang) => ({
+                  value: lang.code,
+                  label: `${lang.nativeName} (${lang.name})`,
+                  badge: lang.shortCode,
+                }))}
                 size="md"
               />
             </div>

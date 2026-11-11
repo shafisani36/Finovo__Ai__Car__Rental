@@ -2,17 +2,25 @@ import fs from 'fs';
 import path from 'path';
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
-import { InspectionAiEngine, type DetectedDamageItem } from './inspection-ai.engine';
+import {
+  InspectionAiEngine,
+  type BaselineStoredPhoto,
+  type DetectedDamageItem,
+  type InputPhotoWithTelemetry,
+} from './inspection-ai.engine';
+import type { ViewPixelTelemetry } from './vision-core';
 
 export interface CreateAiInspectionDTO {
   vehicleId: string;
   rentalId?: string;
   bookingId?: string;
+  pickupInspectionId?: string;
   type: 'PICKUP' | 'RETURN' | 'ROUTINE';
   summary?: string;
   photos: Array<{
     view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR';
     imageUrl: string;
+    pixelTelemetry?: Partial<ViewPixelTelemetry>;
   }>;
   simulatedDamage?: boolean;
 }
@@ -77,6 +85,46 @@ export class InspectionService {
     } catch {
       return { x: 0.25, y: 0.35, width: 0.2, height: 0.2 };
     }
+  }
+
+  private static inferCategory(damageType: string): DetectedDamageItem['category'] {
+    const lower = (damageType || '').toLowerCase();
+    if (lower.includes('scratch') || lower.includes('scuff') || lower.includes('abrasion') || lower.includes('gouge')) {
+      return 'SCRATCH';
+    }
+    if (lower.includes('crack') || lower.includes('fracture')) {
+      return 'CRACK';
+    }
+    if (lower.includes('chip') || lower.includes('peel')) {
+      return 'PAINT_CHIP';
+    }
+    return 'DENT';
+  }
+
+  private static mapDbFinding(f: {
+    id: string;
+    damageType: string;
+    severity: string;
+    location: string;
+    region?: string | null;
+    confidence: number;
+    boundingBox?: string | null;
+    estimatedRepairCost?: unknown;
+  }): DetectedDamageItem {
+    return {
+      id: f.id,
+      damageType: f.damageType,
+      category: this.inferCategory(f.damageType),
+      severity: (['LOW', 'MEDIUM', 'HIGH'].includes((f.severity || '').toUpperCase())
+        ? f.severity.toUpperCase()
+        : 'MEDIUM') as DetectedDamageItem['severity'],
+      location: f.location,
+      confidence: Number(f.confidence || 0.85),
+      boundingBox: this.safeParseBox(f.boundingBox),
+      view: this.inferView(f.region, f.location),
+      estimatedRepairCost: Number(f.estimatedRepairCost || 180),
+      description: f.damageType,
+    };
   }
 
   /**
@@ -210,8 +258,8 @@ export class InspectionService {
   }
 
   /**
-   * Runs Pre-Trained AI computer vision analysis on uploaded inspection views.
-   * Accurately detects car color, scratches, dents, and body integrity.
+   * Executes dynamic computer vision inspection on real uploaded photos.
+   * Compares Return scans automatically against the stored Pickup baseline when available.
    */
   static async runAiAnalysis(dto: CreateAiInspectionDTO, staffUserId?: string) {
     const vehicle = await prisma.vehicle.findUnique({
@@ -221,16 +269,6 @@ export class InspectionService {
     if (!vehicle) {
       throw AppError.notFound('Vehicle not found for inspection');
     }
-
-    // Run Pre-Trained AI Vision Analysis
-    const aiAnalysis = InspectionAiEngine.analyzeVehiclePhotos({
-      type: dto.type,
-      vehicleBrand: vehicle.brand,
-      vehicleModel: vehicle.model,
-      vehicleColor: vehicle.color,
-      photosCount: dto.photos?.length || 4,
-      hasSimulatedDamage: dto.simulatedDamage ?? (dto.type === 'RETURN'),
-    });
 
     // Resolve rentalId automatically if bookingId provided
     let resolvedRentalId = dto.rentalId || null;
@@ -242,8 +280,62 @@ export class InspectionService {
       if (linkedRental) resolvedRentalId = linkedRental.id;
     }
 
+    // Load baseline PICKUP inspection (photos + findings) when performing RETURN inspection
+    let baselinePhotos: BaselineStoredPhoto[] | undefined;
+    let baselineFindings: DetectedDamageItem[] | undefined;
+
+    if (dto.type === 'RETURN') {
+      const baselineInspection = dto.pickupInspectionId
+        ? await prisma.inspection.findUnique({
+            where: { id: dto.pickupInspectionId },
+            include: { photos: true, findings: true },
+          })
+        : resolvedRentalId
+        ? await prisma.inspection.findFirst({
+            where: { rentalId: resolvedRentalId, type: 'PICKUP' },
+            orderBy: { createdAt: 'desc' },
+            include: { photos: true, findings: true },
+          })
+        : await prisma.inspection.findFirst({
+            where: { vehicleId: dto.vehicleId, type: 'PICKUP' },
+            orderBy: { createdAt: 'desc' },
+            include: { photos: true, findings: true },
+          });
+
+      if (baselineInspection) {
+        baselinePhotos = baselineInspection.photos.map((p) => ({
+          view: p.view,
+          imageUrl: p.imageUrl,
+          sha256Hash: p.sha256Hash,
+          qualityDetails: p.qualityDetails,
+          qualityScore: p.qualityScore,
+        }));
+        baselineFindings = baselineInspection.findings.map((f) => this.mapDbFinding(f));
+      }
+    }
+
+    const inputPhotos: InputPhotoWithTelemetry[] = (dto.photos || []).map((p) => ({
+      view: p.view,
+      imageUrl: p.imageUrl,
+      pixelTelemetry: p.pixelTelemetry,
+    }));
+
+    // Run Dynamic Computer Vision Analysis
+    const aiAnalysis = await InspectionAiEngine.analyzeVehiclePhotosAsync({
+      type: dto.type,
+      vehicleBrand: vehicle.brand,
+      vehicleModel: vehicle.model,
+      vehicleColor: vehicle.color,
+      photos: inputPhotos,
+      baselinePhotos,
+      baselineFindings,
+    });
+
+    const userCustomNote =
+      dto.summary && !dto.summary.startsWith('Standard multi-angle') ? ` ${dto.summary}` : '';
+
     const inspection = await prisma.$transaction(async (tx) => {
-      // 1. Create Inspection record with high-precision metrics
+      // 1. Create Inspection record with real pixel-derived metrics
       const created = await tx.inspection.create({
         data: {
           vehicleId: dto.vehicleId,
@@ -251,21 +343,28 @@ export class InspectionService {
           type: dto.type,
           performedById: staffUserId || null,
           overallScore: aiAnalysis.overallScore,
-          summary: dto.summary || `${aiAnalysis.summary} [Detected Color: ${aiAnalysis.detectedColor.colorName}]`,
+          summary: `${aiAnalysis.summary} [Detected Color: ${aiAnalysis.detectedColor.colorName}]${userCustomNote}`,
           hasDamageDetected: aiAnalysis.hasDamageDetected,
           coverageScore: aiAnalysis.coverageScore,
+          capturePlanVersion: aiAnalysis.engineMode === 'MULTIMODAL_LLM' ? 'v4.0-llm' : 'v4.0-cv',
         },
       });
 
-      // 2. Persist uploaded photos cleanly
+      // 2. Persist uploaded photos + cryptographic SHA-256 & pixel telemetry for future comparison
       if (dto.photos && dto.photos.length > 0) {
-        for (const p of dto.photos) {
+        for (let i = 0; i < dto.photos.length; i++) {
+          const p = dto.photos[i];
+          const meta = aiAnalysis.photoMetadata[i];
           await tx.inspectionPhoto.create({
             data: {
               inspectionId: created.id,
               view: p.view,
               imageUrl: this.persistPhotoUrl(p.imageUrl, `${dto.type.toLowerCase()}-${p.view.toLowerCase()}`),
-              qualityScore: 99.2,
+              qualityScore: meta?.qualityScore ?? 85.0,
+              sha256Hash: meta?.sha256Hash,
+              fileSizeBytes: meta?.fileSizeBytes,
+              dimensions: meta?.dimensions,
+              qualityDetails: meta?.qualityDetails,
             },
           });
         }
@@ -276,9 +375,9 @@ export class InspectionService {
         await tx.damageFinding.create({
           data: {
             inspectionId: created.id,
-            damageType: finding.damageType,
+            damageType: finding.damageType.slice(0, 64),
             severity: finding.severity,
-            location: finding.location,
+            location: finding.location.slice(0, 64),
             region: finding.view,
             confidence: finding.confidence,
             boundingBox: JSON.stringify(finding.boundingBox),
@@ -298,10 +397,12 @@ export class InspectionService {
             inspectionId: created.id,
             vehicle: `${vehicle.brand} ${vehicle.model}`,
             type: dto.type,
+            engineMode: aiAnalysis.engineMode,
             detectedColor: aiAnalysis.detectedColor.colorName,
             scratches: aiAnalysis.scratchesCount,
             dents: aiAnalysis.dentsCount,
             score: aiAnalysis.overallScore,
+            parityScore: aiAnalysis.parityScore,
             certHash: aiAnalysis.inspectionHash,
           }),
         },
@@ -318,6 +419,8 @@ export class InspectionService {
         scratchesCount: aiAnalysis.scratchesCount,
         dentsCount: aiAnalysis.dentsCount,
         inspectionHash: aiAnalysis.inspectionHash,
+        engineMode: aiAnalysis.engineMode,
+        parityScore: aiAnalysis.parityScore,
       },
     };
   }
@@ -534,31 +637,8 @@ export class InspectionService {
     if (!pickup) throw AppError.notFound('Pickup baseline inspection not found');
     if (!returnIns) throw AppError.notFound('Return inspection record not found');
 
-    const pickupFindings: DetectedDamageItem[] = pickup.findings.map((f) => ({
-      id: f.id,
-      damageType: f.damageType,
-      category: f.damageType.toLowerCase().includes('scratch') ? 'SCRATCH' : 'DENT',
-      severity: f.severity as any,
-      location: f.location,
-      confidence: f.confidence,
-      boundingBox: this.safeParseBox(f.boundingBox),
-      view: this.inferView(f.region, f.location),
-      estimatedRepairCost: Number(f.estimatedRepairCost || 180),
-      description: f.damageType,
-    }));
-
-    const returnFindings: DetectedDamageItem[] = returnIns.findings.map((f) => ({
-      id: f.id,
-      damageType: f.damageType,
-      category: f.damageType.toLowerCase().includes('scratch') ? 'SCRATCH' : 'DENT',
-      severity: f.severity as any,
-      location: f.location,
-      confidence: f.confidence,
-      boundingBox: this.safeParseBox(f.boundingBox),
-      view: this.inferView(f.region, f.location),
-      estimatedRepairCost: Number(f.estimatedRepairCost || 320),
-      description: f.damageType,
-    }));
+    const pickupFindings: DetectedDamageItem[] = pickup.findings.map((f) => this.mapDbFinding(f));
+    const returnFindings: DetectedDamageItem[] = returnIns.findings.map((f) => this.mapDbFinding(f));
 
     const depositAmount = dto.securityDeposit || Number(pickup.vehicle.securityDeposit || 50000);
     const comparison = InspectionAiEngine.compareInspections(

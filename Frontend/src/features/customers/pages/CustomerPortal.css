@@ -436,12 +436,12 @@
 .cp-modal-box {
   background: #FFFFFF;
   border-radius: var(--cp-radius-xl);
-  max-width: 600px;
+  max-width: min(100%, 600px);
   width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 24px);
   overflow-y: auto;
   box-shadow: var(--cp-shadow-lg);
-  padding: clamp(20px, 3vw, 28px);
+  padding: clamp(16px, 3vw, 28px);
   position: relative;
   animation: cpSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
@@ -541,11 +541,34 @@
   justify-content: center;
 }
 
+.cp-auto-card-stage.is-photo-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(20, 3, 30, 0.45) 0%,
+    rgba(20, 3, 30, 0.05) 40%,
+    rgba(20, 3, 30, 0.55) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
 .cp-auto-card-img {
   width: 90%;
   height: 85%;
   object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.35));
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cp-auto-card-img.is-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: none;
 }
 
 .cp-auto-card:hover .cp-auto-card-img {
@@ -565,13 +588,13 @@
    -------------------------------------------------------------------------- */
 .cp-responsive-grid-2col {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(0, 1.8fr) minmax(min(100%, 300px), 1fr);
   gap: 24px;
 }
 
 .cp-subgrid-2col {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 16px;
 }
 

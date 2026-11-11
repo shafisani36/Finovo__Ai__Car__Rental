@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Search,
   X,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
   Calendar,
@@ -21,6 +23,7 @@ import {
 } from 'lucide-react';
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import type { Vehicle } from '../../features/fleet/types/fleet.types';
+import { getCarImage, resolveVehiclePricing } from '../../utils/carImageHelper';
 import './AvailableCarsPage.css';
 import { CarCard } from '../../components/common/CarCard';
 import { CustomSelect } from '../../components/common/CustomSelect';
@@ -47,6 +50,7 @@ export interface CatalogCar {
   transmission: string;
   seats: number;
   pricePerDay: number;
+  currency?: string;
   isWideHero?: boolean;
   tagline?: string;
   image: string;
@@ -57,7 +61,7 @@ export interface CatalogCar {
   zeroDeposit?: boolean;
 }
 
-// Master Fallback Catalog (In sync with MySQL Seeder)
+// Master Fallback Catalog (Synced with Seeded 12 Distinct Master Vehicles)
 const MASTER_FLEET: CatalogCar[] = [
   {
     id: 'car-1',
@@ -65,17 +69,18 @@ const MASTER_FLEET: CatalogCar[] = [
     brand: 'Lamborghini',
     model: 'Huracán Evo',
     year: 2026,
-    type: 'Sports',
+    type: 'Coupe / Sports',
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 2,
-    pricePerDay: 1000,
+    pricePerDay: 980,
     isWideHero: true,
-    tagline: 'Unleash extraordinary performance.',
-    image: redCar,
+    tagline: 'Unleash extraordinary V10 performance.',
+    image: '/cars/orange-car.jpg',
     logo: lamboLogo,
-    mileageLimit: '250 km',
+    mileageLimit: '200 km',
     available: true,
+    zeroDeposit: false,
   },
   {
     id: 'car-2',
@@ -87,189 +92,189 @@ const MASTER_FLEET: CatalogCar[] = [
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 500,
-    isWideHero: false,
-    image: grayCar,
+    pricePerDay: 210,
+    image: '/cars/bmw.png',
     logo: bmwLogo,
-    mileageLimit: '250 km',
+    mileageLimit: '300 km',
     available: true,
+    zeroDeposit: false,
   },
   {
     id: 'car-3',
-    name: 'BMW 520 i',
+    name: 'BMW X5 M Competition',
     brand: 'BMW',
-    model: '520 i',
+    model: 'X5 M Competition',
     year: 2026,
     type: 'SUV',
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 500,
-    isWideHero: false,
-    image: blueCar,
+    pricePerDay: 360,
+    image: '/cars/studio-bmw-x5.jpg',
     logo: bmwLogo,
-    mileageLimit: '250 km',
+    mileageLimit: '280 km',
     available: true,
+    zeroDeposit: false,
   },
   {
     id: 'car-4',
-    name: 'BMW 520 i',
-    brand: 'BMW',
-    model: '520 i',
-    year: 2026,
+    name: 'Toyota Corolla Altis Grande',
+    brand: 'Toyota',
+    model: 'Corolla Altis Grande',
+    year: 2025,
     type: 'Sedan',
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 500,
-    isWideHero: false,
-    image: grayCar,
+    pricePerDay: 95,
+    image: whiteCar,
     logo: bmwLogo,
-    mileageLimit: '250 km',
+    mileageLimit: '350 km',
     available: true,
+    zeroDeposit: true,
   },
   {
     id: 'car-5',
-    name: 'BMW 520 i',
-    brand: 'BMW',
-    model: '520 i',
-    year: 2026,
-    type: 'Sedan',
-    fuel: 'Hybrid',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 500,
-    isWideHero: false,
-    image: whiteCar,
-    logo: bmwLogo,
-    mileageLimit: '250 km',
-    available: true,
-  },
-  {
-    id: 'car-6',
-    name: 'BMW 520 i',
-    brand: 'BMW',
-    model: '520 i',
-    year: 2026,
-    type: 'Sedan',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 500,
-    isWideHero: false,
-    image: grayCar,
-    logo: bmwLogo,
-    mileageLimit: '250 km',
-    available: true,
-  },
-  {
-    id: 'car-7',
-    name: 'Lamborghini Focus ST',
-    brand: 'Lamborghini',
-    model: 'Focus ST',
-    year: 2026,
-    type: 'Sports',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 4,
-    pricePerDay: 1000,
-    isWideHero: true,
-    tagline: 'Unleash extraordinary performance.',
-    image: yellowCar,
-    logo: lamboLogo,
-    mileageLimit: '250 km',
-    available: true,
-  },
-  {
-    id: 'car-8',
-    name: 'Lamborghini Cooper Works',
-    brand: 'Lamborghini',
-    model: 'Cooper Works',
-    year: 2026,
-    type: 'Sports',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 4,
-    pricePerDay: 1000,
-    isWideHero: true,
-    tagline: 'Unleash extraordinary performance.',
-    image: greenCar,
-    logo: lamboLogo,
-    mileageLimit: '250 km',
-    available: true,
-  },
-  {
-    id: 'car-9',
-    name: 'BMW 520 i',
-    brand: 'BMW',
-    model: '520 i',
-    year: 2026,
-    type: 'SUV',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 500,
-    isWideHero: false,
-    image: blueCar,
-    logo: bmwLogo,
-    mileageLimit: '250 km',
-    available: true,
-  },
-  {
-    id: 'car-10',
-    name: 'BMW 740 i Pure Luxury',
-    brand: 'BMW',
-    model: '740 i',
+    name: 'Tesla Model 3 Long Range',
+    brand: 'Tesla',
+    model: 'Model 3 Long Range',
     year: 2026,
     type: 'Sedan',
     fuel: 'Electric',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 650,
-    isWideHero: false,
-    image: whiteCar,
+    pricePerDay: 165,
+    image: grayCar,
+    logo: bmwLogo,
+    mileageLimit: '320 km',
+    available: true,
+    zeroDeposit: true,
+  },
+  {
+    id: 'car-6',
+    name: 'Tesla Model 3 Performance',
+    brand: 'Tesla',
+    model: 'Model 3 Performance',
+    year: 2026,
+    type: 'Coupe / Sports',
+    fuel: 'Electric',
+    transmission: 'Automatic',
+    seats: 5,
+    pricePerDay: 225,
+    image: redCar,
     logo: bmwLogo,
     mileageLimit: '300 km',
     available: true,
+    zeroDeposit: false,
+  },
+  {
+    id: 'car-7',
+    name: 'Ford Focus ST',
+    brand: 'Ford',
+    model: 'Focus ST',
+    year: 2025,
+    type: 'Hatchback',
+    fuel: 'Petrol',
+    transmission: 'Manual',
+    seats: 5,
+    pricePerDay: 125,
+    image: yellowCar,
+    logo: lamboLogo,
+    mileageLimit: '300 km',
+    available: true,
+    zeroDeposit: true,
+  },
+  {
+    id: 'car-8',
+    name: 'MINI Cooper Works',
+    brand: 'MINI',
+    model: 'Cooper Works',
+    year: 2025,
+    type: 'Hatchback',
+    fuel: 'Petrol',
+    transmission: 'Automatic',
+    seats: 4,
+    pricePerDay: 140,
+    image: greenCar,
+    logo: lamboLogo,
+    mileageLimit: '300 km',
+    available: true,
+    zeroDeposit: false,
+  },
+  {
+    id: 'car-9',
+    name: 'Hyundai Tucson Hybrid AWD',
+    brand: 'Hyundai',
+    model: 'Tucson Hybrid AWD',
+    year: 2026,
+    type: 'SUV',
+    fuel: 'Hybrid',
+    transmission: 'Automatic',
+    seats: 5,
+    pricePerDay: 155,
+    image: blueCar,
+    logo: bmwLogo,
+    mileageLimit: '350 km',
+    available: true,
+    zeroDeposit: true,
+  },
+  {
+    id: 'car-10',
+    name: 'BMW 740i Executive',
+    brand: 'BMW',
+    model: '740i Executive',
+    year: 2026,
+    type: 'Luxury / Executive',
+    fuel: 'Hybrid',
+    transmission: 'Automatic',
+    seats: 5,
+    pricePerDay: 420,
+    image: '/cars/studio-bmw-740i.jpg',
+    logo: bmwLogo,
+    mileageLimit: '300 km',
+    available: true,
+    zeroDeposit: false,
   },
   {
     id: 'car-11',
     name: 'Lamborghini Urus S',
     brand: 'Lamborghini',
-    model: 'Urus',
+    model: 'Urus S',
     year: 2026,
     type: 'SUV',
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 5,
-    pricePerDay: 1200,
+    pricePerDay: 1150,
     isWideHero: true,
     tagline: 'Extraordinary luxury in every terrain.',
-    image: yellowCar,
+    image: '/cars/studio-lambo-urus.jpg',
     logo: lamboLogo,
-    mileageLimit: '300 km',
+    mileageLimit: '250 km',
     available: true,
+    zeroDeposit: false,
   },
   {
     id: 'car-12',
     name: 'BMW M4 Competition',
     brand: 'BMW',
-    model: 'M4',
+    model: 'M4 Competition',
     year: 2026,
-    type: 'Sports',
+    type: 'Coupe / Sports',
     fuel: 'Petrol',
     transmission: 'Automatic',
     seats: 4,
-    pricePerDay: 800,
-    isWideHero: false,
-    image: grayCar,
+    pricePerDay: 480,
+    image: '/cars/studio-bmw-m4.jpg',
     logo: bmwLogo,
     mileageLimit: '250 km',
     available: true,
+    zeroDeposit: false,
   },
 ];
 
 export function AvailableCarsPage() {
+  const { t } = useTranslation();
   // Primary State Pipeline
   const [period, setPeriod] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
   const [search, setSearch] = useState('');
@@ -322,54 +327,30 @@ export function AvailableCarsPage() {
       try {
         const res = await vehiclesApi.list({ limit: 100 });
         if (res?.vehicles && res.vehicles.length > 0 && isMounted) {
-          const apiCars: CatalogCar[] = res.vehicles.map((v: Vehicle, i: number) => {
-            const isLambo =
-              v.brand?.toLowerCase().includes('lambo') ||
-              v.model?.toLowerCase().includes('hurac') ||
-              v.model?.toLowerCase().includes('urus') ||
-              v.model?.toLowerCase().includes('focus') ||
-              v.model?.toLowerCase().includes('cooper');
-
-            // Exact layout match: indices 0, 6, 7 on page 1 are Hero Wide Cards
-            const isWide = isLambo || i === 0 || i === 6 || i === 7;
-
-            // Intelligent image assignment matching vehicle color and category
-            let carImg = grayCar;
-            const colorLower = (v.color || '').toLowerCase();
-            const catLower = (v.category?.name || '').toLowerCase();
-
-            if (colorLower.includes('red') || i === 0) {
-              carImg = redCar;
-            } else if (colorLower.includes('yellow') || i === 6 || i === 10) {
-              carImg = yellowCar;
-            } else if (colorLower.includes('green') || i === 7) {
-              carImg = greenCar;
-            } else if (colorLower.includes('blue') || catLower.includes('suv') || i === 2 || i === 8) {
-              carImg = blueCar;
-            } else if (colorLower.includes('white') || v.fuelType === 'ELECTRIC' || i === 4 || i === 9) {
-              carImg = whiteCar;
-            } else {
-              carImg = grayCar;
-            }
+          const apiCars: CatalogCar[] = res.vehicles.map((v: Vehicle) => {
+            const isLambo = v.brand?.toLowerCase().includes('lambo');
+            const pricing = resolveVehiclePricing(v);
+            const carImg = getCarImage(v);
 
             return {
               id: v.id,
               name: `${v.brand} ${v.model}`,
-              brand: v.brand || 'BMW',
-              model: v.model || '520 i',
+              brand: v.brand || 'Luxury',
+              model: v.model || 'Performance',
               year: v.year || 2026,
               type: v.category?.name || 'Sedan',
               fuel: v.fuelType ? (v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase()) : 'Petrol',
               transmission: v.transmission ? (v.transmission.charAt(0) + v.transmission.slice(1).toLowerCase()) : 'Automatic',
               seats: v.seats || 5,
-              pricePerDay: Number(v.dailyRate || 500),
-              isWideHero: isWide,
-              tagline: isWide ? 'Unleash extraordinary performance.' : undefined,
+              pricePerDay: pricing.dailyRate,
+              currency: pricing.currency,
+              isWideHero: isLambo,
+              tagline: isLambo ? 'Unleash extraordinary performance.' : undefined,
               image: carImg,
               logo: isLambo ? lamboLogo : bmwLogo,
-              mileageLimit: v.mileageLimitPerDay ? `${v.mileageLimitPerDay} km` : '250 km',
+              mileageLimit: v.mileageLimitPerDay ? `${v.mileageLimitPerDay} km` : 'Unlimited',
               available: v.status === 'AVAILABLE',
-              zeroDeposit: false,
+              zeroDeposit: pricing.zeroDeposit,
               unlimitedMileage: !v.mileageLimitPerDay,
             };
           });
@@ -394,10 +375,47 @@ export function AvailableCarsPage() {
   }, [period]);
 
   const periodLabel = useMemo(() => {
-    if (period === 'Weekly') return 'Weekly Fee';
-    if (period === 'Monthly') return 'Monthly Fee';
-    return 'Daily Fee';
-  }, [period]);
+    if (period === 'Weekly') return t('cars.weeklyFee');
+    if (period === 'Monthly') return t('cars.monthlyFee');
+    return t('cars.dailyFee');
+  }, [period, t]);
+
+  const labelPeriodTab = (val: 'Daily' | 'Weekly' | 'Monthly') => {
+    if (val === 'Weekly') return t('cars.weekly');
+    if (val === 'Monthly') return t('cars.monthly');
+    return t('cars.daily');
+  };
+
+  const labelBrand = (val: string) => (val === 'All Brands' ? t('cars.allBrands') : val);
+  const labelType = (val: string) => (val === 'All Types' ? t('cars.allTypes') : val);
+  const labelPrice = (val: string) => {
+    if (val === 'Any Price') return t('cars.anyPrice');
+    if (val === 'SAR 500 or less') return t('cars.priceUnder500');
+    if (val === 'SAR 500–1,000') return t('cars.price500to1000');
+    if (val === 'Above SAR 1,000') return t('cars.priceAbove1000');
+    return val;
+  };
+  const labelTrans = (val: string) => {
+    if (val === 'Any') return t('cars.any');
+    if (val === 'Automatic') return t('cars.specs.automatic');
+    if (val === 'Manual') return t('cars.specs.manual');
+    return val;
+  };
+  const labelFuel = (val: string) => {
+    if (val === 'Any') return t('cars.any');
+    if (val === 'Petrol') return t('cars.specs.petrol');
+    if (val === 'Electric') return t('cars.specs.electric');
+    if (val === 'Hybrid') return t('cars.specs.hybrid');
+    if (val === 'Diesel') return t('cars.specs.diesel');
+    return val;
+  };
+  const labelSeats = (val: string) => {
+    if (val === 'Any') return t('cars.any');
+    if (val === '2 Seats') return t('cars.seats2');
+    if (val === '4-5 Seats') return t('cars.seats45');
+    if (val === '7+ Seats') return t('cars.seats7plus');
+    return val;
+  };
 
   // Extract available brands and types dynamically from fleet
   const brandOptions = useMemo(() => {
@@ -545,10 +563,10 @@ export function AvailableCarsPage() {
         <section className="cars-hero-card" aria-label="Available Luxury Cars Banner">
           {/* Left Content Area */}
           <div className="cars-hero-content">
-            <p className="cars-hero-tagline">EXTRAORDINARY CARS. MEMORABLE JOURNEYS.</p>
-            <h1 className="cars-hero-title">Available Cars</h1>
+            <p className="cars-hero-tagline">{t('cars.tagline')}</p>
+            <h1 className="cars-hero-title">{t('cars.pageTitle')}</h1>
             <p className="cars-hero-subtitle">
-              Find your perfect drive from our premium collection of world-class vehicles.
+              {t('cars.pageSubtitle')}
             </p>
 
             {/* 3 Value Badges */}
@@ -558,8 +576,8 @@ export function AvailableCarsPage() {
                   <CarFront size={18} />
                 </div>
                 <div className="cars-hero-badge-text">
-                  <h4>Premium Fleet</h4>
-                  <p>Latest Models</p>
+                  <h4>{t('cars.badge1Title')}</h4>
+                  <p>{t('cars.badge1Sub')}</p>
                 </div>
               </div>
 
@@ -568,8 +586,8 @@ export function AvailableCarsPage() {
                   <CalendarDays size={18} />
                 </div>
                 <div className="cars-hero-badge-text">
-                  <h4>Flexible Rental</h4>
-                  <p>Daily, Weekly, Monthly</p>
+                  <h4>{t('cars.badge2Title')}</h4>
+                  <p>{t('cars.badge2Sub')}</p>
                 </div>
               </div>
 
@@ -578,8 +596,8 @@ export function AvailableCarsPage() {
                   <Globe size={18} />
                 </div>
                 <div className="cars-hero-badge-text">
-                  <h4>Trusted Worldwide</h4>
-                  <p>Thousands of Happy Customers</p>
+                  <h4>{t('cars.badge3Title')}</h4>
+                  <p>{t('cars.badge3Sub')}</p>
                 </div>
               </div>
             </div>
@@ -594,7 +612,7 @@ export function AvailableCarsPage() {
               loading="eager"
             />
             {/* Cursive Signature Tagline */}
-            <span className="cars-hero-handwritten-tag">More Than a Ride</span>
+            <span className="cars-hero-handwritten-tag">{t('cars.handwrittenTag')}</span>
           </div>
         </section>
       </div>
@@ -610,7 +628,7 @@ export function AvailableCarsPage() {
               <input
                 type="text"
                 className="cars-search-input"
-                placeholder="Search for your dream car..."
+                placeholder={t('cars.searchPlaceholder')}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -641,7 +659,7 @@ export function AvailableCarsPage() {
                   onClick={() => setPeriod(freq)}
                 >
                   {period === freq && <Sparkles size={13} color="#FAB826" />}
-                  <span>{freq}</span>
+                  <span>{labelPeriodTab(freq)}</span>
                 </button>
               ))}
             </div>
@@ -652,11 +670,11 @@ export function AvailableCarsPage() {
               onClick={() => setDateModalOpen(true)}
               role="button"
               tabIndex={0}
-              aria-label="Select rental dates"
+              aria-label={t('cars.selectRentalDates')}
             >
               <Calendar size={18} className="cars-date-picker-icon" />
               <div className="cars-date-picker-info">
-                <span className="cars-date-picker-label">Date Range</span>
+                <span className="cars-date-picker-label">{t('cars.dateRange')}</span>
                 <span className="cars-date-picker-value">{dateDisplay}</span>
               </div>
             </div>
@@ -672,8 +690,8 @@ export function AvailableCarsPage() {
                 onClick={() => setOpenDropdown(openDropdown === 'brand' ? null : 'brand')}
               >
                 <div>
-                  <span className="cars-dropdown-label">Brand</span>
-                  <span className="cars-dropdown-value">{selectedBrand}</span>
+                  <span className="cars-dropdown-label">{t('cars.brand')}</span>
+                  <span className="cars-dropdown-value">{labelBrand(selectedBrand)}</span>
                 </div>
                 <ChevronDown size={14} className="cars-dropdown-arrow" />
               </button>
@@ -691,7 +709,7 @@ export function AvailableCarsPage() {
                         setCurrentPage(1);
                       }}
                     >
-                      <span>{brand}</span>
+                      <span>{labelBrand(brand)}</span>
                       {selectedBrand === brand && <Check size={14} color="#FAB826" />}
                     </button>
                   ))}
@@ -707,8 +725,8 @@ export function AvailableCarsPage() {
                 onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
               >
                 <div>
-                  <span className="cars-dropdown-label">Vehicle Type</span>
-                  <span className="cars-dropdown-value">{selectedType}</span>
+                  <span className="cars-dropdown-label">{t('cars.vehicleType')}</span>
+                  <span className="cars-dropdown-value">{labelType(selectedType)}</span>
                 </div>
                 <ChevronDown size={14} className="cars-dropdown-arrow" />
               </button>
@@ -726,7 +744,7 @@ export function AvailableCarsPage() {
                         setCurrentPage(1);
                       }}
                     >
-                      <span>{type}</span>
+                      <span>{labelType(type)}</span>
                       {selectedType === type && <Check size={14} color="#FAB826" />}
                     </button>
                   ))}
@@ -742,8 +760,8 @@ export function AvailableCarsPage() {
                 onClick={() => setOpenDropdown(openDropdown === 'price' ? null : 'price')}
               >
                 <div>
-                  <span className="cars-dropdown-label">Price Range</span>
-                  <span className="cars-dropdown-value">{selectedPriceRange}</span>
+                  <span className="cars-dropdown-label">{t('cars.priceRange')}</span>
+                  <span className="cars-dropdown-value">{labelPrice(selectedPriceRange)}</span>
                 </div>
                 <ChevronDown size={14} className="cars-dropdown-arrow" />
               </button>
@@ -761,7 +779,7 @@ export function AvailableCarsPage() {
                         setCurrentPage(1);
                       }}
                     >
-                      <span>{opt}</span>
+                      <span>{labelPrice(opt)}</span>
                       {selectedPriceRange === opt && <Check size={14} color="#FAB826" />}
                     </button>
                   ))}
@@ -777,8 +795,8 @@ export function AvailableCarsPage() {
                 onClick={() => setOpenDropdown(openDropdown === 'transmission' ? null : 'transmission')}
               >
                 <div>
-                  <span className="cars-dropdown-label">Transmission</span>
-                  <span className="cars-dropdown-value">{selectedTransmission}</span>
+                  <span className="cars-dropdown-label">{t('cars.transmission')}</span>
+                  <span className="cars-dropdown-value">{labelTrans(selectedTransmission)}</span>
                 </div>
                 <ChevronDown size={14} className="cars-dropdown-arrow" />
               </button>
@@ -796,7 +814,7 @@ export function AvailableCarsPage() {
                         setCurrentPage(1);
                       }}
                     >
-                      <span>{opt}</span>
+                      <span>{labelTrans(opt)}</span>
                       {selectedTransmission === opt && <Check size={14} color="#FAB826" />}
                     </button>
                   ))}
@@ -812,8 +830,8 @@ export function AvailableCarsPage() {
                 onClick={() => setOpenDropdown(openDropdown === 'fuel' ? null : 'fuel')}
               >
                 <div>
-                  <span className="cars-dropdown-label">Fuel Type</span>
-                  <span className="cars-dropdown-value">{selectedFuel}</span>
+                  <span className="cars-dropdown-label">{t('cars.fuelType')}</span>
+                  <span className="cars-dropdown-value">{labelFuel(selectedFuel)}</span>
                 </div>
                 <ChevronDown size={14} className="cars-dropdown-arrow" />
               </button>
@@ -831,7 +849,7 @@ export function AvailableCarsPage() {
                         setCurrentPage(1);
                       }}
                     >
-                      <span>{opt}</span>
+                      <span>{labelFuel(opt)}</span>
                       {selectedFuel === opt && <Check size={14} color="#FAB826" />}
                     </button>
                   ))}
@@ -846,7 +864,7 @@ export function AvailableCarsPage() {
               onClick={() => setMoreFiltersOpen(true)}
             >
               <SlidersHorizontal size={15} />
-              <span>More Filters</span>
+              <span>{t('cars.moreFilters')}</span>
               {activeFiltersCount > 0 && (
                 <span className="cars-active-filter-badge">{activeFiltersCount}</span>
               )}
@@ -861,8 +879,8 @@ export function AvailableCarsPage() {
                 setCurrentPage(1);
               }}
             >
-              <span>Apply Filters</span>
-              <ChevronRight size={16} />
+              <span>{t('cars.applyFilters')}</span>
+              <ChevronRight size={16} className="rtl-mirror-arrow" />
             </button>
           </div>
         </div>
@@ -873,22 +891,22 @@ export function AvailableCarsPage() {
         {/* Header Row: Results Count, Sort, Grid/List Toggles */}
         <div className="cars-catalog-header">
           <div className="cars-catalog-count-box">
-            <h2>{filteredCars.length} Cars Available</h2>
-            <p>Premium vehicles for every journey</p>
+            <h2>{filteredCars.length} {t('cars.carsAvailable')}</h2>
+            <p>{t('cars.premiumCollection')}</p>
           </div>
 
           <div className="cars-catalog-controls">
             {/* Sort Dropdown */}
             <div className="cars-sort-selector-box">
-              <span className="cars-sort-label">Sort by:</span>
+              <span className="cars-sort-label">{t('cars.sortBy')}</span>
               <CustomSelect
                 value={sortOption}
                 onChange={(val) => setSortOption(String(val))}
                 options={[
-                  { value: 'Newest First', label: 'Newest First' },
-                  { value: 'Price: Low to High', label: 'Price: Low to High' },
-                  { value: 'Price: High to Low', label: 'Price: High to Low' },
-                  { value: 'Most Popular', label: 'Most Popular' },
+                  { value: 'Newest First', label: t('cars.sortNewest') },
+                  { value: 'Price: Low to High', label: t('cars.sortPriceAsc') },
+                  { value: 'Price: High to Low', label: t('cars.sortPriceDesc') },
+                  { value: 'Most Popular', label: t('cars.sortPopular') },
                 ]}
                 fullWidth={false}
                 size="sm"
@@ -931,10 +949,10 @@ export function AvailableCarsPage() {
           >
             <CarFront size={54} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
             <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1C0324', margin: '0 0 6px 0' }}>
-              No vehicles found
+              {t('cars.noVehicles')}
             </h3>
             <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 20px 0' }}>
-              Try relaxing your filters or searching for another vehicle model.
+              {t('cars.noVehiclesDesc')}
             </p>
             <button
               type="button"
@@ -953,7 +971,7 @@ export function AvailableCarsPage() {
               }}
             >
               <RotateCcw size={16} />
-              <span>Reset All Filters</span>
+              <span>{t('cars.resetFilters')}</span>
             </button>
           </div>
         ) : viewMode === 'grid' ? (
@@ -972,6 +990,7 @@ export function AvailableCarsPage() {
                 transmission={car.transmission}
                 seats={car.seats}
                 pricePerDay={car.pricePerDay}
+                currency={car.currency}
                 rateMultiplier={rateMultiplier}
                 periodLabel={periodLabel}
                 mileageLimit={car.mileageLimit}
@@ -984,9 +1003,7 @@ export function AvailableCarsPage() {
         ) : (
           /* List Mode View */
           <div className="available-cars-list">
-            {paginatedCars.map((car) => {
-              const displayRate = (car.pricePerDay * rateMultiplier).toFixed(2);
-              return (
+            {paginatedCars.map((car) => (
                 <article key={car.id} className="car-card-list-item">
                   <div className="car-card-list-left">
                     <div className="car-card-list-img-box">
@@ -999,10 +1016,10 @@ export function AvailableCarsPage() {
                     </div>
                     <div className="car-card-list-details">
                       <div className="car-available-pill-badge" style={{ position: 'static', marginBottom: '6px' }}>
-                        <span>Available</span>
+                        <span>{t('common.status.available')}</span>
                       </div>
                       <h3>{car.name}</h3>
-                      <p>{car.year} · {car.type} · {car.transmission} · {car.fuel}</p>
+                      <p>{car.year} · {car.type} · {labelTrans(car.transmission)} · {labelFuel(car.fuel)}</p>
                     </div>
                   </div>
 
@@ -1011,21 +1028,21 @@ export function AvailableCarsPage() {
                       <Gauge size={16} color="#3B094E" />
                       <div className="car-spec-unit-text">
                         <h5>{car.mileageLimit}</h5>
-                        <p>Mileage</p>
+                        <p>{t('cars.specs.mileage')}</p>
                       </div>
                     </div>
                     <div className="car-spec-unit">
                       <Users size={16} color="#3B094E" />
                       <div className="car-spec-unit-text">
-                        <h5>{car.seats} Seats</h5>
-                        <p>Capacity</p>
+                        <h5>{car.seats} {t('cars.specs.seats')}</h5>
+                        <p>{t('cars.capacity')}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="car-card-list-right">
                     <div className="car-card-list-price">
-                      <h4>SAR {displayRate}</h4>
+                      <h4>{car.currency === 'SAR' ? 'SAR ' : '$'}{Math.round(car.pricePerDay * rateMultiplier).toLocaleString()}</h4>
                       <p>{periodLabel}</p>
                     </div>
 
@@ -1046,14 +1063,13 @@ export function AvailableCarsPage() {
                         }}
                         title={`View all details for ${car.name}`}
                       >
-                        <span>View Details</span>
-                        <ChevronRight size={14} />
+                        <span>{t('common.actions.viewDetails')}</span>
+                        <ChevronRight size={14} className="rtl-mirror-arrow" />
                       </Link>
                     </div>
                   </div>
                 </article>
-              );
-            })}
+            ))}
           </div>
         )}
 
@@ -1065,8 +1081,8 @@ export function AvailableCarsPage() {
               <Leaf size={18} />
             </div>
             <div className="cars-eco-text">
-              <h4>Drive a Better Tomorrow</h4>
-              <p>Sustainable journeys for a brighter future.</p>
+              <h4>{t('cars.ecoTitle')}</h4>
+              <p>{t('cars.ecoDesc')}</p>
             </div>
           </div>
 
@@ -1080,9 +1096,9 @@ export function AvailableCarsPage() {
                 setCurrentPage((p) => Math.max(1, p - 1));
                 window.scrollTo({ top: 380, behavior: 'smooth' });
               }}
-              aria-label="Previous page"
+              aria-label={t('common.pagination.previous')}
             >
-              &lt;
+              <ChevronLeft size={16} className="rtl-mirror-arrow" />
             </button>
 
             {Array.from({ length: totalPages }).map((_, i) => {
@@ -1121,16 +1137,16 @@ export function AvailableCarsPage() {
                 setCurrentPage((p) => Math.min(totalPages, p + 1));
                 window.scrollTo({ top: 380, behavior: 'smooth' });
               }}
-              aria-label="Next page"
+              aria-label={t('common.pagination.next')}
             >
-              &gt;
+              <ChevronRight size={16} className="rtl-mirror-arrow" />
             </button>
           </nav>
 
           {/* Right: Found count & Luxury Motto */}
           <div className="cars-footer-tagline">
-            <h5>{filteredCars.length} cars found</h5>
-            <p>LUXURY MOVES PEOPLE FORWARD</p>
+            <h5>{filteredCars.length} {t('cars.carsFound')}</h5>
+            <p>{t('cars.motto')}</p>
           </div>
         </footer>
       </main>
@@ -1140,12 +1156,12 @@ export function AvailableCarsPage() {
         <div className="cars-modal-overlay" onClick={() => setMoreFiltersOpen(false)}>
           <div className="cars-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="cars-modal-header">
-              <h3>Advanced Fleet Filters</h3>
+              <h3>{t('cars.advancedFilters')}</h3>
               <button
                 type="button"
                 className="cars-modal-close-btn"
                 onClick={() => setMoreFiltersOpen(false)}
-                aria-label="Close modal"
+                aria-label={t('common.actions.close')}
               >
                 <X size={18} />
               </button>
@@ -1153,7 +1169,7 @@ export function AvailableCarsPage() {
 
             {/* Passenger Capacity */}
             <div className="cars-modal-section">
-              <label>Passenger Capacity</label>
+              <label>{t('cars.passengerCapacity')}</label>
               <div className="cars-chip-options">
                 {['Any', '2 Seats', '4-5 Seats', '7+ Seats'].map((seats) => (
                   <button
@@ -1162,7 +1178,7 @@ export function AvailableCarsPage() {
                     className={`cars-chip-btn ${selectedSeats === seats ? 'active' : ''}`}
                     onClick={() => setSelectedSeats(seats)}
                   >
-                    {seats}
+                    {labelSeats(seats)}
                   </button>
                 ))}
               </div>
@@ -1170,21 +1186,21 @@ export function AvailableCarsPage() {
 
             {/* Special Rental Features */}
             <div className="cars-modal-section">
-              <label>Special Rental Privileges</label>
+              <label>{t('cars.specialPrivileges')}</label>
               <div className="cars-chip-options">
                 <button
                   type="button"
                   className={`cars-chip-btn ${zeroDepositOnly ? 'active' : ''}`}
                   onClick={() => setZeroDepositOnly(!zeroDepositOnly)}
                 >
-                  Zero Deposit Required
+                  {t('cars.zeroDeposit')}
                 </button>
                 <button
                   type="button"
                   className={`cars-chip-btn ${unlimitedMileageOnly ? 'active' : ''}`}
                   onClick={() => setUnlimitedMileageOnly(!unlimitedMileageOnly)}
                 >
-                  Unlimited Mileage
+                  {t('cars.unlimitedMileage')}
                 </button>
               </div>
             </div>
@@ -1195,14 +1211,14 @@ export function AvailableCarsPage() {
                 className="cars-modal-reset-btn"
                 onClick={handleResetFilters}
               >
-                Reset All
+                {t('cars.resetAll')}
               </button>
               <button
                 type="button"
                 className="cars-modal-apply-btn"
                 onClick={() => setMoreFiltersOpen(false)}
               >
-                Show {filteredCars.length} Cars
+                {t('cars.showCarsPrefix')} {filteredCars.length} {t('cars.showCarsSuffix')}
               </button>
             </div>
           </div>
@@ -1214,21 +1230,21 @@ export function AvailableCarsPage() {
         <div className="cars-modal-overlay" onClick={() => setDateModalOpen(false)}>
           <div className="cars-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="cars-modal-header">
-              <h3>Select Rental Dates</h3>
+              <h3>{t('cars.selectRentalDates')}</h3>
               <button
                 type="button"
                 className="cars-modal-close-btn"
                 onClick={() => setDateModalOpen(false)}
-                aria-label="Close modal"
+                aria-label={t('common.actions.close')}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '16px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#7D7388', marginBottom: '6px' }}>
-                  Pick-up Date
+                  {t('cars.pickupDateLabel')}
                 </label>
                 <input
                   type="date"
@@ -1248,7 +1264,7 @@ export function AvailableCarsPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#7D7388', marginBottom: '6px' }}>
-                  Drop-off Date
+                  {t('cars.dropoffDateLabel')}
                 </label>
                 <input
                   type="date"
@@ -1278,14 +1294,14 @@ export function AvailableCarsPage() {
                   setDateModalOpen(false);
                 }}
               >
-                Clear Dates
+                {t('cars.clearDates')}
               </button>
               <button
                 type="button"
                 className="cars-modal-apply-btn"
                 onClick={handleApplyDates}
               >
-                Apply Dates
+                {t('cars.applyDates')}
               </button>
             </div>
           </div>

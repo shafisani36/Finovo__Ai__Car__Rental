@@ -11,7 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
-import { getCarImage } from '../../../utils/carImageHelper';
+import { getCarImage, isFullBleedCarPhoto, resolveVehiclePricing } from '../../../utils/carImageHelper';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
@@ -20,79 +20,85 @@ const FALLBACK_CARS = [
     id: 'car-bmw-m4',
     brand: 'BMW',
     model: 'M4 Competition Coupe',
-    year: 2025,
-    categoryName: 'Sports',
-    dailyRate: 299,
+    year: 2026,
+    categoryName: 'Coupe / Sports',
+    dailyRate: 480,
+    securityDeposit: 800,
     seats: 4,
     transmission: 'AUTOMATIC',
     fuelType: 'PETROL',
-    primaryImageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-    zeroDeposit: true,
-  },
-  {
-    id: 'car-porsche-taycan',
-    brand: 'Porsche',
-    model: 'Taycan 4S Turbo Electric',
-    year: 2025,
-    categoryName: 'Electric',
-    dailyRate: 349,
-    seats: 4,
-    transmission: 'AUTOMATIC',
-    fuelType: 'ELECTRIC',
-    primaryImageUrl: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80',
+    primaryImageUrl: '/cars/studio-bmw-m4.jpg',
     zeroDeposit: false,
   },
   {
-    id: 'car-mercedes-gle',
-    brand: 'Mercedes-Benz',
-    model: 'GLE 450 AMG Luxury SUV',
-    year: 2024,
+    id: 'car-bmw-x5m',
+    brand: 'BMW',
+    model: 'X5 M Competition',
+    year: 2026,
     categoryName: 'SUV',
-    dailyRate: 239,
-    seats: 7,
+    dailyRate: 360,
+    securityDeposit: 600,
+    seats: 5,
+    transmission: 'AUTOMATIC',
+    fuelType: 'PETROL',
+    primaryImageUrl: '/cars/studio-bmw-x5.jpg',
+    zeroDeposit: false,
+  },
+  {
+    id: 'car-hyundai-tucson',
+    brand: 'Hyundai',
+    model: 'Tucson Hybrid AWD',
+    year: 2026,
+    categoryName: 'SUV',
+    dailyRate: 155,
+    securityDeposit: 0,
+    seats: 5,
     transmission: 'AUTOMATIC',
     fuelType: 'HYBRID',
-    primaryImageUrl: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80',
+    primaryImageUrl: '/cars/finovo-blue-car.png',
     zeroDeposit: true,
   },
   {
-    id: 'car-audi-rs7',
-    brand: 'Audi',
-    model: 'RS7 Sportback Performance',
-    year: 2024,
-    categoryName: 'Luxury',
-    dailyRate: 279,
+    id: 'car-bmw-520i',
+    brand: 'BMW',
+    model: '520 i M-Sport',
+    year: 2026,
+    categoryName: 'Sedan',
+    dailyRate: 210,
+    securityDeposit: 400,
     seats: 5,
     transmission: 'AUTOMATIC',
     fuelType: 'PETROL',
-    primaryImageUrl: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80',
+    primaryImageUrl: '/cars/bmw.png',
     zeroDeposit: false,
   },
   {
-    id: 'car-tesla-modely',
+    id: 'car-tesla-model3',
     brand: 'Tesla',
-    model: 'Model Y Long Range AWD',
-    year: 2025,
-    categoryName: 'Electric',
-    dailyRate: 159,
+    model: 'Model 3 Performance',
+    year: 2026,
+    categoryName: 'Coupe / Sports',
+    dailyRate: 225,
+    securityDeposit: 300,
     seats: 5,
     transmission: 'AUTOMATIC',
     fuelType: 'ELECTRIC',
-    primaryImageUrl: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1200&q=80',
-    zeroDeposit: true,
+    primaryImageUrl: '/cars/finovo-red-car.png',
+    zeroDeposit: false,
   },
   {
-    id: 'car-landrover-defender',
-    brand: 'Land Rover',
-    model: 'Defender 110 X-Dynamic',
-    year: 2024,
-    categoryName: 'SUV',
-    dailyRate: 249,
-    seats: 7,
+    id: 'car-toyota-corolla',
+    brand: 'Toyota',
+    model: 'Corolla Altis Grande',
+    year: 2025,
+    categoryName: 'Sedan',
+    dailyRate: 95,
+    securityDeposit: 0,
+    seats: 5,
     transmission: 'AUTOMATIC',
-    fuelType: 'DIESEL',
-    primaryImageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80',
-    zeroDeposit: false,
+    fuelType: 'PETROL',
+    primaryImageUrl: '/cars/finovo-white-car.png',
+    zeroDeposit: true,
   },
 ];
 
@@ -104,7 +110,8 @@ export function CustomerCarsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedFuel, setSelectedFuel] = useState<string>('ALL');
   const [selectedTransmission, setSelectedTransmission] = useState<string>('ALL');
-  const [maxPrice, setMaxPrice] = useState<number>(500);
+  const [sliderMax, setSliderMax] = useState<number>(1500);
+  const [maxPrice, setMaxPrice] = useState<number>(1500);
 
   useEffect(() => {
     let isMounted = true;
@@ -113,19 +120,28 @@ export function CustomerCarsPage() {
         setIsLoading(true);
         const res = await vehiclesApi.list({ limit: 50 });
         if (isMounted && res.success && res.vehicles && res.vehicles.length > 0) {
-          const mapped = res.vehicles.map((v: any) => ({
-            id: v.id,
-            brand: v.brand?.name || v.brand || 'Luxury',
-            model: v.model?.name || v.model || 'Performance',
-            year: v.year || 2024,
-            categoryName: v.category?.name || v.category || 'Premium',
-            dailyRate: Number(v.pricing?.dailyRate || v.dailyRate || 189),
-            seats: v.seats || 5,
-            transmission: v.transmission || 'AUTOMATIC',
-            fuelType: v.fuelType || 'PETROL',
-            primaryImageUrl: v.media?.find((m: any) => m.isPrimary)?.fileUrl || v.primaryImageUrl || FALLBACK_CARS[0].primaryImageUrl,
-            zeroDeposit: v.zeroDeposit || true,
-          }));
+          const mapped = res.vehicles.map((v: any) => {
+            const pricing = resolveVehiclePricing(v);
+            const resolvedImage = getCarImage(v);
+            return {
+              id: v.id,
+              brand: v.brand?.name || v.brand || 'Luxury',
+              model: v.model?.name || v.model || 'Performance',
+              year: v.year || 2026,
+              categoryName: v.category?.name || v.category || 'Premium',
+              dailyRate: pricing.dailyRate,
+              securityDeposit: pricing.securityDeposit,
+              seats: v.seats || 5,
+              transmission: v.transmission || 'AUTOMATIC',
+              fuelType: v.fuelType || 'PETROL',
+              primaryImageUrl: resolvedImage,
+              zeroDeposit: pricing.zeroDeposit,
+            };
+          });
+          const dynamicCap = Math.max(1200, ...mapped.map((m) => m.dailyRate));
+          const roundedCap = Math.ceil(dynamicCap / 100) * 100;
+          setSliderMax(roundedCap);
+          setMaxPrice(roundedCap);
           setVehicles(mapped);
         } else if (isMounted) {
           setVehicles(FALLBACK_CARS);
@@ -253,8 +269,8 @@ export function CustomerCarsPage() {
             <input
               type="range"
               min={80}
-              max={600}
-              step={10}
+              max={sliderMax}
+              step={25}
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               style={{ width: '100%', accentColor: 'var(--cp-accent)' }}
@@ -265,7 +281,7 @@ export function CustomerCarsPage() {
 
       {/* Grid of Vehicles */}
       {isLoading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '24px' }}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="cp-card cp-skeleton" style={{ height: '360px' }} />
           ))}
@@ -286,27 +302,29 @@ export function CustomerCarsPage() {
               setSelectedCategory('ALL');
               setSelectedFuel('ALL');
               setSelectedTransmission('ALL');
-              setMaxPrice(500);
+              setMaxPrice(sliderMax);
             }}
           >
             Reset All Filters
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
-          {filteredVehicles.map((car) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '24px' }}>
+          {filteredVehicles.map((car) => {
+            const fullBleed = isFullBleedCarPhoto(car.primaryImageUrl);
+            return (
             <div
               key={car.id}
               className="cp-auto-card"
             >
               {/* Image Stage matching website */}
-              <div className="cp-auto-card-stage">
+              <div className={`cp-auto-card-stage ${fullBleed ? 'is-photo-stage' : ''}`}>
                 <img
                   src={car.primaryImageUrl}
                   alt={`${car.brand} ${car.model}`}
-                  className="cp-auto-card-img"
+                  className={`cp-auto-card-img ${fullBleed ? 'is-photo' : ''}`}
                   onError={(e) => {
-                    const fallback = getCarImage(car);
+                    const fallback = getCarImage({ ...car, primaryImageUrl: undefined });
                     if (!e.currentTarget.src.includes(fallback)) {
                       e.currentTarget.src = fallback;
                     }
@@ -354,7 +372,7 @@ export function CustomerCarsPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 92px), 1fr))',
                     gap: '8px',
                     background: '#F8F6F9',
                     padding: '10px',
@@ -390,7 +408,7 @@ export function CustomerCarsPage() {
                 </div>
 
                 {/* Action buttons */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: 'auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 125px), 1fr))', gap: '10px', marginTop: 'auto' }}>
                   <Link
                     to={`/customer/cars/${car.id}`}
                     className="cp-btn-outline"
@@ -409,7 +427,8 @@ export function CustomerCarsPage() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

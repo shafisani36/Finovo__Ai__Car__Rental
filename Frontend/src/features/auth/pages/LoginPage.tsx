@@ -27,10 +27,10 @@ export function LoginPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('auth.errors.validEmail');
     }
     if (!password) {
-      newErrors.password = 'Please enter your password';
+      newErrors.password = t('auth.errors.enterPassword');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -60,7 +60,7 @@ export function LoginPage() {
 
       navigate(target, { replace: true });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid email or password';
+      const msg = err instanceof Error ? err.message : t('auth.errors.invalidCredentials');
       setServerError(msg);
     } finally {
       setIsSubmitting(false);
@@ -72,11 +72,11 @@ export function LoginPage() {
       variant="login"
       topRightPrompt={{
         text: t('auth.dontHaveAccount'),
-        linkText: 'Sign up →',
+        linkText: t('auth.signUpArrow'),
         linkTo: '/register',
       }}
     >
-      <div style={{ textAlign: 'left' }}>
+      <div style={{ textAlign: 'start' }}>
         <h2
           style={{
             fontFamily: 'var(--font-family-display, "Archivo", sans-serif)',
@@ -138,7 +138,7 @@ export function LoginPage() {
             label={t('auth.email')}
             type="email"
             icon={<Mail size={18} />}
-            placeholder="Robin@gmail.com"
+            placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -152,7 +152,7 @@ export function LoginPage() {
             label={t('auth.password')}
             isPassword
             icon={<Lock size={18} />}
-            placeholder="Password"
+            placeholder={t('auth.passwordPlaceholder')}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
@@ -168,6 +168,8 @@ export function LoginPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
               margin: '8px 0 24px 0',
               fontSize: '0.875rem',
             }}
@@ -189,6 +191,7 @@ export function LoginPage() {
                   borderRadius: '10px',
                   backgroundColor: rememberMe ? '#6C1E84' : '#E5DFE7',
                   position: 'relative',
+                  direction: 'ltr',
                   transition: 'background-color 0.2s',
                 }}
               >
@@ -207,7 +210,7 @@ export function LoginPage() {
                 />
               </div>
               <span style={{ fontSize: '0.85rem', color: '#4A3D4E', fontWeight: 500 }}>
-                Remember me
+                {t('auth.rememberMe')}
               </span>
             </div>
 
@@ -223,7 +226,7 @@ export function LoginPage() {
               onMouseEnter={(e) => (e.currentTarget.style.color = '#9C4221')}
               onMouseLeave={(e) => (e.currentTarget.style.color = '#C05621')}
             >
-              Forgot Password
+              {t('auth.forgotPassword')}
             </Link>
           </div>
 
@@ -266,7 +269,7 @@ export function LoginPage() {
             <span>{isSubmitting ? t('common.loading') : t('auth.signInBtn')}</span>
           </button>
 
-          <SocialAuthRow label="or continue with" />
+          <SocialAuthRow label={t('auth.orContinueWith')} />
         </form>
       </div>
     </AuthSplitLayout>

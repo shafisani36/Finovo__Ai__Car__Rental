@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { HowItWorksStep } from '../../../types';
 
 interface StepCardProps {
@@ -7,7 +8,11 @@ interface StepCardProps {
 }
 
 export function StepCard({ step, index }: StepCardProps) {
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
+
+  const stepTitle = t(`home.howItWorks.step${index + 1}Title`, { defaultValue: step.title });
+  const stepDesc = t(`home.howItWorks.step${index + 1}Desc`, { defaultValue: step.description });
 
   // Alternating layout: Card 2 has visual on TOP, Cards 1 & 3 have visual on BOTTOM
   const isVisualTop = index === 1;
@@ -52,7 +57,7 @@ export function StepCard({ step, index }: StepCardProps) {
             <img
               src={imageSrc}
               srcSet={imageSrcSet}
-              alt={step.title}
+              alt={stepTitle}
               style={{
                 width: '100%',
                 height: 'auto',
@@ -81,7 +86,7 @@ export function StepCard({ step, index }: StepCardProps) {
               margin: '0 0 6px 0',
             }}
           >
-            {step.title}
+            {stepTitle}
           </h3>
           <p
             style={{
@@ -94,7 +99,7 @@ export function StepCard({ step, index }: StepCardProps) {
               fontWeight: 500,
             }}
           >
-            {step.description}
+            {stepDesc}
           </p>
         </div>
 
@@ -104,7 +109,7 @@ export function StepCard({ step, index }: StepCardProps) {
             <img
               src={imageSrc}
               srcSet={imageSrcSet}
-              alt={step.title}
+              alt={stepTitle}
               style={{
                 width: '100%',
                 height: 'auto',
@@ -117,12 +122,12 @@ export function StepCard({ step, index }: StepCardProps) {
         )}
       </div>
 
-      {/* Mobile Horizontal Layout matching Figma chunk-3 */}
+      {/* Mobile Horizontal Layout */}
       <div className="step-card-mobile-layout">
         <div className="step-card-mobile-image-wrap">
           <img
             src={imageSrc}
-            alt={step.title}
+            alt={stepTitle}
             className="step-card-mobile-image"
           />
         </div>
@@ -131,10 +136,10 @@ export function StepCard({ step, index }: StepCardProps) {
             0{index + 1}
           </div>
           <h3 className="step-card-mobile-title">
-            {step.title}
+            {stepTitle}
           </h3>
           <p className="step-card-mobile-desc">
-            {step.description}
+            {stepDesc}
           </p>
         </div>
       </div>
@@ -180,7 +185,7 @@ export function StepCard({ step, index }: StepCardProps) {
           .step-card-mobile-info {
             display: flex !important;
             flex-direction: column !important;
-            text-align: left !important;
+            text-align: start !important;
             flex: 1 !important;
           }
           .step-card-mobile-badge {

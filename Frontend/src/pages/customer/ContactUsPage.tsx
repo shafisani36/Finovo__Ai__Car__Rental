@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Phone,
   Mail,
@@ -23,6 +24,8 @@ import show1Img from '../../assets/contact/showroom-1.jpg';
 import show2Img from '../../assets/contact/showroom-2.jpg';
 
 export function ContactUsPage() {
+  const { t } = useTranslation();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -37,22 +40,10 @@ export function ContactUsPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const faqs = [
-    {
-      q: 'How do I modify my booking?',
-      a: 'You can modify your booking by signing in to your account and visiting your customer dashboard, or by reaching out to our support team at least 24 hours prior to scheduled pickup.',
-    },
-    {
-      q: 'What documents are required to rent a car?',
-      a: 'A valid driver license, national identity card or international passport, and a valid credit or debit card registered under the primary driver name.',
-    },
-    {
-      q: 'Do you offer airport pickup and drop-off?',
-      a: 'Yes, we provide 24/7 designated airport valet drop-off and pickup across all major airports in the region.',
-    },
-    {
-      q: 'Can I cancel a reservation for free?',
-      a: 'Free cancellation is available on all standard bookings up to 24 hours before your scheduled pickup time with instant refund processing.',
-    },
+    { q: t('contact.q1'), a: t('contact.a1') },
+    { q: t('contact.q2'), a: t('contact.a2') },
+    { q: t('contact.q3'), a: t('contact.a3') },
+    { q: t('contact.q4'), a: t('contact.a4') },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +52,7 @@ export function ContactUsPage() {
     setSuccessMessage('');
 
     if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-      setErrorMessage('Please fill in all required fields (Name, Email, Subject, Message).');
+      setErrorMessage(t('contact.errorRequired'));
       return;
     }
 
@@ -76,14 +67,14 @@ export function ContactUsPage() {
       });
 
       if (res.success) {
-        setSuccessMessage('Thank you! Your inquiry has been sent to our support desk. We will respond within 24 hours.');
+        setSuccessMessage(t('contact.successSent'));
         setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
       } else {
-        setErrorMessage(res.message || 'Failed to submit inquiry. Please try again.');
+        setErrorMessage(res.message || t('contact.errorSubmit'));
       }
     } catch (err: any) {
       setErrorMessage(
-        err?.response?.data?.message || err?.message || 'Failed to deliver inquiry. Please check your connection.'
+        err?.response?.data?.message || err?.message || t('contact.errorNetwork')
       );
     } finally {
       setSubmitting(false);
@@ -108,7 +99,7 @@ export function ContactUsPage() {
           style={{
             position: 'absolute',
             top: 0,
-            right: 0,
+            insetInlineEnd: 0,
             width: '55%',
             height: '100%',
             objectFit: 'cover',
@@ -129,33 +120,33 @@ export function ContactUsPage() {
               marginBottom: '12px',
             }}
           >
-            WE'RE ALWAYS HERE FOR YOU
+            {t('contact.eyebrow')}
           </p>
-          <h1 style={{ fontSize: '46px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px' }}>
-            Get in touch
+          <h1 style={{ fontSize: 'clamp(1.9rem, 5vw, 2.85rem)', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px' }}>
+            {t('contact.heroTitle')}
           </h1>
           <p style={{ fontSize: '16px', lineHeight: 1.6, opacity: 0.9, marginBottom: '32px' }}>
-            We're here to help with your bookings, vehicle selections, and questions — our support team replies fast, every day of the week.
+            {t('contact.heroDesc')}
           </p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ padding: '10px', borderRadius: '50%', backgroundColor: 'rgba(250, 184, 38, 0.15)', color: '#FAB826' }}>
+              <span style={{ padding: '10px', borderRadius: '50%', backgroundColor: 'rgba(250, 184, 38, 0.15)', color: '#FAB826', flexShrink: 0 }}>
                 <Car size={22} />
               </span>
               <div>
-                <p style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>Real people, real help</p>
-                <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>Dedicated mobility advisors</p>
+                <p style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{t('contact.badge1Title')}</p>
+                <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>{t('contact.badge1Sub')}</p>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ padding: '10px', borderRadius: '50%', backgroundColor: 'rgba(250, 184, 38, 0.15)', color: '#FAB826' }}>
+              <span style={{ padding: '10px', borderRadius: '50%', backgroundColor: 'rgba(250, 184, 38, 0.15)', color: '#FAB826', flexShrink: 0 }}>
                 <CalendarClock size={22} />
               </span>
               <div>
-                <p style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>Within 24 hours</p>
-                <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>Prompt email & phone reply</p>
+                <p style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{t('contact.badge2Title')}</p>
+                <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>{t('contact.badge2Sub')}</p>
               </div>
             </div>
           </div>
@@ -167,12 +158,12 @@ export function ContactUsPage() {
         style={{
           maxWidth: '1200px',
           margin: '-35px auto 40px',
-          padding: '0 24px',
+          padding: '0 clamp(16px, 4vw, 24px)',
           position: 'relative',
           zIndex: 5,
         }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '20px' }}>
           {/* Card 1 */}
           <div
             style={{
@@ -201,9 +192,9 @@ export function ContactUsPage() {
               <Phone size={22} />
             </div>
             <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>Call Us</p>
-              <p style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>+1 (123) 456-7890</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>Mon–Sat, 8am – 10pm</p>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>{t('contact.callUs')}</p>
+              <p className="phone-number" style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>+1 (123) 456-7890</p>
+              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{t('contact.callHours')}</p>
             </div>
           </div>
 
@@ -235,9 +226,9 @@ export function ContactUsPage() {
               <Mail size={22} />
             </div>
             <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>Email Us</p>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>{t('contact.emailUs')}</p>
               <p style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>support@finovo.com</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>24/7 Support Desk</p>
+              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{t('contact.emailSub')}</p>
             </div>
           </div>
 
@@ -269,32 +260,32 @@ export function ContactUsPage() {
               <MapPin size={22} />
             </div>
             <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>Headquarters</p>
-              <p style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>123 Finovo Lane</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>Suite 100 · City Center</p>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>{t('contact.hqLabel')}</p>
+              <p style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>{t('contact.hqAddress')}</p>
+              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{t('contact.hqSuite')}</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Form + Head Office Section */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto 70px', padding: '0 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '40px' }}>
+      <section style={{ maxWidth: '1200px', margin: '0 auto 70px', padding: '0 clamp(16px, 4vw, 24px)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '40px' }}>
           {/* Inquiry Form */}
           <div
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '24px',
-              padding: '36px',
+              padding: 'clamp(22px, 4vw, 36px)',
               boxShadow: '0 10px 35px rgba(0, 0, 0, 0.05)',
               border: '1px solid #ECEAEF',
             }}
           >
-            <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#1E0426', marginBottom: '8px' }}>
-              Send us a Message
+            <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 1.75rem)', fontWeight: 800, color: '#1E0426', marginBottom: '8px' }}>
+              {t('contact.formTitle')}
             </h2>
             <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '24px' }}>
-              Fill out this form and our customer inquiries team will respond to your registered email.
+              {t('contact.formSubtitle')}
             </p>
 
             {successMessage && (
@@ -312,7 +303,7 @@ export function ContactUsPage() {
                   fontSize: '14px',
                 }}
               >
-                <CheckCircle2 size={18} />
+                <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
                 <span>{successMessage}</span>
               </div>
             )}
@@ -332,28 +323,30 @@ export function ContactUsPage() {
                   fontSize: '14px',
                 }}
               >
-                <AlertCircle size={18} />
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '6px' }}>
-                    Full Name <span style={{ color: '#DC2626' }}>*</span>
+                    {t('contact.nameLabel')} <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#9CA3AF' }} />
+                    <User size={16} style={{ position: 'absolute', insetInlineStart: '12px', top: '14px', color: '#9CA3AF' }} />
                     <input
                       type="text"
-                      placeholder="e.g. Jordan Ahmed"
+                      placeholder={t('contact.namePlaceholder')}
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
                       style={{
                         width: '100%',
-                        padding: '12px 14px 12px 36px',
+                        paddingBlock: '12px',
+                        paddingInlineStart: '36px',
+                        paddingInlineEnd: '14px',
                         borderRadius: '10px',
                         border: '1px solid #D1D5DB',
                         fontSize: '14px',
@@ -366,19 +359,21 @@ export function ContactUsPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '6px' }}>
-                    Email Address <span style={{ color: '#DC2626' }}>*</span>
+                    {t('contact.emailLabel')} <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#9CA3AF' }} />
+                    <Mail size={16} style={{ position: 'absolute', insetInlineStart: '12px', top: '14px', color: '#9CA3AF' }} />
                     <input
                       type="email"
-                      placeholder="e.g. jordan@example.com"
+                      placeholder={t('contact.emailPlaceholder')}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
                       style={{
                         width: '100%',
-                        padding: '12px 14px 12px 36px',
+                        paddingBlock: '12px',
+                        paddingInlineStart: '36px',
+                        paddingInlineEnd: '14px',
                         borderRadius: '10px',
                         border: '1px solid #D1D5DB',
                         fontSize: '14px',
@@ -390,21 +385,23 @@ export function ContactUsPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '6px' }}>
-                    Phone Number
+                    {t('contact.phoneLabel')}
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <Phone size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#9CA3AF' }} />
+                    <Phone size={16} style={{ position: 'absolute', insetInlineStart: '12px', top: '14px', color: '#9CA3AF' }} />
                     <input
                       type="tel"
-                      placeholder="e.g. +1 (123) 456-7890"
+                      placeholder={t('contact.phonePlaceholder')}
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       style={{
                         width: '100%',
-                        padding: '12px 14px 12px 36px',
+                        paddingBlock: '12px',
+                        paddingInlineStart: '36px',
+                        paddingInlineEnd: '14px',
                         borderRadius: '10px',
                         border: '1px solid #D1D5DB',
                         fontSize: '14px',
@@ -417,19 +414,21 @@ export function ContactUsPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '6px' }}>
-                    Subject <span style={{ color: '#DC2626' }}>*</span>
+                    {t('contact.subjectLabel')} <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <Calendar size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#9CA3AF' }} />
+                    <Calendar size={16} style={{ position: 'absolute', insetInlineStart: '12px', top: '14px', color: '#9CA3AF' }} />
                     <input
                       type="text"
-                      placeholder="e.g. Booking Enquiry or Fleet Questions"
+                      placeholder={t('contact.subjectPlaceholder')}
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       required
                       style={{
                         width: '100%',
-                        padding: '12px 14px 12px 36px',
+                        paddingBlock: '12px',
+                        paddingInlineStart: '36px',
+                        paddingInlineEnd: '14px',
                         borderRadius: '10px',
                         border: '1px solid #D1D5DB',
                         fontSize: '14px',
@@ -443,19 +442,21 @@ export function ContactUsPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '6px' }}>
-                  Message <span style={{ color: '#DC2626' }}>*</span>
+                  {t('contact.messageLabel')} <span style={{ color: '#DC2626' }}>*</span>
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <MessageCircle size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#9CA3AF' }} />
+                  <MessageCircle size={16} style={{ position: 'absolute', insetInlineStart: '12px', top: '14px', color: '#9CA3AF' }} />
                   <textarea
                     rows={4}
-                    placeholder="Tell us how we can assist you with your rental or reservation..."
+                    placeholder={t('contact.messagePlaceholder')}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     required
                     style={{
                       width: '100%',
-                      padding: '12px 14px 12px 36px',
+                      paddingBlock: '12px',
+                      paddingInlineStart: '36px',
+                      paddingInlineEnd: '14px',
                       borderRadius: '10px',
                       border: '1px solid #D1D5DB',
                       fontSize: '14px',
@@ -492,12 +493,12 @@ export function ContactUsPage() {
                 {submitting ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>Submitting Message...</span>
+                    <span>{t('contact.submitting')}</span>
                   </>
                 ) : (
                   <>
-                    <span>Send Message</span>
-                    <ArrowRight size={16} />
+                    <span>{t('contact.sendMessage')}</span>
+                    <ArrowRight size={16} className="rtl-mirror-arrow" />
                   </>
                 )}
               </button>
@@ -510,7 +511,7 @@ export function ContactUsPage() {
               position: 'relative',
               borderRadius: '24px',
               overflow: 'hidden',
-              minHeight: '480px',
+              minHeight: '420px',
               boxShadow: '0 10px 35px rgba(0, 0, 0, 0.08)',
             }}
           >
@@ -531,7 +532,7 @@ export function ContactUsPage() {
               style={{
                 position: 'absolute',
                 top: '24px',
-                left: '24px',
+                insetInlineStart: '24px',
                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
                 borderRadius: '14px',
                 padding: '14px 18px',
@@ -539,6 +540,7 @@ export function ContactUsPage() {
                 alignItems: 'center',
                 gap: '12px',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                maxWidth: 'calc(100% - 48px)',
               }}
             >
               <div
@@ -550,22 +552,23 @@ export function ContactUsPage() {
                   color: '#FAB826',
                   display: 'grid',
                   placeItems: 'center',
+                  flexShrink: 0,
                 }}
               >
                 <MapPin size={20} />
               </div>
               <div>
-                <p style={{ fontWeight: 800, fontSize: '14px', margin: 0, color: '#1E0426' }}>Finovo Head Office</p>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: '2px 0 0' }}>123 Finovo Lane, Suite 100</p>
+                <p style={{ fontWeight: 800, fontSize: '14px', margin: 0, color: '#1E0426' }}>{t('contact.officeBadgeTitle')}</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: '2px 0 0' }}>{t('contact.officeBadgeSub')}</p>
               </div>
             </div>
 
-            <div style={{ position: 'absolute', bottom: '28px', left: '28px', right: '28px', color: '#FFFFFF' }}>
-              <p style={{ fontSize: '26px', fontWeight: 800, lineHeight: 1.25, margin: 0 }}>
-                Premium service starts here
+            <div style={{ position: 'absolute', bottom: '28px', insetInlineStart: '28px', insetInlineEnd: '28px', color: '#FFFFFF' }}>
+              <p style={{ fontSize: 'clamp(1.25rem, 3vw, 1.625rem)', fontWeight: 800, lineHeight: 1.25, margin: 0 }}>
+                {t('contact.officeHeadline')}
               </p>
               <p style={{ fontSize: '14px', opacity: 0.85, marginTop: '8px', lineHeight: 1.5 }}>
-                Visit our central operations showroom or any of our city branches for instant vehicle handovers and bespoke rental consultations.
+                {t('contact.officeDesc')}
               </p>
             </div>
           </div>
@@ -578,30 +581,30 @@ export function ContactUsPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px', marginBottom: '36px' }}>
             <div>
               <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', color: '#1E0426', opacity: 0.8, textTransform: 'uppercase' }}>
-                OUR LOCATIONS
+                {t('contact.locationsEyebrow')}
               </p>
-              <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#1E0426', margin: '6px 0 0' }}>
-                Find Us Across the City
+              <h2 style={{ fontSize: 'clamp(1.6rem, 3.8vw, 2.25rem)', fontWeight: 800, color: '#1E0426', margin: '6px 0 0' }}>
+                {t('contact.locationsTitle')}
               </h2>
               <p style={{ fontSize: '15px', color: '#4B5563', margin: '6px 0 0' }}>
-                Experience Finovo in person at our dedicated customer hubs and airport pickup zones.
+                {t('contact.locationsDesc')}
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
             {/* Showroom 1 */}
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 25px rgba(0,0,0,0.06)' }}>
-              <img src={show1Img} alt="Downtown Showroom" style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
+              <img src={show1Img} alt={t('contact.hub1Title')} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
               <div style={{ padding: '22px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#FAB826', backgroundColor: '#1E0426', padding: '4px 10px', borderRadius: '20px' }}>
-                  CENTRAL HUB
+                  {t('contact.hub1Tag')}
                 </span>
                 <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1E0426', margin: '12px 0 6px' }}>
-                  Downtown Luxury Showroom
+                  {t('contact.hub1Title')}
                 </h3>
                 <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px' }}>
-                  Financial Center Boulevard, Tower 4 · Open 24/7
+                  {t('contact.hub1Desc')}
                 </p>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <a
@@ -616,7 +619,7 @@ export function ContactUsPage() {
                       textDecoration: 'none',
                     }}
                   >
-                    Direct Line
+                    {t('contact.directLine')}
                   </a>
                 </div>
               </div>
@@ -624,16 +627,16 @@ export function ContactUsPage() {
 
             {/* Showroom 2 */}
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 25px rgba(0,0,0,0.06)' }}>
-              <img src={show2Img} alt="Airport Terminal Showroom" style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
+              <img src={show2Img} alt={t('contact.hub2Title')} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
               <div style={{ padding: '22px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#FAB826', backgroundColor: '#1E0426', padding: '4px 10px', borderRadius: '20px' }}>
-                  AIRPORT TERMINAL
+                  {t('contact.hub2Tag')}
                 </span>
                 <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1E0426', margin: '12px 0 6px' }}>
-                  Airport Express Valet Hub
+                  {t('contact.hub2Title')}
                 </h3>
                 <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px' }}>
-                  Terminal 3 Arrival Concourse · Fast Track Key Pickup
+                  {t('contact.hub2Desc')}
                 </p>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <a
@@ -648,7 +651,7 @@ export function ContactUsPage() {
                       textDecoration: 'none',
                     }}
                   >
-                    Direct Line
+                    {t('contact.directLine')}
                   </a>
                 </div>
               </div>
@@ -658,13 +661,13 @@ export function ContactUsPage() {
       </section>
 
       {/* Frequently Asked Questions */}
-      <section style={{ maxWidth: '960px', margin: '70px auto', padding: '0 24px' }}>
+      <section style={{ maxWidth: '960px', margin: '70px auto', padding: '0 clamp(16px, 4vw, 24px)' }}>
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', color: '#FAB826', textTransform: 'uppercase' }}>
-            FREQUENT QUESTIONS
+            {t('contact.faqEyebrow')}
           </p>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#1E0426', margin: '6px 0 0' }}>
-            Frequently Asked Questions
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3.4vw, 2rem)', fontWeight: 800, color: '#1E0426', margin: '6px 0 0' }}>
+            {t('contact.faqTitle')}
           </h2>
         </div>
 
@@ -673,7 +676,7 @@ export function ContactUsPage() {
             const isOpen = openFaq === index;
             return (
               <div
-                key={faq.q}
+                key={index}
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '16px',
@@ -693,12 +696,13 @@ export function ContactUsPage() {
                     justifyContent: 'space-between',
                     background: 'none',
                     border: 'none',
-                    textAlign: 'left',
+                    textAlign: 'start',
                     cursor: 'pointer',
+                    gap: '12px',
                   }}
                 >
                   <span style={{ fontSize: '16px', fontWeight: 700, color: '#1E0426' }}>{faq.q}</span>
-                  {isOpen ? <ChevronUp size={20} color="#1E0426" /> : <ChevronDown size={20} color="#9CA3AF" />}
+                  {isOpen ? <ChevronUp size={20} color="#1E0426" style={{ flexShrink: 0 }} /> : <ChevronDown size={20} color="#9CA3AF" style={{ flexShrink: 0 }} />}
                 </button>
                 {isOpen && (
                   <div style={{ padding: '0 24px 20px', color: '#4B5563', fontSize: '14px', lineHeight: 1.6 }}>
@@ -710,6 +714,17 @@ export function ContactUsPage() {
           })}
         </div>
       </section>
+
+      <style>{`
+        [dir='rtl'] .contact-hero-img {
+          clip-path: polygon(0 0, 80% 0, 100% 100%, 0 100%) !important;
+        }
+        @media (max-width: 900px) {
+          .contact-hero-img {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Gauge, Tag, ChevronRight } from 'lucide-react';
+import { isFullBleedCarPhoto } from '../../../utils/carImageHelper';
 import './CarCard.css';
 import cityBackdrop from '../../../assets/cars/finovo-city.png';
 
@@ -15,6 +17,7 @@ export interface CarCardProps {
   transmission?: string;
   seats?: number;
   pricePerDay: number;
+  currency?: string;
   rateMultiplier?: number;
   periodLabel?: string;
   mileageLimit?: string;
@@ -30,32 +33,38 @@ export const CarCard: React.FC<CarCardProps> = ({
   name,
   year,
   pricePerDay,
+  currency = 'USD',
   rateMultiplier = 1,
-  periodLabel = 'Daily Fee',
+  periodLabel,
   mileageLimit = '250 km',
   image,
   logo,
   available = true,
   className = '',
 }) => {
-  const displayRate = (pricePerDay * rateMultiplier).toFixed(2);
+  const { t } = useTranslation();
+  const displayRate = Math.round(pricePerDay * rateMultiplier).toLocaleString();
+  const currencyPrefix = currency === 'SAR' ? 'SAR ' : '$';
+  const resolvedPeriodLabel = periodLabel || t('cars.dailyFee');
+  const fullBleed = isFullBleedCarPhoto(image);
 
   return (
     <article className={`finovo-car-card ${className}`}>
       {/* 1. TOP ARTWORK STAGE: Twilight Skyline + Organic S-Wave + Vehicle */}
       <div className="finovo-car-card-stage">
-        {/* City Skyline Background */}
-        <img
-          src={cityBackdrop}
-          alt="Twilight City Skyline"
-          className="finovo-car-card-skyline"
-          loading="lazy"
-        />
+        {!fullBleed && (
+          <img
+            src={cityBackdrop}
+            alt="Twilight City Skyline"
+            className="finovo-car-card-skyline"
+            loading="lazy"
+          />
+        )}
 
         {/* Available Pill Badge */}
         {available && (
           <div className="finovo-car-card-status-pill">
-            <span>Available</span>
+            <span>{t('common.status.available')}</span>
           </div>
         )}
 
@@ -72,12 +81,16 @@ export const CarCard: React.FC<CarCardProps> = ({
           />
         </svg>
 
-        {/* Centered Vehicle Cutout */}
-        <Link to={`/cars/${id}`} className="finovo-car-card-vehicle-wrap" title={`View full specs & book ${name}`}>
+        {/* Centered Vehicle Cutout or Edge-to-Edge Studio Photo */}
+        <Link
+          to={`/cars/${id}`}
+          className={`finovo-car-card-vehicle-wrap ${fullBleed ? 'is-photo-wrap' : ''}`}
+          title={`View full specs & book ${name}`}
+        >
           <img
             src={image}
             alt={name}
-            className="finovo-car-card-vehicle-img"
+            className={`finovo-car-card-vehicle-img ${fullBleed ? 'is-photo' : ''}`}
             loading="lazy"
           />
         </Link>
@@ -105,7 +118,7 @@ export const CarCard: React.FC<CarCardProps> = ({
             <Gauge size={18} className="finovo-car-card-stat-icon" />
             <div className="finovo-car-card-stat-details">
               <span className="finovo-car-card-stat-value">{mileageLimit}</span>
-              <span className="finovo-car-card-stat-label">Mileage</span>
+              <span className="finovo-car-card-stat-label">{t('cars.specs.mileage')}</span>
             </div>
           </div>
 
@@ -113,8 +126,8 @@ export const CarCard: React.FC<CarCardProps> = ({
           <div className="finovo-car-card-stat-unit">
             <Tag size={18} className="finovo-car-card-stat-icon" />
             <div className="finovo-car-card-stat-details">
-              <span className="finovo-car-card-stat-value">SAR {displayRate}</span>
-              <span className="finovo-car-card-stat-label">{periodLabel}</span>
+              <span className="finovo-car-card-stat-value">{currencyPrefix}{displayRate}</span>
+              <span className="finovo-car-card-stat-label">{resolvedPeriodLabel}</span>
             </div>
           </div>
         </div>
@@ -125,7 +138,7 @@ export const CarCard: React.FC<CarCardProps> = ({
           className="finovo-car-card-action-btn"
           aria-label={`View details and book ${name}`}
         >
-          <ChevronRight size={20} strokeWidth={2.5} />
+          <ChevronRight size={20} strokeWidth={2.5} className="rtl-mirror-arrow" />
         </Link>
       </div>
     </article>

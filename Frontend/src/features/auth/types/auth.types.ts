@@ -6,6 +6,7 @@ export interface User {
   avatarUrl?: string | null;
   isEmailVerified: boolean;
   status: 'ACTIVE' | 'PENDING_VERIFICATION' | 'SUSPENDED';
+  preferredLanguage?: string | null;
   roles: string[];
   permissions: string[];
   createdAt: string;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   customerPortalApi,
   type PortalOverviewResponse,
@@ -25,6 +26,7 @@ import {
 import './CustomerPortal.css';
 
 export function CustomerDashboardOverviewPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [data, setData] = useState<PortalOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +115,7 @@ export function CustomerDashboardOverviewPage() {
     return (
       <div className="cp-page-container">
         <div className="cp-card cp-skeleton" style={{ height: '140px' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="cp-card cp-skeleton" style={{ height: '90px' }} />
           ))}
@@ -128,11 +130,11 @@ export function CustomerDashboardOverviewPage() {
       <div className="cp-page-container">
         <div className="cp-card cp-empty-state">
           <AlertTriangle size={48} color="var(--cp-danger)" style={{ marginBottom: '16px' }} />
-          <h2 className="cp-empty-title">Unable to Load Dashboard</h2>
+          <h2 className="cp-empty-title">{t('portal.unableLoad')}</h2>
           <p className="cp-empty-desc">{error}</p>
           <button onClick={loadData} className="cp-btn-secondary">
             <RefreshCw size={16} />
-            <span>Retry Loading</span>
+            <span>{t('portal.retryLoading')}</span>
           </button>
         </div>
       </div>
@@ -154,12 +156,13 @@ export function CustomerDashboardOverviewPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
             gap: '12px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#1E0426' }}>
             <Sparkles size={16} color="#B45309" />
-            <span>Viewing dynamic preview mode. Live customer telemetry ready to sync.</span>
+            <span>{t('portal.previewBanner')}</span>
           </div>
           <button
             type="button"
@@ -168,7 +171,7 @@ export function CustomerDashboardOverviewPage() {
             style={{ padding: '6px 14px', fontSize: '0.75rem', minHeight: '32px', gap: '5px' }}
           >
             <RefreshCw size={12} />
-            <span>Sync</span>
+            <span>{t('portal.sync')}</span>
           </button>
         </div>
       )}
@@ -180,7 +183,7 @@ export function CustomerDashboardOverviewPage() {
               className={customer.isLicenseVerified ? 'cp-badge cp-badge-accent' : 'cp-badge cp-badge-warning'}
             >
               <ShieldCheck size={14} />
-              {customer.isLicenseVerified ? 'Verified Driver' : 'Pending Verification'}
+              {customer.isLicenseVerified ? t('portal.verifiedDriver') : t('portal.pendingVerification')}
             </span>
           </div>
 
@@ -194,7 +197,7 @@ export function CustomerDashboardOverviewPage() {
               lineHeight: 1.2,
             }}
           >
-            Welcome back, {customer.fullName}
+            {t('portal.welcomeBackUser')} {customer.fullName || t('portal.valuedRenter')}
           </h1>
           <p
             style={{
@@ -205,14 +208,14 @@ export function CustomerDashboardOverviewPage() {
               lineHeight: 1.5,
             }}
           >
-            Manage your active trips, upcoming reservations, invoices, and vehicle pickup inspections from your centralized self-service portal.
+            {t('portal.overviewDesc')}
           </p>
         </div>
 
         <div className="cp-header-actions" style={{ zIndex: 2 }}>
           <Link to="/customer/cars" className="cp-btn-primary">
             <Car size={18} />
-            <span>Book Next Car</span>
+            <span>{t('portal.bookNextCar')}</span>
           </Link>
 
           <Link
@@ -225,7 +228,7 @@ export function CustomerDashboardOverviewPage() {
             }}
           >
             <Sparkles size={16} color="var(--cp-accent)" />
-            <span>AI Concierge</span>
+            <span>{t('portal.aiConcierge')}</span>
           </Link>
         </div>
       </div>
@@ -280,13 +283,13 @@ export function CustomerDashboardOverviewPage() {
       )}
 
       {/* 3. Stat KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
         <div className="cp-stat-card">
           <div className="cp-stat-icon-wrap" style={{ color: 'var(--cp-primary)' }}>
             <CalendarCheck size={24} />
           </div>
           <div>
-            <div className="cp-stat-label">Active Trips</div>
+            <div className="cp-stat-label">{t('portal.activeBookings')}</div>
             <div className="cp-stat-value">{stats.activeBookings}</div>
           </div>
         </div>
@@ -296,7 +299,7 @@ export function CustomerDashboardOverviewPage() {
             <Car size={24} />
           </div>
           <div>
-            <div className="cp-stat-label">Total Bookings</div>
+            <div className="cp-stat-label">{t('portal.totalReservations')}</div>
             <div className="cp-stat-value">{stats.totalBookings}</div>
           </div>
         </div>
@@ -306,7 +309,7 @@ export function CustomerDashboardOverviewPage() {
             <CreditCard size={24} />
           </div>
           <div>
-            <div className="cp-stat-label">Pending Balance</div>
+            <div className="cp-stat-label">{t('portal.pendingBalance')}</div>
             <div className="cp-stat-value" style={{ color: 'var(--cp-warning)' }}>
               ${stats.pendingBalanceTotal.toLocaleString()}
             </div>
@@ -318,7 +321,7 @@ export function CustomerDashboardOverviewPage() {
             <Award size={24} />
           </div>
           <div>
-            <div className="cp-stat-label">Loyalty Points</div>
+            <div className="cp-stat-label">{t('portal.rewardPoints')}</div>
             <div className="cp-stat-value">{stats.rewardPoints} pts</div>
           </div>
         </div>
@@ -371,8 +374,8 @@ export function CustomerDashboardOverviewPage() {
               className="cp-btn-outline"
               style={{ padding: '6px 12px', fontSize: '0.8rem', minHeight: '32px' }}
             >
-              <span>View Inspection Scans</span>
-              <ArrowRight size={14} />
+              <span>{t('portal.viewInspection')}</span>
+              <ArrowRight size={14} className="rtl-mirror-arrow" />
             </Link>
           </div>
 
@@ -506,18 +509,18 @@ export function CustomerDashboardOverviewPage() {
             className="cp-btn-secondary"
             style={{ padding: '10px 18px', fontSize: '0.85rem' }}
           >
-            <span>Trip Details</span>
-            <ChevronRight size={16} />
+            <span>{t('common.actions.viewDetails')}</span>
+            <ChevronRight size={16} className="rtl-mirror-arrow" />
           </Link>
         </div>
       ) : null}
 
       {/* 5. Two-Column Grid: Recent Bookings & Quick Links */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
         {/* Left Column: Recent Trips */}
         <div className="cp-card">
           <div className="cp-card-header">
-            <h2 className="cp-card-title">Recent Reservations</h2>
+            <h2 className="cp-card-title">{t('admin.recentBookings')}</h2>
             <Link
               to="/customer/bookings"
               style={{
@@ -525,19 +528,23 @@ export function CustomerDashboardOverviewPage() {
                 fontWeight: 700,
                 fontSize: '0.825rem',
                 textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
               }}
             >
-              View All ({stats.totalBookings}) →
+              <span>{t('common.actions.viewAll')} ({stats.totalBookings})</span>
+              <ChevronRight size={14} className="rtl-mirror-arrow" />
             </Link>
           </div>
 
           {stats.totalBookings === 0 ? (
             <div className="cp-empty-state" style={{ padding: '24px 0' }}>
               <Car size={36} color="var(--cp-text-subtle)" style={{ marginBottom: '8px' }} />
-              <div style={{ fontWeight: 700, color: 'var(--cp-primary)', marginBottom: '4px' }}>No reservations yet</div>
-              <p className="cp-empty-desc" style={{ marginBottom: '16px' }}>Discover our premium fleet and book your first journey today.</p>
+              <div style={{ fontWeight: 700, color: 'var(--cp-primary)', marginBottom: '4px' }}>{t('common.empty.noData')}</div>
+              <p className="cp-empty-desc" style={{ marginBottom: '16px' }}>{t('portal.overviewDesc')}</p>
               <Link to="/customer/cars" className="cp-btn-primary">
-                Browse Fleet
+                {t('nav.browseFleet')}
               </Link>
             </div>
           ) : (
@@ -567,7 +574,7 @@ export function CustomerDashboardOverviewPage() {
                       {b.vehicle?.brand} {b.vehicle?.model}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                  <div style={{ textAlign: 'end' }}>
                     <div style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '0.9rem' }}>
                       ${Number(b.totalAmount).toLocaleString()}
                     </div>
@@ -581,7 +588,7 @@ export function CustomerDashboardOverviewPage() {
                       }`}
                       style={{ fontSize: '0.68rem', padding: '2px 6px' }}
                     >
-                      {b.status}
+                      {t(`common.status.${b.status.toLowerCase()}`, { defaultValue: b.status })}
                     </span>
                   </div>
                 </Link>
@@ -594,10 +601,10 @@ export function CustomerDashboardOverviewPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="cp-card">
             <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>
-              Self-Service Shortcuts
+              {t('portal.quickShortcuts')}
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 145px), 1fr))', gap: '12px' }}>
               <Link
                 to="/customer/documents"
                 style={{
@@ -614,8 +621,8 @@ export function CustomerDashboardOverviewPage() {
                 }}
               >
                 <FileCheck size={20} color="var(--cp-primary)" />
-                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>Upload Documents</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>License & ID verification</span>
+                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.driverDocuments')}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>{t('portal.verifiedDriver')}</span>
               </Link>
 
               <Link
@@ -634,8 +641,8 @@ export function CustomerDashboardOverviewPage() {
                 }}
               >
                 <CreditCard size={20} color="var(--cp-primary)" />
-                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>Billing & Invoices</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>Receipts & statements</span>
+                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.paymentsInvoices')}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>{t('portal.pendingBalance')}</span>
               </Link>
 
               <Link
@@ -654,8 +661,8 @@ export function CustomerDashboardOverviewPage() {
                 }}
               >
                 <Clock size={20} color="var(--cp-primary)" />
-                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>Customer Support</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>Help tickets & dispatch</span>
+                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.supportTickets')}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>{t('home.stats.customerSupport')}</span>
               </Link>
 
               <Link
@@ -674,8 +681,8 @@ export function CustomerDashboardOverviewPage() {
                 }}
               >
                 <Gift size={20} color="#D97706" />
-                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>Rewards & Club</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>Earn points & vouchers</span>
+                <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.rewardsReferrals')}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>{t('portal.rewardPoints')}</span>
               </Link>
             </div>
           </div>
@@ -703,9 +710,9 @@ export function CustomerDashboardOverviewPage() {
                   letterSpacing: '0.04em',
                 }}
               >
-                24/7 ROADSIDE EMERGENCY
+                {t('nav.roadsideTitle')}
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Towing, flat tire & concierge support</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t('nav.roadsideDesc')}</div>
             </div>
             <a
               href="tel:+966114009000"
@@ -718,7 +725,7 @@ export function CustomerDashboardOverviewPage() {
               }}
             >
               <Phone size={14} />
-              Call Hotline
+              {t('contact.callUs')}
             </a>
           </div>
         </div>

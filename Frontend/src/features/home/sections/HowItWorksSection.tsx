@@ -1,10 +1,12 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { HOW_IT_WORKS_STEPS } from '../data/homepageData';
 import { StepCard } from '../components/StepCard';
 
 export function HowItWorksSection() {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -82,7 +84,7 @@ export function HowItWorksSection() {
                 margin: 0,
               }}
             >
-              How It Works
+              {t('home.howItWorks.title')}
             </h2>
           </div>
 
@@ -117,9 +119,9 @@ export function HowItWorksSection() {
                 fontWeight: 500,
               }}
             >
-              Find your perfect rental car in just a few simple steps —
+              {t('home.howItWorks.subtitleLine1')}
               <br />
-              search, choose, book, and drive with ease.
+              {t('home.howItWorks.subtitleLine2')}
             </p>
           </div>
         </div>

@@ -160,7 +160,7 @@ export function CustomerRewardsPage() {
 
       {/* Referral Program Card */}
       <div className="cp-card">
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(280px, 1fr)', gap: '24px', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '24px', alignItems: 'center' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <Gift size={20} color="#FAB826" />
@@ -242,7 +242,7 @@ export function CustomerRewardsPage() {
       {/* Available Promo Vouchers */}
       <div className="cp-card">
         <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Your Available Discount Vouchers</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '16px' }}>
           {data.vouchers.map((v, idx) => (
             <div
               key={idx}

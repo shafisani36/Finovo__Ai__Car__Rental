@@ -35,12 +35,16 @@
 .finovo-about-page .hero-photo {
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   width: 58%;
   height: 100%;
   object-fit: cover;
   opacity: 0.92;
   clip-path: polygon(18% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+
+[dir='rtl'] .finovo-about-page .hero-photo {
+  clip-path: polygon(0% 0%, 82% 0%, 100% 100%, 0% 100%);
 }
 
 .finovo-about-page .intro-copy {
@@ -60,7 +64,7 @@
 }
 
 .finovo-about-page .intro-copy h1 {
-  font-size: 42px;
+  font-size: clamp(1.9rem, 5vw, 2.625rem);
   line-height: 1.25;
   font-weight: 800;
   margin-bottom: 16px;
@@ -140,7 +144,7 @@
 .finovo-about-page .experience-badge {
   position: absolute;
   bottom: -24px;
-  right: 12px;
+  inset-inline-end: 12px;
   background: #1E0426;
   color: #FFFFFF;
   border-radius: 20px;
@@ -258,7 +262,7 @@
 
 .finovo-about-page .benefit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   gap: 24px;
   margin-top: 40px;
 }
@@ -371,7 +375,7 @@
 }
 
 .finovo-about-page .journey-copy h2 {
-  font-size: 38px;
+  font-size: clamp(1.6rem, 4.5vw, 2.375rem);
   font-weight: 800;
   line-height: 1.25;
   margin-bottom: 24px;
@@ -379,7 +383,7 @@
 
 .finovo-about-page .journey-photo {
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   top: 0;
   width: 50%;
   height: 100%;

@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { User, AuthResponse } from '../types/auth.types';
 import { authClient } from '../api/authClient';
 import { AuthContext } from './auth-context-def';
+import i18n, { normalizeLanguageCode } from '../../../i18n/config';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const syncedServerPrefRef = useRef<string | null>(null);
 
   const fetchCurrentUser = useCallback(async () => {
     try {
@@ -111,6 +113,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchCurrentUser();
   };
 
+  const updatePreferredLanguage = useCallback((preferredLanguage: string) => {
+    const normalized = normalizeLanguageCode(preferredLanguage) || preferredLanguage;
+    setUser((prev) => (prev ? { ...prev, preferredLanguage: normalized } : prev));
+  }, []);
+
+  // Sync user's persisted DB language preference once per server profile update/login,
+  // never fighting explicit language switches in LanguageSelector.
+  useEffect(() => {
+    if (!user) {
+      syncedServerPrefRef.current = null;
+      return;
+    }
+
+    const serverPref = normalizeLanguageCode(user.preferredLanguage);
+    const syncKey = `${user.id}:${serverPref || ''}`;
+    if (syncKey === syncedServerPrefRef.current) {
+      return;
+    }
+
+    syncedServerPrefRef.current = syncKey;
+    if (serverPref && normalizeLanguageCode(i18n.language) !== serverPref) {
+      void i18n.changeLanguage(serverPref);
+    }
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -124,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyResetCode,
         resetPassword,
         refreshProfile,
+        updatePreferredLanguage,
       }}
     >
       {children}

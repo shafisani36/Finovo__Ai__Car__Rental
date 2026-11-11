@@ -174,11 +174,12 @@ export function ReturnVehiclePage() {
       const analyzed = await inspectionApi.analyze({
         vehicleId: rental.vehicleId,
         rentalId: rental.id,
+        pickupInspectionId: pickupInspectionId || undefined,
         type: 'RETURN',
-        simulatedDamage: true,
         photos: clientReport.photos.map((p) => ({
           view: (p.view as 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR') || 'FRONT',
           imageUrl: p.imageUrl,
+          pixelTelemetry: p.pixelTelemetry,
         })),
       });
 
@@ -200,16 +201,12 @@ export function ReturnVehiclePage() {
 
       const cmp = InspectionAiEngine.compareReports(baselineForCompare, finalReturnReport, depositAmt);
       setComparisonReport(cmp);
-      if (cmp.totalProposedCharges > 0) {
-        setDamageCharges(cmp.totalProposedCharges);
-      }
+      setDamageCharges(cmp.totalProposedCharges);
     } catch (err) {
       console.warn('Return AI inspection DB sync warning, using computed comparison:', err);
       const cmp = InspectionAiEngine.compareReports(baselineForCompare, clientReport, depositAmt);
       setComparisonReport(cmp);
-      if (cmp.totalProposedCharges > 0) {
-        setDamageCharges(cmp.totalProposedCharges);
-      }
+      setDamageCharges(cmp.totalProposedCharges);
     } finally {
       setIsSavingReturnScan(false);
     }
@@ -379,7 +376,7 @@ export function ReturnVehiclePage() {
           padding: '24px',
           border: '1px solid #ECEAEF',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
           gap: '24px',
         }}
       >
@@ -1147,6 +1144,7 @@ export function ReturnVehiclePage() {
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         inspectionType="RETURN"
+        baselineReport={pickupBaselineReport}
         vehicle={{
           id: rental.vehicle.id,
           brand: rental.vehicle.brand,

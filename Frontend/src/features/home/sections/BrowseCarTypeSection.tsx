@@ -1,17 +1,100 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { FEATURED_CARS } from '../data/homepageData';
 import { CarCard } from '../components/CarCard';
 import { ArrowRight } from 'lucide-react';
 import type { FeaturedCar } from '../../../types';
+import { vehiclesApi } from '../../../api/services/vehicles.api';
+import { getCarImage, resolveVehiclePricing } from '../../../utils/carImageHelper';
 
 interface BrowseCarTypeSectionProps {
   onRentCar?: (car: FeaturedCar) => void;
 }
 
 export function BrowseCarTypeSection({ onRentCar }: BrowseCarTypeSectionProps) {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
+  const [featuredCars, setFeaturedCars] = useState<FeaturedCar[]>(FEATURED_CARS);
+
+  useEffect(() => {
+    let mounted = true;
+    vehiclesApi
+      .list({ limit: 8, status: 'AVAILABLE' })
+      .then((res) => {
+        if (!mounted || !res?.vehicles?.length) return;
+        const distinct: FeaturedCar[] = [];
+        const seenCat = new Set<string>();
+        const ordered = [...res.vehicles];
+
+        // Pick up to 4 diverse body categories/models first for showcase variety
+        for (const v of ordered) {
+          const catName = v.category?.name || 'Sedan';
+          if (distinct.length < 4 && (!seenCat.has(catName) || ordered.length <= 4)) {
+            seenCat.add(catName);
+            const pricing = resolveVehiclePricing(v);
+            distinct.push({
+              id: v.id,
+              name: `${v.brand} ${v.model}`,
+              subtitle: catName.toUpperCase(),
+              year: v.year || 2026,
+              type: catName,
+              dailyRate: pricing.dailyRate,
+              priceDisplay: `$${pricing.dailyRate}`,
+              rating: 5,
+              image: getCarImage(v),
+              specs: {
+                transmission: v.transmission === 'MANUAL' ? 'Manual' : 'Automatic',
+                fuelType: v.fuelType
+                  ? v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase()
+                  : 'Petrol',
+                hp: v.horsePower ? `${v.horsePower} HP` : '255 HP',
+                drivetrain: v.drivetrain || 'AWD',
+                seats: v.seats || 5,
+                luggage: 3,
+              },
+              featured: true,
+            });
+          }
+        }
+        // Top up to 4 if fewer distinct categories matched
+        for (const v of ordered) {
+          if (distinct.length >= 4) break;
+          if (!distinct.some((d) => d.id === v.id)) {
+            const catName = v.category?.name || 'Sedan';
+            const pricing = resolveVehiclePricing(v);
+            distinct.push({
+              id: v.id,
+              name: `${v.brand} ${v.model}`,
+              subtitle: catName.toUpperCase(),
+              year: v.year || 2026,
+              type: catName,
+              dailyRate: pricing.dailyRate,
+              priceDisplay: `$${pricing.dailyRate}`,
+              rating: 5,
+              image: getCarImage(v),
+              specs: {
+                transmission: v.transmission === 'MANUAL' ? 'Manual' : 'Automatic',
+                fuelType: v.fuelType
+                  ? v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase()
+                  : 'Petrol',
+                hp: v.horsePower ? `${v.horsePower} HP` : '255 HP',
+                drivetrain: v.drivetrain || 'AWD',
+                seats: v.seats || 5,
+                luggage: 3,
+              },
+              featured: true,
+            });
+          }
+        }
+        if (distinct.length > 0) setFeaturedCars(distinct);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useGSAP(
     () => {
@@ -87,55 +170,55 @@ export function BrowseCarTypeSection({ onRentCar }: BrowseCarTypeSectionProps) {
               lineHeight: 1.15,
               margin: 0,
             }}
-          >
-            Browse by Car Type
-          </h2>
-
-          <a
-            href="#browse-cars"
-            className="browse-all-link"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              textDecoration: 'none',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                color: '#FFFFFF',
-                textDecoration: 'underline',
-                textUnderlineOffset: '4px',
-              }}
             >
-              View All Cars
-            </span>
-            <span
-              className="arrow-circle"
+              {t('home.browseCars.title')}
+            </h2>
+
+            <a
+              href="/cars"
+              className="browse-all-link"
               style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
                 display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: '10px',
+                textDecoration: 'none',
+                cursor: 'pointer',
                 flexShrink: 0,
-                transition: 'transform 0.2s ease',
               }}
             >
-              <ArrowRight size={14} color="#330231" strokeWidth={2.6} />
-            </span>
-          </a>
+              <span
+                style={{
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '4px',
+                }}
+              >
+                {t('home.browseCars.viewAll')}
+              </span>
+              <span
+                className="arrow-circle"
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFFFFF',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'transform 0.2s ease',
+                }}
+              >
+                <ArrowRight size={14} color="#330231" strokeWidth={2.6} className="rtl-mirror-arrow" />
+              </span>
+            </a>
         </div>
 
         {/* Cars Grid (4 Columns) */}
         <div className="browse-cars-grid">
-          {FEATURED_CARS.map((car) => (
+          {featuredCars.map((car) => (
             <div key={car.id} className="browse-car-item">
               <CarCard car={car} onRent={onRentCar} />
             </div>
@@ -167,8 +250,8 @@ export function BrowseCarTypeSection({ onRentCar }: BrowseCarTypeSectionProps) {
             -webkit-overflow-scrolling: touch !important;
             gap: 16px !important;
             padding-bottom: 12px !important;
-            margin-right: -16px;
-            padding-right: 16px;
+            margin-inline-end: -16px;
+            padding-inline-end: 16px;
             scrollbar-width: none !important;
           }
           .browse-cars-grid::-webkit-scrollbar {

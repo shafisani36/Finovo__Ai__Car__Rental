@@ -39,11 +39,11 @@
   justify-content: center;
 }
 
-/* Twilight City Skyline on the Left */
+/* Twilight City Skyline on Start Side */
 .finovo-car-card-skyline {
   position: absolute;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   width: 58%;
   height: 100%;
   object-fit: cover;
@@ -55,11 +55,15 @@
   -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
 }
 
+[dir='rtl'] .finovo-car-card-skyline {
+  transform: scaleX(-1);
+}
+
 /* Available Status Pill Badge */
 .finovo-car-card-status-pill {
   position: absolute;
   top: 14px;
-  right: 16px;
+  inset-inline-end: 16px;
   z-index: 5;
   background: #D4F4E4;
   color: #067647;
@@ -97,6 +101,12 @@
   pointer-events: none;
 }
 
+.finovo-car-card-vehicle-wrap.is-photo-wrap {
+  inset: 0;
+  z-index: 1;
+  pointer-events: auto;
+}
+
 .finovo-car-card-vehicle-img {
   max-width: 82%;
   max-height: 145px;
@@ -104,6 +114,16 @@
   filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.28));
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: block;
+}
+
+.finovo-car-card-vehicle-img.is-photo {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  object-position: center 60%;
+  filter: none;
 }
 
 .finovo-car-card:hover .finovo-car-card-vehicle-img {

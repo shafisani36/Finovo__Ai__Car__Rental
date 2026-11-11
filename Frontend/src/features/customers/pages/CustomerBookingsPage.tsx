@@ -128,7 +128,7 @@ export function CustomerBookingsPage() {
             ))}
           </div>
 
-          <div style={{ position: 'relative', width: '280px' }}>
+          <div style={{ position: 'relative', width: 'min(100%, 280px)', flex: '1 1 220px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--cp-text-muted)' }} />
             <input
               type="text"
@@ -189,7 +189,7 @@ export function CustomerBookingsPage() {
                   <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     <div
                       style={{
-                        width: '160px',
+                        width: 'min(100%, 160px)',
                         height: '110px',
                         borderRadius: '12px',
                         background: '#F1EEF4',

@@ -399,7 +399,7 @@
 
 .cat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 18px;
 }
 
@@ -515,8 +515,8 @@
   background-color: #FFFFFF;
   border-radius: 20px;
   width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
+  max-width: min(100%, 520px);
+  max-height: calc(100dvh - 24px);
   box-shadow: 0 24px 60px rgba(20, 2, 32, 0.35);
   border: 1.5px solid #EFEAEF;
   overflow: hidden;

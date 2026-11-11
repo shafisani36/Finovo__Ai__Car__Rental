@@ -85,15 +85,44 @@ import {
 import { en } from '../src/i18n/locales/en';
 import { ur } from '../src/i18n/locales/ur';
 import { ar } from '../src/i18n/locales/ar';
+import { fr } from '../src/i18n/locales/fr';
+import { es } from '../src/i18n/locales/es';
+import { de } from '../src/i18n/locales/de';
 import { API_ENDPOINTS } from '../src/api/endpoints';
 
+function collectLeafPaths(obj: Record<string, unknown>, prefix = ''): string[] {
+  const paths: string[] = [];
+  for (const key of Object.keys(obj).sort()) {
+    const nextPath = prefix ? `${prefix}.${key}` : key;
+    const val = obj[key];
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      paths.push(...collectLeafPaths(val as Record<string, unknown>, nextPath));
+    } else {
+      paths.push(nextPath);
+    }
+  }
+  return paths;
+}
+
+function getByPath(obj: Record<string, unknown>, path: string): unknown {
+  return path.split('.').reduce<unknown>((acc, seg) => {
+    if (acc && typeof acc === 'object') {
+      return (acc as Record<string, unknown>)[seg];
+    }
+    return undefined;
+  }, obj);
+}
+
 describe('1. Multilingual Configuration & Supported Languages Allowlist', () => {
-  test('Should recognize supported languages (en, ur, ar) and reject invalid codes', () => {
+  test('Should recognize all 6 supported languages (en, ur, ar, fr, es, de) and reject invalid codes', () => {
     assert.equal(isSupportedLanguage('en'), true);
     assert.equal(isSupportedLanguage('ur'), true);
     assert.equal(isSupportedLanguage('ar'), true);
-    assert.equal(isSupportedLanguage('fr'), false);
-    assert.equal(isSupportedLanguage('de'), false);
+    assert.equal(isSupportedLanguage('fr'), true);
+    assert.equal(isSupportedLanguage('es'), true);
+    assert.equal(isSupportedLanguage('de'), true);
+    assert.equal(isSupportedLanguage('xx'), false);
+    assert.equal(isSupportedLanguage('ja'), false);
     assert.equal(isSupportedLanguage(null), false);
     assert.equal(isSupportedLanguage(123), false);
   });
@@ -104,10 +133,13 @@ describe('1. Multilingual Configuration & Supported Languages Allowlist', () => 
     assert.equal(normalizeLanguageCode('ur-PK'), 'ur');
     assert.equal(normalizeLanguageCode('ar-SA'), 'ar');
     assert.equal(normalizeLanguageCode('ar-AE'), 'ar');
+    assert.equal(normalizeLanguageCode('fr-FR'), 'fr');
+    assert.equal(normalizeLanguageCode('es-MX'), 'es');
+    assert.equal(normalizeLanguageCode('de-DE'), 'de');
     assert.equal(normalizeLanguageCode('ja-JP'), null);
   });
 
-  test('Should have correct RTL/LTR and locale configuration for each language', () => {
+  test('Should have correct RTL/LTR and locale configuration for all 6 languages', () => {
     assert.equal(SUPPORTED_LANGUAGES.en.direction, 'ltr');
     assert.equal(SUPPORTED_LANGUAGES.en.locale, 'en-US');
 
@@ -116,6 +148,15 @@ describe('1. Multilingual Configuration & Supported Languages Allowlist', () => 
 
     assert.equal(SUPPORTED_LANGUAGES.ar.direction, 'rtl');
     assert.equal(SUPPORTED_LANGUAGES.ar.nativeName, 'العربية');
+
+    assert.equal(SUPPORTED_LANGUAGES.fr.direction, 'ltr');
+    assert.equal(SUPPORTED_LANGUAGES.fr.nativeName, 'Français');
+
+    assert.equal(SUPPORTED_LANGUAGES.es.direction, 'ltr');
+    assert.equal(SUPPORTED_LANGUAGES.es.nativeName, 'Español');
+
+    assert.equal(SUPPORTED_LANGUAGES.de.direction, 'ltr');
+    assert.equal(SUPPORTED_LANGUAGES.de.nativeName, 'Deutsch');
   });
 });
 
@@ -177,42 +218,57 @@ describe('3. Document Direction & RTL Synchronizer', () => {
 });
 
 describe('4. Translation Resource Integrity & Parity', () => {
-  test('All top-level namespaces must be identical across en, ur, and ar', () => {
-    const enKeys = Object.keys(en).sort();
-    const urKeys = Object.keys(ur).sort();
-    const arKeys = Object.keys(ar).sort();
+  const allLocales = { en, ur, ar, fr, es, de } as const;
 
-    assert.deepEqual(urKeys, enKeys, 'Urdu namespaces must match English');
-    assert.deepEqual(arKeys, enKeys, 'Arabic namespaces must match English');
+  test('All top-level namespaces and nested keys must match English across all 6 languages', () => {
+    const enLeafPaths = collectLeafPaths(en as unknown as Record<string, unknown>);
+
+    for (const [code, bundle] of Object.entries(allLocales)) {
+      const leafPaths = collectLeafPaths(bundle as unknown as Record<string, unknown>);
+      assert.deepEqual(
+        leafPaths,
+        enLeafPaths,
+        `Locale "${code}" keys must match English key-for-key`
+      );
+
+      for (const path of enLeafPaths) {
+        const val = getByPath(bundle as unknown as Record<string, unknown>, path);
+        assert.equal(typeof val, 'string', `${code}.${path} must be a non-empty string`);
+        assert.ok((val as string).trim().length > 0, `${code}.${path} must not be empty`);
+      }
+    }
   });
 
-  test('Critical actions in common namespace must be translated in all languages', () => {
+  test('Critical actions in common namespace must be translated in all 6 languages', () => {
     const actionKeys = Object.keys(en.common.actions);
-    for (const key of actionKeys) {
-      assert.ok(
-        (ur.common.actions as any)[key],
-        `Urdu missing common.actions.${key}`
-      );
-      assert.ok(
-        (ar.common.actions as any)[key],
-        `Arabic missing common.actions.${key}`
-      );
+    for (const [code, bundle] of Object.entries(allLocales)) {
+      for (const key of actionKeys) {
+        assert.ok(
+          (bundle.common.actions as Record<string, string>)[key],
+          `${code} missing common.actions.${key}`
+        );
+      }
     }
   });
 
-  test('Navigation labels must be translated in all languages', () => {
+  test('Navigation labels must be translated in all 6 languages', () => {
     const navKeys = Object.keys(en.nav);
-    for (const key of navKeys) {
-      assert.ok((ur.nav as any)[key], `Urdu missing nav.${key}`);
-      assert.ok((ar.nav as any)[key], `Arabic missing nav.${key}`);
+    for (const [code, bundle] of Object.entries(allLocales)) {
+      for (const key of navKeys) {
+        assert.ok((bundle.nav as Record<string, string>)[key], `${code} missing nav.${key}`);
+      }
     }
   });
 
-  test('Live Translator keys must exist in all languages', () => {
+  test('Live Translator keys must exist in all 6 languages', () => {
     const translatorKeys = Object.keys(en.translator);
-    for (const key of translatorKeys) {
-      assert.ok((ur.translator as any)[key], `Urdu missing translator.${key}`);
-      assert.ok((ar.translator as any)[key], `Arabic missing translator.${key}`);
+    for (const [code, bundle] of Object.entries(allLocales)) {
+      for (const key of translatorKeys) {
+        assert.ok(
+          (bundle.translator as Record<string, unknown>)[key],
+          `${code} missing translator.${key}`
+        );
+      }
     }
   });
 });

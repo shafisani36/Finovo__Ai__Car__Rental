@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { BRAND_CATEGORIES } from '../data/homepageData';
@@ -10,6 +11,7 @@ interface CarCategorySectionProps {
 }
 
 export function CarCategorySection({ onCategorySelect }: CarCategorySectionProps) {
+  const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -73,7 +75,7 @@ export function CarCategorySection({ onCategorySelect }: CarCategorySectionProps
               margin: '0 0 6px 0',
             }}
           >
-            Car Category
+            {t('home.categories.title')}
           </h2>
           <p
             style={{
@@ -84,7 +86,7 @@ export function CarCategorySection({ onCategorySelect }: CarCategorySectionProps
               margin: 0,
             }}
           >
-            Find your ride by your favorite brand
+            {t('home.categories.subtitle')}
           </p>
         </div>
 
@@ -121,8 +123,8 @@ export function CarCategorySection({ onCategorySelect }: CarCategorySectionProps
             -webkit-overflow-scrolling: touch !important;
             gap: 14px !important;
             padding-bottom: 8px !important;
-            margin-right: -16px;
-            padding-right: 16px;
+            margin-inline-end: -16px;
+            padding-inline-end: 16px;
             scrollbar-width: none !important;
           }
           .category-cards-grid::-webkit-scrollbar {

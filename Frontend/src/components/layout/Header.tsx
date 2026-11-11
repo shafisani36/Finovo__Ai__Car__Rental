@@ -279,7 +279,7 @@ export function Header({ onSignInClick }: HeaderProps) {
                 })}
               >
                 <span>{link.label}</span>
-                <span style={{ color: '#FAB826', fontSize: '1rem' }}>›</span>
+                <span className="rtl-mirror-chevron" style={{ color: '#FAB826', fontSize: '1rem' }}>›</span>
               </NavLink>
             ))}
 
@@ -301,14 +301,14 @@ export function Header({ onSignInClick }: HeaderProps) {
                 borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
                 backgroundColor: 'rgba(250, 184, 38, 0.08)',
                 cursor: 'pointer',
-                textAlign: 'left',
+                textAlign: 'start',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Languages size={18} />
                 <span>{t('nav.translator')}</span>
               </div>
-              <span style={{ color: '#FAB826', fontSize: '1rem' }}>›</span>
+              <span className="rtl-mirror-chevron" style={{ color: '#FAB826', fontSize: '1rem' }}>›</span>
             </button>
           </div>
 
@@ -346,6 +346,51 @@ export function Header({ onSignInClick }: HeaderProps) {
       >
         <TextTranslator onClose={() => setTranslatorOpen(false)} />
       </Modal>
+
+      <style>{`
+        .header-container {
+          position: relative;
+        }
+        .header-brand-logo {
+          flex-shrink: 0;
+        }
+        .header-actions {
+          flex-shrink: 0;
+        }
+        @media (max-width: 1120px) {
+          .desktop-only-inline {
+            display: none !important;
+          }
+          .desktop-navigation {
+            gap: 18px !important;
+          }
+        }
+        @media (max-width: 960px) {
+          .mobile-toggle-btn {
+            display: inline-flex !important;
+          }
+          .desktop-navigation {
+            display: none !important;
+          }
+          .signin-button {
+            display: none !important;
+          }
+          .mobile-profile-btn {
+            display: inline-flex !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .header-actions {
+            gap: 6px !important;
+          }
+          .theme-toggle-btn {
+            display: none !important;
+          }
+          .translator-toggle-btn {
+            padding: 6px 8px !important;
+          }
+        }
+      `}</style>
     </header>
   );
 }

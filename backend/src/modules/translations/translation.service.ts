@@ -149,6 +149,9 @@ export class TranslationService {
       { code: 'en', name: 'English', nativeName: 'English', direction: 'ltr', locale: 'en-US' },
       { code: 'ur', name: 'Urdu', nativeName: 'اردو', direction: 'rtl', locale: 'ur-PK' },
       { code: 'ar', name: 'Arabic', nativeName: 'العربية', direction: 'rtl', locale: 'ar-SA' },
+      { code: 'fr', name: 'French', nativeName: 'Français', direction: 'ltr', locale: 'fr-FR' },
+      { code: 'es', name: 'Spanish', nativeName: 'Español', direction: 'ltr', locale: 'es-ES' },
+      { code: 'de', name: 'German', nativeName: 'Deutsch', direction: 'ltr', locale: 'de-DE' },
     ];
   }
 }
