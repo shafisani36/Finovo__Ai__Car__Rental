@@ -12,8 +12,10 @@ import {
 import { customerPortalApi, type SupportTicketItem } from '../api/customerPortalApi';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
+import { telHref, useSiteInfo } from '../../../hooks/usePublicSite';
 
 export function CustomerSupportPage() {
+  const site = useSiteInfo();
   const [tickets, setTickets] = useState<SupportTicketItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -132,32 +134,43 @@ export function CustomerSupportPage() {
       </div>
 
       {/* Emergency Hotline Contact Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
+        {site?.supportPhone && (
         <div className="cp-card" style={{ background: '#FFFDF5', borderColor: '#FDE68A' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <Phone size={20} color="#D97706" />
             <span style={{ fontWeight: 800, color: '#92400E', fontSize: '1rem' }}>24/7 Roadside Emergency</span>
           </div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-            +966 11 400 9000
-          </div>
+          <a
+            href={telHref(site.supportPhone)}
+            className="phone-number"
+            style={{ display: 'block', fontSize: '1.4rem', fontWeight: 800, color: 'var(--cp-primary)', textDecoration: 'none', overflowWrap: 'anywhere' }}
+          >
+            {site.supportPhone}
+          </a>
           <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '6px 0 0 0' }}>
             Direct technician and emergency towing dispatch across all highways.
           </p>
         </div>
+        )}
 
+        {site?.supportEmail && (
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <Mail size={20} color="var(--cp-primary)" />
             <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1rem' }}>Concierge Email Desk</span>
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--cp-primary)' }}>
-            support@finovo.com
-          </div>
+          <a
+            href={`mailto:${site.supportEmail}`}
+            style={{ display: 'block', fontSize: '1.2rem', fontWeight: 700, color: 'var(--cp-primary)', textDecoration: 'none', overflowWrap: 'anywhere' }}
+          >
+            {site.supportEmail}
+          </a>
           <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '6px 0 0 0' }}>
             Average response time: <strong>under 15 minutes</strong> for active reservations.
           </p>
         </div>
+        )}
       </div>
 
       {/* Tickets List */}

@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { customerPortalApi, type CustomerPaymentSummary } from '../api/customerPortalApi';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import { StripePaymentForm } from '../../payments/components/StripePaymentForm';
+import { formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerPaymentsPage() {
@@ -20,10 +22,8 @@ export function CustomerPaymentsPage() {
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState('');
   const [payAmount, setPayAmount] = useState(0);
-  const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
-  const [cardExpiry, setCardExpiry] = useState('12/28');
-  const [cardCvc, setCardCvc] = useState('888');
-  const [isPaying, setIsPaying] = useState(false);
+  // Amount locked in when the customer continues to the Stripe card form
+  const [stripeAmount, setStripeAmount] = useState<number | null>(null);
   const [paySuccessMessage, setPaySuccessMessage] = useState<string | null>(null);
 
   // Invoice view modal
@@ -39,9 +39,9 @@ export function CustomerPaymentsPage() {
         if (unpaid) {
           setSelectedBookingId(unpaid.bookingId);
           setPayAmount(unpaid.balanceDue);
-        } else if (res.invoices.length > 0) {
-          setSelectedBookingId(res.invoices[0].bookingId);
-          setPayAmount(100);
+        } else {
+          setSelectedBookingId('');
+          setPayAmount(0);
         }
       }
     } catch (err) {
@@ -55,28 +55,21 @@ export function CustomerPaymentsPage() {
     fetchPayments();
   }, []);
 
-  const handleProcessPayment = async () => {
-    if (!selectedBookingId || payAmount <= 0) return;
-    try {
-      setIsPaying(true);
-      await customerPortalApi.processPayment({
-        bookingId: selectedBookingId,
-        amount: payAmount,
-        paymentMethod: 'CREDIT_CARD',
-        cardNumberLast4: '4242',
-        cardBrand: 'Visa',
-      });
-      setPaySuccessMessage('Payment processed successfully!');
-      setTimeout(() => {
-        setIsPayModalOpen(false);
-        setPaySuccessMessage(null);
-        fetchPayments();
-      }, 1500);
-    } catch (err: any) {
-      alert(err.message || 'Payment processing failed');
-    } finally {
-      setIsPaying(false);
-    }
+  const selectedInvoiceForPay = data?.invoices.find((i) => i.bookingId === selectedBookingId);
+  const maxPayable = selectedInvoiceForPay?.balanceDue ?? 0;
+
+  const closePayModal = () => {
+    setIsPayModalOpen(false);
+    setStripeAmount(null);
+    setPaySuccessMessage(null);
+  };
+
+  const handlePaymentSuccess = () => {
+    setPaySuccessMessage('Payment processed successfully!');
+    setTimeout(() => {
+      closePayModal();
+      fetchPayments();
+    }, 1500);
   };
 
   if (isLoading) {
@@ -91,7 +84,7 @@ export function CustomerPaymentsPage() {
     totalPaid: 0,
     totalOutstanding: 0,
     securityDepositsHeld: 0,
-    currency: 'USD',
+    currency: '',
   };
 
   return (
@@ -106,7 +99,7 @@ export function CustomerPaymentsPage() {
           <div className="cp-header-actions">
             <button className="cp-btn-primary" onClick={() => setIsPayModalOpen(true)}>
               <CreditCard size={16} />
-              Pay Outstanding (${summary.totalOutstanding.toFixed(2)})
+              Pay Outstanding ({formatMoney(summary.totalOutstanding, summary.currency, 2)})
             </button>
           </div>
         )}
@@ -120,7 +113,7 @@ export function CustomerPaymentsPage() {
             Total Settled & Paid
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-            ${summary.totalPaid.toFixed(2)}
+            {formatMoney(summary.totalPaid, summary.currency, 2)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
             Across all completed & active rentals
@@ -139,7 +132,7 @@ export function CustomerPaymentsPage() {
               color: summary.totalOutstanding > 0 ? 'var(--cp-danger)' : 'var(--cp-primary)',
             }}
           >
-            ${summary.totalOutstanding.toFixed(2)}
+            {formatMoney(summary.totalOutstanding, summary.currency, 2)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
             {summary.totalOutstanding > 0 ? 'Pending payment settlement' : 'All accounts settled'}
@@ -152,7 +145,7 @@ export function CustomerPaymentsPage() {
             Security Deposits Held
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-            ${summary.securityDepositsHeld.toFixed(2)}
+            {formatMoney(summary.securityDepositsHeld, summary.currency, 2)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
             Refunded automatically upon trip completion
@@ -186,7 +179,7 @@ export function CustomerPaymentsPage() {
                     <td style={{ padding: '14px 8px', color: 'var(--cp-primary)' }}>{inv.vehicleName}</td>
                     <td style={{ padding: '14px 8px', color: 'var(--cp-text-muted)' }}>{inv.date}</td>
                     <td style={{ padding: '14px 8px', fontWeight: 700, color: 'var(--cp-primary)' }}>
-                      ${inv.totalAmount.toFixed(2)}
+                      {formatMoney(inv.totalAmount, inv.currency || summary.currency, 2)}
                     </td>
                     <td
                       style={{
@@ -195,7 +188,7 @@ export function CustomerPaymentsPage() {
                         color: inv.balanceDue > 0 ? 'var(--cp-danger)' : '#10B981',
                       }}
                     >
-                      ${inv.balanceDue.toFixed(2)}
+                      {formatMoney(inv.balanceDue, inv.currency || summary.currency, 2)}
                     </td>
                     <td style={{ padding: '14px 8px' }}>
                       <span
@@ -260,7 +253,7 @@ export function CustomerPaymentsPage() {
                       {new Date(tx.createdAt).toLocaleDateString()}
                     </td>
                     <td style={{ padding: '14px 8px', fontWeight: 700, color: '#10B981' }}>
-                      +${tx.amount.toFixed(2)}
+                      +{formatMoney(tx.amount, tx.currency, 2)}
                     </td>
                     <td style={{ padding: '14px 8px' }}>
                       <span className="cp-badge cp-badge-success">{tx.status}</span>
@@ -290,81 +283,67 @@ export function CustomerPaymentsPage() {
               </div>
             ) : (
               <>
-                <div className="cp-form-group">
-                  <label className="cp-label">Select Booking</label>
-                  <CustomSelect
-                    value={selectedBookingId}
-                    onChange={(val) => {
-                      const bookingId = String(val);
-                      setSelectedBookingId(bookingId);
-                      const inv = data?.invoices.find((i) => i.bookingId === bookingId);
-                      if (inv) setPayAmount(inv.balanceDue > 0 ? inv.balanceDue : inv.totalAmount);
-                    }}
-                    options={(data?.invoices || []).map((inv) => ({
-                      value: inv.bookingId,
-                      label: `Booking #${inv.bookingNumber} - ${inv.vehicleName}`,
-                      sublabel: `Balance: ${inv.balanceDue.toFixed(2)}`,
-                      badge: inv.status,
-                    }))}
-                    placeholder="Select a booking invoice..."
-                    size="md"
+                {stripeAmount === null ? (
+                  <>
+                    <div className="cp-form-group">
+                      <label className="cp-label">Select Booking</label>
+                      <CustomSelect
+                        value={selectedBookingId}
+                        onChange={(val) => {
+                          const bookingId = String(val);
+                          setSelectedBookingId(bookingId);
+                          const inv = data?.invoices.find((i) => i.bookingId === bookingId);
+                          setPayAmount(inv ? inv.balanceDue : 0);
+                        }}
+                        options={(data?.invoices || [])
+                          .filter((inv) => inv.balanceDue > 0)
+                          .map((inv) => ({
+                            value: inv.bookingId,
+                            label: `Booking #${inv.bookingNumber} - ${inv.vehicleName}`,
+                            sublabel: `Balance: ${formatMoney(inv.balanceDue, inv.currency, 2)}`,
+                            badge: inv.status,
+                          }))}
+                        placeholder="Select a booking invoice..."
+                        size="md"
+                      />
+                    </div>
+
+                    <div className="cp-form-group">
+                      <label className="cp-label">
+                        Amount to Pay{selectedInvoiceForPay?.currency ? ` (${selectedInvoiceForPay.currency})` : ''}
+                      </label>
+                      <input
+                        type="number"
+                        className="cp-input"
+                        value={payAmount}
+                        onChange={(e) => setPayAmount(Number(e.target.value))}
+                        min={1}
+                        max={maxPayable}
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+                      <button className="cp-btn-outline" onClick={closePayModal}>
+                        Cancel
+                      </button>
+                      <button
+                        className="cp-btn-primary"
+                        disabled={!selectedBookingId || payAmount <= 0 || payAmount > maxPayable}
+                        onClick={() => setStripeAmount(Math.round(payAmount * 100) / 100)}
+                      >
+                        Continue to Card Payment
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <StripePaymentForm
+                    bookingId={selectedBookingId}
+                    amount={stripeAmount}
+                    onSuccess={handlePaymentSuccess}
+                    onCancel={() => setStripeAmount(null)}
                   />
-                </div>
-
-                <div className="cp-form-group">
-                  <label className="cp-label">Amount to Pay ($ USD)</label>
-                  <input
-                    type="number"
-                    className="cp-input"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(Number(e.target.value))}
-                    min={1}
-                  />
-                </div>
-
-                <div className="cp-form-group">
-                  <label className="cp-label">Credit Card Number</label>
-                  <input
-                    type="text"
-                    className="cp-input"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))', gap: '12px' }}>
-                  <div className="cp-form-group">
-                    <label className="cp-label">Expiry (MM/YY)</label>
-                    <input
-                      type="text"
-                      className="cp-input"
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
-                    />
-                  </div>
-                  <div className="cp-form-group">
-                    <label className="cp-label">CVC</label>
-                    <input
-                      type="text"
-                      className="cp-input"
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-                  <button className="cp-btn-outline" onClick={() => setIsPayModalOpen(false)}>
-                    Cancel
-                  </button>
-                  <button
-                    className="cp-btn-primary"
-                    disabled={isPaying || payAmount <= 0}
-                    onClick={handleProcessPayment}
-                  >
-                    {isPaying ? 'Processing...' : `Pay $${payAmount.toFixed(2)}`}
-                  </button>
-                </div>
+                )}
               </>
             )}
           </div>
@@ -374,13 +353,14 @@ export function CustomerPaymentsPage() {
       {/* Invoice Details Modal */}
       {selectedInvoice && (
         <div className="cp-modal-backdrop">
-          <div className="cp-modal-box" style={{ maxWidth: '640px' }}>
+          <div className="cp-modal-box printable-document" style={{ maxWidth: '640px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <span className="cp-badge cp-badge-accent">Finovo Tax Invoice</span>
                 <h2 className="cp-card-title" style={{ marginTop: '6px' }}>Invoice #{selectedInvoice.bookingNumber}</h2>
               </div>
               <button
+                className="no-print"
                 onClick={() => setSelectedInvoice(null)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cp-text-muted)' }}
               >
@@ -408,31 +388,31 @@ export function CustomerPaymentsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.9rem', marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--cp-text-muted)' }}>Subtotal:</span>
-                <span style={{ fontWeight: 600 }}>${selectedInvoice.subtotal.toFixed(2)}</span>
+                <span style={{ fontWeight: 600 }}>{formatMoney(selectedInvoice.subtotal, selectedInvoice.currency || summary.currency, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--cp-text-muted)' }}>VAT (10%):</span>
-                <span style={{ fontWeight: 600 }}>${selectedInvoice.taxAmount.toFixed(2)}</span>
+                <span style={{ fontWeight: 600 }}>{formatMoney(selectedInvoice.taxAmount, selectedInvoice.currency || summary.currency, 2)}</span>
               </div>
               <div style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontWeight: 800 }}>Total:</span>
                 <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--cp-primary)' }}>
-                  ${selectedInvoice.totalAmount.toFixed(2)}
+                  {formatMoney(selectedInvoice.totalAmount, selectedInvoice.currency || summary.currency, 2)}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--cp-text-muted)' }}>Amount Paid:</span>
-                <span style={{ fontWeight: 700, color: '#10B981' }}>-${selectedInvoice.paidAmount.toFixed(2)}</span>
+                <span style={{ fontWeight: 700, color: '#10B981' }}>-{formatMoney(selectedInvoice.paidAmount, selectedInvoice.currency || summary.currency, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--cp-text-muted)' }}>Balance Remaining:</span>
                 <span style={{ fontWeight: 800, color: selectedInvoice.balanceDue > 0 ? 'var(--cp-danger)' : '#10B981' }}>
-                  ${selectedInvoice.balanceDue.toFixed(2)}
+                  {formatMoney(selectedInvoice.balanceDue, selectedInvoice.currency || summary.currency, 2)}
                 </span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button onClick={() => window.print()} className="cp-btn-secondary">
                 <Printer size={16} />
                 Print Invoice

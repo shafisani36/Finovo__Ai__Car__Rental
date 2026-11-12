@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Search,
@@ -23,19 +23,13 @@ import {
 } from 'lucide-react';
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import type { Vehicle } from '../../features/fleet/types/fleet.types';
-import { getCarImage, resolveVehiclePricing } from '../../utils/carImageHelper';
+import { formatMoney, getCarImage, resolveVehiclePricing } from '../../utils/carImageHelper';
 import './AvailableCarsPage.css';
 import { CarCard } from '../../components/common/CarCard';
 import { CustomSelect } from '../../components/common/CustomSelect';
 
 // Master Visual Assets matching Figma Design Specification
 import heroCarImg from '../../assets/cars/finovo-available-hero-car.png';
-import redCar from '../../assets/cars/finovo-red-car.png';
-import grayCar from '../../assets/cars/finovo-gray-car.png';
-import blueCar from '../../assets/cars/finovo-blue-car.png';
-import whiteCar from '../../assets/cars/finovo-white-car.png';
-import yellowCar from '../../assets/cars/finovo-yellow-car.png';
-import greenCar from '../../assets/cars/finovo-green-car.png';
 import bmwLogo from '../../assets/cars/finovo-bmw-logo.png';
 import lamboLogo from '../../assets/cars/finovo-lamborghini-logo.png';
 
@@ -61,224 +55,30 @@ export interface CatalogCar {
   zeroDeposit?: boolean;
 }
 
-// Master Fallback Catalog (Synced with Seeded 12 Distinct Master Vehicles)
-const MASTER_FLEET: CatalogCar[] = [
-  {
-    id: 'car-1',
-    name: 'Lamborghini Huracán Evo',
-    brand: 'Lamborghini',
-    model: 'Huracán Evo',
-    year: 2026,
-    type: 'Coupe / Sports',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 2,
-    pricePerDay: 980,
-    isWideHero: true,
-    tagline: 'Unleash extraordinary V10 performance.',
-    image: '/cars/orange-car.jpg',
-    logo: lamboLogo,
-    mileageLimit: '200 km',
-    available: true,
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-2',
-    name: 'BMW 520 i',
-    brand: 'BMW',
-    model: '520 i',
-    year: 2026,
-    type: 'Sedan',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 210,
-    image: '/cars/bmw.png',
-    logo: bmwLogo,
-    mileageLimit: '300 km',
-    available: true,
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-3',
-    name: 'BMW X5 M Competition',
-    brand: 'BMW',
-    model: 'X5 M Competition',
-    year: 2026,
-    type: 'SUV',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 360,
-    image: '/cars/studio-bmw-x5.jpg',
-    logo: bmwLogo,
-    mileageLimit: '280 km',
-    available: true,
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-4',
-    name: 'Toyota Corolla Altis Grande',
-    brand: 'Toyota',
-    model: 'Corolla Altis Grande',
-    year: 2025,
-    type: 'Sedan',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 95,
-    image: whiteCar,
-    logo: bmwLogo,
-    mileageLimit: '350 km',
-    available: true,
-    zeroDeposit: true,
-  },
-  {
-    id: 'car-5',
-    name: 'Tesla Model 3 Long Range',
-    brand: 'Tesla',
-    model: 'Model 3 Long Range',
-    year: 2026,
-    type: 'Sedan',
-    fuel: 'Electric',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 165,
-    image: grayCar,
-    logo: bmwLogo,
-    mileageLimit: '320 km',
-    available: true,
-    zeroDeposit: true,
-  },
-  {
-    id: 'car-6',
-    name: 'Tesla Model 3 Performance',
-    brand: 'Tesla',
-    model: 'Model 3 Performance',
-    year: 2026,
-    type: 'Coupe / Sports',
-    fuel: 'Electric',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 225,
-    image: redCar,
-    logo: bmwLogo,
-    mileageLimit: '300 km',
-    available: true,
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-7',
-    name: 'Ford Focus ST',
-    brand: 'Ford',
-    model: 'Focus ST',
-    year: 2025,
-    type: 'Hatchback',
-    fuel: 'Petrol',
-    transmission: 'Manual',
-    seats: 5,
-    pricePerDay: 125,
-    image: yellowCar,
-    logo: lamboLogo,
-    mileageLimit: '300 km',
-    available: true,
-    zeroDeposit: true,
-  },
-  {
-    id: 'car-8',
-    name: 'MINI Cooper Works',
-    brand: 'MINI',
-    model: 'Cooper Works',
-    year: 2025,
-    type: 'Hatchback',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 4,
-    pricePerDay: 140,
-    image: greenCar,
-    logo: lamboLogo,
-    mileageLimit: '300 km',
-    available: true,
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-9',
-    name: 'Hyundai Tucson Hybrid AWD',
-    brand: 'Hyundai',
-    model: 'Tucson Hybrid AWD',
-    year: 2026,
-    type: 'SUV',
-    fuel: 'Hybrid',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 155,
-    image: blueCar,
-    logo: bmwLogo,
-    mileageLimit: '350 km',
-    available: true,
-    zeroDeposit: true,
-  },
-  {
-    id: 'car-10',
-    name: 'BMW 740i Executive',
-    brand: 'BMW',
-    model: '740i Executive',
-    year: 2026,
-    type: 'Luxury / Executive',
-    fuel: 'Hybrid',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 420,
-    image: '/cars/studio-bmw-740i.jpg',
-    logo: bmwLogo,
-    mileageLimit: '300 km',
-    available: true,
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-11',
-    name: 'Lamborghini Urus S',
-    brand: 'Lamborghini',
-    model: 'Urus S',
-    year: 2026,
-    type: 'SUV',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 5,
-    pricePerDay: 1150,
-    isWideHero: true,
-    tagline: 'Extraordinary luxury in every terrain.',
-    image: '/cars/studio-lambo-urus.jpg',
-    logo: lamboLogo,
-    mileageLimit: '250 km',
-    available: true,
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-12',
-    name: 'BMW M4 Competition',
-    brand: 'BMW',
-    model: 'M4 Competition',
-    year: 2026,
-    type: 'Coupe / Sports',
-    fuel: 'Petrol',
-    transmission: 'Automatic',
-    seats: 4,
-    pricePerDay: 480,
-    image: '/cars/studio-bmw-m4.jpg',
-    logo: bmwLogo,
-    mileageLimit: '250 km',
-    available: true,
-    zeroDeposit: false,
-  },
-];
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isIsoDate(value: string | null): boolean {
+  return Boolean(value && ISO_DATE_PATTERN.test(value) && !isNaN(new Date(value).getTime()));
+}
+
+function todayIso(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
+/** Converts a local calendar range (inclusive) into the ISO interval the backend filters on. */
+function toBackendRange(start: string, end: string): { from: string; to: string } {
+  const from = new Date(`${start}T00:00:00`);
+  const to = new Date(`${end}T23:59:59`);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
 
 export function AvailableCarsPage() {
   const { t } = useTranslation();
   // Primary State Pipeline
   const [period, setPeriod] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
   const [search, setSearch] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('All Brands');
   const [selectedType, setSelectedType] = useState('All Types');
   const [selectedPriceRange, setSelectedPriceRange] = useState('Any Price');
   const [selectedTransmission, setSelectedTransmission] = useState('Any');
@@ -297,14 +97,26 @@ export function AvailableCarsPage() {
   const [zeroDepositOnly, setZeroDepositOnly] = useState<boolean>(false);
   const [unlimitedMileageOnly, setUnlimitedMileageOnly] = useState<boolean>(false);
 
-  // Date Range State
+  // Date Range State (pre-filled from ?pickupDate=YYYY-MM-DD&returnDate=YYYY-MM-DD)
+  const [searchParams, setSearchParams] = useSearchParams();
+  // ?brand=Toyota from the home page brand cards
+  const [selectedBrand, setSelectedBrand] = useState(() => searchParams.get('brand')?.trim() || 'All Brands');
+  const initialStart = isIsoDate(searchParams.get('pickupDate')) ? searchParams.get('pickupDate')! : '';
+  const initialEnd = isIsoDate(searchParams.get('returnDate')) ? searchParams.get('returnDate')! : '';
   const [dateModalOpen, setDateModalOpen] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [dateDisplay, setDateDisplay] = useState('MM/DD/YYYY - MM/DD/YYYY');
+  const [startDate, setStartDate] = useState(initialStart);
+  const [endDate, setEndDate] = useState(initialEnd);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [appliedRange, setAppliedRange] = useState<{ start: string; end: string } | null>(
+    initialStart && initialEnd && initialStart <= initialEnd ? { start: initialStart, end: initialEnd } : null
+  );
+  const dateDisplay = appliedRange ? `${appliedRange.start} - ${appliedRange.end}` : t('cars.datePlaceholder');
 
-  // Live Dynamic Backend Vehicles State Layer
-  const [fleet, setFleet] = useState<CatalogCar[]>(MASTER_FLEET);
+  // Live backend fleet (no hardcoded fallback data)
+  const [fleet, setFleet] = useState<CatalogCar[]>([]);
+  const [isLoadingFleet, setIsLoadingFleet] = useState(true);
+  const [fleetError, setFleetError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
   // Close dropdown on outside click
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -320,52 +132,67 @@ export function AvailableCarsPage() {
     };
   }, []);
 
-  // Fetch Live Vehicles Dynamically from backend API
+  // Fetch vehicles from the backend; when a date range is applied the backend excludes cars booked in that range
   useEffect(() => {
     let isMounted = true;
     async function loadVehicles() {
+      setIsLoadingFleet(true);
+      setFleetError(null);
       try {
-        const res = await vehiclesApi.list({ limit: 100 });
-        if (res?.vehicles && res.vehicles.length > 0 && isMounted) {
-          const apiCars: CatalogCar[] = res.vehicles.map((v: Vehicle) => {
-            const isLambo = v.brand?.toLowerCase().includes('lambo');
-            const pricing = resolveVehiclePricing(v);
-            const carImg = getCarImage(v);
-
-            return {
-              id: v.id,
-              name: `${v.brand} ${v.model}`,
-              brand: v.brand || 'Luxury',
-              model: v.model || 'Performance',
-              year: v.year || 2026,
-              type: v.category?.name || 'Sedan',
-              fuel: v.fuelType ? (v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase()) : 'Petrol',
-              transmission: v.transmission ? (v.transmission.charAt(0) + v.transmission.slice(1).toLowerCase()) : 'Automatic',
-              seats: v.seats || 5,
-              pricePerDay: pricing.dailyRate,
-              currency: pricing.currency,
-              isWideHero: isLambo,
-              tagline: isLambo ? 'Unleash extraordinary performance.' : undefined,
-              image: carImg,
-              logo: isLambo ? lamboLogo : bmwLogo,
-              mileageLimit: v.mileageLimitPerDay ? `${v.mileageLimitPerDay} km` : 'Unlimited',
-              available: v.status === 'AVAILABLE',
-              zeroDeposit: pricing.zeroDeposit,
-              unlimitedMileage: !v.mileageLimitPerDay,
-            };
-          });
-
-          setFleet(apiCars);
-        }
+        const range = appliedRange ? toBackendRange(appliedRange.start, appliedRange.end) : null;
+        const res = await vehiclesApi.list({
+          limit: 100,
+          publicCatalog: 'true',
+          ...(range ? { availableFrom: range.from, availableTo: range.to } : {}),
+        });
+        if (!isMounted) return;
+        const apiCars: CatalogCar[] = (res?.vehicles || []).map((v: Vehicle) => {
+          const isLambo = v.brand?.toLowerCase().includes('lambo');
+          const pricing = resolveVehiclePricing(v);
+          return {
+            id: v.id,
+            name: `${v.brand} ${v.model}`,
+            brand: v.brand,
+            model: v.model,
+            year: v.year,
+            type: v.category?.name || '',
+            fuel: v.fuelType ? v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase() : '',
+            transmission: v.transmission
+              ? v.transmission.charAt(0) + v.transmission.slice(1).toLowerCase()
+              : '',
+            seats: v.seats,
+            pricePerDay: pricing.dailyRate,
+            currency: pricing.currency,
+            isWideHero: isLambo,
+            image: getCarImage(v),
+            logo: isLambo ? lamboLogo : bmwLogo,
+            mileageLimit: v.mileageLimitPerDay ? `${v.mileageLimitPerDay} km` : t('cars.unlimitedMileage'),
+            // Inside a selected range the backend already removed booked cars
+            available: range ? true : v.status === 'AVAILABLE',
+            zeroDeposit: pricing.zeroDeposit,
+            unlimitedMileage: !v.mileageLimitPerDay,
+          };
+        });
+        setFleet(apiCars);
       } catch (err) {
-        // Fall back gracefully to MASTER_FLEET if offline
+        if (isMounted) {
+          setFleet([]);
+          setFleetError(err instanceof Error ? err.message : t('cars.loadError'));
+        }
+      } finally {
+        if (isMounted) setIsLoadingFleet(false);
       }
     }
     loadVehicles();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [appliedRange, reloadToken, t]);
+
+  // Query string passed to detail pages so the selected dates carry through to checkout
+  const detailsSearch = appliedRange
+    ? `?pickupDate=${appliedRange.start}&returnDate=${appliedRange.end}`
+    : '';
 
   // Multiplier for rental frequency
   const rateMultiplier = useMemo(() => {
@@ -548,11 +375,42 @@ export function AvailableCarsPage() {
   };
 
   const handleApplyDates = () => {
-    if (startDate && endDate) {
-      setDateDisplay(`${startDate} - ${endDate}`);
-    } else {
-      setDateDisplay('MM/DD/YYYY - MM/DD/YYYY');
+    if (!startDate && !endDate) {
+      handleClearDates();
+      return;
     }
+    if (!startDate || !endDate) {
+      setDateError(t('cars.dateErrorBoth'));
+      return;
+    }
+    if (startDate < todayIso()) {
+      setDateError(t('cars.dateErrorPast'));
+      return;
+    }
+    if (endDate < startDate) {
+      setDateError(t('cars.dateErrorOrder'));
+      return;
+    }
+    setDateError(null);
+    setAppliedRange({ start: startDate, end: endDate });
+    setCurrentPage(1);
+    const next = new URLSearchParams(searchParams);
+    next.set('pickupDate', startDate);
+    next.set('returnDate', endDate);
+    setSearchParams(next, { replace: true });
+    setDateModalOpen(false);
+  };
+
+  const handleClearDates = () => {
+    setStartDate('');
+    setEndDate('');
+    setDateError(null);
+    setAppliedRange(null);
+    setCurrentPage(1);
+    const next = new URLSearchParams(searchParams);
+    next.delete('pickupDate');
+    next.delete('returnDate');
+    setSearchParams(next, { replace: true });
     setDateModalOpen(false);
   };
 
@@ -937,7 +795,49 @@ export function AvailableCarsPage() {
         </div>
 
         {/* 4. CARS CATALOG: ASYMMETRIC GRID OR LIST */}
-        {filteredCars.length === 0 ? (
+        {isLoadingFleet ? (
+          <div className="available-cars-grid" aria-busy="true" aria-live="polite">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="cars-skeleton-card" />
+            ))}
+          </div>
+        ) : fleetError ? (
+          <div
+            role="alert"
+            style={{
+              textAlign: 'center',
+              padding: '70px 20px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '26px',
+              border: '2px solid #3B094E',
+            }}
+          >
+            <CarFront size={54} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#1C0324', margin: '0 0 6px 0' }}>
+              {t('cars.loadError')}
+            </h3>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 20px 0' }}>{fleetError}</p>
+            <button
+              type="button"
+              onClick={() => setReloadToken((n) => n + 1)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                backgroundColor: '#1C0324',
+                color: '#FAB826',
+                border: 'none',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              <RotateCcw size={16} />
+              <span>{t('common.actions.retry')}</span>
+            </button>
+          </div>
+        ) : filteredCars.length === 0 ? (
           <div
             style={{
               textAlign: 'center',
@@ -997,6 +897,7 @@ export function AvailableCarsPage() {
                 image={car.image}
                 logo={car.logo}
                 available={car.available}
+                linkSearch={detailsSearch}
               />
             ))}
           </div>
@@ -1015,9 +916,11 @@ export function AvailableCarsPage() {
                       />
                     </div>
                     <div className="car-card-list-details">
-                      <div className="car-available-pill-badge" style={{ position: 'static', marginBottom: '6px' }}>
-                        <span>{t('common.status.available')}</span>
-                      </div>
+                      {car.available && (
+                        <div className="car-available-pill-badge" style={{ position: 'static', marginBottom: '6px' }}>
+                          <span>{t('common.status.available')}</span>
+                        </div>
+                      )}
                       <h3>{car.name}</h3>
                       <p>{car.year} · {car.type} · {labelTrans(car.transmission)} · {labelFuel(car.fuel)}</p>
                     </div>
@@ -1042,13 +945,13 @@ export function AvailableCarsPage() {
 
                   <div className="car-card-list-right">
                     <div className="car-card-list-price">
-                      <h4>{car.currency === 'SAR' ? 'SAR ' : '$'}{Math.round(car.pricePerDay * rateMultiplier).toLocaleString()}</h4>
+                      <h4>{formatMoney(Math.round(car.pricePerDay * rateMultiplier), car.currency)}</h4>
                       <p>{periodLabel}</p>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Link
-                        to={`/cars/${car.id}`}
+                        to={`/cars/${car.id}${detailsSearch}`}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -1249,7 +1152,11 @@ export function AvailableCarsPage() {
                 <input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  min={todayIso()}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setDateError(null);
+                  }}
                   style={{
                     width: '100%',
                     padding: '10px 14px',
@@ -1269,7 +1176,11 @@ export function AvailableCarsPage() {
                 <input
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate || todayIso()}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setDateError(null);
+                  }}
                   style={{
                     width: '100%',
                     padding: '10px 14px',
@@ -1283,16 +1194,17 @@ export function AvailableCarsPage() {
               </div>
             </div>
 
+            {dateError && (
+              <p role="alert" style={{ color: '#B91C1C', fontSize: '13px', fontWeight: 600, margin: '0 0 16px 0' }}>
+                {dateError}
+              </p>
+            )}
+
             <div className="cars-modal-footer">
               <button
                 type="button"
                 className="cars-modal-reset-btn"
-                onClick={() => {
-                  setStartDate('');
-                  setEndDate('');
-                  setDateDisplay('MM/DD/YYYY - MM/DD/YYYY');
-                  setDateModalOpen(false);
-                }}
+                onClick={handleClearDates}
               >
                 {t('cars.clearDates')}
               </button>

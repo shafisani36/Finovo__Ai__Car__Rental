@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { inspectionApi } from '../api/inspectionApi';
-import type { InspectionRecord } from '../api/inspectionApi';
+import type { InspectionReport as InspectionRecord } from '../api/inspectionApi';
 import {
   ShieldAlert,
   Search,
@@ -49,10 +49,10 @@ export function InspectionsListPage() {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      ins.vehicle.brand.toLowerCase().includes(q) ||
-      ins.vehicle.model.toLowerCase().includes(q) ||
-      ins.vehicle.registrationNumber.toLowerCase().includes(q) ||
-      (ins.rental?.booking.bookingNumber && ins.rental.booking.bookingNumber.toLowerCase().includes(q))
+      Boolean(ins.vehicle?.brand.toLowerCase().includes(q)) ||
+      Boolean(ins.vehicle?.model.toLowerCase().includes(q)) ||
+      Boolean(ins.vehicle?.registrationNumber.toLowerCase().includes(q)) ||
+      Boolean(ins.rental?.booking?.bookingNumber.toLowerCase().includes(q))
     );
   });
 
@@ -295,7 +295,7 @@ export function InspectionsListPage() {
                       <td style={{ padding: '16px 20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <img
-                            src={ins.vehicle.primaryImageUrl || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=120&q=80'}
+                            src={ins.photos[0]?.imageUrl || ''}
                             alt=""
                             style={{
                               width: '46px',
@@ -307,10 +307,10 @@ export function InspectionsListPage() {
                           />
                           <div>
                             <div style={{ fontWeight: 700, color: '#1E0426' }}>
-                              {ins.vehicle.brand} {ins.vehicle.model}
+                              {ins.vehicle?.brand} {ins.vehicle?.model}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
-                              {ins.vehicle.registrationNumber}
+                              {ins.vehicle?.registrationNumber}
                             </div>
                           </div>
                         </div>
@@ -318,13 +318,13 @@ export function InspectionsListPage() {
 
                       {/* Rental / Customer */}
                       <td style={{ padding: '16px 20px' }}>
-                        {ins.rental ? (
+                        {ins.rental?.booking ? (
                           <>
                             <div style={{ fontWeight: 600, color: '#1E0426' }}>
                               {ins.rental.booking.bookingNumber}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
-                              {ins.rental.booking.customer.fullName}
+                              {ins.rental.booking.customer?.fullName}
                             </div>
                           </>
                         ) : (

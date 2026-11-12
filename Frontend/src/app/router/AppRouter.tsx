@@ -72,10 +72,13 @@ import { InquiriesListPage } from '../../features/inquiries/pages/InquiriesListP
 import { UsersManagementPage } from '../../features/users/pages/UsersManagementPage';
 import { CustomersListPage } from '../../features/customers/pages/CustomersListPage';
 
+import { CanonicalUrlManager } from '../../components/seo/CanonicalUrlManager';
+
 export function AppRouter() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <CanonicalUrlManager />
         <Routes>
           {/* Main Website Layout */}
           <Route path="/" element={<RootLayout />}>

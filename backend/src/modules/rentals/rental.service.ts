@@ -1,47 +1,27 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { RentalPricingService } from '../fleet/rental-pricing.service';
-import { InspectionService } from '../inspections/inspection.service';
-import { InspectionAiEngine } from '../inspections/inspection-ai.engine';
-
-export interface HandoverPickupInspectionDTO {
-  overallScore?: number;
-  summary?: string;
-  hasDamageDetected?: boolean;
-  detectedColorName?: string;
-  photos?: Array<{
-    view: string;
-    imageUrl: string;
-    qualityScore?: number;
-    pixelTelemetry?: Record<string, unknown>;
-  }>;
-  findings?: Array<{
-    damageType: string;
-    severity: string;
-    location: string;
-    confidence: number;
-    boundingBox?: unknown;
-    view?: string;
-    estimatedRepairCost?: number;
-  }>;
-}
+import { PICKUP_SCAN_VALID_HOURS } from '../inspections/inspection.service';
 
 export interface HandoverDTO {
   bookingId: string;
   startMileage: number;
   startFuelLevel: string;
   notes?: string;
-  pickupInspectionData?: HandoverPickupInspectionDTO;
+  /** AI pickup inspection performed right before the keys are handed over (required). */
+  pickupInspectionId: string;
 }
 
 export interface ReturnVehicleDTO {
   rentalId: string;
   endMileage: number;
   endFuelLevel: string;
-  damageCharge?: number;
+  /** AI return inspection that was compared against the pickup inspection (required for the final return). */
+  returnInspectionId?: string;
   fuelDiscrepancyCharge?: number;
   additionalAdjustment?: number;
   conditionNotes?: string;
+  /** Send the car to the garage after return: it becomes unavailable for booking. */
   sendToMaintenance?: boolean;
 }
 
@@ -167,13 +147,30 @@ export class RentalService {
       throw AppError.notFound('Rental record not found');
     }
 
-    return {
-      ...rental,
-      inspections: rental.inspections.map((ins) => ({
-        ...ins,
-        findings: ins.findings.map((f) => InspectionService.formatFinding(f)),
-      })),
-    };
+    return rental;
+  }
+
+  /**
+   * Damage fines come only from the AI return comparison (charges the staff did not waive).
+   */
+  private static async resolveDamageCharges(rentalId: string, returnInspectionId?: string) {
+    if (!returnInspectionId) {
+      return { comparisonId: null as string | null, damageCharge: 0, chargeIds: [] as string[] };
+    }
+    const inspection = await prisma.inspection.findUnique({ where: { id: returnInspectionId } });
+    if (!inspection || inspection.type !== 'RETURN' || inspection.rentalId !== rentalId) {
+      throw AppError.badRequest('The return inspection does not belong to this rental');
+    }
+    const comparison = await prisma.damage_comparisons.findFirst({
+      where: { returnInspectionId },
+      include: { damage_charges: true },
+    });
+    if (!comparison) {
+      throw AppError.badRequest('The return inspection has no comparison with the pickup inspection');
+    }
+    const active = comparison.damage_charges.filter((c) => c.status !== 'REJECTED' && c.status !== 'SETTLED');
+    const damageCharge = Math.round(active.reduce((sum, c) => sum + Number(c.proposedAmount), 0) * 100) / 100;
+    return { comparisonId: comparison.id, damageCharge, chargeIds: active.map((c) => c.id) };
   }
 
   /**
@@ -203,6 +200,7 @@ export class RentalService {
 
     const snapshot = this.extractSnapshot(rental.booking);
     const returnTime = new Date();
+    const damage = await this.resolveDamageCharges(rental.id, dto.returnInspectionId);
 
     const settlement = RentalPricingService.calculateSettlement({
       snapshot,
@@ -213,7 +211,7 @@ export class RentalService {
       startOdometer: rental.startMileage,
       endOdometer: endMileage,
       fuelDiscrepancyCharge: Number(dto.fuelDiscrepancyCharge ?? (dto as any).fuelCharges ?? 0),
-      damageCharge: Number(dto.damageCharge ?? (dto as any).damageCharges ?? 0),
+      damageCharge: damage.damageCharge,
       additionalAdjustment: Number(dto.additionalAdjustment || 0),
       amountAlreadyPaid: Number(rental.booking.totalAmount || 0),
     });
@@ -243,8 +241,31 @@ export class RentalService {
       throw AppError.badRequest('Vehicle has already been handed over for this booking');
     }
 
-    if (booking.status === 'CANCELLED' || booking.status === 'REJECTED') {
-      throw AppError.badRequest(`Cannot handover cancelled booking #${booking.bookingNumber}`);
+    if (!['CONFIRMED', 'READY_FOR_PICKUP'].includes(booking.status)) {
+      throw AppError.badRequest(`Booking #${booking.bookingNumber} is ${booking.status} and cannot be handed over`);
+    }
+
+    const startMileage = Number(dto.startMileage);
+    if (!Number.isFinite(startMileage) || startMileage < 0) {
+      throw AppError.badRequest('A valid starting odometer reading is required');
+    }
+
+    // Keys can only be handed over after a fresh AI pickup inspection of this exact vehicle
+    if (!dto.pickupInspectionId) {
+      throw AppError.badRequest('Run the AI pickup inspection before handing over the keys');
+    }
+    const pickupInspection = await prisma.inspection.findUnique({ where: { id: dto.pickupInspectionId } });
+    if (
+      !pickupInspection ||
+      pickupInspection.type !== 'PICKUP' ||
+      pickupInspection.vehicleId !== booking.vehicleId ||
+      pickupInspection.rentalId !== null
+    ) {
+      throw AppError.badRequest('The pickup inspection does not belong to this vehicle or was already used');
+    }
+    const ageHours = (Date.now() - pickupInspection.createdAt.getTime()) / 3_600_000;
+    if (ageHours > PICKUP_SCAN_VALID_HOURS) {
+      throw AppError.badRequest('The pickup inspection is too old. Please scan the vehicle again before handover.');
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -253,7 +274,7 @@ export class RentalService {
         data: {
           bookingId: booking.id,
           vehicleId: booking.vehicleId,
-          startMileage: Number(dto.startMileage),
+          startMileage,
           startFuelLevel: dto.startFuelLevel || '100%',
           pickedUpAt: new Date(),
           status: 'ACTIVE',
@@ -269,7 +290,7 @@ export class RentalService {
       // 3. Update Vehicle status to RENTED
       await tx.vehicle.update({
         where: { id: booking.vehicleId },
-        data: { status: 'RENTED', mileage: Number(dto.startMileage) },
+        data: { status: 'RENTED', mileage: startMileage },
       });
 
       // 4. Record Odometer Log for handover
@@ -277,104 +298,18 @@ export class RentalService {
         data: {
           vehicleId: booking.vehicleId,
           bookingId: booking.id,
-          odometerReading: Number(dto.startMileage),
+          odometerReading: startMileage,
           source: 'CHECK_OUT',
           recordedBy: staffUserId || 'Fleet Staff',
           notes: `Vehicle pickup handover for booking #${booking.bookingNumber}`,
         },
       });
 
-      // 5. Persist Real Pre-Handover Baseline Pickup Inspection (Photos + AI Findings)
-      const pickupData = dto.pickupInspectionData;
-      const pickupFindings = pickupData?.findings || [];
-      const createdPickup = await tx.inspection.create({
-        data: {
-          rentalId: rental.id,
-          vehicleId: booking.vehicleId,
-          type: 'PICKUP',
-          performedById: staffUserId || null,
-          overallScore: pickupData?.overallScore ?? 100.0,
-          summary:
-            pickupData?.summary ||
-            `Pickup handover completed. Starting mileage: ${dto.startMileage} km, Fuel: ${dto.startFuelLevel}. ${dto.notes || 'No pre-existing critical damage.'}`,
-          hasDamageDetected: pickupData?.hasDamageDetected ?? pickupFindings.length > 0,
-        },
+      // 5. Attach the AI pickup inspection as the baseline of this rental
+      await tx.inspection.update({
+        where: { id: pickupInspection.id },
+        data: { rentalId: rental.id, status: 'FINALIZED' },
       });
-
-      const pickupPhotos: Array<{
-        view: string;
-        imageUrl: string;
-        qualityScore?: number;
-        pixelTelemetry?: Record<string, unknown>;
-      }> =
-        pickupData?.photos && pickupData.photos.length > 0
-          ? pickupData.photos
-          : [
-              {
-                view: 'FRONT',
-                imageUrl: booking.vehicle.primaryImageUrl || '',
-              },
-            ];
-
-      const resolvedPhotoMeta = await Promise.all(
-        pickupPhotos.map((p) => InspectionAiEngine.loadPhotoBinary(p.imageUrl))
-      );
-
-      for (let i = 0; i < pickupPhotos.length; i++) {
-        const p = pickupPhotos[i];
-        const loadedBin = resolvedPhotoMeta[i];
-        const tel = (p.pixelTelemetry || {}) as Record<string, unknown>;
-        const qualityScore =
-          typeof p.qualityScore === 'number'
-            ? p.qualityScore
-            : typeof tel.qualityScore === 'number'
-            ? tel.qualityScore
-            : 88.0;
-        const dimensions =
-          typeof tel.width === 'number' && typeof tel.height === 'number' && tel.width > 0
-            ? `${tel.width}x${tel.height}`
-            : undefined;
-        const qualityDetails =
-          Object.keys(tel).length > 0
-            ? JSON.stringify({
-                dHash64: tel.dHash64 || '',
-                byteHash: tel.byteHash || loadedBin?.sha256Hash || '',
-                meanLuma: tel.meanLuma ?? 128,
-                dominantColor: tel.dominantColor,
-                patchGridB64: tel.patchGridB64,
-              })
-            : undefined;
-
-        await tx.inspectionPhoto.create({
-          data: {
-            inspectionId: createdPickup.id,
-            view: p.view || 'FRONT',
-            imageUrl: InspectionService.persistPhotoUrl(p.imageUrl, `pickup-${(p.view || 'front').toLowerCase()}`),
-            qualityScore,
-            sha256Hash: loadedBin?.sha256Hash,
-            fileSizeBytes: loadedBin ? loadedBin.buffer.length : undefined,
-            dimensions,
-            qualityDetails,
-          },
-        });
-      }
-
-      for (const f of pickupFindings) {
-        await tx.damageFinding.create({
-          data: {
-            inspectionId: createdPickup.id,
-            damageType: f.damageType.slice(0, 64),
-            severity: f.severity || 'LOW',
-            location: f.location.slice(0, 64),
-            region: f.view || 'FRONT',
-            confidence: f.confidence > 1 ? f.confidence / 100 : f.confidence,
-            boundingBox: f.boundingBox ? JSON.stringify(f.boundingBox) : null,
-            estimatedRepairCost: f.estimatedRepairCost ?? 150,
-            isHumanVerified: true,
-            humanDecision: 'BASELINE_DOCUMENTED',
-          },
-        });
-      }
 
       // 6. Audit Log
       await tx.securityAuditLog.create({
@@ -384,8 +319,10 @@ export class RentalService {
           metadata: JSON.stringify({
             bookingNumber: booking.bookingNumber,
             vehicleId: booking.vehicleId,
-            startMileage: dto.startMileage,
+            startMileage,
             fuelLevel: dto.startFuelLevel,
+            pickupInspectionId: pickupInspection.id,
+            conditionScore: pickupInspection.overallScore,
           }),
         },
       });
@@ -425,6 +362,12 @@ export class RentalService {
       );
     }
 
+    // The final return requires the AI return inspection (pickup vs return comparison)
+    if (!dto.returnInspectionId) {
+      throw AppError.badRequest('Run the AI return inspection before completing the return');
+    }
+    const damage = await this.resolveDamageCharges(rental.id, dto.returnInspectionId);
+
     const returnTime = new Date();
     const snapshot = this.extractSnapshot(rental.booking);
 
@@ -438,7 +381,7 @@ export class RentalService {
       startOdometer: rental.startMileage,
       endOdometer: endMileage,
       fuelDiscrepancyCharge: Number(dto.fuelDiscrepancyCharge ?? (dto as any).fuelCharges ?? 0),
-      damageCharge: Number(dto.damageCharge ?? (dto as any).damageCharges ?? 0),
+      damageCharge: damage.damageCharge,
       additionalAdjustment: Number(dto.additionalAdjustment || 0),
       amountAlreadyPaid: Number(rental.booking.totalAmount || 0),
     });
@@ -512,18 +455,61 @@ export class RentalService {
         },
       });
 
-      // 5. Create Return Inspection record
-      await tx.inspection.create({
-        data: {
-          rentalId: rental.id,
-          vehicleId: rental.vehicleId,
-          type: 'RETURN',
-          performedById: staffUserId || null,
-          overallScore: dto.damageCharge ? 80.0 : 98.0,
-          summary: `Return completed. Return odometer: ${endMileage} km, Fuel: ${dto.endFuelLevel}. ${dto.conditionNotes || 'No new critical damages reported.'}`,
-          hasDamageDetected: Boolean(dto.damageCharge && dto.damageCharge > 0),
-        },
+      // 5. Finalize the AI return inspection, settle its fines and (optionally) send the car to the garage
+      await tx.inspection.update({
+        where: { id: dto.returnInspectionId! },
+        data: { status: 'FINALIZED' },
       });
+
+      if (damage.comparisonId) {
+        await tx.damage_comparisons.update({
+          where: { id: damage.comparisonId },
+          data: {
+            status: 'APPROVED',
+            totalApprovedCharges: damage.damageCharge,
+            reviewerId: staffUserId || null,
+            reviewedAt: returnTime,
+            updatedAt: returnTime,
+          },
+        });
+        for (const chargeId of damage.chargeIds) {
+          const charge = await tx.damage_charges.findUnique({ where: { id: chargeId } });
+          if (!charge) continue;
+          await tx.damage_charges.update({
+            where: { id: chargeId },
+            data: {
+              status: 'SETTLED',
+              approvedAmount: charge.proposedAmount,
+              approvedById: charge.approvedById || staffUserId || null,
+              approvedAt: charge.approvedAt || returnTime,
+              updatedAt: returnTime,
+            },
+          });
+        }
+      }
+
+      if (dto.sendToMaintenance) {
+        const charges = damage.comparisonId
+          ? await tx.damage_charges.findMany({ where: { comparisonId: damage.comparisonId, status: 'SETTLED' } })
+          : [];
+        await tx.vehicleMaintenance.create({
+          data: {
+            vehicleId: rental.vehicleId,
+            maintenanceType: charges.length > 0 ? 'BODY_WORK' : 'REPAIR',
+            status: 'IN_PROGRESS',
+            title: `Garage after return of booking #${rental.booking.bookingNumber}`,
+            description:
+              charges.length > 0
+                ? charges.map((c) => `- ${c.description}`).join('\n')
+                : dto.conditionNotes || 'Sent to garage after return inspection',
+            scheduledDate: returnTime,
+            startDate: returnTime,
+            odometerReading: endMileage,
+            currency: rental.booking.currency,
+            createdBy: staffUserId || 'Fleet Staff',
+          },
+        });
+      }
 
       // 6. Record Odometer Log
       await tx.vehicleOdometerLog.create({
@@ -551,6 +537,8 @@ export class RentalService {
             finalRentalTotal: settlement.breakdown.finalRentalTotal,
             netPayableOrRefund: settlement.financialSummary.netPayableOrRefund,
             depositRefund: settlement.depositAccounting.refundableDeposit,
+            returnInspectionId: dto.returnInspectionId,
+            damageCharge: damage.damageCharge,
           }),
         },
       });

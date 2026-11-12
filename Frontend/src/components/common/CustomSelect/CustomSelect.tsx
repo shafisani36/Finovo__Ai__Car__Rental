@@ -59,12 +59,16 @@ export function CustomSelect<T extends string | number = string>({
         setActualPlacement(menuPlacement);
       }
 
-      // Horizontal placement (prevents right-edge overflow on narrow screens / grid columns)
-      const spaceRight = window.innerWidth - rect.right;
-      if (spaceRight < 140 || rect.left > window.innerWidth * 0.55) {
-        setHorizontalPlacement('right');
+      // Horizontal placement: anchor to the inline-start edge (left in LTR, right in RTL) and flip only
+      // when the menu (min 220px) would overflow the viewport. Prevents page-level horizontal scrollbars in RTL.
+      const isRtl = getComputedStyle(containerRef.current).direction === 'rtl';
+      const menuWidth = Math.max(rect.width, 220);
+      const fitsLeftAnchored = rect.left + menuWidth <= window.innerWidth - 8;
+      const fitsRightAnchored = rect.right - menuWidth >= 8;
+      if (isRtl) {
+        setHorizontalPlacement(fitsRightAnchored || !fitsLeftAnchored ? 'right' : 'left');
       } else {
-        setHorizontalPlacement('left');
+        setHorizontalPlacement(fitsLeftAnchored || !fitsRightAnchored ? 'left' : 'right');
       }
     }
   }, [isOpen, menuPlacement]);

@@ -1,7 +1,7 @@
+import { Prisma, $Enums } from '@prisma/client';
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
-import { RentalPricingService } from '../fleet/rental-pricing.service';
-import { PricingMethod } from '@prisma/client';
+import { RentalPricingService, QuoteAddonInput } from '../fleet/rental-pricing.service';
 
 export interface CreateBookingDTO {
   customerId?: string;
@@ -13,6 +13,12 @@ export interface CreateBookingDTO {
   notes?: string;
   estimatedKm?: number;
   driverRequired?: boolean;
+  addons?: string[];
+}
+
+export interface BookingActor {
+  userId?: string;
+  roles?: string[];
 }
 
 export interface BookingFilters {
@@ -25,6 +31,99 @@ export interface BookingFilters {
   limit?: number;
 }
 
+/**
+ * Booking statuses that occupy a vehicle for their date range.
+ * Cancelled, rejected, expired, completed, draft and quoted bookings never block a vehicle.
+ */
+export const BLOCKING_BOOKING_STATUSES = [
+  'RESERVED',
+  'PENDING',
+  'CONFIRMED',
+  'READY_FOR_PICKUP',
+  'ACTIVE',
+  'REQUIRES_REVIEW',
+] as const;
+
+/** Settlement status used while an online card payment is outstanding. */
+export const AWAITING_PAYMENT_STATUS = 'AWAITING_PAYMENT';
+
+/** How long an unpaid online booking holds the vehicle before it is released. */
+export const PAYMENT_HOLD_MINUTES = 30;
+
+/** Turnaround buffer kept free between two consecutive bookings of the same vehicle. */
+export const TURNAROUND_BUFFER_MS = 2 * 60 * 60 * 1000;
+
+/** Tax rate applied to every customer quote. */
+export const BOOKING_TAX_RATE_PERCENT = 8;
+
+/**
+ * Server-side add-on catalog. Clients only send add-on codes; prices are always resolved here.
+ */
+export const BOOKING_ADDON_CATALOG: Record<string, QuoteAddonInput> = {
+  PROTECTION_STANDARD: {
+    code: 'PROTECTION_STANDARD',
+    description: 'Standard protection plan',
+    unitPrice: 35,
+    chargeUnit: 'DAY',
+  },
+  PROTECTION_PREMIUM: {
+    code: 'PROTECTION_PREMIUM',
+    description: 'Premium protection plan',
+    unitPrice: 75,
+    chargeUnit: 'DAY',
+  },
+  GPS: { code: 'GPS', description: 'GPS navigation unit', unitPrice: 10, chargeUnit: 'DAY' },
+  CHILD_SEAT: { code: 'CHILD_SEAT', description: 'Child safety seat', unitPrice: 8, chargeUnit: 'DAY' },
+  EXTRA_DRIVER: { code: 'EXTRA_DRIVER', description: 'Additional driver', unitPrice: 15, chargeUnit: 'DAY' },
+};
+
+const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'OPERATOR', 'FLEET_MANAGER', 'EMPLOYEE', 'MANAGER'];
+
+/**
+ * Builds the Prisma filter for bookings that block a vehicle inside [from, to).
+ * Unpaid online bookings stop blocking once their payment hold expires.
+ */
+export function blockingBookingWhere(
+  from: Date,
+  to: Date,
+  options: { excludeBookingId?: string; withBuffer?: boolean } = {}
+): Prisma.BookingWhereInput {
+  const buffer = options.withBuffer === false ? 0 : TURNAROUND_BUFFER_MS;
+  const effectiveFrom = new Date(from.getTime() - buffer);
+  const effectiveTo = new Date(to.getTime() + buffer);
+  const holdCutoff = new Date(Date.now() - PAYMENT_HOLD_MINUTES * 60 * 1000);
+
+  return {
+    ...(options.excludeBookingId ? { id: { not: options.excludeBookingId } } : {}),
+    status: { in: [...BLOCKING_BOOKING_STATUSES] },
+    // Interval overlap: existingStart < requestedEnd AND existingEnd > requestedStart
+    pickupDateTime: { lt: effectiveTo },
+    returnDateTime: { gt: effectiveFrom },
+    OR: [
+      { settlementStatus: null },
+      { settlementStatus: { not: AWAITING_PAYMENT_STATUS } },
+      { createdAt: { gte: holdCutoff } },
+    ],
+  };
+}
+
+function resolveAddons(codes?: unknown): QuoteAddonInput[] {
+  if (!Array.isArray(codes)) return [];
+  const unique = Array.from(new Set(codes.map((c) => String(c).trim().toUpperCase())));
+  const resolved: QuoteAddonInput[] = [];
+  for (const code of unique) {
+    const addon = BOOKING_ADDON_CATALOG[code];
+    if (!addon) {
+      throw AppError.badRequest(`Unknown booking add-on: ${code}`);
+    }
+    resolved.push(addon);
+  }
+  if (unique.includes('PROTECTION_STANDARD') && unique.includes('PROTECTION_PREMIUM')) {
+    throw AppError.badRequest('Only one protection plan can be selected');
+  }
+  return resolved;
+}
+
 export class BookingService {
   /**
    * Half-open interval availability check: [pickup, return) with 2-hour turnaround buffer
@@ -35,6 +134,10 @@ export class BookingService {
     returnDate: Date,
     excludeBookingId?: string
   ): Promise<{ available: boolean; conflictReason?: string }> {
+    if (isNaN(pickupDate.getTime()) || isNaN(returnDate.getTime())) {
+      return { available: false, conflictReason: 'Invalid pickup or return date.' };
+    }
+
     if (pickupDate >= returnDate) {
       return { available: false, conflictReason: 'Return date must be strictly after pickup date.' };
     }
@@ -49,34 +152,26 @@ export class BookingService {
       return { available: false, conflictReason: 'Vehicle does not exist.' };
     }
 
-    if (vehicle.status === 'ARCHIVED') {
-      return { available: false, conflictReason: 'Vehicle is decommissioned or archived.' };
+    if (vehicle.status === 'ARCHIVED' || vehicle.deletedAt || !vehicle.isBookable) {
+      return { available: false, conflictReason: 'Vehicle is decommissioned or not open for booking.' };
     }
 
-    // Turnaround buffer (2 hours)
-    const bufferMs = 2 * 60 * 60 * 1000;
-    const effectivePickup = new Date(pickupDate.getTime() - bufferMs);
-    const effectiveReturn = new Date(returnDate.getTime() + bufferMs);
+    if (vehicle.status === 'MAINTENANCE') {
+      return { available: false, conflictReason: 'Vehicle is currently offline for maintenance.' };
+    }
 
-    // Find conflicting overlapping reservations
+    // Find conflicting overlapping reservations (includes turnaround buffer)
     const conflicts = await prisma.booking.findMany({
-      where: {
-        vehicleId,
-        id: excludeBookingId ? { not: excludeBookingId } : undefined,
-        status: { in: ['CONFIRMED', 'ACTIVE', 'PENDING'] },
-        // Interval overlap formula: existingStart < requestedEnd AND existingEnd > requestedStart
-        AND: [
-          { pickupDateTime: { lt: effectiveReturn } },
-          { returnDateTime: { gt: effectivePickup } },
-        ],
-      },
+      where: { vehicleId, ...blockingBookingWhere(pickupDate, returnDate, { excludeBookingId }) },
+      orderBy: { pickupDateTime: 'asc' },
+      take: 1,
     });
 
     if (conflicts.length > 0) {
       const conflict = conflicts[0];
       return {
         available: false,
-        conflictReason: `Vehicle already reserved for booking #${conflict.bookingNumber} (${conflict.pickupDateTime.toISOString().slice(0, 10)} to ${conflict.returnDateTime.toISOString().slice(0, 10)})`,
+        conflictReason: `This car is not available from ${conflict.pickupDateTime.toISOString().slice(0, 10)} to ${conflict.returnDateTime.toISOString().slice(0, 10)}. Please choose different dates.`,
       };
     }
 
@@ -91,8 +186,10 @@ export class BookingService {
     pickupDate: Date,
     returnDate: Date,
     estimatedKm?: number,
-    driverRequired?: boolean
+    driverRequired?: boolean,
+    addonCodes?: unknown
   ) {
+    const addons = resolveAddons(addonCodes);
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId },
       include: { category: true },
@@ -128,7 +225,8 @@ export class BookingService {
       returnDateTime: returnDate,
       estimatedKm: estimatedKm ? Number(estimatedKm) : null,
       driverRequired: Boolean(driverRequired),
-      taxRatePercent: 8,
+      taxRatePercent: BOOKING_TAX_RATE_PERCENT,
+      addons,
     });
 
     return {
@@ -148,6 +246,9 @@ export class BookingService {
       subtotal: pricingQuote.subtotal,
       extraDistanceCharge: pricingQuote.extraDistanceCharge,
       driverFee: pricingQuote.driverFee,
+      addonsTotal: pricingQuote.addonsTotal,
+      selectedAddons: addons.map((a) => a.code),
+      taxRatePercent: BOOKING_TAX_RATE_PERCENT,
       discountAmount: pricingQuote.discountAmount,
       taxableAmount: pricingQuote.taxableAmount,
       taxAmount: pricingQuote.taxAmount,
@@ -163,12 +264,24 @@ export class BookingService {
   /**
    * Creates an atomic booking with transactional verification, immutable pricing snapshot, and breakdowns
    */
-  static async createBooking(dto: CreateBookingDTO, actorUserId?: string) {
+  static async createBooking(dto: CreateBookingDTO, actor: BookingActor = {}) {
+    const actorUserId = actor.userId;
+    const isStaff = (actor.roles || []).some((r) => STAFF_ROLES.includes(r));
+
+    if (!dto || !dto.vehicleId) {
+      throw AppError.badRequest('vehicleId is required');
+    }
+
     const pickupDate = new Date(dto.pickupDateTime);
     const returnDate = new Date(dto.returnDateTime);
 
     if (isNaN(pickupDate.getTime()) || isNaN(returnDate.getTime())) {
       throw AppError.badRequest('Invalid pickup or return date format');
+    }
+
+    // Customers cannot book in the past (15 minute tolerance for clock skew)
+    if (!isStaff && pickupDate.getTime() < Date.now() - 15 * 60 * 1000) {
+      throw AppError.badRequest('Pickup date/time cannot be in the past');
     }
 
     // Initial availability pre-check
@@ -183,13 +296,15 @@ export class BookingService {
       pickupDate,
       returnDate,
       dto.estimatedKm,
-      dto.driverRequired
+      dto.driverRequired,
+      dto.addons
     );
 
-    // Verify customer exists or auto-resolve from logged-in actorUserId
-    let customer = dto.customerId
-      ? await prisma.customer.findUnique({ where: { id: dto.customerId } })
-      : null;
+    // Staff may book on behalf of any customer; customers always book for themselves
+    let customer =
+      isStaff && dto.customerId
+        ? await prisma.customer.findUnique({ where: { id: dto.customerId } })
+        : null;
 
     if (!customer && actorUserId) {
       customer = await prisma.customer.findFirst({
@@ -213,44 +328,48 @@ export class BookingService {
     if (!customer) {
       throw AppError.notFound('Customer profile not found. Please log in or provide a valid customerId.');
     }
+    const bookingCustomer = customer;
 
-    // Resolve branches with fallback if missing
-    let pickupBranchId = dto.pickupBranchId;
-    let returnBranchId = dto.returnBranchId;
-    if (!pickupBranchId || !returnBranchId) {
-      const defaultBranch = await prisma.branch.findFirst();
-      if (!defaultBranch) {
-        throw AppError.badRequest('No rental branches configured in system');
+    // Resolve branches: explicit ids must exist, otherwise use the vehicle home branch or first active branch
+    const resolveBranch = async (branchId?: string) => {
+      if (branchId) {
+        const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+        if (!branch) throw AppError.badRequest('Selected branch does not exist');
+        return branch.id;
       }
-      pickupBranchId = pickupBranchId || defaultBranch.id;
-      returnBranchId = returnBranchId || defaultBranch.id;
-    }
+      const vehicle = await prisma.vehicle.findUnique({
+        where: { id: dto.vehicleId },
+        select: { branchId: true },
+      });
+      if (vehicle?.branchId) return vehicle.branchId;
+      const firstBranch = await prisma.branch.findFirst({ orderBy: { createdAt: 'asc' } });
+      if (!firstBranch) throw AppError.badRequest('No rental branches configured in system');
+      return firstBranch.id;
+    };
+    const pickupBranchId = await resolveBranch(dto.pickupBranchId);
+    const returnBranchId = dto.returnBranchId
+      ? await resolveBranch(dto.returnBranchId)
+      : pickupBranchId;
 
-    // Generate unique booking number: FIN-2026-XXXX
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const bookingNumber = `FIN-${new Date().getFullYear()}-${randomSuffix}`;
+    // Unique booking number: FIN-YYYY-<time><random>
+    const bookingNumber = `FIN-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}${Math.floor(
+      100 + Math.random() * 900
+    )}`;
 
-    // Execute atomic booking creation in Prisma transaction
+    // Online customer bookings wait for card payment; staff bookings are confirmed directly
+    const initialStatus = isStaff ? 'CONFIRMED' : 'PENDING';
+    const initialSettlement = isStaff ? 'PENDING' : AWAITING_PAYMENT_STATUS;
+
+    // Execute atomic booking creation in a serializable transaction to prevent double booking
     const booking = await prisma.$transaction(async (tx) => {
-      // Re-verify availability within transaction for bulletproof concurrency
-      const bufferMs = 2 * 60 * 60 * 1000;
-      const effectivePickup = new Date(pickupDate.getTime() - bufferMs);
-      const effectiveReturn = new Date(returnDate.getTime() + bufferMs);
-
       const conflicts = await tx.booking.findMany({
-        where: {
-          vehicleId: dto.vehicleId,
-          status: { in: ['CONFIRMED', 'ACTIVE', 'PENDING'] },
-          AND: [
-            { pickupDateTime: { lt: effectiveReturn } },
-            { returnDateTime: { gt: effectivePickup } },
-          ],
-        },
+        where: { vehicleId: dto.vehicleId, ...blockingBookingWhere(pickupDate, returnDate) },
+        take: 1,
       });
 
       if (conflicts.length > 0) {
         throw AppError.conflict(
-          `Vehicle was just reserved by another customer for booking #${conflicts[0].bookingNumber}`
+          'This car was just reserved by another customer for the selected dates. Please choose different dates.'
         );
       }
 
@@ -258,13 +377,13 @@ export class BookingService {
       const created = await tx.booking.create({
         data: {
           bookingNumber,
-          customerId: customer.id,
+          customerId: bookingCustomer.id,
           vehicleId: dto.vehicleId,
           pickupBranchId,
           returnBranchId,
           pickupDateTime: pickupDate,
           returnDateTime: returnDate,
-          status: 'CONFIRMED',
+          status: initialStatus,
           pricingMethod: quote.pricingMethod,
           dailyRate: quote.ratesApplied.baseRate,
           totalDays: quote.totalDays,
@@ -273,7 +392,7 @@ export class BookingService {
           depositAmount: quote.depositAmount,
           totalAmount: quote.rentalTotal,
           finalTotal: null,
-          settlementStatus: 'PENDING',
+          settlementStatus: initialSettlement,
           currency: quote.currency,
           notes: dto.notes || null,
         },
@@ -306,7 +425,7 @@ export class BookingService {
           gracePeriodMinutes: 30,
           partialMonthPolicy: 'prorated_daily',
           depositAmount: quote.depositAmount,
-          taxRatePercent: 8,
+          taxRatePercent: BOOKING_TAX_RATE_PERCENT,
           pricingEngineVersion: quote.pricingEngineVersion,
           rawConfigSnapshot: JSON.stringify(quote),
           quotedAt: new Date(),
@@ -350,7 +469,7 @@ export class BookingService {
       });
 
       return created;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     return booking;
   }
@@ -459,9 +578,28 @@ export class BookingService {
    * Updates booking status (transitions: CONFIRMED -> ACTIVE, or CANCELLED)
    */
   static async updateStatus(id: string, newStatus: string, reason?: string, actorUserId?: string) {
+    const validStatuses: string[] = Object.values($Enums.bookings_status);
+    if (!validStatuses.includes(newStatus)) {
+      throw AppError.badRequest(`Invalid booking status: ${newStatus}`);
+    }
+
     const booking = await prisma.booking.findUnique({ where: { id } });
     if (!booking) {
       throw AppError.notFound('Booking not found');
+    }
+
+    // Re-activating a released booking must not double-book the vehicle
+    const blocking = BLOCKING_BOOKING_STATUSES as readonly string[];
+    if (blocking.includes(newStatus) && !blocking.includes(booking.status)) {
+      const availability = await this.checkAvailability(
+        booking.vehicleId,
+        booking.pickupDateTime,
+        booking.returnDateTime,
+        booking.id
+      );
+      if (!availability.available) {
+        throw AppError.conflict(availability.conflictReason || 'Vehicle is not available for this booking period');
+      }
     }
 
     const updated = await prisma.booking.update({
@@ -501,7 +639,7 @@ export class BookingService {
 
     const bookings = await prisma.booking.findMany({
       where: {
-        status: { in: ['CONFIRMED', 'ACTIVE', 'COMPLETED'] },
+        status: { in: [...BLOCKING_BOOKING_STATUSES, 'COMPLETED'] },
         AND: [
           { pickupDateTime: { lte: end } },
           { returnDateTime: { gte: start } },

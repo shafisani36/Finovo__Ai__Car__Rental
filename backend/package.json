@@ -15,8 +15,10 @@
     "seed:customer": "tsx src/seed_customer.ts",
     "test:auth": "tsx tests/unit/auth.test.ts",
     "test:pricing": "tsx tests/unit/pricing.test.ts",
-    "test": "tsx tests/unit/auth.test.ts && tsx tests/unit/pricing.test.ts && tsx tests/unit/translation.test.ts",
-    "test:translation": "tsx tests/unit/translation.test.ts"
+    "test": "tsx tests/unit/auth.test.ts && tsx tests/unit/pricing.test.ts && tsx tests/unit/translation.test.ts && tsx tests/unit/booking-availability.test.ts && tsx tests/unit/inspection-assessment.test.ts && tsx tests/unit/inspection-consistency.test.ts",
+    "test:translation": "tsx tests/unit/translation.test.ts",
+    "test:availability": "tsx tests/unit/booking-availability.test.ts",
+    "test:inspection": "tsx tests/unit/inspection-assessment.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
@@ -26,7 +28,11 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
+    "helmet": "^8.3.0",
+    "jpeg-js": "^0.4.4",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.1",
+    "stripe": "^17.7.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -35,6 +41,7 @@
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.10",
+    "@types/nodemailer": "^6.4.24",
     "prisma": "^6.4.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"

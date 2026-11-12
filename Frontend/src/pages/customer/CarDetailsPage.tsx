@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Check,
@@ -30,9 +30,15 @@ import {
 } from 'lucide-react';
 import { lookupPretrainedVehicle } from '../../features/fleet/data/pretrainedVehicles';
 import { vehiclesApi } from '../../api/services/vehicles.api';
+import { branchesApi } from '../../api/services/branches.api';
+import { useBookingQuote, toLocalIso } from '../../hooks/useBookingQuote';
+import type { BookingAddonCode } from '../../features/bookings/api/bookingApi';
+import type { Branch } from '../../features/branches/api/branchApi';
 import { useAuth } from '../../features/auth/context';
 import {
+  formatMoney,
   getCarGalleryEntries,
+  getCarImage,
   isFullBleedCarPhoto,
   resolveVehiclePricing,
 } from '../../utils/carImageHelper';
@@ -42,28 +48,27 @@ import { CustomSelect } from '../../components/common/CustomSelect';
 // Assets
 import carMain from '../../assets/car-detail/car-main.jpg';
 import lamboLogo from '../../assets/car-detail/lambo-logo.jpg';
-import orangeCar from '../../assets/car-detail/orange-car.jpg';
-import bmwImg from '../../assets/car-detail/bmw.png';
 
 interface InsurancePlan {
-  id: string;
-  name: string;
-  pricePerDay: number;
-  description: string;
+  id: 'basic' | 'standard' | 'premium';
+  /** Server add-on code; prices are always read from the backend catalog */
+  addonCode: BookingAddonCode | null;
 }
 
 const INSURANCE_PLANS: InsurancePlan[] = [
-  { id: 'basic', name: 'Basic', pricePerDay: 0, description: 'Third-Party Liability' },
-  { id: 'standard', name: 'Standard', pricePerDay: 50, description: 'Collision Damage Waiver (CDW)' },
-  { id: 'premium', name: 'Premium', pricePerDay: 100, description: 'Zero Deductible & Full Shield' },
+  { id: 'basic', addonCode: null },
+  { id: 'standard', addonCode: 'PROTECTION_STANDARD' },
+  { id: 'premium', addonCode: 'PROTECTION_PREMIUM' },
 ];
 
-const CITY_OPTIONS = [
-  { value: 'Riyadh Central', label: 'Riyadh Central Hub', sublabel: 'King Fahd Road' },
-  { value: 'Dubai Downtown', label: 'Dubai Downtown', sublabel: 'Financial Centre' },
-  { value: 'Abu Dhabi Airport', label: 'Abu Dhabi Airport', sublabel: 'Terminal 1 VIP' },
-  { value: 'Jeddah Corniche', label: 'Jeddah Corniche', sublabel: 'Red Sea Hub' },
-];
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function localDateOffset(daysFromToday: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromToday);
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+}
 
 export function CarDetailsPage() {
   const { t } = useTranslation();
@@ -71,26 +76,26 @@ export function CarDetailsPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
-  // Dynamic Dates (Tomorrow to +3 days)
-  const tomorrowStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
-  };
-
-  const inThreeDaysStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 4);
-    return d.toISOString().split('T')[0];
-  };
+  // Dates come from the cars search (?pickupDate&returnDate) or default to tomorrow -> +3 days
+  const [searchParams] = useSearchParams();
+  const queryPickup = searchParams.get('pickupDate');
+  const queryReturn = searchParams.get('returnDate');
 
   const [activeThumb, setActiveThumb] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState<InsurancePlan>(INSURANCE_PLANS[1]);
-  const [pickupCity, setPickupCity] = useState('Riyadh Central');
-  const [dropoffCity, setDropoffCity] = useState('Riyadh Central');
-  const [pickupDate, setPickupDate] = useState(tomorrowStr);
-  const [dropoffDate, setDropoffDate] = useState(inThreeDaysStr);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [pickupBranchId, setPickupBranchId] = useState('');
+  const [returnBranchId, setReturnBranchId] = useState('');
+  const [pickupDate, setPickupDate] = useState(
+    queryPickup && ISO_DATE_PATTERN.test(queryPickup) ? queryPickup : localDateOffset(1)
+  );
+  const [dropoffDate, setDropoffDate] = useState(
+    queryReturn && ISO_DATE_PATTERN.test(queryReturn) ? queryReturn : localDateOffset(4)
+  );
   const [vehicle, setVehicle] = useState<any>(null);
+  const [isLoadingVehicle, setIsLoadingVehicle] = useState(true);
+  const [vehicleError, setVehicleError] = useState<string | null>(null);
+  const [similarCars, setSimilarCars] = useState<any[]>([]);
   const [cartAdded, setCartAdded] = useState(false);
   const [wishlistAdded, setWishlistAdded] = useState(false);
 
@@ -98,80 +103,116 @@ export function CarDetailsPage() {
     let isMounted = true;
     async function fetchCarDetails() {
       if (!id) return;
+      setIsLoadingVehicle(true);
+      setVehicleError(null);
       try {
         const res = await vehiclesApi.getById(id);
-        if (res && res.vehicle && isMounted) {
+        if (!isMounted) return;
+        if (res && res.vehicle) {
           setVehicle(res.vehicle);
-          return;
+        } else {
+          setVehicle(null);
+          setVehicleError(t('cars.details.notFound'));
         }
       } catch (e) {
-        // Fallback below
-      }
-
-      // Fallback matching mock/catalog IDs
-      if (isMounted) {
-        if (id.includes('hurac') || id === 'car-1') {
-          setVehicle({
-            id: 'car-1',
-            brand: 'Lamborghini',
-            model: 'Huracán Evo Spider',
-            year: 2026,
-            dailyRate: 1000,
-            engineCapacity: '5.2L V10 Naturally Aspirated',
-            horsepower: 640,
-            fuelType: 'Petrol',
-            doors: 2,
-            seats: 2,
-            luggageCapacity: 2,
-            drivetrain: 'AWD All-Wheel Drive',
-            topSpeed: 325,
-            transmission: '7-Speed Dual Clutch',
-            primaryImageUrl: carMain,
-          });
-        } else if (id.includes('m4') || id === 'car-bmw-m4') {
-          setVehicle({
-            id,
-            brand: 'BMW',
-            model: 'M4 Competition Coupe',
-            year: 2026,
-            dailyRate: 550,
-            engineCapacity: '3.0L M TwinPower Turbo',
-            horsepower: 503,
-            fuelType: 'Petrol',
-            doors: 2,
-            seats: 4,
-            luggageCapacity: 3,
-            drivetrain: 'M xDrive AWD',
-            topSpeed: 290,
-            transmission: '8-Speed M Steptronic',
-            primaryImageUrl: orangeCar,
-          });
-        } else {
-          setVehicle({
-            id,
-            brand: 'BMW',
-            model: '520 i M-Sport Executive',
-            year: 2026,
-            dailyRate: 480,
-            engineCapacity: '2.0L TwinPower Turbo',
-            horsepower: 255,
-            fuelType: 'Petrol',
-            doors: 4,
-            seats: 5,
-            luggageCapacity: 4,
-            drivetrain: 'Rear-Wheel Drive (RWD)',
-            topSpeed: 250,
-            transmission: '8-Speed Steptronic Automatic',
-            primaryImageUrl: bmwImg,
-          });
+        if (isMounted) {
+          setVehicle(null);
+          setVehicleError(e instanceof Error ? e.message : t('cars.details.notFound'));
         }
+      } finally {
+        if (isMounted) setIsLoadingVehicle(false);
       }
     }
     fetchCarDetails();
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, t]);
+
+  // Real rental branches from the backend
+  useEffect(() => {
+    let isMounted = true;
+    branchesApi
+      .list()
+      .then((res) => {
+        if (!isMounted) return;
+        const active = (res.branches || []).filter((b) => b.isActive !== false);
+        setBranches(active);
+        if (active.length > 0) {
+          setPickupBranchId((prev) => prev || active[0].id);
+          setReturnBranchId((prev) => prev || active[0].id);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setBranches([]);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Similar cars from the same category (live data only)
+  useEffect(() => {
+    let isMounted = true;
+    const categoryId = vehicle?.categoryId || vehicle?.category?.id;
+    if (!categoryId) {
+      setSimilarCars([]);
+      return;
+    }
+    vehiclesApi
+      .list({ limit: 4, category: categoryId, publicCatalog: 'true' })
+      .then((res) => {
+        if (!isMounted) return;
+        setSimilarCars((res.vehicles || []).filter((v: any) => v.id !== vehicle.id).slice(0, 3));
+      })
+      .catch(() => {
+        if (isMounted) setSimilarCars([]);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [vehicle]);
+
+  const branchOptions = branches.map((b) => ({ value: b.id, label: b.name, sublabel: b.city }));
+
+  // Server-side price + availability for the selected dates and plan
+  const selectedAddons: BookingAddonCode[] = selectedPlan.addonCode ? [selectedPlan.addonCode] : [];
+  const pickupIso = toLocalIso(pickupDate);
+  const returnIso = toLocalIso(dropoffDate);
+  const {
+    quote,
+    availability,
+    addonCatalog,
+    isLoading: isQuoteLoading,
+    error: quoteError,
+  } = useBookingQuote(vehicle?.id, pickupIso, returnIso, selectedAddons);
+  const isUnavailable = availability ? !availability.available : false;
+  const planPrice = (plan: InsurancePlan) =>
+    plan.addonCode ? addonCatalog.find((a) => a.code === plan.addonCode)?.unitPrice ?? null : 0;
+
+  if (isLoadingVehicle) {
+    return (
+      <div style={{ backgroundColor: '#F9F8FA', minHeight: '60vh', display: 'grid', placeItems: 'center' }}>
+        <p style={{ color: '#6B7280', fontWeight: 600 }}>{t('common.loading')}</p>
+      </div>
+    );
+  }
+
+  if (!vehicle) {
+    return (
+      <div style={{ backgroundColor: '#F9F8FA', minHeight: '60vh', display: 'grid', placeItems: 'center', padding: '40px 20px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>
+            {t('cars.details.notFound')}
+          </h1>
+          {vehicleError && <p style={{ color: '#6B7280', margin: '0 0 20px' }}>{vehicleError}</p>}
+          <Link to="/cars" style={{ color: '#1E0426', fontWeight: 800 }}>
+            {t('cars.details.backToCars')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // Dynamic gallery items strictly matching the active vehicle/model
   const gallery = getCarGalleryEntries(vehicle).map((entry) => ({
@@ -181,15 +222,17 @@ export function CarDetailsPage() {
   const safeActiveThumb = activeThumb < gallery.length ? activeThumb : 0;
   const activePhoto = gallery[safeActiveThumb] || {
     label: `${vehicle.brand} ${vehicle.model}`,
-    src: carMain,
+    src: getCarImage(vehicle) || carMain,
   };
 
-  const brandName = vehicle?.brand?.name || vehicle?.brand || 'Luxury';
-  const modelName = vehicle?.model?.name || vehicle?.model || 'Performance';
-  const carName = vehicle ? `${brandName} ${modelName}` : 'Luxury Vehicle';
-  const baseRate = vehicle ? resolveVehiclePricing(vehicle).dailyRate : 210;
-  const days = Math.max(1, Math.ceil((new Date(dropoffDate).getTime() - new Date(pickupDate).getTime()) / (1000 * 60 * 60 * 24)) || 2);
-  const totalRental = (baseRate + selectedPlan.pricePerDay) * days;
+  const brandName = vehicle?.brand?.name || vehicle?.brand || '';
+  const modelName = vehicle?.model?.name || vehicle?.model || '';
+  const carName = `${brandName} ${modelName}`.trim();
+  const vehiclePricing = resolveVehiclePricing(vehicle);
+  const baseRate = vehiclePricing.dailyRate;
+  const currency = quote?.currency || vehiclePricing.currency;
+  const days = quote?.totalDays ?? null;
+  const totalRental = quote ? quote.totalAmount : null;
 
   // Dynamic Specs with Pre-Trained Engine & Extra Metadata
   const extraSpecs = (() => {
@@ -199,53 +242,48 @@ export function CarDetailsPage() {
 
   const pretrainedSpec = lookupPretrainedVehicle(brandName, modelName);
 
-  const isSports =
-    vehicle?.category?.slug === 'sports' ||
-    vehicle?.categoryName?.toLowerCase().includes('sport') ||
-    modelName.toLowerCase().includes('hurac') ||
-    modelName.toLowerCase().includes('m4');
-
-  const engineVal = vehicle?.engineCapacity || pretrainedSpec?.engineSize || (isSports ? '5.2L V10 Naturally Aspirated' : '2.0L TwinPower Turbo');
+  const engineVal = vehicle?.engineSize || vehicle?.engineCapacity || pretrainedSpec?.engineSize || '—';
   const powerVal = vehicle?.horsepower || vehicle?.horsePower
     ? `${vehicle.horsepower || vehicle.horsePower} HP`
     : pretrainedSpec
       ? `${pretrainedSpec.horsePower} HP`
-      : (isSports ? '640 HP' : '255 HP');
+      : '—';
   const accelVal = extraSpecs?.acceleration0to100
     ? `${extraSpecs.acceleration0to100}s`
     : pretrainedSpec
       ? `${pretrainedSpec.acceleration0to100}s`
-      : (isSports ? '3.2s' : '5.4s');
+      : '—';
   const torqueVal = extraSpecs?.torqueNm
     ? `${extraSpecs.torqueNm} Nm`
     : pretrainedSpec
       ? `${pretrainedSpec.torqueNm} Nm`
-      : (isSports ? '600 Nm' : '400 Nm');
-  const fuelEconomyVal = extraSpecs?.fuelEconomy || (pretrainedSpec ? `${pretrainedSpec.fuelEconomyL100km} L/100km` : '9.8 L/100km');
-  const fuelVal = vehicle?.fuelType || vehicle?.fuel || pretrainedSpec?.fuelType || 'Petrol (98 Octane)';
-  const doorsVal = vehicle?.doors ? `${vehicle.doors} Doors` : (vehicle?.seats && vehicle.seats <= 2 ? '2 Doors' : '4 Doors');
+      : '—';
+  const fuelEconomyVal = extraSpecs?.fuelEconomy || (pretrainedSpec ? `${pretrainedSpec.fuelEconomyL100km} L/100km` : '—');
+  const fuelVal = vehicle?.fuelType || vehicle?.fuel || pretrainedSpec?.fuelType || '—';
+  const doorsVal = vehicle?.doors ? `${vehicle.doors} ${t('cars.details.doorsUnit')}` : '—';
   const luggageVal = extraSpecs?.luggageCapacityBags
     ? `${extraSpecs.luggageCapacityBags} Large, ${extraSpecs?.cabinBagsCapacity || 2} Cabin`
     : pretrainedSpec
       ? `${pretrainedSpec.luggageCapacityBags} Large, ${pretrainedSpec.cabinBagsCapacity} Cabin`
-      : (vehicle?.luggageCapacity ? `${vehicle.luggageCapacity} Bags` : '3 Bags');
-  const drivetrainVal = vehicle?.drivetrain || pretrainedSpec?.drivetrain || (isSports ? 'Performance AWD' : 'RWD / xDrive');
+      : (vehicle?.luggageCapacity ? `${vehicle.luggageCapacity} Bags` : '—');
+  const drivetrainVal = vehicle?.drivetrain || pretrainedSpec?.drivetrain || '—';
   const speedVal = extraSpecs?.topSpeed
     ? `${extraSpecs.topSpeed} km/h`
     : vehicle?.topSpeed
       ? `${vehicle.topSpeed} km/h`
       : pretrainedSpec
         ? `${pretrainedSpec.topSpeedKmH} km/h`
-        : (isSports ? '325 km/h' : '250 km/h');
-  const transVal = vehicle?.transmission || pretrainedSpec?.transmission || 'Automatic (8-Speed)';
+        : '—';
+  const transVal = vehicle?.transmission || pretrainedSpec?.transmission || '—';
 
   const handleBookNow = () => {
+    if (isUnavailable || !quote) return;
     const bookingQuery = new URLSearchParams({
-      vehicleId: id || vehicle?.id || '',
+      vehicleId: vehicle.id,
       pickupDate: pickupDate,
       returnDate: dropoffDate,
-      pickupCity: pickupCity,
-      dropoffCity: dropoffCity,
+      pickupBranchId,
+      returnBranchId,
       plan: selectedPlan.id,
     }).toString();
 
@@ -304,7 +342,7 @@ export function CarDetailsPage() {
 
             <div style={{ marginTop: '20px', marginBottom: '24px' }}>
               <span style={{ fontSize: 'clamp(1.75rem, 4vw, 2.25rem)', fontWeight: 800, color: '#FAB826' }}>
-                SAR {baseRate.toLocaleString()}
+                {formatMoney(baseRate, vehiclePricing.currency)}
               </span>
               <span style={{ fontSize: '15px', opacity: 0.8, marginInlineStart: '8px' }}>{t('common.perDay')}</span>
             </div>
@@ -452,7 +490,10 @@ export function CarDetailsPage() {
                         {isSelected && <Check size={14} color="#FAB826" />}
                       </div>
                       <span style={{ fontSize: '11px', display: 'block', marginTop: '2px', opacity: 0.85 }}>
-                        +{plan.pricePerDay === 0 ? 'SAR 0' : `SAR ${plan.pricePerDay}`}/{t('cars.pricePerDay')}
+                        {planPrice(plan) === null
+                          ? '…'
+                          : `+${formatMoney(planPrice(plan) as number, currency)}`}
+                        /{t('cars.pricePerDay')}
                       </span>
                     </button>
                   );
@@ -466,9 +507,9 @@ export function CarDetailsPage() {
                     {t('cars.details.pickupBranch')}
                   </label>
                   <CustomSelect
-                    value={pickupCity}
-                    onChange={(val) => setPickupCity(String(val))}
-                    options={CITY_OPTIONS}
+                    value={pickupBranchId}
+                    onChange={(val) => setPickupBranchId(String(val))}
+                    options={branchOptions}
                     variant="dark"
                     size="sm"
                   />
@@ -479,9 +520,9 @@ export function CarDetailsPage() {
                     {t('cars.details.dropoffBranch')}
                   </label>
                   <CustomSelect
-                    value={dropoffCity}
-                    onChange={(val) => setDropoffCity(String(val))}
-                    options={CITY_OPTIONS}
+                    value={returnBranchId}
+                    onChange={(val) => setReturnBranchId(String(val))}
+                    options={branchOptions}
                     variant="dark"
                     size="sm"
                   />
@@ -494,7 +535,16 @@ export function CarDetailsPage() {
                   <input
                     type="date"
                     value={pickupDate}
-                    onChange={(e) => setPickupDate(e.target.value)}
+                    min={localDateOffset(0)}
+                    onChange={(e) => {
+                      setPickupDate(e.target.value);
+                      if (dropoffDate <= e.target.value) {
+                        const next = new Date(`${e.target.value}T00:00:00`);
+                        next.setDate(next.getDate() + 1);
+                        const offset = next.getTimezoneOffset() * 60000;
+                        setDropoffDate(new Date(next.getTime() - offset).toISOString().slice(0, 10));
+                      }
+                    }}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -548,16 +598,41 @@ export function CarDetailsPage() {
               >
                 <div>
                   <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>{t('cars.details.estimatedDuration')}</p>
-                  <strong style={{ fontSize: '16px', color: '#FAB826' }}>{days} {t('common.days')}</strong>
+                  <strong style={{ fontSize: '16px', color: '#FAB826' }}>
+                    {days === null ? '—' : `${days} ${t('common.days')}`}
+                  </strong>
                 </div>
 
                 <div style={{ textAlign: 'end' }}>
                   <p style={{ margin: 0, fontSize: '12px', opacity: 0.85 }}>{t('cars.details.totalWithTax')}</p>
                   <strong style={{ fontSize: '20px', color: '#FAB826', fontWeight: 800 }}>
-                    SAR {totalRental.toLocaleString()}
+                    {isQuoteLoading ? '…' : totalRental === null ? '—' : formatMoney(totalRental, currency)}
                   </strong>
                 </div>
               </div>
+
+              {isUnavailable && (
+                <p
+                  role="alert"
+                  style={{
+                    margin: '0 0 16px',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {t('cars.details.notAvailableForDates', { from: pickupDate, to: dropoffDate })}
+                </p>
+              )}
+              {quoteError && !isUnavailable && (
+                <p role="alert" style={{ margin: '0 0 16px', color: '#FCA5A5', fontSize: '13px', fontWeight: 600 }}>
+                  {quoteError}
+                </p>
+              )}
             </div>
 
             {/* Action buttons */}
@@ -565,7 +640,10 @@ export function CarDetailsPage() {
               <button
                 type="button"
                 onClick={handleBookNow}
+                disabled={isUnavailable || !quote || isQuoteLoading || !pickupBranchId}
+                aria-disabled={isUnavailable || !quote || isQuoteLoading || !pickupBranchId}
                 style={{
+                  opacity: isUnavailable || !quote || isQuoteLoading || !pickupBranchId ? 0.55 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -688,7 +766,7 @@ export function CarDetailsPage() {
                 </div>
                 <span style={{ fontSize: '11px', color: '#6B7280', display: 'block' }}>{item.label}</span>
                 <strong style={{ fontSize: '14px', color: '#1E0426', display: 'block', marginTop: '4px' }}>
-                  {item.val}
+                  <bdi dir="ltr">{item.val}</bdi>
                 </strong>
               </div>
             );
@@ -798,39 +876,49 @@ export function CarDetailsPage() {
         </div>
       </section>
 
-      {/* Similar Cars Section */}
-      <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 clamp(16px, 4vw, 24px)' }}>
-        <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#1E0426', marginBottom: '24px' }}>
-          {t('cars.details.similarCars')}
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
-          {/* Card 1 */}
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
-            <img src={orangeCar} alt="McLaren 720S" style={{ width: '100%', height: '160px', objectFit: 'contain' }} />
-            <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '14px 0 4px' }}>McLaren 720S Spider</h4>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Sports · 2026 · {t('cars.specs.automatic')}</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
-              <strong style={{ fontSize: '16px', color: '#1E0426' }}>SAR 1,150 {t('common.perDay')}</strong>
-              <Link to="/cars" style={{ color: '#1E0426', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
-                {t('cars.details.viewCar')}
-              </Link>
-            </div>
+      {/* Similar Cars Section (live data from the same category) */}
+      {similarCars.length > 0 && (
+        <section style={{ maxWidth: '1240px', margin: '0 auto 80px', padding: '0 clamp(16px, 4vw, 24px)' }}>
+          <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#1E0426', marginBottom: '24px' }}>
+            {t('cars.details.similarCars')}
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
+            {similarCars.map((car) => {
+              const pricing = resolveVehiclePricing(car);
+              return (
+                <div
+                  key={car.id}
+                  style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}
+                >
+                  <img
+                    src={getCarImage(car)}
+                    alt={`${car.brand} ${car.model}`}
+                    style={{ width: '100%', height: '160px', objectFit: 'contain' }}
+                    loading="lazy"
+                  />
+                  <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '14px 0 4px' }}>
+                    {car.brand} {car.model}
+                  </h4>
+                  <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
+                    {[car.category?.name, car.year].filter(Boolean).join(' · ')}
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
+                    <strong style={{ fontSize: '16px', color: '#1E0426' }}>
+                      {formatMoney(pricing.dailyRate, pricing.currency)} {t('common.perDay')}
+                    </strong>
+                    <Link
+                      to={`/cars/${car.id}?pickupDate=${pickupDate}&returnDate=${dropoffDate}`}
+                      style={{ color: '#1E0426', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}
+                    >
+                      {t('cars.details.viewCar')}
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          {/* Card 2 */}
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
-            <img src={bmwImg} alt="BMW M8 Competition" style={{ width: '100%', height: '160px', objectFit: 'contain' }} />
-            <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '14px 0 4px' }}>BMW M8 Competition</h4>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Coupe · 2026 · {t('cars.specs.automatic')}</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
-              <strong style={{ fontSize: '16px', color: '#1E0426' }}>SAR 850 {t('common.perDay')}</strong>
-              <Link to="/cars" style={{ color: '#1E0426', fontWeight: 700, fontSize: '13px', textDecoration: 'none' }}>
-                {t('cars.details.viewCar')}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

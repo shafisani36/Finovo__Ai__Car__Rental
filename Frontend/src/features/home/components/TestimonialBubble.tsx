@@ -1,32 +1,52 @@
-import { useTranslation } from 'react-i18next';
 import type { TestimonialItem } from '../../../types';
 import { Star } from 'lucide-react';
+
+/** Customer photo when one exists, otherwise their initials (real reviews rarely carry a photo). */
+function ReviewerAvatar({ item }: { item: TestimonialItem }) {
+  if (item.avatar) {
+    return (
+      <img
+        src={item.avatar}
+        alt={item.author}
+        loading="lazy"
+        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block' }}
+      />
+    );
+  }
+  const initials = item.author
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '50%',
+        display: 'grid',
+        placeItems: 'center',
+        backgroundColor: '#FAB826',
+        color: '#330231',
+        fontWeight: 800,
+        fontSize: '1.1rem',
+        boxShadow: '0 0 12px rgba(254, 225, 90, 0.45)',
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
 
 interface TestimonialBubbleProps {
   item: TestimonialItem;
 }
 
 export function TestimonialBubble({ item }: TestimonialBubbleProps) {
-  const { t } = useTranslation();
   const isFeatured = item.variant === 'featured';
-
-  const translatedReview =
-    item.variant === 'featured'
-      ? t('home.testimonials.featuredReview')
-      : item.variant === 'bubble-left'
-      ? t('home.testimonials.review1')
-      : item.variant === 'bubble-center'
-      ? t('home.testimonials.review2')
-      : item.variant === 'bubble-right'
-      ? t('home.testimonials.review3')
-      : item.review;
-
-  const translatedLocation =
-    item.location.toLowerCase().includes('dubai')
-      ? t('home.testimonials.dubai')
-      : item.location.toLowerCase().includes('saud')
-      ? t('home.testimonials.saudia')
-      : item.location;
 
   if (isFeatured) {
     return (
@@ -55,18 +75,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
               flexShrink: 0,
             }}
           >
-            <img
-              src={item.avatar}
-              alt={item.author}
-              style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                display: 'block',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
-              }}
-            />
+            <ReviewerAvatar item={item} />
           </div>
 
           {/* Review Details */}
@@ -82,7 +91,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
                 marginBottom: '4px',
               }}
             >
-              {item.author}
+              <bdi>{item.author}</bdi>
             </div>
 
             {/* 5 Golden Stars */}
@@ -109,7 +118,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
                 fontWeight: 500,
               }}
             >
-              {translatedReview}
+              <bdi>{item.review}</bdi>
             </p>
           </div>
 
@@ -186,17 +195,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
           pointerEvents: 'none',
         }}
       >
-        <img
-          src={item.avatar}
-          alt={item.author}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            display: 'block',
-            filter: 'drop-shadow(0 0 12px rgba(254, 225, 90, 0.45))',
-          }}
-        />
+        <ReviewerAvatar item={item} />
       </div>
 
       {/* Card Box */}
@@ -235,7 +234,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
                 letterSpacing: '-0.01em',
               }}
             >
-              {item.author}
+              <bdi>{item.author}</bdi>
             </span>
             <span
               style={{
@@ -245,7 +244,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
                 color: 'rgba(255, 255, 255, 0.72)',
               }}
             >
-              ({translatedLocation})
+              (<bdi>{item.location}</bdi>)
             </span>
           </div>
 
@@ -274,7 +273,7 @@ export function TestimonialBubble({ item }: TestimonialBubbleProps) {
             margin: 0,
           }}
         >
-          {translatedReview}
+          <bdi>{item.review}</bdi>
         </p>
       </div>
     </div>

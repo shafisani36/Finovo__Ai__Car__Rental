@@ -1,10 +1,7 @@
 import type {
   BrandCategory,
-  FeaturedCar,
   WhyChooseUsItem,
   HowItWorksStep,
-  StatItem,
-  TestimonialItem,
   FaqItem,
 } from '../../../types';
 
@@ -51,88 +48,6 @@ export const BRAND_CATEGORIES: BrandCategory[] = [
   },
 ];
 
-export const FEATURED_CARS: FeaturedCar[] = [
-  {
-    id: 'bmw-x5m-suv',
-    name: 'BMW X5 M Competition',
-    subtitle: 'SUV • V8',
-    year: 2026,
-    type: 'SUV',
-    dailyRate: 360,
-    priceDisplay: '$360 / day',
-    rating: 5,
-    image: '/cars/studio-bmw-x5.jpg',
-    specs: {
-      transmission: 'Automatic',
-      fuelType: 'Petrol',
-      hp: '617 HP',
-      drivetrain: 'AWD',
-      seats: 5,
-      luggage: 4,
-    },
-    featured: true,
-  },
-  {
-    id: 'bmw-520i-sedan',
-    name: 'BMW 520i M-Sport',
-    subtitle: 'SEDAN',
-    year: 2026,
-    type: 'Sedan',
-    dailyRate: 210,
-    priceDisplay: '$210 / day',
-    rating: 5,
-    image: '/cars/bmw.png',
-    specs: {
-      transmission: 'Automatic',
-      fuelType: 'Petrol',
-      hp: '255 HP',
-      drivetrain: 'RWD',
-      seats: 5,
-      luggage: 3,
-    },
-    featured: true,
-  },
-  {
-    id: 'tesla-model3-ev',
-    name: 'Tesla Model 3 Performance',
-    subtitle: 'ELECTRIC',
-    year: 2026,
-    type: 'Electric',
-    dailyRate: 225,
-    priceDisplay: '$225 / day',
-    rating: 5,
-    image: '/cars/finovo-red-car.png',
-    specs: {
-      transmission: 'Automatic',
-      fuelType: 'Electric',
-      hp: '510 HP',
-      drivetrain: 'AWD',
-      seats: 5,
-      luggage: 3,
-    },
-    featured: true,
-  },
-  {
-    id: 'hyundai-tucson-suv',
-    name: 'Hyundai Tucson Hybrid',
-    subtitle: 'HYBRID SUV',
-    year: 2026,
-    type: 'SUV',
-    dailyRate: 155,
-    priceDisplay: '$155 / day',
-    rating: 5,
-    image: '/cars/finovo-blue-car.png',
-    specs: {
-      transmission: 'Automatic',
-      fuelType: 'Hybrid',
-      hp: '226 HP',
-      drivetrain: 'AWD',
-      seats: 5,
-      luggage: 3,
-    },
-    featured: true,
-  },
-];
 
 export const WHY_CHOOSE_US_ITEMS: WhyChooseUsItem[] = [
   {
@@ -196,72 +111,7 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
   },
 ];
 
-export const STATS_ITEMS: StatItem[] = [
-  {
-    id: 'cars',
-    value: '500+',
-    label: 'Cars in Fleet',
-  },
-  {
-    id: 'customers',
-    value: '10K+',
-    label: 'Happy Customers',
-  },
-  {
-    id: 'locations',
-    value: '15',
-    label: 'Locations',
-  },
-  {
-    id: 'support',
-    value: '24/7',
-    label: 'Customer Support',
-  },
-];
 
-export const TESTIMONIALS: TestimonialItem[] = [
-  {
-    id: 'featured',
-    author: 'Ahmed',
-    role: 'Verified Driver',
-    location: 'Dubai',
-    rating: 5,
-    review: 'Smooth booking and the car was exactly as shown. Highly recommended! The service was impeccable from start to finish.',
-    avatar: '/testimonials/avatar-ahmed.png',
-    badge: 'Verified Renter',
-    variant: 'featured',
-  },
-  {
-    id: 't-1',
-    author: 'Fatima S.',
-    role: 'Verified Customer',
-    location: 'Dubai',
-    rating: 5,
-    review: '“24/7 support really helped during our trip. Will rent again! 🔥”',
-    avatar: '/testimonials/avatar-fatima-dubai.png',
-    variant: 'bubble-left',
-  },
-  {
-    id: 't-2',
-    author: 'Fatima S.',
-    role: 'Verified Customer',
-    location: 'Saudia',
-    rating: 5,
-    review: '“24/7 support really helped during our trip. Will rent again!”',
-    avatar: '/testimonials/avatar-fatima-saudia.png',
-    variant: 'bubble-center',
-  },
-  {
-    id: 't-3',
-    author: 'Khalid M..',
-    role: 'Verified Customer',
-    location: 'Dubai',
-    rating: 5,
-    review: '“24/7 support really helped during our trip. Will rent again!”',
-    avatar: '/testimonials/avatar-khalid.png',
-    variant: 'bubble-right',
-  },
-];
 
 
 export const FAQ_ITEMS: FaqItem[] = [

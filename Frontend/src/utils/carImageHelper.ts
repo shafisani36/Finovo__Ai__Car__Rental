@@ -14,44 +14,37 @@ export interface ResolvedVehiclePricing {
 const IMAGE_PLACEHOLDER_PATTERNS = ['car-4-tucson', 'car-3-corolla'];
 
 /**
- * Normalizes vehicle daily rates & deposits into consistent USD display figures
- * while honoring custom active PricingTiers when present.
+ * Returns the vehicle's billable daily rate, deposit and currency exactly as stored in the backend.
  */
 export function resolveVehiclePricing(v: any): ResolvedVehiclePricing {
+  // Mirrors exactly what the backend pricing engine charges (vehicle.dailyRate / securityDeposit / currency).
+  // No conversions and no invented defaults: a missing value stays 0 so it is visible instead of silently faked.
   if (!v) {
-    return { dailyRate: 185, securityDeposit: 0, currency: 'USD', zeroDeposit: true };
+    return { dailyRate: 0, securityDeposit: 0, currency: '', zeroDeposit: false };
   }
 
-  const activeTier = Array.isArray(v.pricingTiers)
-    ? v.pricingTiers.find((t: any) => t?.isActive !== false) || v.pricingTiers[0]
-    : undefined;
-
-  const currency = String(activeTier?.currency || v.pricing?.currency || v.currency || 'USD').toUpperCase();
-  const rawDaily = Number(
-    activeTier?.baseRate ?? v.pricing?.dailyRate ?? v.dailyRate ?? v.category?.baseRate ?? 185
-  );
-  const rawDeposit = Number(
-    activeTier?.securityDeposit ?? v.pricing?.depositAmount ?? v.securityDeposit ?? 0
-  );
-
-  // Normalize large PKR-scale admin test records cleanly into USD display amounts
-  const isPkrScale = currency === 'PKR' && rawDaily > 5000;
-  const dailyRate = isPkrScale ? Math.max(45, Math.round(rawDaily / 278)) : Math.max(1, Math.round(rawDaily));
-  const securityDeposit = isPkrScale
-    ? Math.max(0, Math.round(rawDeposit / 278))
-    : Math.max(0, Math.round(rawDeposit));
-
-  const zeroDeposit =
-    typeof v.zeroDeposit === 'boolean' && rawDeposit === 0
-      ? v.zeroDeposit
-      : securityDeposit <= 0;
+  const currency = String(v.currency || '').toUpperCase();
+  const dailyRate = Math.max(0, Number(v.dailyRate) || 0);
+  const securityDeposit = Math.max(0, Number(v.securityDeposit) || 0);
 
   return {
     dailyRate,
     securityDeposit,
-    currency: isPkrScale ? 'USD' : currency,
-    zeroDeposit,
+    currency,
+    zeroDeposit: securityDeposit <= 0,
   };
+}
+
+/**
+ * Formats a money amount with its ISO currency code, e.g. "PKR 8,000".
+ */
+export function formatMoney(amount: number, currency?: string, fractionDigits = 0): string {
+  const value = Number.isFinite(amount) ? amount : 0;
+  const formatted = value.toLocaleString(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+  return currency ? `${currency} ${formatted}` : formatted;
 }
 
 /**

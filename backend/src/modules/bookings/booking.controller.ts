@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { BookingService } from './booking.service';
+import { BookingService, BOOKING_ADDON_CATALOG } from './booking.service';
 
 export class BookingController {
   static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -40,7 +40,7 @@ export class BookingController {
 
   static async quote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { vehicleId, pickupDateTime, returnDateTime, estimatedKm, driverRequired } = req.query;
+      const { vehicleId, pickupDateTime, returnDateTime, estimatedKm, driverRequired, addons } = req.query;
       if (!vehicleId || !pickupDateTime || !returnDateTime) {
         res.status(400).json({ success: false, message: 'vehicleId, pickupDateTime, and returnDateTime are required' });
         return;
@@ -51,8 +51,18 @@ export class BookingController {
       const estKm = estimatedKm ? Number(estimatedKm) : undefined;
       const driverReq = driverRequired === 'true' || driverRequired === '1';
 
-      const quote = await BookingService.calculateQuote(String(vehicleId), pDate, rDate, estKm, driverReq);
-      res.status(200).json({ success: true, quote });
+      const addonCodes = typeof addons === 'string' && addons.trim() ? addons.split(',') : [];
+
+      const [quote, availability] = await Promise.all([
+        BookingService.calculateQuote(String(vehicleId), pDate, rDate, estKm, driverReq, addonCodes),
+        BookingService.checkAvailability(String(vehicleId), pDate, rDate),
+      ]);
+      res.status(200).json({
+        success: true,
+        quote,
+        availability,
+        addonCatalog: Object.values(BOOKING_ADDON_CATALOG),
+      });
     } catch (err) {
       next(err);
     }
@@ -60,7 +70,10 @@ export class BookingController {
 
   static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const booking = await BookingService.createBooking(req.body, req.user?.userId);
+      const booking = await BookingService.createBooking(req.body, {
+        userId: req.user?.userId,
+        roles: req.user?.roles,
+      });
       res.status(201).json({ success: true, booking });
     } catch (err) {
       next(err);

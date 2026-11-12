@@ -321,6 +321,7 @@
 .custom-select-options-list {
   max-height: 250px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 6px;
   list-style: none;
   margin: 0;
@@ -577,4 +578,41 @@
 .custom-select-container.variant-dark .custom-select-check,
 .custom-select-container.variant-glass .custom-select-check {
   color: #FAB826;
+}
+
+/* ==========================================================================
+   RTL support: no horizontal overflow, mirrored hover motion, start-aligned text
+   ========================================================================== */
+.custom-select-option {
+  text-align: start;
+}
+
+[dir='rtl'] .custom-select-trigger {
+  text-align: right;
+}
+
+[dir='rtl'] .custom-select-option:hover,
+[dir='rtl'] .custom-select-container.variant-dark .custom-select-option:hover,
+[dir='rtl'] .custom-select-container.variant-glass .custom-select-option:hover {
+  transform: translateX(-3px);
+}
+
+[dir='rtl'] .custom-select-option:active {
+  transform: scale(0.99) translateX(-2px);
+}
+
+[dir='rtl'] .custom-select-menu {
+  direction: rtl;
+}
+
+/* Arabic / Urdu glyphs are taller: keep options readable without forcing a scrollbar */
+[lang='ur'] .custom-select-options-list,
+[lang='ar'] .custom-select-options-list {
+  max-height: 320px;
+}
+
+[lang='ur'] .custom-select-option {
+  line-height: 1.9;
+  padding-top: 6px;
+  padding-bottom: 6px;
 }

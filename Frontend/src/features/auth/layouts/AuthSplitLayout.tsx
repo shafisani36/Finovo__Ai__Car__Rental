@@ -30,9 +30,10 @@ export function AuthSplitLayout({
 
   return (
     <div
+      className="auth-split-root"
       style={{
         display: 'flex',
-        minHeight: '100vh',
+        height: '100dvh',
         width: '100%',
         backgroundColor: '#FFFFFF',
         fontFamily: 'var(--font-family-sans, "Manrope", sans-serif)',
@@ -57,8 +58,7 @@ export function AuthSplitLayout({
         className="auth-hero-panel"
         style={{
           width: 'clamp(460px, 52vw, 820px)',
-          minHeight: '100vh',
-          height: '100vh',
+          height: '100%',
           position: 'sticky',
           top: 0,
           flexShrink: 0,
@@ -520,8 +520,10 @@ export function AuthSplitLayout({
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#FFFFFF',
-          minHeight: '100vh',
-          padding: 'clamp(24px, 4vw, 48px) clamp(20px, 4.5vw, 64px)',
+          height: '100%',
+          // The page itself never scrolls; only on extremely small screens can the form area scroll
+          overflowY: 'auto',
+          padding: 'clamp(16px, 3.5vh, 48px) clamp(20px, 4.5vw, 64px)',
           boxSizing: 'border-box',
           position: 'relative',
           zIndex: 1,
@@ -538,7 +540,7 @@ export function AuthSplitLayout({
             gap: '12px',
             fontSize: '0.925rem',
             color: '#4A3D4E',
-            marginBottom: 'clamp(16px, 3vh, 36px)',
+            marginBottom: 'clamp(10px, 2.5vh, 36px)',
           }}
         >
           {/* Mobile Only Brand Logo */}
@@ -552,7 +554,7 @@ export function AuthSplitLayout({
             <LanguageSelector variant="admin" />
             {topRightPrompt && (
               <>
-                <span>{topRightPrompt.text}&nbsp;</span>
+                <span className="auth-prompt-text">{topRightPrompt.text}&nbsp;</span>
                 <Link
                   to={topRightPrompt.linkTo}
                   style={{
@@ -587,11 +589,12 @@ export function AuthSplitLayout({
 
         {/* Bottom subtle copyright / privacy note */}
         <div
+          className="auth-copyright"
           style={{
             textAlign: 'center',
             fontSize: '0.78rem',
             color: '#9CA3AF',
-            marginTop: '24px',
+            marginTop: 'clamp(10px, 2.5vh, 24px)',
           }}
         >
           {t('auth.split.copyright')}
@@ -619,8 +622,50 @@ export function AuthSplitLayout({
         }
         @media (max-width: 480px) {
           .auth-form-panel {
-            padding: 20px 16px !important;
+            padding: 16px !important;
           }
+          /* Logo, language and the sign-in / sign-up link share one row on phones */
+          .auth-prompt-text { display: none; }
+        }
+        @media (max-width: 480px) and (max-height: 700px) {
+          .auth-form-panel h1 + p, .auth-form-panel h2 + p { display: none; }
+          .auth-form-panel h1, .auth-form-panel h2 { margin-bottom: 10px !important; }
+        }
+
+        /* ---- Fit the whole form on screen: compact spacing as the viewport gets shorter ---- */
+        .auth-form-panel { scrollbar-width: none; }
+        .auth-form-panel::-webkit-scrollbar { display: none; }
+
+        @media (max-height: 900px) {
+          .auth-form-panel .auth-field { margin-bottom: 14px !important; }
+          .auth-form-panel .auth-input { height: 46px !important; }
+          .auth-form-panel h1, .auth-form-panel h2 { font-size: clamp(1.6rem, 2.2vw, 2rem) !important; }
+          .auth-form-panel h1 + p, .auth-form-panel h2 + p { margin-bottom: 18px !important; }
+          .auth-social > div:first-child { margin: 14px 0 !important; }
+          .auth-social { margin-top: 14px !important; }
+        }
+
+        @media (max-height: 800px) {
+          .auth-form-panel .auth-field { margin-bottom: 10px !important; }
+          .auth-form-panel .auth-label { margin-bottom: 4px !important; font-size: 0.82rem !important; }
+          .auth-form-panel .auth-input { height: 42px !important; }
+          .auth-form-panel h1, .auth-form-panel h2 { font-size: 1.55rem !important; margin-bottom: 4px !important; }
+          .auth-form-panel h1 + p, .auth-form-panel h2 + p { margin-bottom: 14px !important; font-size: 0.88rem !important; }
+          .auth-form-panel button[type='submit'] { height: 44px !important; }
+          .auth-social { margin-top: 10px !important; }
+          .auth-social > div:first-child { margin: 10px 0 !important; }
+          .auth-social button, .auth-social a { height: 40px !important; }
+          .auth-copyright { display: none; }
+        }
+
+        @media (max-height: 680px) {
+          .auth-form-panel .auth-field { margin-bottom: 8px !important; }
+          .auth-form-panel .auth-input { height: 40px !important; font-size: 0.9rem !important; }
+          .auth-form-panel h1, .auth-form-panel h2 { font-size: 1.35rem !important; }
+          .auth-form-panel h1 + p, .auth-form-panel h2 + p { margin-bottom: 10px !important; }
+          .auth-form-panel button[type='submit'] { height: 42px !important; }
+          .auth-social > div:first-child { margin: 8px 0 !important; }
+          .auth-social button, .auth-social a { height: 38px !important; }
         }
       `}</style>
     </div>

@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { BrandLogo } from '../common/BrandLogo';
 import { LanguageSelector } from '../common/LanguageSelector';
 import { Mail, Phone, MapPin, Smartphone } from 'lucide-react';
+import { telHref, useSiteInfo } from '../../hooks/usePublicSite';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -39,6 +40,7 @@ const LinkedinIcon = () => (
 
 export function Footer() {
   const { t } = useTranslation();
+  const site = useSiteInfo();
   const footerRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -106,15 +108,18 @@ export function Footer() {
               {t('footer.description')}
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
+              {/* Only the company's configured profiles (SOCIAL_*_URL in the backend .env) */}
               {[
-                { icon: <InstagramIcon />, label: 'Instagram' },
-                { icon: <FacebookIcon />, label: 'Facebook' },
-                { icon: <TwitterIcon />, label: 'Twitter' },
-                { icon: <LinkedinIcon />, label: 'LinkedIn' },
-              ].map((s) => (
+                { icon: <InstagramIcon />, label: 'Instagram', href: site?.social.instagram },
+                { icon: <FacebookIcon />, label: 'Facebook', href: site?.social.facebook },
+                { icon: <TwitterIcon />, label: 'X', href: site?.social.x },
+                { icon: <LinkedinIcon />, label: 'LinkedIn', href: site?.social.linkedin },
+              ].filter((s) => Boolean(s.href)).map((s) => (
                 <a
                   key={s.label}
-                  href="#"
+                  href={s.href!}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={s.label}
                   style={{
                     width: '38px',
@@ -190,24 +195,34 @@ export function Footer() {
               {t('footer.contactInfo')}
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <Mail size={17} color="var(--color-accent-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)' }}>
-                  concierge@finovorentals.com
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <Phone size={17} color="var(--color-accent-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span className="phone-number" style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)' }}>
-                  +1 (800) 555-FINOVO
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <MapPin size={17} color="var(--color-accent-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)' }}>
-                  100 Innovation Way, Suite 400<br />San Francisco, CA 94105
-                </span>
-              </div>
+              {site?.supportEmail && (
+                <a
+                  href={`mailto:${site.supportEmail}`}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', textDecoration: 'none' }}
+                >
+                  <Mail size={17} color="var(--color-accent-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)', wordBreak: 'break-word' }}>
+                    {site.supportEmail}
+                  </span>
+                </a>
+              )}
+              {site?.supportPhone && (
+                <a
+                  href={telHref(site.supportPhone)}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', textDecoration: 'none' }}
+                >
+                  <Phone size={17} color="var(--color-accent-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span className="phone-number" style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)' }}>
+                    {site.supportPhone}
+                  </span>
+                </a>
+              )}
+              {site?.address && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <MapPin size={17} color="var(--color-accent-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-white-secondary)' }}>{site.address}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -277,7 +292,7 @@ export function Footer() {
             color: 'var(--text-white-muted)',
           }}
         >
-          <div>© 2026 {t('common.appName')}. {t('footer.rightsReserved')}</div>
+          <div>© {new Date().getFullYear()} {t('common.appName')}. {t('footer.rightsReserved')}</div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>

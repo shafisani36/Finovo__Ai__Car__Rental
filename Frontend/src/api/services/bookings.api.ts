@@ -1,6 +1,13 @@
 import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../endpoints';
-import type { Booking, CreateBookingPayload, QuoteResult, CalendarEvent } from '../../features/bookings/api/bookingApi';
+import type {
+  Booking,
+  BookingAddon,
+  CreateBookingPayload,
+  QuoteAvailability,
+  QuoteResult,
+  CalendarEvent,
+} from '../../features/bookings/api/bookingApi';
 
 export const bookingsApi = {
   /**
@@ -33,7 +40,14 @@ export const bookingsApi = {
     vehicleId: string;
     pickupDateTime: string;
     returnDateTime: string;
-  }): Promise<{ success: boolean; quote: QuoteResult }> => {
+    /** Comma separated add-on codes, priced on the server */
+    addons?: string;
+  }): Promise<{
+    success: boolean;
+    quote: QuoteResult;
+    availability: QuoteAvailability;
+    addonCatalog: BookingAddon[];
+  }> => {
     return apiClient.get(API_ENDPOINTS.BOOKINGS.QUOTE, { params });
   },
 

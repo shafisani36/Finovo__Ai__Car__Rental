@@ -45,6 +45,8 @@ export interface RentalRecord {
     pickupDateTime: string;
     returnDateTime: string;
     totalAmount: number;
+    currency?: string;
+    depositAmount?: number;
     customer: {
       id: string;
       fullName: string;
@@ -84,27 +86,8 @@ export interface HandoverPayload {
   startMileage: number;
   startFuelLevel: string;
   notes?: string;
-  pickupInspectionData?: {
-    overallScore?: number;
-    summary?: string;
-    hasDamageDetected?: boolean;
-    detectedColorName?: string;
-    photos?: Array<{
-      view: string;
-      imageUrl: string;
-      qualityScore?: number;
-      pixelTelemetry?: unknown;
-    }>;
-    findings?: Array<{
-      damageType: string;
-      severity: string;
-      location: string;
-      confidence: number;
-      boundingBox?: unknown;
-      view?: string;
-      estimatedRepairCost?: number;
-    }>;
-  };
+  /** AI pickup inspection performed right before the handover */
+  pickupInspectionId: string;
 }
 
 export interface SettlementLineItem {
@@ -171,10 +154,10 @@ export interface ReturnPayload {
   endFuelLevel: string;
   conditionNotes?: string;
   sendToMaintenance?: boolean;
-  damageCharge?: number;
+  /** AI return inspection (compared with the pickup inspection); damage fines come from it */
+  returnInspectionId?: string;
   fuelDiscrepancyCharge?: number;
   additionalAdjustment?: number;
-  returnDateTime?: string;
 }
 
 export const rentalApi = {

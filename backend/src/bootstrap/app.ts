@@ -1,6 +1,8 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { env } from '../config/env.config';
 import { authRouter } from '../api/routes/auth.routes';
@@ -15,14 +17,28 @@ import { customerRouter } from '../api/routes/customer.routes';
 import { branchRouter } from '../api/routes/branch.routes';
 import { inquiryRouter } from '../api/routes/inquiry.routes';
 import { translationRouter } from '../modules/translations/translation.routes';
+import { paymentRouter } from '../api/routes/payment.routes';
+import { publicSiteRouter } from '../modules/public/public-site.routes';
+import { StripePaymentController } from '../modules/payments/stripe-payment.controller';
 import { errorHandler } from '../middleware/error-handler';
 
 export function createApp(): Application {
   const app = express();
 
-  // CORS Configuration supporting frontend cookies, authentication, and tracing headers
-  const allowedOrigins = [
-    env.CORS.ORIGIN,
+  // Behind Nginx / a load balancer: needed for correct client IPs (rate limits, audit logs) and secure cookies
+  if (env.TRUST_PROXY > 0) app.set('trust proxy', env.TRUST_PROXY);
+  app.disable('x-powered-by');
+
+  // Security headers. The API serves JSON and uploaded images only; images must be loadable by the frontend origin.
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      contentSecurityPolicy: false,
+    })
+  );
+
+  // CORS: in production only the configured frontend origin(s) may call the API with cookies
+  const devOrigins = [
     'http://localhost:5176',
     'http://127.0.0.1:5176',
     'http://localhost:5173',
@@ -30,13 +46,15 @@ export function createApp(): Application {
     'http://localhost:3000',
     'http://127.0.0.1:3000',
   ];
+  const allowedOrigins = new Set([...env.CORS.ORIGINS, ...(env.IS_PRODUCTION ? [] : devOrigins)]);
 
   const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || env.NODE_ENV !== 'production') {
+      // No Origin header = same-origin request, server-to-server call or health check
+      if (!origin || allowedOrigins.has(origin.replace(/\/+$/, ''))) {
         callback(null, true);
       } else {
-        callback(null, true);
+        callback(null, false);
       }
     },
     credentials: true,
@@ -69,13 +87,46 @@ export function createApp(): Application {
   app.use(cors(corsOptions));
   app.options('*', cors(corsOptions));
 
-  // Body and cookie parsing with expanded limit for fleet high-res photo uploads
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+  // Stripe webhook needs the untouched raw body for signature verification, so it is mounted before JSON parsing
+  app.post(
+    '/api/v1/payments/stripe/webhook',
+    express.raw({ type: 'application/json', limit: '1mb' }),
+    StripePaymentController.webhook
+  );
+
+  // Body parsing: large bodies only where photos/documents are uploaded as base64, 1 MB everywhere else
+  const largeBody = express.json({ limit: '50mb' });
+  app.use('/api/v1/vehicles', largeBody);
+  app.use('/api/v1/inspections', largeBody);
+  app.use('/api/v1/customers', largeBody);
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 
-  // Static assets serving for vehicle uploads
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  // General API rate limit per IP (auth routes have their own stricter limit)
+  app.use(
+    '/api/v1',
+    rateLimit({
+      windowMs: env.RATE_LIMIT.WINDOW_MS,
+      max: parseInt(process.env.RATE_LIMIT_MAX_GLOBAL || '1500', 10),
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: {
+        success: false,
+        error: { code: 'TOO_MANY_REQUESTS', message: 'Too many requests. Please slow down and try again shortly.' },
+      },
+    })
+  );
+
+  // Uploaded images (vehicle photos, inspection photos). Never executed, never listed.
+  app.use(
+    '/uploads',
+    express.static(path.join(process.cwd(), 'uploads'), {
+      index: false,
+      dotfiles: 'deny',
+      maxAge: env.IS_PRODUCTION ? '7d' : 0,
+    })
+  );
 
   // Health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
@@ -100,6 +151,13 @@ export function createApp(): Application {
   app.use('/api/v1/branches', branchRouter);
   app.use('/api/v1/inquiries', inquiryRouter);
   app.use('/api/v1/translations', translationRouter);
+  app.use('/api/v1/payments', paymentRouter);
+  app.use('/api/v1/public', publicSiteRouter);
+
+  // Unknown API route: JSON 404 instead of an HTML page
+  app.use('/api', (_req: Request, res: Response) => {
+    res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'API route not found' } });
+  });
 
   // Centralized Error Handler
   app.use(errorHandler);

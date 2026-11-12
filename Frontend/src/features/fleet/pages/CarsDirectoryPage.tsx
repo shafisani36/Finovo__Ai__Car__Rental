@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import { CustomSelect } from '../../../components/common/CustomSelect';
-import { getCarImage, isFullBleedCarPhoto, resolveVehiclePricing } from '../../../utils/carImageHelper';
+import { formatMoney, getCarImage, isFullBleedCarPhoto, resolveVehiclePricing } from '../../../utils/carImageHelper';
 import redCar from '../../../assets/cars/finovo-red-car.png';
 import grayCar from '../../../assets/cars/finovo-gray-car.png';
 import blueCar from '../../../assets/cars/finovo-blue-car.png';
@@ -590,7 +590,7 @@ export function CarsDirectoryPage() {
 
                     {/* Pricing */}
                     <td style={{ padding: '16px', fontWeight: 700, color: '#1A0322' }}>
-                      ${resolveVehiclePricing(v).dailyRate} / day
+                      {formatMoney(resolveVehiclePricing(v).dailyRate, resolveVehiclePricing(v).currency)} / day
                     </td>
 
                     {/* Status Badge */}
@@ -1007,7 +1007,7 @@ export function CarsDirectoryPage() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
                           <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1A0322', lineHeight: 1.1 }}>
-                            ${resolveVehiclePricing(v).dailyRate}
+                            {formatMoney(resolveVehiclePricing(v).dailyRate, resolveVehiclePricing(v).currency)}
                           </span>
                           <span style={{ fontSize: '0.78rem', color: '#8A7090' }}>/ day</span>
                         </div>

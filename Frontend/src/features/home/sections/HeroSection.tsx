@@ -5,56 +5,72 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { Sparkles, ShieldCheck, ScanEye, ArrowRight, CarFront } from 'lucide-react';
 import { SearchWidget } from '../components/SearchWidget';
+import { vehiclesApi } from '../../../api/services/vehicles.api';
+import type { Vehicle } from '../../fleet/types/fleet.types';
+import { formatMoney, getCarImage, resolveVehiclePricing } from '../../../utils/carImageHelper';
+import { usePublicStats } from '../../../hooks/usePublicSite';
 
 interface ShowcaseVehicle {
   id: string;
   image: string;
-  nameKey: string;
-  tagKey: string;
-  priceKey: string;
+  name: string;
+  tag: string;
+  price: string;
   accent: string;
 }
 
-const SHOWCASE_VEHICLES: ShowcaseVehicle[] = [
-  {
-    id: 'tesla',
-    image: '/cars/finovo-red-car.png',
-    nameKey: 'home.hero.showcase1Name',
-    tagKey: 'home.hero.showcase1Tag',
-    priceKey: 'home.hero.showcase1Price',
-    accent: '#EF4444',
-  },
-  {
-    id: 'bmw',
-    image: '/cars/bmw.png',
-    nameKey: 'home.hero.showcase2Name',
-    tagKey: 'home.hero.showcase2Tag',
-    priceKey: 'home.hero.showcase2Price',
-    accent: '#FAB826',
-  },
-  {
-    id: 'tucson',
-    image: '/cars/finovo-blue-car.png',
-    nameKey: 'home.hero.showcase3Name',
-    tagKey: 'home.hero.showcase3Tag',
-    priceKey: 'home.hero.showcase3Price',
-    accent: '#38BDF8',
-  },
-];
+const SHOWCASE_ACCENTS = ['#EF4444', '#FAB826', '#38BDF8'];
+
+/** Up to three real catalog cars with a photo, cheapest first, for the hero podium. */
+function useShowcaseVehicles(): ShowcaseVehicle[] {
+  const [vehicles, setVehicles] = useState<ShowcaseVehicle[]>([]);
+  useEffect(() => {
+    let active = true;
+    vehiclesApi
+      .list({ limit: 24, publicCatalog: 'true' })
+      .then((res) => {
+        if (!active) return;
+        const list = (res?.vehicles || [])
+          .filter((v: Vehicle) => v.status === 'AVAILABLE' && (v.primaryImageUrl || (v.photos && v.photos.length > 0)))
+          .slice(0, 3)
+          .map((v: Vehicle, index: number) => {
+            const pricing = resolveVehiclePricing(v);
+            return {
+              id: v.id,
+              image: getCarImage(v),
+              name: `${v.brand} ${v.model}`,
+              tag: [v.category?.name, v.year].filter(Boolean).join(' · '),
+              price: formatMoney(pricing.dailyRate, pricing.currency),
+              accent: SHOWCASE_ACCENTS[index % SHOWCASE_ACCENTS.length],
+            };
+          });
+        setVehicles(list);
+      })
+      .catch(() => {
+        if (active) setVehicles([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  return vehicles;
+}
 
 export function HeroSection() {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const showcase = useShowcaseVehicles();
+  const stats = usePublicStats();
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || showcase.length < 2) return;
     const timer = window.setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % SHOWCASE_VEHICLES.length);
+      setActiveIndex((prev) => (prev + 1) % showcase.length);
     }, 5200);
     return () => window.clearInterval(timer);
-  }, [isPaused]);
+  }, [isPaused, showcase.length]);
 
   useGSAP(
     () => {
@@ -79,7 +95,7 @@ export function HeroSection() {
     { scope: containerRef }
   );
 
-  const activeVehicle = SHOWCASE_VEHICLES[activeIndex];
+  const activeVehicle = showcase[Math.min(activeIndex, showcase.length - 1)];
 
   return (
     <section ref={containerRef} className="hero-section finovo-hero-stage">
@@ -89,7 +105,7 @@ export function HeroSection() {
       <div className="finovo-hero-grid-pattern" aria-hidden="true" />
 
       <div className="container finovo-hero-container">
-        <div className="finovo-hero-grid">
+        <div className={`finovo-hero-grid${activeVehicle ? '' : ' is-single'}`}>
           {/* Start Column: Brand Messaging, Quick CTAs, and Booking Search Console */}
           <div className="finovo-hero-content">
             <div className="hero-headline">
@@ -119,27 +135,36 @@ export function HeroSection() {
               </Link>
             </div>
 
-            <div className="finovo-hero-stats-strip">
-              <div className="finovo-hero-stat-pill">
-                <span className="finovo-hero-stat-dot" style={{ backgroundColor: '#FAB826' }} />
-                <span>{t('home.hero.statsVehicles')}</span>
+            {stats && (
+              <div className="finovo-hero-stats-strip">
+                {stats.vehicles > 0 && (
+                  <div className="finovo-hero-stat-pill">
+                    <span className="finovo-hero-stat-dot" style={{ backgroundColor: '#FAB826' }} />
+                    <span>{t('home.hero.statsVehiclesCount', { count: stats.vehicles })}</span>
+                  </div>
+                )}
+                {stats.averageRating !== null && stats.reviewCount > 0 && (
+                  <div className="finovo-hero-stat-pill">
+                    <span className="finovo-hero-stat-dot" style={{ backgroundColor: '#34D399' }} />
+                    <span>{t('home.hero.statsRating', { rating: stats.averageRating })}</span>
+                  </div>
+                )}
+                {stats.branches > 0 && (
+                  <div className="finovo-hero-stat-pill">
+                    <span className="finovo-hero-stat-dot" style={{ backgroundColor: '#C084FC' }} />
+                    <span>{t('home.hero.statsLocations', { count: stats.branches })}</span>
+                  </div>
+                )}
               </div>
-              <div className="finovo-hero-stat-pill">
-                <span className="finovo-hero-stat-dot" style={{ backgroundColor: '#34D399' }} />
-                <span>{t('home.hero.statsSatisfaction')}</span>
-              </div>
-              <div className="finovo-hero-stat-pill">
-                <span className="finovo-hero-stat-dot" style={{ backgroundColor: '#C084FC' }} />
-                <span>{t('home.hero.statsAiScan')}</span>
-              </div>
-            </div>
+            )}
 
             <div className="hero-search-wrapper" style={{ width: '100%' }}>
               <SearchWidget />
             </div>
           </div>
 
-          {/* End Column: Interactive Luxury Architectural AI Vehicle Podium */}
+          {/* End Column: Interactive Luxury Architectural AI Vehicle Podium (real catalog cars only) */}
+          {activeVehicle && (
           <div
             className="hero-window-card finovo-hero-podium"
             onMouseEnter={() => setIsPaused(true)}
@@ -170,11 +195,11 @@ export function HeroSection() {
               {/* Subtle 360-degree scan orbit ring */}
               <div className="finovo-podium-ring" aria-hidden="true" />
 
-              {SHOWCASE_VEHICLES.map((vehicle, index) => (
+              {showcase.map((vehicle, index) => (
                 <img
                   key={vehicle.id}
                   src={vehicle.image}
-                  alt={t(vehicle.nameKey)}
+                  alt={vehicle.name}
                   loading="eager"
                   className={`finovo-podium-car-img ${index === activeIndex ? 'is-active' : ''}`}
                 />
@@ -185,7 +210,7 @@ export function HeroSection() {
 
             {/* Vehicle Selector Switcher */}
             <div className="finovo-podium-switcher" role="tablist" aria-label={t('home.categories.title')}>
-              {SHOWCASE_VEHICLES.map((vehicle, index) => {
+              {showcase.map((vehicle, index) => {
                 const isSelected = index === activeIndex;
                 return (
                   <button
@@ -200,7 +225,7 @@ export function HeroSection() {
                       className="finovo-podium-tab-swatch"
                       style={{ backgroundColor: vehicle.accent }}
                     />
-                    <span className="finovo-podium-tab-text">{t(vehicle.nameKey)}</span>
+                    <span className="finovo-podium-tab-text">{vehicle.name}</span>
                   </button>
                 );
               })}
@@ -209,24 +234,25 @@ export function HeroSection() {
             {/* Bottom Frosted Telemetry & Quick Reserve Bar */}
             <div className="finovo-podium-footer">
               <div style={{ minWidth: 0 }}>
-                <div className="finovo-podium-car-name">{t(activeVehicle.nameKey)}</div>
-                <div className="finovo-podium-car-tag">{t(activeVehicle.tagKey)}</div>
+                <div className="finovo-podium-car-name">{activeVehicle.name}</div>
+                <div className="finovo-podium-car-tag">{activeVehicle.tag}</div>
               </div>
 
               <div className="finovo-podium-price-group">
                 <div style={{ textAlign: 'end' }}>
                   <span className="finovo-podium-price-label">{t('home.hero.startingFrom')}</span>
                   <div className="finovo-podium-price-val">
-                    {t(activeVehicle.priceKey)}
+                    {activeVehicle.price}
                     <span className="finovo-podium-price-unit"> {t('common.perDay')}</span>
                   </div>
                 </div>
-                <Link to="/cars" className="finovo-podium-reserve-btn">
+                <Link to={`/cars/${activeVehicle.id}`} className="finovo-podium-reserve-btn">
                   {t('home.hero.bookQuick')}
                 </Link>
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
 
@@ -289,6 +315,11 @@ export function HeroSection() {
           grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
           gap: 36px;
           align-items: center;
+        }
+
+        /* No catalog car with a photo yet: the search column takes the stage alone */
+        .finovo-hero-grid.is-single {
+          grid-template-columns: minmax(0, 720px);
         }
 
         .finovo-hero-content {

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
+import { formatCount, usePublicStats, useSiteInfo } from '../../hooks/usePublicSite';
 import '../../styles/about-page.css';
 
 import heroImg from '../../assets/about/finovo-hero.png';
@@ -18,6 +19,9 @@ import journeyImg from '../../assets/about/finovo-journey.png';
 
 export function AboutUsPage() {
   const { t } = useTranslation();
+  const stats = usePublicStats();
+  const site = useSiteInfo();
+  const yearsInBusiness = site?.foundedYear ? new Date().getFullYear() - site.foundedYear : null;
 
   const benefits = [
     {
@@ -80,20 +84,22 @@ export function AboutUsPage() {
             <span>{t('about.exploreFleet')}</span>
             <ArrowRight size={16} className="rtl-mirror-arrow" />
           </Link>
-          <div className="stats">
-            <div>
-              <strong>10K+</strong>
-              <span>{t('about.stat1Label')}</span>
+          {stats && (
+            <div className="stats">
+              <div>
+                <strong>{formatCount(stats.customers)}</strong>
+                <span>{t('about.stat1Label')}</span>
+              </div>
+              <div>
+                <strong>{formatCount(stats.vehicles)}</strong>
+                <span>{t('about.stat2Label')}</span>
+              </div>
+              <div>
+                <strong>{formatCount(stats.branches)}</strong>
+                <span>{t('about.stat3Label')}</span>
+              </div>
             </div>
-            <div>
-              <strong>500+</strong>
-              <span>{t('about.stat2Label')}</span>
-            </div>
-            <div>
-              <strong>25+</strong>
-              <span>{t('about.stat3Label')}</span>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -107,10 +113,12 @@ export function AboutUsPage() {
         </div>
         <div className="story-imagery">
           <img className="steering-photo" src={steeringImg} alt="Driver behind the wheel of a Finovo vehicle" />
-          <div className="experience-badge">
-            <strong>8+</strong>
-            <span>{t('about.yearsExcellence')}</span>
-          </div>
+          {yearsInBusiness !== null && yearsInBusiness > 0 && (
+            <div className="experience-badge">
+              <strong>{yearsInBusiness}+</strong>
+              <span>{t('about.yearsExcellence')}</span>
+            </div>
+          )}
         </div>
       </section>
 

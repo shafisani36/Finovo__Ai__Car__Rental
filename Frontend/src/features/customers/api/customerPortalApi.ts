@@ -195,6 +195,9 @@ export interface CustomerPaymentSummary {
     totalAmount: number;
     paidAmount: number;
     balanceDue: number;
+    depositAmount?: number;
+    currency?: string;
+    bookingStatus?: string;
     status: 'PAID' | 'PARTIAL' | 'UNPAID';
   }>;
 }

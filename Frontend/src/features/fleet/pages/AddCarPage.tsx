@@ -61,15 +61,6 @@ const POPULAR_COLORS = [
   { id: 'utility', label: 'Exterior & Utility' },
 ];
 
-export const DEFAULT_FALLBACK_CATEGORIES: VehicleCategory[] = [
-  { id: 'cat-sedan', name: 'Sedan', slug: 'sedan', baseRate: 8000, description: 'Standard & Executive Sedans (up to 5 passengers)' },
-  { id: 'cat-suv', name: 'SUV', slug: 'suv', baseRate: 15000, description: 'Compact, Mid-Size & Full-Size SUVs (5 to 8 passengers)' },
-  { id: 'cat-pickup', name: 'Pickup Truck', slug: 'pickup', baseRate: 14000, description: 'Single & Double Cab Utility Pickups (up to 6 passengers)' },
-  { id: 'cat-van', name: 'Van / Minibus', slug: 'van-minibus', baseRate: 22000, description: 'High-Capacity Passenger Vans (10 to 20 passengers)' },
-  { id: 'cat-hatchback', name: 'Hatchback', slug: 'hatchback', baseRate: 6000, description: 'Urban Compact & Commuter' },
-  { id: 'cat-sports', name: 'Coupe / Sports', slug: 'coupe-sports', baseRate: 25000, description: 'High Performance & Grand Tourers' },
-  { id: 'cat-luxury', name: 'Luxury / Executive', slug: 'luxury-executive', baseRate: 35000, description: 'Flagship Premium & Chauffeur Fleet' },
-];
 
 export function AddCarPage() {
   const { id } = useParams<{ id: string }>();
@@ -105,7 +96,7 @@ const maxAllowedYear = currentYear + 1;
   const [model, setModel] = useState('');
   const [customModelMode, setCustomModelMode] = useState(false);
   const [customModelName, setCustomModelName] = useState('');
-  const [year, setYear] = useState<number>(2025);
+  const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [trim, setTrim] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [vin, setVin] = useState('');

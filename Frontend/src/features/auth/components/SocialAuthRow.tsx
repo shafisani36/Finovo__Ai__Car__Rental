@@ -16,7 +16,7 @@ export function SocialAuthRow({
   };
 
   return (
-    <div style={{ width: '100%', marginTop: '20px', textAlign: 'center' }}>
+    <div className="auth-social" style={{ width: '100%', marginTop: '20px', textAlign: 'center' }}>
       {/* Divider */}
       <div
         style={{

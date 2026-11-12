@@ -287,8 +287,12 @@ html[lang='ur'] .finovo-page-title {
   top: calc(100% + 6px);
   right: 0;
   min-width: 195px;
-  max-height: 300px;
+  /* Only six languages: grow to fit instead of showing a scrollbar (taller Arabic/Urdu glyphs included) */
+  max-height: min(480px, calc(100vh - 96px));
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background-color: #1E0426;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 14px;
@@ -301,6 +305,16 @@ html[lang='ur'] .finovo-page-title {
 [dir='rtl'] .finovo-language-dropdown {
   right: auto;
   left: 0;
+}
+
+.finovo-language-dropdown::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+[lang='ur'] .finovo-language-option {
+  line-height: 1.9;
 }
 
 .finovo-language-dropdown.admin-variant {
@@ -481,4 +495,12 @@ html[lang='ur'] .finovo-page-title {
 [dir='rtl'] .notif-badge {
   left: 6px;
   right: auto;
+}
+
+/* Numbers with units ("208 HP", "PKR 8,000", "250 km") keep their LTR reading order inside RTL text */
+[dir='rtl'] .finovo-car-card-stat-value,
+[dir='rtl'] .car-card-list-price h4,
+[dir='rtl'] .car-spec-unit-text h5 {
+  unicode-bidi: isolate;
+  direction: ltr;
 }

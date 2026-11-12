@@ -255,7 +255,7 @@ export function CustomerBookingDetailPage() {
                 {booking.pickupBranch?.name || 'Central Hub'}
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '0 0 12px 0' }}>
-                {booking.pickupBranch?.address || 'King Fahd Road, Luxury Motor Complex, Riyadh'}
+                {booking.pickupBranch?.address || booking.pickupBranch?.city || '—'}
               </p>
               <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--cp-primary)' }}>
                 {pickupDateFormatted}
@@ -271,7 +271,7 @@ export function CustomerBookingDetailPage() {
                 {booking.returnBranch?.name || 'Central Hub'}
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '0 0 12px 0' }}>
-                {booking.returnBranch?.address || 'King Fahd Road, Luxury Motor Complex, Riyadh'}
+                {booking.returnBranch?.address || booking.returnBranch?.city || '—'}
               </p>
               <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--cp-primary)' }}>
                 {returnDateFormatted}

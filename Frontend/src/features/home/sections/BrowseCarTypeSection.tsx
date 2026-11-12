@@ -2,12 +2,11 @@ import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-import { FEATURED_CARS } from '../data/homepageData';
 import { CarCard } from '../components/CarCard';
 import { ArrowRight } from 'lucide-react';
 import type { FeaturedCar } from '../../../types';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
-import { getCarImage, resolveVehiclePricing } from '../../../utils/carImageHelper';
+import { formatMoney, getCarImage, resolveVehiclePricing } from '../../../utils/carImageHelper';
 
 interface BrowseCarTypeSectionProps {
   onRentCar?: (car: FeaturedCar) => void;
@@ -16,76 +15,56 @@ interface BrowseCarTypeSectionProps {
 export function BrowseCarTypeSection({ onRentCar }: BrowseCarTypeSectionProps) {
   const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
-  const [featuredCars, setFeaturedCars] = useState<FeaturedCar[]>(FEATURED_CARS);
+  // Live fleet only: no hardcoded showcase cars
+  const [featuredCars, setFeaturedCars] = useState<FeaturedCar[]>([]);
 
   useEffect(() => {
     let mounted = true;
     vehiclesApi
-      .list({ limit: 8, status: 'AVAILABLE' })
+      .list({ limit: 8, status: 'AVAILABLE', publicCatalog: 'true' })
       .then((res) => {
         if (!mounted || !res?.vehicles?.length) return;
+        const toFeatured = (v: (typeof res.vehicles)[number]): FeaturedCar => {
+          const catName = v.category?.name || '';
+          const pricing = resolveVehiclePricing(v);
+          return {
+            id: v.id,
+            name: `${v.brand} ${v.model}`,
+            subtitle: catName.toUpperCase(),
+            year: v.year,
+            type: catName,
+            dailyRate: pricing.dailyRate,
+            priceDisplay: formatMoney(pricing.dailyRate, pricing.currency),
+            rating: 5,
+            image: getCarImage(v),
+            specs: {
+              transmission: v.transmission === 'MANUAL' ? 'Manual' : 'Automatic',
+              fuelType: v.fuelType ? v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase() : '',
+              hp: v.horsePower ? `${v.horsePower} HP` : '—',
+              drivetrain: v.drivetrain || '—',
+              seats: v.seats,
+              luggage: 0,
+            },
+            featured: true,
+          };
+        };
         const distinct: FeaturedCar[] = [];
         const seenCat = new Set<string>();
         const ordered = [...res.vehicles];
 
         // Pick up to 4 diverse body categories/models first for showcase variety
         for (const v of ordered) {
-          const catName = v.category?.name || 'Sedan';
+          const catName = v.category?.name || '';
           if (distinct.length < 4 && (!seenCat.has(catName) || ordered.length <= 4)) {
             seenCat.add(catName);
-            const pricing = resolveVehiclePricing(v);
-            distinct.push({
-              id: v.id,
-              name: `${v.brand} ${v.model}`,
-              subtitle: catName.toUpperCase(),
-              year: v.year || 2026,
-              type: catName,
-              dailyRate: pricing.dailyRate,
-              priceDisplay: `$${pricing.dailyRate}`,
-              rating: 5,
-              image: getCarImage(v),
-              specs: {
-                transmission: v.transmission === 'MANUAL' ? 'Manual' : 'Automatic',
-                fuelType: v.fuelType
-                  ? v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase()
-                  : 'Petrol',
-                hp: v.horsePower ? `${v.horsePower} HP` : '255 HP',
-                drivetrain: v.drivetrain || 'AWD',
-                seats: v.seats || 5,
-                luggage: 3,
-              },
-              featured: true,
-            });
+            distinct.push(toFeatured(v));
           }
         }
         // Top up to 4 if fewer distinct categories matched
         for (const v of ordered) {
           if (distinct.length >= 4) break;
           if (!distinct.some((d) => d.id === v.id)) {
-            const catName = v.category?.name || 'Sedan';
-            const pricing = resolveVehiclePricing(v);
-            distinct.push({
-              id: v.id,
-              name: `${v.brand} ${v.model}`,
-              subtitle: catName.toUpperCase(),
-              year: v.year || 2026,
-              type: catName,
-              dailyRate: pricing.dailyRate,
-              priceDisplay: `$${pricing.dailyRate}`,
-              rating: 5,
-              image: getCarImage(v),
-              specs: {
-                transmission: v.transmission === 'MANUAL' ? 'Manual' : 'Automatic',
-                fuelType: v.fuelType
-                  ? v.fuelType.charAt(0) + v.fuelType.slice(1).toLowerCase()
-                  : 'Petrol',
-                hp: v.horsePower ? `${v.horsePower} HP` : '255 HP',
-                drivetrain: v.drivetrain || 'AWD',
-                seats: v.seats || 5,
-                luggage: 3,
-              },
-              featured: true,
-            });
+            distinct.push(toFeatured(v));
           }
         }
         if (distinct.length > 0) setFeaturedCars(distinct);

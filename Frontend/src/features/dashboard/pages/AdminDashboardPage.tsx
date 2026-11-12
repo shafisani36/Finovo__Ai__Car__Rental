@@ -30,99 +30,6 @@ import {
 } from 'lucide-react';
 
 
-const FALLBACK_DASHBOARD: DashboardOverviewResponse = {
-  timestamp: new Date().toISOString(),
-  fleet: {
-    total: 24,
-    available: 18,
-    rented: 4,
-    maintenance: 2,
-    reserved: 0,
-    utilizationRate: 75,
-  },
-  operations: {
-    todaysPickups: 3,
-    todaysReturns: 2,
-    upcomingBookings: 8,
-    activeRentals: 4,
-    overdueRentals: 0,
-  },
-  customers: {
-    total: 12,
-    verified: 9,
-    pending: 3,
-  },
-  financials: {
-    totalRevenue: 42800,
-    monthlyRevenue: 18600,
-    averageDailyRate: 485,
-    currency: 'USD',
-  },
-  inspections: {
-    total: 38,
-    damaged: 2,
-    pendingReviewFindings: [],
-  },
-  categories: [
-    { id: 'cat-1', name: 'Sports & Supercars', slug: 'sports', baseRate: 950, totalVehicles: 6, available: 4, rented: 2, maintenance: 0 },
-    { id: 'cat-2', name: 'Executive Sedans', slug: 'sedan', baseRate: 450, totalVehicles: 10, available: 8, rented: 1, maintenance: 1 },
-    { id: 'cat-3', name: 'Luxury SUVs', slug: 'suv', baseRate: 600, totalVehicles: 8, available: 6, rented: 1, maintenance: 1 },
-  ],
-  branches: [
-    { id: 'b1', name: 'Riyadh Central Hub', code: 'RUH-01', city: 'Riyadh', totalVehicles: 14, activeRented: 3 },
-    { id: 'b2', name: 'Jeddah Corniche Terminal', code: 'JED-01', city: 'Jeddah', totalVehicles: 10, activeRented: 1 },
-  ],
-  recentBookings: [
-    {
-      id: 'bk-1',
-      bookingNumber: 'FIN-2026-9021',
-      customerName: 'Ahmed Al-Mansoor',
-      customerEmail: 'ahmed@finovo.ai',
-      vehicleName: 'Lamborghini Huracán Evo',
-      vehicleCategory: 'Sports',
-      vehicleImage: null,
-      pickupDateTime: new Date().toISOString(),
-      returnDateTime: new Date(Date.now() + 86400000 * 2).toISOString(),
-      pickupBranch: 'Riyadh Central Hub',
-      status: 'ACTIVE',
-      totalAmount: 2000,
-      dailyRate: 1000,
-      currency: 'USD',
-    },
-    {
-      id: 'bk-2',
-      bookingNumber: 'FIN-2026-8910',
-      customerName: 'Sarah Jenkins',
-      customerEmail: 'sarah.j@example.com',
-      vehicleName: 'BMW 520 i M-Sport',
-      vehicleCategory: 'Sedan',
-      vehicleImage: null,
-      pickupDateTime: new Date(Date.now() + 86400000).toISOString(),
-      returnDateTime: new Date(Date.now() + 86400000 * 4).toISOString(),
-      pickupBranch: 'Jeddah Corniche Terminal',
-      status: 'CONFIRMED',
-      totalAmount: 1500,
-      dailyRate: 500,
-      currency: 'USD',
-    },
-  ],
-  recentActivity: [
-    {
-      id: 'act-1',
-      event: 'AI Inspection Scan Completed',
-      user: 'Computer Vision Agent #04',
-      metadata: { vehicle: 'Lamborghini Huracán Evo', score: 98 },
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'act-2',
-      event: 'Digital Handover QR Verified',
-      user: 'Operations Branch Officer',
-      metadata: { booking: 'FIN-2026-9021' },
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-    },
-  ],
-};
 
 export function AdminDashboardPage() {
   const { t } = useTranslation();
@@ -219,24 +126,6 @@ export function AdminDashboardPage() {
               }}
             >
               {t('admin.retryConnection')}
-            </button>
-            <button
-              onClick={() => {
-                setData(FALLBACK_DASHBOARD);
-                setError(null);
-              }}
-              style={{
-                backgroundColor: '#FAB826',
-                color: '#1E0426',
-                padding: '10px 24px',
-                borderRadius: '10px',
-                border: 'none',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(250, 184, 38, 0.3)',
-              }}
-            >
-              {t('admin.loadFallback')}
             </button>
           </div>
         </div>

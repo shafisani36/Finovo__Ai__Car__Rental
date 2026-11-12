@@ -6,7 +6,6 @@ import {
   type PortalOverviewResponse,
 } from '../api/customerPortalApi';
 import { getCarImage } from '../../../utils/carImageHelper';
-import { useAuth } from '../../auth/context';
 import {
   Car,
   CalendarCheck,
@@ -27,7 +26,6 @@ import './CustomerPortal.css';
 
 export function CustomerDashboardOverviewPage() {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const [data, setData] = useState<PortalOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,70 +39,17 @@ export function CustomerDashboardOverviewPage() {
       const res = await customerPortalApi.getOverview();
       if (res && res.customer) {
         setData(res);
-        return;
+      } else {
+        setData(null);
+        setError(t('portal.unableLoad'));
       }
     } catch (err: unknown) {
-      console.warn('Customer portal API error, using dynamic fallback overview:', err);
+      // Show the real error instead of invented dashboard data
+      setData(null);
+      setError(err instanceof Error ? err.message : t('portal.unableLoad'));
     } finally {
       setLoading(false);
     }
-
-    // Dynamic Fallback Exception Handling: Provide structured overview so customer dashboard is always responsive
-    setIsFallbackMode(true);
-    const fallbackOverview: PortalOverviewResponse = {
-      success: true,
-      customer: {
-        id: user?.id || 'cust-user',
-        fullName: user?.fullName || 'Valued Renter',
-        email: user?.email || 'customer@finovo.ai',
-        phone: user?.phone || '+1 555-0199',
-        isLicenseVerified: true,
-        preferredLanguage: 'en',
-      },
-      stats: {
-        totalBookings: 1,
-        activeBookings: 1,
-        pendingBalanceTotal: 0,
-        rewardPoints: 250,
-        unreadNotificationsCount: 1,
-      },
-      activeRental: {
-        id: 'rental-live-01',
-        pickedUpAt: new Date().toISOString(),
-        startMileage: 14200,
-        vehicle: {
-          id: 'car-1',
-          brand: 'BMW',
-          model: 'M4 Competition Coupe',
-          year: 2026,
-          transmission: 'AUTOMATIC',
-          fuelType: 'PETROL',
-          seats: 4,
-          categoryName: 'Sports',
-          primaryImageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-        },
-        booking: {
-          id: 'book-01',
-          bookingNumber: 'FIN-2026-7821',
-          pickupBranch: { id: 'b1', name: 'Riyadh Central Hub', code: 'RUH-01', city: 'Riyadh' },
-          returnBranch: { id: 'b1', name: 'Riyadh Central Hub', code: 'RUH-01', city: 'Riyadh' },
-          returnDateTime: new Date(Date.now() + 86400000 * 2).toISOString(),
-        },
-      },
-      upcomingBookings: [],
-      recentCompletedBookings: [],
-      actionAlerts: [
-        {
-          id: 'alert-1',
-          type: 'INFO',
-          title: '360° AI Vehicle Inspection Verified',
-          message: 'Computer vision diagnostics confirmed 0 unrecorded exterior scratches on active rental.',
-          actionLabel: 'View Inspection',
-          actionUrl: '/customer/bookings',
-        },
-      ],
-    };
-    setData(fallbackOverview);
   };
 
   useEffect(() => {

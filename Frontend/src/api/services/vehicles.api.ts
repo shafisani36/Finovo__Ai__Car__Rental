@@ -35,6 +35,9 @@ export const vehiclesApi = {
     maxPrice?: number;
     sortBy?: string;
     order?: 'asc' | 'desc';
+    availableFrom?: string;
+    availableTo?: string;
+    publicCatalog?: 'true' | 'false';
   } = {}): Promise<VehicleListResponse> => {
     return apiClient.get(API_ENDPOINTS.VEHICLES.LIST, { params });
   },

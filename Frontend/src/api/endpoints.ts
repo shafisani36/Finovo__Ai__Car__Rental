@@ -73,7 +73,9 @@ export const API_ENDPOINTS = {
     LIST: '/inspections',
     BY_ID: (id: string) => `/inspections/${id}`,
     ANALYZE: '/inspections/analyze',
-    REVIEW_FINDING: (findingId: string) => `/inspections/findings/${findingId}/review`,
+    FOR_BOOKING: (bookingId: string) => `/inspections/booking/${bookingId}`,
+    COMPARISON: (id: string) => `/inspections/comparisons/${id}`,
+    REVIEW_CHARGE: (chargeId: string) => `/inspections/charges/${chargeId}/review`,
   },
 
   // Customer Management
@@ -98,6 +100,13 @@ export const API_ENDPOINTS = {
   // Public Inquiries
   INQUIRIES: {
     SUBMIT: '/inquiries',
+  },
+
+  // Stripe payments (sandbox / live depending on backend keys)
+  PAYMENTS: {
+    STRIPE_CONFIG: '/payments/stripe/config',
+    STRIPE_INTENT: '/payments/stripe/intent',
+    STRIPE_CONFIRM: '/payments/stripe/confirm',
   },
 
   // Admin Operations

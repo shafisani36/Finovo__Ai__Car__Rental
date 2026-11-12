@@ -29,6 +29,14 @@ export interface QuoteCalculationRequest {
   driverFeePerDay?: number;
   discountPercent?: number;
   taxRatePercent?: number;
+  addons?: QuoteAddonInput[];
+}
+
+export interface QuoteAddonInput {
+  code: string;
+  description: string;
+  unitPrice: number;
+  chargeUnit: 'DAY' | 'BOOKING';
 }
 
 export interface SettlementCalculationRequest {
@@ -110,6 +118,7 @@ export interface CalculationQuoteResult {
   subtotal: number;
   extraDistanceCharge: number;
   driverFee: number;
+  addonsTotal: number;
   discountAmount: number;
   taxableAmount: number;
   taxAmount: number;
@@ -567,8 +576,30 @@ export class RentalPricingService {
       });
     }
 
+    // Optional add-ons (protection plans, equipment); unit prices are resolved server-side by the caller
+    let addonsTotal = 0;
+    const addonDays = Math.max(1, billableDays || Math.ceil(billableHours / 24) || 1);
+    for (const addon of req.addons || []) {
+      const unitPrice = this.roundMoney(Number(addon.unitPrice) || 0);
+      if (unitPrice <= 0) continue;
+      const quantity = addon.chargeUnit === 'DAY' ? addonDays : 1;
+      const amount = this.roundMoney(unitPrice * quantity);
+      addonsTotal = this.roundMoney(addonsTotal + amount);
+      lineItems.push({
+        lineType: 'addon',
+        description: addon.description,
+        quantity,
+        unit: addon.chargeUnit,
+        unitPrice,
+        amount,
+        currency,
+        isTaxable: true,
+        taxAmount: 0,
+      });
+    }
+
     // Subtotal before discounts
-    const subtotal = this.roundMoney(baseRental + extraDistanceCharge + driverFee);
+    const subtotal = this.roundMoney(baseRental + extraDistanceCharge + driverFee + addonsTotal);
 
     // Discounts
     let discountAmount = 0;
@@ -647,6 +678,7 @@ export class RentalPricingService {
       subtotal,
       extraDistanceCharge,
       driverFee,
+      addonsTotal,
       discountAmount,
       taxableAmount,
       taxAmount,

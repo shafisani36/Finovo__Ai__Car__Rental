@@ -8,7 +8,16 @@ export const vehicleFilterSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(10),
   sortBy: z.enum(['dailyRate', 'year', 'createdAt', 'model']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
-});
+  availableFrom: z.string().datetime({ offset: true }).optional(),
+  availableTo: z.string().datetime({ offset: true }).optional(),
+  publicCatalog: z.enum(['true', 'false']).optional(),
+}).refine(
+  (data) => (!data.availableFrom && !data.availableTo) || (data.availableFrom && data.availableTo),
+  { message: 'availableFrom and availableTo must be provided together' }
+).refine(
+  (data) => !data.availableFrom || !data.availableTo || new Date(data.availableFrom) < new Date(data.availableTo),
+  { message: 'availableFrom must be before availableTo' }
+);
 
 export const vehiclePhotoInputSchema = z.object({
   url: z.string().optional(),

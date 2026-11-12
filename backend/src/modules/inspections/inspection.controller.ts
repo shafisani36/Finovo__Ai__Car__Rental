@@ -1,10 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { InspectionService } from './inspection.service';
 
+function param(req: Request, name: string): string {
+  const value = req.params[name];
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export class InspectionController {
-  static async list(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const inspections = await InspectionService.listInspections();
+      const inspections = await InspectionService.listInspections({
+        vehicleId: req.query.vehicleId ? String(req.query.vehicleId) : undefined,
+        rentalId: req.query.rentalId ? String(req.query.rentalId) : undefined,
+        type: req.query.type ? String(req.query.type) : undefined,
+      });
       res.status(200).json({ success: true, inspections });
     } catch (err) {
       next(err);
@@ -13,9 +22,17 @@ export class InspectionController {
 
   static async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const inspection = await InspectionService.getById(id);
+      const inspection = await InspectionService.getById(param(req, 'id'));
       res.status(200).json({ success: true, inspection });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async listForBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await InspectionService.listForBooking(param(req, 'bookingId'), req.user!);
+      res.status(200).json({ success: true, ...result });
     } catch (err) {
       next(err);
     }
@@ -23,33 +40,8 @@ export class InspectionController {
 
   static async analyze(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const inspection = await InspectionService.runAiAnalysis(req.body, req.user?.userId);
+      const inspection = await InspectionService.analyze(req.body, req.user?.userId);
       res.status(201).json({ success: true, inspection });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  static async reviewFinding(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const findingId = Array.isArray(req.params.findingId) ? req.params.findingId[0] : req.params.findingId;
-      const result = await InspectionService.reviewFinding(findingId, req.body, req.user?.userId);
-      res.status(200).json({
-        success: true,
-        finding: result.finding,
-        maintenanceCreated: result.maintenanceCreated,
-        maintenanceRecordId: result.maintenanceRecordId,
-        vehicleStatus: result.vehicleStatus,
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  static async compare(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const result = await InspectionService.compareInspections(req.body, req.user?.userId);
-      res.status(201).json({ success: true, comparison: result });
     } catch (err) {
       next(err);
     }
@@ -57,8 +49,16 @@ export class InspectionController {
 
   static async getComparisonById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const comparison = await InspectionService.getComparisonById(id);
+      const comparison = await InspectionService.getComparisonById(param(req, 'id'));
+      res.status(200).json({ success: true, comparison });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async reviewCharge(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const comparison = await InspectionService.reviewCharge(param(req, 'chargeId'), req.body, req.user?.userId);
       res.status(200).json({ success: true, comparison });
     } catch (err) {
       next(err);

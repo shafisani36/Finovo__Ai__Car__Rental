@@ -171,56 +171,8 @@ export function CarDetailPage() {
       })
       .catch((err) => {
         if (isMounted) {
-          console.warn('Backend fleet vehicle API warning, using dynamic fallback:', err);
-          try {
-            const isLambo = id.includes('hurac') || id === 'car-1';
-            const isM4 = id.includes('m4') || id === 'car-bmw-m4';
-            const fallbackVehicle: any = {
-              id,
-              brand: isLambo ? 'Lamborghini' : 'BMW',
-              model: isLambo ? 'Huracán Evo Spider' : isM4 ? 'M4 Competition Coupe' : '520 i M-Sport',
-              year: 2026,
-              registrationNumber: isLambo ? 'DXB-9901' : isM4 ? 'RUH-7812' : 'JED-5520',
-              vin: `FIN${id.toUpperCase().replace(/[^A-Z0-9]/g, '').padEnd(14, '0')}`,
-              color: isLambo ? 'Arancio Borealis' : isM4 ? 'Isle of Man Green' : 'Mineral White Metallic',
-              status: 'AVAILABLE',
-              fuelType: 'PETROL',
-              transmission: 'AUTOMATIC',
-              seats: isLambo ? 2 : isM4 ? 4 : 5,
-              doors: isLambo ? 2 : isM4 ? 2 : 4,
-              engineCapacity: isLambo ? '5.2L V10' : isM4 ? '3.0L Twin-Turbo' : '2.0L TwinPower Turbo',
-              horsepower: isLambo ? 640 : isM4 ? 503 : 255,
-              pricingMethod: 'DAILY_FLAT',
-              dailyRate: isLambo ? 1000 : isM4 ? 550 : 480,
-              securityDeposit: isLambo ? 2500 : 1000,
-              mileageLimitPerDay: 250,
-              excessMileageFee: 2.5,
-              currency: 'USD',
-              primaryImageUrl: isLambo
-                ? 'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=1200&q=80'
-                : 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
-              category: {
-                id: 'cat-1',
-                name: isLambo ? 'Supercars' : 'Executive Luxury',
-                slug: isLambo ? 'sports' : 'sedan',
-              },
-              branch: {
-                id: 'b1',
-                name: 'Riyadh Central Hub',
-                city: 'Riyadh',
-              },
-              features: [
-                'AI Computer Vision Pre-Trip Scan Protocol',
-                'Apple CarPlay & Android Auto Wireless Interface',
-                'Adaptive Cruise Control & Lane Keep Steering',
-                'Head-Up Display & Active Matrix Headlights',
-                'Full Leather Interior with Heated Ergonomic Seats',
-              ],
-            };
-            setVehicle(fallbackVehicle);
-          } catch (fallbackErr: any) {
-            setError(fallbackErr.message || 'Failed to load vehicle profile');
-          }
+          setVehicle(null);
+          setError(err?.message || 'Failed to load vehicle profile');
         }
       })
       .finally(() => {

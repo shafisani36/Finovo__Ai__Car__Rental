@@ -1,157 +1,170 @@
-import { authClient } from '../../auth/api/authClient';
-import type { ViewPixelTelemetry } from '../services/pixelVisionAnalyzer';
+import { apiClient } from '../../../api/client';
 
-export interface DamageFinding {
+export const INSPECTION_VIEWS = ['FRONT', 'DRIVER_SIDE', 'PASSENGER_SIDE', 'REAR', 'ROOF', 'INTERIOR'] as const;
+export type InspectionView = (typeof INSPECTION_VIEWS)[number];
+export const REQUIRED_VIEWS: InspectionView[] = ['FRONT', 'DRIVER_SIDE', 'PASSENGER_SIDE', 'REAR'];
+
+export type DamageCategory = 'SCRATCH' | 'DENT' | 'PAINT_CHIP' | 'CRACK' | 'BROKEN_PART';
+export type DamageSeverity = 'LOW' | 'MEDIUM' | 'HIGH';
+export type ComparisonClassification =
+  | 'PRE_EXISTING_UNCHANGED'
+  | 'PRE_EXISTING_WORSENED'
+  | 'CONFIRMED_NEW_DAMAGE'
+  | 'POSSIBLY_NEW_DAMAGE'
+  | 'INCONCLUSIVE';
+
+export interface NormalizedBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface InspectionFinding {
   id: string;
-  inspectionId: string;
-  photoId?: string;
+  view: InspectionView;
+  category: DamageCategory;
   damageType: string;
-  severity: string;
-  location: string;
+  severity: DamageSeverity;
+  part: string;
+  description: string;
+  /** 0-100 */
   confidence: number;
-  boundingBox?: string; // JSON string of { x, y, width, height }
-  region?: string;
-  estimatedRepairCost?: number;
-  status?: string;
-  humanDecision?: string;
-  isHumanVerified?: boolean;
-  reviewedById?: string;
-  reviewedAt?: string;
-  reviewNotes?: string;
-  createdAt: string;
+  box: NormalizedBox;
+  estimatedRepairCost: number;
+  classification: ComparisonClassification | null;
+  baselineFindingId: string | null;
+  humanDecision: string | null;
 }
 
 export interface InspectionPhoto {
   id: string;
-  inspectionId: string;
-  view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR';
+  view: InspectionView;
   imageUrl: string;
-  qualityScore?: number | null;
-  qualityDetails?: string | null;
-  createdAt: string;
+  qualityIssue?: string | null;
 }
 
-export interface InspectionRecord {
+export interface InspectionReport {
   id: string;
-  rentalId?: string;
-  vehicleId: string;
   type: 'PICKUP' | 'RETURN' | 'ROUTINE';
-  overallScore: number;
-  summary?: string;
-  hasDamageDetected: boolean;
+  status: string;
+  vehicleId: string;
+  rentalId: string | null;
   createdAt: string;
-  performedBy?: {
-    id: string;
-    fullName: string;
-    email: string;
-  };
-  vehicle: {
+  overallScore: number;
+  conditionGrade: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR';
+  summary: string | null;
+  hasDamageDetected: boolean;
+  coverageScore: number | null;
+  vehicle?: {
     id: string;
     brand: string;
     model: string;
     year: number;
     registrationNumber: string;
-    primaryImageUrl?: string;
-    category?: {
-      name: string;
-    };
-    photos?: Array<{ imageUrl: string; isPrimary: boolean }>;
+    color?: string | null;
+    vin?: string | null;
   };
   rental?: {
     id: string;
-    booking: {
-      id: string;
-      bookingNumber: string;
-      depositAmount?: number;
-      customer: {
-        id: string;
-        fullName: string;
-        email: string;
-        phone?: string;
-      };
-      damage_comparisons?: Array<{
-        id: string;
-        status: string;
-        summary?: string;
-        preExistingCount: number;
-        newDamageCount: number;
-        totalProposedCharges: number;
-        totalApprovedCharges: number;
-      }>;
-    };
-    inspections?: InspectionRecord[];
-  };
+    booking?: { id: string; bookingNumber: string; currency?: string; customer?: { fullName: string; email?: string } };
+  } | null;
+  performedBy?: { id: string; fullName: string } | null;
   photos: InspectionPhoto[];
-  findings: DamageFinding[];
+  findings: InspectionFinding[];
+  totals: { findings: number; scratches: number; dents: number; estimatedRepairCost: number };
+  comparison?: DamageComparison | null;
 }
 
-export type CreateInspectionPayload = AnalyzePayload;
+export interface DamageCharge {
+  id: string;
+  damageFindingId: string | null;
+  description: string;
+  proposedAmount: number;
+  approvedAmount: number;
+  currency: string;
+  status: 'PROPOSED' | 'EVIDENCE_REVIEW' | 'APPROVED' | 'REJECTED' | 'CUSTOMER_NOTIFIED' | 'SETTLED' | 'DISPUTED';
+  notes: string | null;
+}
 
-export interface AnalyzePayload {
-  vehicleId: string;
-  rentalId?: string;
-  bookingId?: string;
-  pickupInspectionId?: string;
-  type: 'PICKUP' | 'RETURN' | 'ROUTINE';
-  summary?: string;
-  simulatedDamage?: boolean;
-  photos: Array<{
-    view: 'FRONT' | 'DRIVER_SIDE' | 'PASSENGER_SIDE' | 'REAR' | 'ROOF' | 'INTERIOR';
-    imageUrl: string;
-    pixelTelemetry?: Partial<ViewPixelTelemetry>;
+export interface DamageComparison {
+  id: string;
+  status: string;
+  summary: string | null;
+  coverageParityScore: number;
+  preExistingCount: number;
+  newDamageCount: number;
+  inconclusiveCount: number;
+  currency: string;
+  depositAmount: number;
+  totalProposedCharges: number;
+  totalActiveCharges: number;
+  bookingId: string;
+  bookingNumber: string;
+  vehicle?: {
+    id: string;
+    brand: string;
+    model: string;
+    year: number;
+    registrationNumber: string;
+    color?: string | null;
+  };
+  pickupInspection: InspectionReport | null;
+  returnInspection: InspectionReport | null;
+  matches: Array<{
+    id: string;
+    findingId: string | null;
+    baselineFindingId: string | null;
+    region: string;
+    classification: ComparisonClassification;
+    confidence: number;
+    proposedCost: number;
   }>;
+  charges: DamageCharge[];
 }
 
-export interface ReviewFindingPayload {
-  decision: 'APPROVED_CLAIM' | 'REJECTED_FALSE_POSITIVE' | 'MAINTENANCE_SCHEDULED';
+export interface AnalyzeInspectionPayload {
+  type: 'PICKUP' | 'RETURN' | 'ROUTINE';
+  vehicleId?: string;
+  bookingId?: string;
+  rentalId?: string;
   notes?: string;
+  photos: Array<{ view: InspectionView; imageData: string }>;
 }
 
 export const inspectionApi = {
-  async getInspections(): Promise<{ success: boolean; inspections: InspectionRecord[] }> {
-    return authClient.request<{ success: boolean; inspections: InspectionRecord[] }>('/inspections');
+  getInspections(params: { vehicleId?: string; type?: string } = {}) {
+    return apiClient.get<{ success: boolean; inspections: InspectionReport[] }>('/inspections', { params });
   },
 
-  async getInspectionById(id: string): Promise<{ success: boolean; inspection: InspectionRecord }> {
-    return authClient.request<{ success: boolean; inspection: InspectionRecord }>(`/inspections/${id}`);
+  getInspectionById(id: string) {
+    return apiClient.get<{ success: boolean; inspection: InspectionReport }>(`/inspections/${id}`);
   },
 
-  async compare(payload: {
-    bookingId: string;
-    pickupInspectionId: string;
-    returnInspectionId: string;
-    securityDeposit?: number;
-  }): Promise<{ success: boolean; comparison: any }> {
-    return authClient.request('/inspections/compare', {
-      method: 'POST',
-      body: JSON.stringify(payload),
+  getForBooking(bookingId: string) {
+    return apiClient.get<{
+      success: boolean;
+      bookingNumber: string;
+      inspections: InspectionReport[];
+      comparison: DamageComparison | null;
+    }>(`/inspections/booking/${bookingId}`);
+  },
+
+  getComparisonById(id: string) {
+    return apiClient.get<{ success: boolean; comparison: DamageComparison }>(`/inspections/comparisons/${id}`);
+  },
+
+  /** Runs the AI vision inspection (usually 10-60 seconds). */
+  analyze(payload: AnalyzeInspectionPayload) {
+    return apiClient.post<{ success: boolean; inspection: InspectionReport }>('/inspections/analyze', payload, {
+      timeoutMs: 180_000,
     });
   },
 
-  async getComparisonById(id: string): Promise<{ success: boolean; comparison: any }> {
-    return authClient.request('/inspections/comparisons/' + id);
-  },
-
-  async analyze(payload: AnalyzePayload): Promise<{ success: boolean; inspection: InspectionRecord }> {
-    return authClient.request<{ success: boolean; inspection: InspectionRecord }>('/inspections/analyze', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  },
-
-  async reviewFinding(
-    findingId: string,
-    payload: ReviewFindingPayload
-  ): Promise<{
-    success: boolean;
-    finding: DamageFinding;
-    maintenanceCreated?: boolean;
-    maintenanceRecordId?: string | null;
-    vehicleStatus?: string;
-  }> {
-    return authClient.request(`/inspections/findings/${findingId}/review`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    });
+  reviewCharge(chargeId: string, decision: 'APPROVED' | 'REJECTED', notes?: string) {
+    return apiClient.patch<{ success: boolean; comparison: DamageComparison }>(
+      `/inspections/charges/${chargeId}/review`,
+      { decision, notes }
+    );
   },
 };

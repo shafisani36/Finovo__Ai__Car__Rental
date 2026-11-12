@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 import { AppError } from '../shared/errors/app-error';
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
@@ -32,6 +33,33 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
       },
     });
     return;
+  }
+
+  // Request body too large / malformed JSON (from express.json)
+  const bodyError = err as { type?: string; status?: number };
+  if (bodyError?.type === 'entity.too.large') {
+    res.status(413).json({ success: false, error: { code: 'PAYLOAD_TOO_LARGE', message: 'The uploaded data is too large.' } });
+    return;
+  }
+  if (bodyError?.type === 'entity.parse.failed') {
+    res.status(400).json({ success: false, error: { code: 'INVALID_JSON', message: 'The request body is not valid JSON.' } });
+    return;
+  }
+
+  // Common database errors mapped to clear HTTP answers
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2002') {
+      res.status(409).json({ success: false, error: { code: 'ALREADY_EXISTS', message: 'A record with these details already exists.' } });
+      return;
+    }
+    if (err.code === 'P2025') {
+      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'The requested record was not found.' } });
+      return;
+    }
+    if (err.code === 'P2003') {
+      res.status(409).json({ success: false, error: { code: 'IN_USE', message: 'This record is linked to other records and cannot be changed.' } });
+      return;
+    }
   }
 
   // Handle unexpected errors

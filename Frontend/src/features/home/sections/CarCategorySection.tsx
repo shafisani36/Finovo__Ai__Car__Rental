@@ -1,10 +1,14 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { BRAND_CATEGORIES } from '../data/homepageData';
 import { CategoryCard } from '../components/CategoryCard';
 import type { BrandCategory } from '../../../types';
+import { usePublicStats } from '../../../hooks/usePublicSite';
+
+const brandKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 interface CarCategorySectionProps {
   onCategorySelect?: (cat: BrandCategory) => void;
@@ -13,9 +17,25 @@ interface CarCategorySectionProps {
 export function CarCategorySection({ onCategorySelect }: CarCategorySectionProps) {
   const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
+  const navigate = useNavigate();
+  const stats = usePublicStats();
+
+  // Only brands that are really in the public fleet, each opening the fleet filtered by that brand
+  const categories = useMemo(() => {
+    const fleetBrands = stats?.brands ?? [];
+    return BRAND_CATEGORIES.flatMap((category) => {
+      const key = brandKey(category.brand);
+      const match = fleetBrands.find((brand) => {
+        const fleetKey = brandKey(brand);
+        return fleetKey === key || fleetKey.startsWith(key) || key.startsWith(fleetKey);
+      });
+      return match ? [{ category, fleetBrand: match }] : [];
+    });
+  }, [stats]);
 
   useGSAP(
     () => {
+      if (categories.length === 0 || !sectionRef.current) return;
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -47,8 +67,10 @@ export function CarCategorySection({ onCategorySelect }: CarCategorySectionProps
         '-=0.4'
       );
     },
-    { scope: sectionRef }
+    { scope: sectionRef, dependencies: [categories.length] }
   );
+
+  if (categories.length === 0) return null;
 
   return (
     <section
@@ -98,9 +120,16 @@ export function CarCategorySection({ onCategorySelect }: CarCategorySectionProps
             gap: 'clamp(16px, 2.2vw, 26px)',
           }}
         >
-          {BRAND_CATEGORIES.map((cat) => (
-            <div key={cat.id} className="category-card-item">
-              <CategoryCard category={cat} onSelect={onCategorySelect} />
+          {categories.map(({ category, fleetBrand }) => (
+            <div key={category.id} className="category-card-item">
+              <CategoryCard
+                category={category}
+                onSelect={(selected) =>
+                  onCategorySelect
+                    ? onCategorySelect(selected)
+                    : navigate(`/cars?brand=${encodeURIComponent(fleetBrand)}`)
+                }
+              />
             </div>
           ))}
         </div>

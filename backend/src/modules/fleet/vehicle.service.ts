@@ -5,6 +5,7 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { AuditService } from '../audit/audit.service';
+import { blockingBookingWhere } from '../bookings/booking.service';
 import { VehicleImageService } from './vehicle-image.service';
 import type {
   VehicleFilterInput,
@@ -61,34 +62,63 @@ export class VehicleService {
    * Retrieves paginated vehicles with filtering and sorting
    */
   static async listVehicles(filters: VehicleFilterInput) {
-    const { page, limit, search, category, status, sortBy, sortOrder } = filters;
+    const { page, limit, search, category, status, sortBy, sortOrder, availableFrom, availableTo, publicCatalog } =
+      filters;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.VehicleWhereInput = {};
+    // Every condition is combined with AND so search, category and date filters never overwrite each other
+    const conditions: Prisma.VehicleWhereInput[] = [];
 
     if (search && search.trim()) {
       const query = search.trim();
-      where.OR = [
-        { brand: { contains: query } },
-        { model: { contains: query } },
-        { registrationNumber: { contains: query } },
-        { vin: { contains: query } },
-        { trim: { contains: query } },
-        { vehicleCode: { contains: query } },
-      ];
+      conditions.push({
+        OR: [
+          { brand: { contains: query } },
+          { model: { contains: query } },
+          { registrationNumber: { contains: query } },
+          { vin: { contains: query } },
+          { trim: { contains: query } },
+          { vehicleCode: { contains: query } },
+        ],
+      });
     }
 
     if (category && category !== 'ALL') {
-      where.OR = [
-        { categoryId: category },
-        { category: { slug: category.toLowerCase() } },
-        { category: { name: category } },
-      ];
+      conditions.push({
+        OR: [
+          { categoryId: category },
+          { category: { slug: category.toLowerCase() } },
+          { category: { name: category } },
+        ],
+      });
     }
 
     if (status && status !== 'ALL') {
-      where.status = status as VehicleStatus;
+      conditions.push({ status: status as VehicleStatus });
     }
+
+    // Customer-facing catalog: only listed, public, non-archived vehicles
+    if (publicCatalog === 'true') {
+      conditions.push({
+        deletedAt: null,
+        isListed: true,
+        isPublicCatalog: true,
+        status: { not: 'ARCHIVED' },
+      });
+    }
+
+    // Date-range availability: hide a vehicle only when it has a blocking booking overlapping the range
+    if (availableFrom && availableTo) {
+      const from = new Date(availableFrom);
+      const to = new Date(availableTo);
+      conditions.push({
+        isBookable: true,
+        status: { notIn: ['MAINTENANCE', 'ARCHIVED'] },
+        bookings: { none: blockingBookingWhere(from, to) },
+      });
+    }
+
+    const where: Prisma.VehicleWhereInput = conditions.length > 0 ? { AND: conditions } : {};
 
     const [total, vehicles] = await Promise.all([
       prisma.vehicle.count({ where }),
@@ -1846,11 +1876,7 @@ export class VehicleService {
     const conflictingBooking = await prisma.booking.findFirst({
       where: {
         vehicleId,
-        status: { in: ['CONFIRMED', 'ACTIVE', 'PENDING'] },
-        AND: [
-          { pickupDateTime: { lt: returnDate } },
-          { returnDateTime: { gt: pickup } },
-        ],
+        ...blockingBookingWhere(pickup, returnDate),
       },
       select: {
         id: true,

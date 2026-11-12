@@ -26,6 +26,8 @@ export interface CarCardProps {
   available?: boolean;
   onBookClick?: (id: string) => void;
   className?: string;
+  /** Optional query string (e.g. "?pickupDate=...&returnDate=...") appended to detail links. */
+  linkSearch?: string;
 }
 
 export const CarCard: React.FC<CarCardProps> = ({
@@ -33,7 +35,7 @@ export const CarCard: React.FC<CarCardProps> = ({
   name,
   year,
   pricePerDay,
-  currency = 'USD',
+  currency = '',
   rateMultiplier = 1,
   periodLabel,
   mileageLimit = '250 km',
@@ -41,10 +43,11 @@ export const CarCard: React.FC<CarCardProps> = ({
   logo,
   available = true,
   className = '',
+  linkSearch = '',
 }) => {
   const { t } = useTranslation();
   const displayRate = Math.round(pricePerDay * rateMultiplier).toLocaleString();
-  const currencyPrefix = currency === 'SAR' ? 'SAR ' : '$';
+  const currencyPrefix = currency ? `${currency} ` : '';
   const resolvedPeriodLabel = periodLabel || t('cars.dailyFee');
   const fullBleed = isFullBleedCarPhoto(image);
 
@@ -83,7 +86,7 @@ export const CarCard: React.FC<CarCardProps> = ({
 
         {/* Centered Vehicle Cutout or Edge-to-Edge Studio Photo */}
         <Link
-          to={`/cars/${id}`}
+          to={`/cars/${id}${linkSearch}`}
           className={`finovo-car-card-vehicle-wrap ${fullBleed ? 'is-photo-wrap' : ''}`}
           title={`View full specs & book ${name}`}
         >
@@ -105,7 +108,7 @@ export const CarCard: React.FC<CarCardProps> = ({
             alt={`${name} emblem`}
             className="finovo-car-card-logo-img"
           />
-          <Link to={`/cars/${id}`} className="finovo-car-card-text-box" style={{ textDecoration: 'none' }} title={`View details for ${name}`}>
+          <Link to={`/cars/${id}${linkSearch}`} className="finovo-car-card-text-box" style={{ textDecoration: 'none' }} title={`View details for ${name}`}>
             <h4 className="finovo-car-card-title">{name}</h4>
             <div className="finovo-car-card-year">{year}</div>
           </Link>
@@ -134,7 +137,7 @@ export const CarCard: React.FC<CarCardProps> = ({
 
         {/* Right: Circular Action Button */}
         <Link
-          to={`/cars/${id}`}
+          to={`/cars/${id}${linkSearch}`}
           className="finovo-car-card-action-btn"
           aria-label={`View details and book ${name}`}
         >

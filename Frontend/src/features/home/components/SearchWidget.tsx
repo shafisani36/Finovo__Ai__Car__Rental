@@ -1,19 +1,27 @@
 import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { RentalType, SearchFormData } from '../../../types';
 import { Button } from '../../../components/common/Button';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { MapPin, Calendar, Car, Search, CheckCircle2, AlertCircle } from 'lucide-react';
 
+function localDateOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
 export function SearchWidget() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<SearchFormData>({
     rentalType: 'daily',
-    pickupLocation: 'San Francisco Int Airport (SFO)',
-    dropoffLocation: 'Same as pickup',
-    pickupDate: '2026-10-20',
+    pickupLocation: '',
+    dropoffLocation: '',
+    pickupDate: localDateOffset(1),
     pickupTime: '10:00 AM',
-    dropoffDate: '2026-10-24',
+    dropoffDate: localDateOffset(4),
     dropoffTime: '10:00 AM',
     carCategory: 'All Luxury & Electric',
     differentDropoff: false,
@@ -33,13 +41,19 @@ export function SearchWidget() {
       setValidationError(t('home.searchWidget.errorPickup'));
       return;
     }
+    if (!formData.pickupDate || !formData.dropoffDate || formData.dropoffDate < formData.pickupDate) {
+      setValidationError(t('cars.dateErrorOrder'));
+      return;
+    }
+    if (formData.pickupDate < localDateOffset(0)) {
+      setValidationError(t('cars.dateErrorPast'));
+      return;
+    }
     setValidationError(null);
     setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      const target = document.getElementById('browse-cars');
-      target?.scrollIntoView({ behavior: 'smooth' });
-    }, 900);
+    // Open the cars catalog filtered to cars that are free for the selected dates
+    const query = new URLSearchParams({ pickupDate: formData.pickupDate, returnDate: formData.dropoffDate });
+    navigate(`/cars?${query.toString()}`);
   };
 
   const tabLabels: Record<RentalType, string> = {

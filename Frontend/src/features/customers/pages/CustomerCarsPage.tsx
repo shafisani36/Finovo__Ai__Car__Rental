@@ -15,92 +15,6 @@ import { getCarImage, isFullBleedCarPhoto, resolveVehiclePricing } from '../../.
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
-const FALLBACK_CARS = [
-  {
-    id: 'car-bmw-m4',
-    brand: 'BMW',
-    model: 'M4 Competition Coupe',
-    year: 2026,
-    categoryName: 'Coupe / Sports',
-    dailyRate: 480,
-    securityDeposit: 800,
-    seats: 4,
-    transmission: 'AUTOMATIC',
-    fuelType: 'PETROL',
-    primaryImageUrl: '/cars/studio-bmw-m4.jpg',
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-bmw-x5m',
-    brand: 'BMW',
-    model: 'X5 M Competition',
-    year: 2026,
-    categoryName: 'SUV',
-    dailyRate: 360,
-    securityDeposit: 600,
-    seats: 5,
-    transmission: 'AUTOMATIC',
-    fuelType: 'PETROL',
-    primaryImageUrl: '/cars/studio-bmw-x5.jpg',
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-hyundai-tucson',
-    brand: 'Hyundai',
-    model: 'Tucson Hybrid AWD',
-    year: 2026,
-    categoryName: 'SUV',
-    dailyRate: 155,
-    securityDeposit: 0,
-    seats: 5,
-    transmission: 'AUTOMATIC',
-    fuelType: 'HYBRID',
-    primaryImageUrl: '/cars/finovo-blue-car.png',
-    zeroDeposit: true,
-  },
-  {
-    id: 'car-bmw-520i',
-    brand: 'BMW',
-    model: '520 i M-Sport',
-    year: 2026,
-    categoryName: 'Sedan',
-    dailyRate: 210,
-    securityDeposit: 400,
-    seats: 5,
-    transmission: 'AUTOMATIC',
-    fuelType: 'PETROL',
-    primaryImageUrl: '/cars/bmw.png',
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-tesla-model3',
-    brand: 'Tesla',
-    model: 'Model 3 Performance',
-    year: 2026,
-    categoryName: 'Coupe / Sports',
-    dailyRate: 225,
-    securityDeposit: 300,
-    seats: 5,
-    transmission: 'AUTOMATIC',
-    fuelType: 'ELECTRIC',
-    primaryImageUrl: '/cars/finovo-red-car.png',
-    zeroDeposit: false,
-  },
-  {
-    id: 'car-toyota-corolla',
-    brand: 'Toyota',
-    model: 'Corolla Altis Grande',
-    year: 2025,
-    categoryName: 'Sedan',
-    dailyRate: 95,
-    securityDeposit: 0,
-    seats: 5,
-    transmission: 'AUTOMATIC',
-    fuelType: 'PETROL',
-    primaryImageUrl: '/cars/finovo-white-car.png',
-    zeroDeposit: true,
-  },
-];
 
 export function CustomerCarsPage() {
   const navigate = useNavigate();
@@ -118,17 +32,17 @@ export function CustomerCarsPage() {
     async function loadFleet() {
       try {
         setIsLoading(true);
-        const res = await vehiclesApi.list({ limit: 50 });
+        const res = await vehiclesApi.list({ limit: 50, publicCatalog: 'true' });
         if (isMounted && res.success && res.vehicles && res.vehicles.length > 0) {
           const mapped = res.vehicles.map((v: any) => {
             const pricing = resolveVehiclePricing(v);
             const resolvedImage = getCarImage(v);
             return {
               id: v.id,
-              brand: v.brand?.name || v.brand || 'Luxury',
-              model: v.model?.name || v.model || 'Performance',
-              year: v.year || 2026,
-              categoryName: v.category?.name || v.category || 'Premium',
+              brand: v.brand?.name || v.brand || '',
+              model: v.model?.name || v.model || '',
+              year: v.year,
+              categoryName: v.category?.name || '',
               dailyRate: pricing.dailyRate,
               securityDeposit: pricing.securityDeposit,
               seats: v.seats || 5,
@@ -144,11 +58,11 @@ export function CustomerCarsPage() {
           setMaxPrice(roundedCap);
           setVehicles(mapped);
         } else if (isMounted) {
-          setVehicles(FALLBACK_CARS);
+          setVehicles([]);
         }
       } catch (err) {
         console.error('Error loading fleet:', err);
-        if (isMounted) setVehicles(FALLBACK_CARS);
+        if (isMounted) setVehicles([]);
       } finally {
         if (isMounted) setIsLoading(false);
       }

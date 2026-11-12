@@ -5,22 +5,17 @@ import { requireRole } from '../../middleware/authorize';
 
 export const inspectionRouter = Router();
 
+const STAFF = ['ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'] as const;
+
 inspectionRouter.use(authenticate);
 
-// Inspection read operations (authenticated users, customers & staff)
-inspectionRouter.get('/', InspectionController.list);
-inspectionRouter.get('/:id', InspectionController.getById);
+// Customers see only the reports of their own bookings; staff see everything
+inspectionRouter.get('/booking/:bookingId', InspectionController.listForBooking);
 
-// AI Computer Vision Analysis: Open to Customers during checkout/return & Staff
-inspectionRouter.post('/analyze', InspectionController.analyze);
-
-// Inspection comparison (baseline vs return): Open to Customers during return & Staff
-inspectionRouter.post('/compare', InspectionController.compare);
-inspectionRouter.get('/comparisons/:id', InspectionController.getComparisonById);
-
-// Staff human verification
-inspectionRouter.patch(
-  '/findings/:findingId/review',
-  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'),
-  InspectionController.reviewFinding
-);
+// Staff operations
+inspectionRouter.get('/', requireRole(...STAFF), InspectionController.list);
+inspectionRouter.get('/comparisons/:id', requireRole(...STAFF), InspectionController.getComparisonById);
+inspectionRouter.get('/:id', requireRole(...STAFF), InspectionController.getById);
+// Large body: up to 6 compressed photos as data URLs
+inspectionRouter.post('/analyze', requireRole(...STAFF), InspectionController.analyze);
+inspectionRouter.patch('/charges/:chargeId/review', requireRole(...STAFF), InspectionController.reviewCharge);

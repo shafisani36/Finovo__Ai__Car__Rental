@@ -255,7 +255,7 @@ export function CustomerLayout() {
                 <div className="user-avatar">{userInitials}</div>
                 <div className="user-text-info">
                   <span className="user-name">{user?.fullName || t('portal.valuedRenter')}</span>
-                  <span className="user-email">{user?.email || 'customer@finovo.com'}</span>
+                  <span className="user-email">{user?.email ?? ''}</span>
                 </div>
                 <ChevronDown size={14} color="#685D73" />
               </button>

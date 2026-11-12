@@ -17,14 +17,57 @@ import {
   Loader2,
 } from 'lucide-react';
 import { inquiryApi } from '../../api/services/inquiry.api';
+import { telHref, useSiteInfo } from '../../hooks/usePublicSite';
 
 import heroImg from '../../assets/contact/hero-car.jpg';
 import officeImg from '../../assets/contact/office-car.jpg';
 import show1Img from '../../assets/contact/showroom-1.jpg';
 import show2Img from '../../assets/contact/showroom-2.jpg';
 
+const contactLinkStyle: React.CSSProperties = { color: 'inherit', textDecoration: 'none', overflowWrap: 'anywhere' };
+
+function ContactCard({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: React.ReactNode; note?: string | null }) {
+  return (
+    <div
+      style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: '20px',
+        padding: '24px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.06)',
+        border: '1px solid #ECEAEF',
+        display: 'flex',
+        gap: '18px',
+        alignItems: 'center',
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          width: '52px',
+          height: '52px',
+          borderRadius: '50%',
+          backgroundColor: '#1E0426',
+          color: '#FAB826',
+          display: 'grid',
+          placeItems: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>{label}</p>
+        <p style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px', overflowWrap: 'anywhere' }}>{value}</p>
+        {note && <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{note}</p>}
+      </div>
+    </div>
+  );
+}
+
 export function ContactUsPage() {
   const { t } = useTranslation();
+  const site = useSiteInfo();
+  const branches = site?.branches ?? [];
 
   const [formData, setFormData] = useState({
     name: '',
@@ -164,107 +207,25 @@ export function ContactUsPage() {
         }}
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '20px' }}>
-          {/* Card 1 */}
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              padding: '24px',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.06)',
-              border: '1px solid #ECEAEF',
-              display: 'flex',
-              gap: '18px',
-              alignItems: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '50%',
-                backgroundColor: '#1E0426',
-                color: '#FAB826',
-                display: 'grid',
-                placeItems: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Phone size={22} />
-            </div>
-            <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>{t('contact.callUs')}</p>
-              <p className="phone-number" style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>+1 (123) 456-7890</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{t('contact.callHours')}</p>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              padding: '24px',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.06)',
-              border: '1px solid #ECEAEF',
-              display: 'flex',
-              gap: '18px',
-              alignItems: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '50%',
-                backgroundColor: '#1E0426',
-                color: '#FAB826',
-                display: 'grid',
-                placeItems: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Mail size={22} />
-            </div>
-            <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>{t('contact.emailUs')}</p>
-              <p style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>support@finovo.com</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{t('contact.emailSub')}</p>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '20px',
-              padding: '24px',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.06)',
-              border: '1px solid #ECEAEF',
-              display: 'flex',
-              gap: '18px',
-              alignItems: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '50%',
-                backgroundColor: '#1E0426',
-                color: '#FAB826',
-                display: 'grid',
-                placeItems: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <MapPin size={22} />
-            </div>
-            <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280', margin: 0 }}>{t('contact.hqLabel')}</p>
-              <p style={{ fontSize: '17px', fontWeight: 800, color: '#1E0426', margin: '4px 0 2px' }}>{t('contact.hqAddress')}</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{t('contact.hqSuite')}</p>
-            </div>
-          </div>
+          {site?.supportPhone && (
+            <ContactCard
+              icon={<Phone size={22} />}
+              label={t('contact.callUs')}
+              value={<a className="phone-number" href={telHref(site.supportPhone)} style={contactLinkStyle}>{site.supportPhone}</a>}
+              note={site.openingHours}
+            />
+          )}
+          {site?.supportEmail && (
+            <ContactCard
+              icon={<Mail size={22} />}
+              label={t('contact.emailUs')}
+              value={<a href={`mailto:${site.supportEmail}`} style={contactLinkStyle}>{site.supportEmail}</a>}
+              note={t('contact.emailSub')}
+            />
+          )}
+          {site?.address && (
+            <ContactCard icon={<MapPin size={22} />} label={t('contact.hqLabel')} value={site.address} />
+          )}
         </div>
       </section>
 
@@ -575,7 +536,8 @@ export function ContactUsPage() {
         </div>
       </section>
 
-      {/* Showroom Locations Section */}
+      {/* Showroom Locations Section (real branches only) */}
+      {branches.length > 0 && (
       <section style={{ backgroundColor: '#ECE5DB', padding: '70px 6%' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px', marginBottom: '36px' }}>
@@ -593,72 +555,57 @@ export function ContactUsPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
-            {/* Showroom 1 */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 25px rgba(0,0,0,0.06)' }}>
-              <img src={show1Img} alt={t('contact.hub1Title')} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
-              <div style={{ padding: '22px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#FAB826', backgroundColor: '#1E0426', padding: '4px 10px', borderRadius: '20px' }}>
-                  {t('contact.hub1Tag')}
-                </span>
-                <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1E0426', margin: '12px 0 6px' }}>
-                  {t('contact.hub1Title')}
-                </h3>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px' }}>
-                  {t('contact.hub1Desc')}
-                </p>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <a
-                    href="tel:+11234567890"
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      backgroundColor: '#F3F4F6',
-                      color: '#1E0426',
-                      fontWeight: 700,
-                      fontSize: '12px',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    {t('contact.directLine')}
-                  </a>
+            {branches.map((branch, index) => (
+              <div
+                key={branch.id}
+                style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 25px rgba(0,0,0,0.06)' }}
+              >
+                <img
+                  src={index % 2 === 0 ? show1Img : show2Img}
+                  alt={branch.name}
+                  loading="lazy"
+                  style={{ width: '100%', height: '220px', objectFit: 'cover' }}
+                />
+                <div style={{ padding: '22px' }}>
+                  {index === 0 && (
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#FAB826', backgroundColor: '#1E0426', padding: '4px 10px', borderRadius: '20px' }}>
+                      {t('contact.hub1Tag')}
+                    </span>
+                  )}
+                  <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1E0426', margin: '12px 0 6px', overflowWrap: 'anywhere' }}>
+                    {branch.name}
+                  </h3>
+                  {branch.address && (
+                    <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 6px' }}>{branch.address}</p>
+                  )}
+                  {branch.openingHours && (
+                    <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '0 0 16px' }}>{branch.openingHours}</p>
+                  )}
+                  {branch.phone && (
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                      <a
+                        href={telHref(branch.phone)}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          backgroundColor: '#F3F4F6',
+                          color: '#1E0426',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        {t('contact.directLine')}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Showroom 2 */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 25px rgba(0,0,0,0.06)' }}>
-              <img src={show2Img} alt={t('contact.hub2Title')} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
-              <div style={{ padding: '22px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#FAB826', backgroundColor: '#1E0426', padding: '4px 10px', borderRadius: '20px' }}>
-                  {t('contact.hub2Tag')}
-                </span>
-                <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1E0426', margin: '12px 0 6px' }}>
-                  {t('contact.hub2Title')}
-                </h3>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 16px' }}>
-                  {t('contact.hub2Desc')}
-                </p>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <a
-                    href="tel:+11234567890"
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      backgroundColor: '#F3F4F6',
-                      color: '#1E0426',
-                      fontWeight: 700,
-                      fontSize: '12px',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    {t('contact.directLine')}
-                  </a>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
+      )}
 
       {/* Frequently Asked Questions */}
       <section style={{ maxWidth: '960px', margin: '70px auto', padding: '0 clamp(16px, 4vw, 24px)' }}>

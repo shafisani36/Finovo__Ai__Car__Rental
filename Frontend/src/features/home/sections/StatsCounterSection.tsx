@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { formatCount, usePublicStats } from '../../../hooks/usePublicSite';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -15,52 +16,37 @@ interface StatConfig {
   duration: number;
 }
 
-const STATS_DATA: StatConfig[] = [
-  {
-    id: 'cars',
-    labelKey: 'home.stats.carsInFleet',
-    target: 500,
-    suffix: '+',
-    displayValue: '500+',
-    duration: 1.8,
-  },
-  {
-    id: 'customers',
-    labelKey: 'home.stats.happyCustomers',
-    target: 10,
-    suffix: 'K+',
-    displayValue: '10K+',
-    duration: 1.6,
-  },
-  {
-    id: 'locations',
-    labelKey: 'home.stats.locations',
-    target: 15,
-    suffix: '',
-    displayValue: '15',
-    duration: 1.4,
-  },
-  {
-    id: 'support',
-    labelKey: 'home.stats.customerSupport',
-    target: 24,
-    suffix: '/7',
-    displayValue: '24/7',
-    duration: 1.7,
-  },
-];
+/** Turns a live count into an animated counter: 1240 animates 0 -> 1 and ends on "1.2K+". */
+function countStat(id: string, labelKey: string, value: number, duration: number): StatConfig {
+  const scaled = value >= 1_000_000 ? value / 1_000_000 : value >= 1_000 ? value / 1_000 : value;
+  const suffix = value >= 1_000_000 ? 'M+' : value >= 1_000 ? 'K+' : '';
+  return { id, labelKey, target: Math.floor(scaled), suffix, displayValue: formatCount(value), duration };
+}
 
 export function StatsCounterSection() {
   const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
   const numberRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const liveStats = usePublicStats();
+
+  // Every number comes from the database; support hours are a company policy, not a count.
+  const stats = useMemo<StatConfig[]>(() => {
+    if (!liveStats) return [];
+    return [
+      countStat('cars', 'home.stats.carsInFleet', liveStats.vehicles, 1.8),
+      countStat('customers', 'home.stats.happyCustomers', liveStats.customers, 1.6),
+      countStat('locations', 'home.stats.locations', liveStats.branches, 1.4),
+      { id: 'support', labelKey: 'home.stats.customerSupport', target: 24, suffix: '/7', displayValue: '24/7', duration: 1.7 },
+    ];
+  }, [liveStats]);
 
   useGSAP(
     () => {
+      if (stats.length === 0) return;
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       if (prefersReducedMotion) {
-        STATS_DATA.forEach((stat, idx) => {
+        stats.forEach((stat, idx) => {
           const el = numberRefs.current[idx];
           if (el) el.textContent = stat.displayValue;
         });
@@ -68,7 +54,7 @@ export function StatsCounterSection() {
       }
 
       // Initialize counter text to 0
-      STATS_DATA.forEach((stat, idx) => {
+      stats.forEach((stat, idx) => {
         const el = numberRefs.current[idx];
         if (el) el.textContent = `0${stat.suffix}`;
       });
@@ -94,7 +80,7 @@ export function StatsCounterSection() {
       });
 
       // Count up animation for each number
-      STATS_DATA.forEach((stat, idx) => {
+      stats.forEach((stat, idx) => {
         const el = numberRefs.current[idx];
         if (!el) return;
 
@@ -117,8 +103,11 @@ export function StatsCounterSection() {
         );
       });
     },
-    { scope: sectionRef }
+    { scope: sectionRef, dependencies: [stats] }
   );
+
+  // Nothing to show until the real numbers arrive (no placeholder figures)
+  if (stats.length === 0) return null;
 
   return (
     <section
@@ -135,7 +124,7 @@ export function StatsCounterSection() {
     >
       <div className="container" style={{ maxWidth: '1240px', margin: '0 auto', padding: '0 24px' }}>
         <div className="stats-counter-grid">
-          {STATS_DATA.map((stat, idx) => (
+          {stats.map((stat, idx) => (
             <div key={stat.id} className="stats-col">
               {/* Perfectly locked Y-axis label container */}
               <div className="stat-label">

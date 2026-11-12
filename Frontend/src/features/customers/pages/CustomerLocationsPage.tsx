@@ -22,38 +22,6 @@ interface BranchDisplay {
   openingHours?: string | null;
 }
 
-const FALLBACK_BRANCHES: BranchDisplay[] = [
-  {
-    id: 'b1',
-    name: 'Finovo Central Luxury Hub',
-    code: 'FIN-CENTRAL-01',
-    address: 'King Fahd Road, Luxury Motor Complex, Al Olaya',
-    city: 'Riyadh',
-    phone: '+966 11 400 9000',
-    email: 'riyadh.central@finovo.com',
-    openingHours: 'Open 24/7 (Continuous Dispatch & Key Drop)',
-  },
-  {
-    id: 'b2',
-    name: 'King Khalid International Airport (KKIA - T5)',
-    code: 'FIN-AIRPORT-02',
-    address: 'Terminal 5 Arrivals Hall, Fast-Lane Rental Area',
-    city: 'Riyadh',
-    phone: '+966 11 400 9001',
-    email: 'kkia.t5@finovo.com',
-    openingHours: 'Open 24/7 (Flight Tracking Automatic Hold)',
-  },
-  {
-    id: 'b3',
-    name: 'Jeddah Corniche Executive Center',
-    code: 'FIN-JEDDAH-03',
-    address: 'Al Andalus District, North Corniche Road',
-    city: 'Jeddah',
-    phone: '+966 12 600 8000',
-    email: 'jeddah.corniche@finovo.com',
-    openingHours: '08:00 AM – 02:00 AM Daily',
-  },
-];
 
 export function CustomerLocationsPage() {
   const [branches, setBranches] = useState<BranchDisplay[]>([]);
@@ -70,20 +38,20 @@ export function CustomerLocationsPage() {
           const mapped = res.branches.map((b: any) => ({
             id: b.id,
             name: b.name,
-            code: b.code || 'FIN-LOC',
-            address: b.address || 'King Fahd Road, Luxury Motor Complex',
-            city: b.city || 'Riyadh',
-            phone: b.phone || '+966 11 400 9000',
-            email: b.email || 'support@finovo.com',
-            openingHours: b.openingHours || 'Open 24/7 (VIP Fast-Lane Handover)',
+            code: b.code || '',
+            address: b.address || '',
+            city: b.city || '',
+            phone: b.phone || '',
+            email: b.email || '',
+            openingHours: b.openingHours || '',
           }));
           setBranches(mapped);
         } else if (isMounted) {
-          setBranches(FALLBACK_BRANCHES);
+          setBranches([]);
         }
       } catch (err) {
         console.error('Error loading branches:', err);
-        if (isMounted) setBranches(FALLBACK_BRANCHES);
+        if (isMounted) setBranches([]);
       } finally {
         if (isMounted) setIsLoading(false);
       }

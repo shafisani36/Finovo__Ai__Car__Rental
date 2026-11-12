@@ -6,11 +6,13 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { FAQ_ITEMS } from '../data/homepageData';
 import { Button } from '../../../components/common/Button';
 import { HelpCircle, Mail, Phone, Plus } from 'lucide-react';
+import { telHref, useSiteInfo } from '../../../hooks/usePublicSite';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function FaqSection() {
   const { t } = useTranslation();
+  const site = useSiteInfo();
   const sectionRef = useRef<HTMLElement>(null);
   const [activeFaqId, setActiveFaqId] = useState<string>(FAQ_ITEMS[0].id);
 
@@ -168,8 +170,9 @@ export function FaqSection() {
 
               {/* Direct Contact Links */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
+                {site?.supportPhone && (
                 <a
-                  href="tel:+18005553466"
+                  href={telHref(site.supportPhone)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -184,10 +187,12 @@ export function FaqSection() {
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
                 >
                   <Phone size={16} color="#330231" />
-                  <span className="phone-number">+1 (800) 555-FINOVO</span>
+                  <span className="phone-number">{site.supportPhone}</span>
                 </a>
+                )}
+                {site?.supportEmail && (
                 <a
-                  href="mailto:support@finovorentals.com"
+                  href={`mailto:${site.supportEmail}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -202,8 +207,9 @@ export function FaqSection() {
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
                 >
                   <Mail size={16} color="#330231" />
-                  <span>support@finovorentals.com</span>
+                  <span style={{ wordBreak: 'break-word' }}>{site.supportEmail}</span>
                 </a>
+                )}
               </div>
             </div>
 

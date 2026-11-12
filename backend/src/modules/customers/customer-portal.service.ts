@@ -588,14 +588,16 @@ export class CustomerPortalService {
       .filter((p) => p.status === 'SUCCEEDED')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
+    // Amount due per booking = rental total + refundable deposit (the same amount Stripe checkout charges)
+    const amountDue = (b: (typeof bookings)[number]) => Number(b.totalAmount) + Number(b.depositAmount || 0);
+    const paidFor = (bookingId: string) =>
+      paymentsList
+        .filter((p) => p.bookingId === bookingId && p.status === 'SUCCEEDED')
+        .reduce((s, p) => s + Number(p.amount), 0);
+
     const totalOutstanding = bookings
-      .filter((b) => b.status !== 'CANCELLED' && b.status !== 'REJECTED')
-      .reduce((sum, b) => {
-        const paidForBooking = paymentsList
-          .filter((p) => p.bookingId === b.id && p.status === 'SUCCEEDED')
-          .reduce((s, p) => s + Number(p.amount), 0);
-        return sum + Math.max(0, Number(b.totalAmount) - paidForBooking);
-      }, 0);
+      .filter((b) => !['CANCELLED', 'REJECTED', 'EXPIRED'].includes(b.status))
+      .reduce((sum, b) => sum + Math.max(0, amountDue(b) - paidFor(b.id)), 0);
 
     const securityDepositsHeld = bookings
       .filter((b) => ['ACTIVE', 'CONFIRMED'].includes(b.status))
@@ -606,7 +608,7 @@ export class CustomerPortalService {
         totalPaid,
         totalOutstanding,
         securityDepositsHeld,
-        currency: 'PKR',
+        currency: bookings[0]?.currency || 'PKR',
       },
       transactions: paymentsList.map((p) => ({
         id: p.id,
@@ -620,9 +622,8 @@ export class CustomerPortalService {
         createdAt: p.createdAt,
       })),
       invoices: bookings.map((b) => {
-        const paidAmount = paymentsList
-          .filter((p) => p.bookingId === b.id && p.status === 'SUCCEEDED')
-          .reduce((s, p) => s + Number(p.amount), 0);
+        const paidAmount = paidFor(b.id);
+        const due = amountDue(b);
         return {
           id: `INV-${b.bookingNumber}`,
           bookingId: b.id,
@@ -632,9 +633,12 @@ export class CustomerPortalService {
           subtotal: Number(b.subtotal),
           taxAmount: Number(b.taxAmount),
           totalAmount: Number(b.totalAmount),
+          depositAmount: Number(b.depositAmount || 0),
+          currency: b.currency,
+          bookingStatus: b.status,
           paidAmount,
-          balanceDue: Math.max(0, Number(b.totalAmount) - paidAmount),
-          status: paidAmount >= Number(b.totalAmount) ? 'PAID' : paidAmount > 0 ? 'PARTIAL' : 'UNPAID',
+          balanceDue: ['CANCELLED', 'REJECTED', 'EXPIRED'].includes(b.status) ? 0 : Math.max(0, due - paidAmount),
+          status: paidAmount >= due ? 'PAID' : paidAmount > 0 ? 'PARTIAL' : 'UNPAID',
         };
       }),
     };
@@ -658,47 +662,41 @@ export class CustomerPortalService {
       throw AppError.forbidden('Unauthorized access to this booking');
     }
 
-    // Generate unique payment ID and transaction record
-    const paymentId = `PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    // Card payments are only accepted through the verified Stripe flow (/payments/stripe/*)
+    const method = String(payload.paymentMethod || '').toUpperCase();
+    if (['CREDIT_CARD', 'DEBIT_CARD', 'STRIPE', 'CARD'].includes(method)) {
+      throw AppError.badRequest('Card payments must be completed through secure Stripe checkout');
+    }
+    if (!['BANK_TRANSFER', 'JAZZCASH', 'EASYPAISA', 'CASH'].includes(method)) {
+      throw AppError.badRequest('Unsupported payment method');
+    }
 
+    const amount = Math.round(Number(payload.amount) * 100) / 100;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw AppError.badRequest('Payment amount must be a positive number');
+    }
+
+    // Offline methods are recorded as PENDING until staff verify the transfer; they never settle a booking directly
+    const paymentId = `PAY-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const createdPayment = await prisma.payments.create({
       data: {
         id: paymentId,
         bookingId: booking.id,
-        amount: payload.amount,
+        amount,
         currency: booking.currency || 'PKR',
-        status: 'SUCCEEDED',
-        provider: payload.paymentMethod.toLowerCase(),
-        receiptUrl: `/customer/payments/${paymentId}/receipt`,
-        metadata: JSON.stringify({
-          cardBrand: payload.cardBrand || 'Visa',
-          cardNumberLast4: payload.cardNumberLast4 || '4242',
-          type: payload.type || 'RENTAL_PAYMENT',
-        }),
+        status: 'PENDING',
+        provider: method.toLowerCase(),
+        metadata: JSON.stringify({ type: payload.type || 'RENTAL_PAYMENT' }),
         updatedAt: new Date(),
       },
     });
 
-    // Update settlement status on booking if fully paid
-    const allPayments = await prisma.payments.findMany({
-      where: { bookingId: booking.id, status: 'SUCCEEDED' },
-    });
-    const totalPaid = allPayments.reduce((s, p) => s + Number(p.amount), 0);
-
-    if (totalPaid >= Number(booking.totalAmount)) {
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: { settlementStatus: 'SETTLED' },
-      });
-    }
-
-    // Notify customer
     await prisma.customerNotification.create({
       data: {
         customerId: customer.id,
         category: 'PAYMENT',
-        title: 'Payment Successful',
-        message: `Your payment of PKR ${payload.amount.toLocaleString()} for booking #${booking.bookingNumber} was processed successfully.`,
+        title: 'Payment Submitted',
+        message: `Your ${method.replace('_', ' ').toLowerCase()} payment of ${booking.currency || 'PKR'} ${amount.toLocaleString()} for booking #${booking.bookingNumber} is awaiting verification.`,
         actionUrl: '/customer/payments',
       },
     });

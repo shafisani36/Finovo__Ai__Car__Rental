@@ -1,19 +1,36 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-import { TESTIMONIALS } from '../data/homepageData';
+import { usePublicReviews } from '../../../hooks/usePublicSite';
+import type { TestimonialItem } from '../../../types';
 import { TestimonialBubble } from '../components/TestimonialBubble';
 
 export function TestimonialsSection() {
   const { t } = useTranslation();
   const sectionRef = useRef<HTMLElement>(null);
 
-  const featured = TESTIMONIALS.find((t) => t.variant === 'featured');
-  const others = TESTIMONIALS.filter((t) => t.variant !== 'featured');
+  const reviews = usePublicReviews();
+
+  // Real approved reviews only: the best one is featured, the next three are the cards.
+  const { featured, others } = useMemo(() => {
+    const variants: TestimonialItem['variant'][] = ['bubble-left', 'bubble-center', 'bubble-right'];
+    const items: TestimonialItem[] = reviews.slice(0, 4).map((review, index) => ({
+      id: review.id,
+      author: review.customerName,
+      role: '',
+      location: review.vehicle,
+      rating: Math.max(1, Math.min(5, Math.round(review.rating))),
+      review: review.comment,
+      avatar: '',
+      variant: index === 0 ? 'featured' : variants[(index - 1) % variants.length],
+    }));
+    return { featured: items[0], others: items.slice(1) };
+  }, [reviews]);
 
   useGSAP(
     () => {
+      if (!sectionRef.current) return;
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (prefersReducedMotion) return;
 
@@ -59,8 +76,11 @@ export function TestimonialsSection() {
           '-=0.4'
         );
     },
-    { scope: sectionRef }
+    { scope: sectionRef, dependencies: [featured?.id] }
   );
+
+  // No invented testimonials: the section appears once real customers have left reviews.
+  if (!featured) return null;
 
   return (
     <section

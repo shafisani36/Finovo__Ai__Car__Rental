@@ -1,0 +1,92 @@
+/* ==========================================================================
+   PRINT / PDF OUTPUT
+   Every printed document (inspection certificate, invoice, booking summary) is
+   rendered monochrome: black text on white, neutral grey rules, grayscale images.
+   ========================================================================== */
+
+/* Certificate preview on screen matches the printed PDF exactly */
+.printable-certificate,
+.printable-certificate * {
+  color: #000000 !important;
+  border-color: #c8c8c8 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.printable-certificate,
+.printable-certificate *:not(img) {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+.printable-certificate img,
+.printable-certificate svg {
+  filter: grayscale(100%) !important;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    color: #000000 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: #c8c8c8 !important;
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    filter: grayscale(100%) !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* When a page contains a dedicated printable document, print only that document */
+  body:has(.printable-document) * {
+    visibility: hidden;
+  }
+
+  body:has(.printable-document) .printable-document,
+  body:has(.printable-document) .printable-document * {
+    visibility: visible;
+  }
+
+  body:has(.printable-document) .printable-document {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+  }
+
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+}

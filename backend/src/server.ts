@@ -1,21 +1,22 @@
 import { createApp } from './bootstrap/app';
-import { env } from './config/env.config';
+import { env, validateEnv } from './config/env.config';
 import { prisma } from './infrastructure/prisma/prisma.client';
 
 async function bootstrap() {
+  validateEnv();
   const app = createApp();
 
   // Test database connection
   try {
     await prisma.$connect();
-    console.log(' Successfully connected to MySQL database: finovo_car_rental');
+    console.log(' Successfully connected to the MySQL database');
   } catch (err) {
     console.error(' Database connection failed on startup:', err);
     process.exit(1);
   }
 
   const server = app.listen(env.PORT, () => {
-    console.log(` Finovo Auth API server listening on http://localhost:${env.PORT}`);
+    console.log(` Finovo API listening on port ${env.PORT} (${env.NODE_ENV})`);
     console.log(` Health check: http://localhost:${env.PORT}/api/health`);
   });
 
@@ -30,6 +31,16 @@ async function bootstrap() {
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+
+  // Log instead of silently losing async failures; a crashing process is restarted by the process manager
+  process.on('unhandledRejection', (reason) => {
+    console.error('[unhandledRejection]', reason);
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('[uncaughtException]', err);
+    shutdown('uncaughtException');
+    setTimeout(() => process.exit(1), 10_000).unref();
+  });
 }
 
 bootstrap().catch((err) => {

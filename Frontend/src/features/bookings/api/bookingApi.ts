@@ -9,7 +9,20 @@ export interface Booking {
   returnBranchId: string;
   pickupDateTime: string;
   returnDateTime: string;
-  status: 'PENDING' | 'CONFIRMED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+  status:
+    | 'DRAFT'
+    | 'QUOTED'
+    | 'RESERVED'
+    | 'PENDING'
+    | 'CONFIRMED'
+    | 'READY_FOR_PICKUP'
+    | 'ACTIVE'
+    | 'RETURN_INSPECTION'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'EXPIRED'
+    | 'REJECTED'
+    | 'REQUIRES_REVIEW';
   dailyRate: number;
   totalDays: number;
   subtotal: number;
@@ -60,13 +73,28 @@ export interface Booking {
 }
 
 export interface CreateBookingPayload {
-  customerId: string;
+  customerId?: string;
   vehicleId: string;
   pickupBranchId: string;
   returnBranchId: string;
   pickupDateTime: string;
   returnDateTime: string;
   notes?: string;
+  addons?: BookingAddonCode[];
+}
+
+export type BookingAddonCode = 'PROTECTION_STANDARD' | 'PROTECTION_PREMIUM' | 'GPS' | 'CHILD_SEAT' | 'EXTRA_DRIVER';
+
+export interface BookingAddon {
+  code: BookingAddonCode;
+  description: string;
+  unitPrice: number;
+  chargeUnit: 'DAY' | 'BOOKING';
+}
+
+export interface QuoteAvailability {
+  available: boolean;
+  conflictReason?: string;
 }
 
 export interface PricingBreakdownItem {
@@ -116,6 +144,11 @@ export interface QuoteResult {
   totalRental?: number;
   totalAmount: number;
   grandTotal?: number;
+  addonsTotal?: number;
+  selectedAddons?: BookingAddonCode[];
+  taxRatePercent?: number;
+  rentalTotal?: number;
+  lineItems?: PricingBreakdownItem[];
 }
 
 export interface CalendarEvent {

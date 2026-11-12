@@ -268,7 +268,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
         >
           <Gauge size={15} color="#E6D2F4" strokeWidth={1.8} style={{ flexShrink: 0 }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {car.specs.hp || '163 HP'}
+            {car.specs.hp || '—'}
           </span>
         </div>
 
@@ -291,7 +291,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
         >
           <DrivetrainChassisIcon size={16} color="#E6D2F4" />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {car.specs.drivetrain || '2WD'}
+            {car.specs.drivetrain || '—'}
           </span>
         </div>
       </div>

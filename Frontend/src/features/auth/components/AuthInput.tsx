@@ -22,8 +22,9 @@ export function AuthInput({
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
   return (
-    <div style={{ marginBottom: '18px', width: '100%', textAlign: 'start' }}>
+    <div className="auth-field" style={{ marginBottom: '18px', width: '100%', textAlign: 'start' }}>
       <label
+        className="auth-label"
         htmlFor={inputId}
         style={{
           display: 'block',
@@ -65,6 +66,7 @@ export function AuthInput({
         <input
           id={inputId}
           type={inputType}
+          className="auth-input"
           style={{
             width: '100%',
             height: '48px',

@@ -1,26 +1,52 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { bookingApi } from '../../bookings/api/bookingApi';
-import type { Booking } from '../../bookings/api/bookingApi';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AlertTriangle, KeyRound, Loader2, RotateCcw, ScanLine, ShieldCheck } from 'lucide-react';
+import { bookingApi, type Booking } from '../../bookings/api/bookingApi';
 import { rentalApi } from '../api/rentalApi';
+import { inspectionApi, type InspectionReport } from '../../inspections/api/inspectionApi';
+import { VehiclePhotoCapture } from '../../inspections/components/VehiclePhotoCapture';
 import {
-  KeyRound,
-  AlertTriangle,
-  Gauge,
-  Droplet,
-  ShieldCheck,
-  RotateCcw,
-  Camera,
-  CheckCircle2,
-  FileText,
-  Sparkles,
-} from 'lucide-react';
+  missingRequiredViews,
+  toAnalyzePhotos,
+  VIEW_LABELS,
+  type CapturedPhotos,
+} from '../../inspections/components/inspectionHelpers';
+import { InspectionReportView } from '../../inspections/components/InspectionReportView';
 import { CustomSelect } from '../../../components/common/CustomSelect';
-import { PageContainer, PageHeader, Button } from '../../../components/common';
+import { PageContainer, PageHeader } from '../../../components/common';
 import { getCarImage } from '../../../utils/carImageHelper';
-import { AiCameraScannerModal } from '../../inspections/components/AiCameraScannerModal';
-import { InspectionReportPdfModal } from '../../inspections/components/InspectionReportPdfModal';
-import type { ClientInspectionReport } from '../../inspections/services/inspectionAiEngine';
+import '../../inspections/components/inspection.css';
+
+const FUEL_LEVELS = ['100%', '75%', '50%', '25%', '10%'].map((v) => ({ value: v, label: v }));
+const HANDOVER_STATUSES = ['CONFIRMED', 'READY_FOR_PICKUP'];
+
+const card: React.CSSProperties = {
+  backgroundColor: '#FFFFFF',
+  borderRadius: '16px',
+  padding: '24px',
+  border: '1px solid #ECEAEF',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+};
+
+const primaryButton: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  padding: '12px 22px',
+  borderRadius: '12px',
+  border: 'none',
+  backgroundColor: '#1E0426',
+  color: '#FFFFFF',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
 
 export function HandoverVehiclePage() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -28,102 +54,94 @@ export function HandoverVehiclePage() {
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Handover state
-  const [startMileage, setStartMileage] = useState<number>(0);
-  const [startFuelLevel, setStartFuelLevel] = useState<string>('100%');
-  const [notes, setNotes] = useState<string>('Vehicle exterior and interior verified clean. Keys handed over.');
+  // Step 1: identity & document checks (must be ticked by staff, never pre-ticked)
+  const [idVerified, setIdVerified] = useState(false);
+  const [licenseVerified, setLicenseVerified] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
 
-  // Checklist
-  const [idVerified, setIdVerified] = useState<boolean>(true);
-  const [licenseVerified, setLicenseVerified] = useState<boolean>(true);
-  const [depositSecured, setDepositSecured] = useState<boolean>(true);
-  const [keysInspected, setKeysInspected] = useState<boolean>(true);
+  // Step 2: AI pickup inspection
+  const [photos, setPhotos] = useState<CapturedPhotos>({});
+  const [scanNotes, setScanNotes] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [report, setReport] = useState<InspectionReport | null>(null);
 
-  // Mandatory Pre-Handover AI Baseline Inspection Scan (before keys release)
-  const [pickupReport, setPickupReport] = useState<ClientInspectionReport | null>(null);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  // Step 3: key handover
+  const [startMileage, setStartMileage] = useState('');
+  const [startFuelLevel, setStartFuelLevel] = useState('100%');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (bookingId) {
-      loadBooking(bookingId);
-    }
+    if (!bookingId) return;
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await bookingApi.getById(bookingId);
+        if (!active) return;
+        setBooking(res.booking);
+        const mileage = Number((res.booking.vehicle as { mileage?: number })?.mileage);
+        if (Number.isFinite(mileage) && mileage > 0) setStartMileage(String(mileage));
+      } catch (err) {
+        if (active) setLoadError(errorMessage(err, 'Failed to load booking'));
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [bookingId]);
 
-  const loadBooking = async (id: string) => {
+  const checksDone = idVerified && licenseVerified && paymentVerified;
+  const missingViews = missingRequiredViews(photos);
+
+  const runScan = async () => {
+    if (!booking) return;
+    if (missingViews.length > 0) {
+      setError(`Take the required photos first: ${missingViews.map((v) => VIEW_LABELS[v]).join(', ')}`);
+      return;
+    }
+    setScanning(true);
+    setError(null);
     try {
-      setLoading(true);
-      const res = await bookingApi.getById(id);
-      if (res.success && res.booking) {
-        setBooking(res.booking);
-        const vehicleMileage = Number((res.booking.vehicle as { mileage?: number })?.mileage || 0);
-        if (vehicleMileage > 0) {
-          setStartMileage(vehicleMileage);
-        }
-        if (res.booking.rental) {
-          setError('This booking has already been handed over into an active rental.');
-        }
-      }
-    } catch (err: unknown) {
-      const e = err as { message?: string; response?: { data?: { message?: string } } };
-      setError(e.message || e.response?.data?.message || 'Failed to retrieve booking information');
+      const res = await inspectionApi.analyze({
+        type: 'PICKUP',
+        bookingId: booking.id,
+        notes: scanNotes || undefined,
+        photos: toAnalyzePhotos(photos),
+      });
+      setReport(res.inspection);
+    } catch (err) {
+      setError(errorMessage(err, 'The AI inspection failed. Please try again.'));
     } finally {
-      setLoading(false);
+      setScanning(false);
     }
   };
 
-  const handleConfirmHandover = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!booking) return;
-
-    if (!idVerified || !licenseVerified || !depositSecured || !keysInspected) {
-      setError('Please complete all mandatory handover checklist verifications before dispatching.');
+  const handover = async () => {
+    if (!booking || !report) return;
+    const mileage = Number(startMileage);
+    if (!Number.isFinite(mileage) || mileage < 0 || startMileage.trim() === '') {
+      setError('Enter the current odometer reading');
       return;
     }
-
-    if (!pickupReport) {
-      setError('Please run the Pre-Handover AI 360° Baseline Scan before releasing the vehicle keys.');
-      return;
-    }
-
+    setSubmitting(true);
+    setError(null);
     try {
-      setSubmitting(true);
-      setError(null);
       await rentalApi.handover({
         bookingId: booking.id,
-        startMileage: Number(startMileage) || 12500,
+        startMileage: mileage,
         startFuelLevel,
-        notes,
-        pickupInspectionData: {
-          overallScore: pickupReport.overallScore,
-          summary: pickupReport.summary,
-          hasDamageDetected: pickupReport.findings.length > 0,
-          detectedColorName: pickupReport.detectedColor.colorName,
-          photos: pickupReport.photos.map((p) => ({
-            view: p.view,
-            imageUrl: p.imageUrl,
-            qualityScore: p.qualityScore,
-            pixelTelemetry: p.pixelTelemetry,
-          })),
-          findings: pickupReport.findings.map((f) => ({
-            damageType: f.damageType,
-            severity: f.severity,
-            location: f.location,
-            confidence: f.confidence,
-            boundingBox: f.boundingBox,
-            view: f.view,
-            estimatedRepairCost: f.estimatedRepairCost,
-          })),
-        },
+        notes: notes || undefined,
+        pickupInspectionId: report.id,
       });
-
       navigate('/admin/rentals');
-    } catch (err: unknown) {
-      const e = err as { message?: string; response?: { data?: { message?: string } } };
-      setError(e.message || e.response?.data?.message || 'Failed to complete vehicle handover');
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to hand over the vehicle'));
     } finally {
       setSubmitting(false);
     }
@@ -132,8 +150,8 @@ export function HandoverVehiclePage() {
   if (loading) {
     return (
       <div style={{ padding: '80px', textAlign: 'center', color: '#685D73' }}>
-        <RotateCcw size={28} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-        <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading booking details for handover...</div>
+        <RotateCcw size={28} style={{ animation: 'spin 1s linear infinite' }} />
+        <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading booking…</div>
       </div>
     );
   }
@@ -142,518 +160,205 @@ export function HandoverVehiclePage() {
     return (
       <div style={{ maxWidth: '800px', margin: '40px auto', textAlign: 'center' }}>
         <AlertTriangle size={48} color="#EF4444" style={{ marginBottom: '16px' }} />
-        <h2 style={{ color: '#1E0426' }}>Booking Not Found</h2>
-        <p style={{ color: '#685D73', marginBottom: '24px' }}>
-          The requested booking ID could not be loaded or verified.
-        </p>
-        <Link
-          to="/admin/bookings"
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#1E0426',
-            color: '#FFFFFF',
-            borderRadius: '10px',
-            textDecoration: 'none',
-            fontWeight: 600,
-          }}
-        >
-          Return to Bookings
+        <h2 style={{ color: '#1E0426' }}>Booking not found</h2>
+        <p style={{ color: '#685D73', marginBottom: '24px' }}>{loadError}</p>
+        <Link to="/admin/bookings" style={{ ...primaryButton, textDecoration: 'none' }}>
+          Back to bookings
         </Link>
       </div>
     );
   }
 
+  const blockedReason = booking.rental
+    ? 'This booking has already been handed over.'
+    : !HANDOVER_STATUSES.includes(booking.status)
+      ? `This booking is ${booking.status} and cannot be handed over.`
+      : null;
+
   return (
     <PageContainer>
       <PageHeader
-        breadcrumbs={[
-          { label: 'Bookings', href: '/admin/bookings' },
-          { label: `Handover #${booking.bookingNumber}` },
-        ]}
-        title="Vehicle Handover & Key Release"
-        subtitle={`Initiate active rental dispatch for booking #${booking.bookingNumber}. Record odometer mileage, fuel level, and verify driver credentials.`}
+        breadcrumbs={[{ label: 'Bookings', href: '/admin/bookings' }, { label: `Handover #${booking.bookingNumber}` }]}
+        title="Vehicle handover"
+        subtitle="Verify the renter, scan the car with AI, then hand over the keys."
       />
 
-      {error && (
+      {(error || blockedReason) && (
         <div
+          role="alert"
           style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.08)',
             border: '1px solid #EF4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.06)',
             borderRadius: '12px',
             padding: '14px 18px',
             color: '#B91C1C',
-            fontSize: '0.875rem',
             display: 'flex',
-            alignItems: 'center',
             gap: '10px',
+            alignItems: 'center',
+            fontWeight: 600,
           }}
         >
           <AlertTriangle size={18} />
-          <span>{error}</span>
+          <span>{blockedReason || error}</span>
         </div>
       )}
 
-      {/* Main Form & Overview Card */}
-      <form onSubmit={handleConfirmHandover} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* Booking & Vehicle Summary Header */}
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '24px',
-            border: '1px solid #ECEAEF',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
-            gap: '24px',
-          }}
-        >
-          {/* Vehicle Info */}
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <img
-              src={getCarImage(booking.vehicle)}
-              alt=""
-              style={{
-                width: '100px',
-                height: '70px',
-                borderRadius: '10px',
-                objectFit: 'cover',
-                backgroundColor: '#F7F5F8',
-              }}
-            />
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>ASSIGNED FLEET</div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E0426' }}>
-                {booking.vehicle.brand} {booking.vehicle.model}
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: '#685D73' }}>
-                Plate: <strong>{booking.vehicle.registrationNumber}</strong> • {booking.vehicle.category.name}
-              </div>
-            </div>
-          </div>
-
-          {/* Customer Info */}
+      {/* Booking summary */}
+      <div style={{ ...card, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <img
+            src={getCarImage(booking.vehicle)}
+            alt=""
+            style={{ width: '100px', height: '70px', borderRadius: '10px', objectFit: 'cover', backgroundColor: '#F7F5F8' }}
+          />
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>AUTHORIZED RENTER</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E0426' }}>
-              {booking.customer.fullName}
+            <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>VEHICLE</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E0426' }}>
+              {booking.vehicle.brand} {booking.vehicle.model}
             </div>
-            <div style={{ fontSize: '0.8125rem', color: '#685D73' }}>
-              License: <strong>{booking.customer.driverLicenseNumber || 'DL-994821-B'}</strong>
-            </div>
-            <div style={{ fontSize: '0.8125rem', color: '#685D73' }}>
-              Contact: {booking.customer.phone || booking.customer.email}
-            </div>
+            <div style={{ fontSize: '0.8rem', color: '#685D73' }}>Plate: {booking.vehicle.registrationNumber}</div>
           </div>
         </div>
+        <div>
+          <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>RENTER</div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E0426' }}>{booking.customer.fullName}</div>
+          <div style={{ fontSize: '0.8rem', color: '#685D73' }}>
+            License: {booking.customer.driverLicenseNumber || 'not on file'} · {booking.customer.phone || booking.customer.email}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#685D73' }}>
+            {new Date(booking.pickupDateTime).toLocaleString()} → {new Date(booking.returnDateTime).toLocaleString()}
+          </div>
+        </div>
+      </div>
 
-        {/* Operational Checklist */}
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '24px',
-            border: '1px solid #ECEAEF',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <ShieldCheck size={20} color="#059669" />
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1E0426' }}>
-              Mandatory Dispatch Verification Checklist
+      {!blockedReason && (
+        <>
+          {/* Step 1 */}
+          <section style={card}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
+              <ShieldCheck size={20} /> Step 1 · Verify the renter
             </h3>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '14px',
-                backgroundColor: idVerified ? 'rgba(16, 185, 129, 0.05)' : '#F7F5F8',
-                border: `1px solid ${idVerified ? '#10B981' : '#ECEAEF'}`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={idVerified}
-                onChange={(e) => setIdVerified(e.target.checked)}
-                style={{ width: '18px', height: '18px', accentColor: '#1E0426' }}
-              />
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1E0426' }}>
-                Identity / Passport Confirmed
-              </span>
-            </label>
-
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '14px',
-                backgroundColor: licenseVerified ? 'rgba(16, 185, 129, 0.05)' : '#F7F5F8',
-                border: `1px solid ${licenseVerified ? '#10B981' : '#ECEAEF'}`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={licenseVerified}
-                onChange={(e) => setLicenseVerified(e.target.checked)}
-                style={{ width: '18px', height: '18px', accentColor: '#1E0426' }}
-              />
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1E0426' }}>
-                Driver License Valid & In-Hand
-              </span>
-            </label>
-
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '14px',
-                backgroundColor: depositSecured ? 'rgba(16, 185, 129, 0.05)' : '#F7F5F8',
-                border: `1px solid ${depositSecured ? '#10B981' : '#ECEAEF'}`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={depositSecured}
-                onChange={(e) => setDepositSecured(e.target.checked)}
-                style={{ width: '18px', height: '18px', accentColor: '#1E0426' }}
-              />
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1E0426' }}>
-                Security Deposit Authorized ($500)
-              </span>
-            </label>
-
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '14px',
-                backgroundColor: keysInspected ? 'rgba(16, 185, 129, 0.05)' : '#F7F5F8',
-                border: `1px solid ${keysInspected ? '#10B981' : '#ECEAEF'}`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={keysInspected}
-                onChange={(e) => setKeysInspected(e.target.checked)}
-                style={{ width: '18px', height: '18px', accentColor: '#1E0426' }}
-              />
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1E0426' }}>
-                Key Fob & Registration Pack Ready
-              </span>
-            </label>
-          </div>
-        </div>
-
-        {/* Departure Odometer & Fuel Reading */}
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '24px',
-            border: '1px solid #ECEAEF',
-          }}
-        >
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '1.05rem', fontWeight: 700, color: '#1E0426' }}>
-            Departure Readings
-          </h3>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-            {/* Mileage */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '8px' }}>
-                Current Odometer Reading (KM) *
-              </label>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  backgroundColor: '#F7F5F8',
-                  borderRadius: '10px',
-                  border: '1px solid #ECEAEF',
-                  padding: '10px 14px',
-                }}
-              >
-                <Gauge size={18} color="#685D73" />
+            {[
+              { checked: idVerified, set: setIdVerified, label: 'CNIC / passport checked and matches the booking name' },
+              { checked: licenseVerified, set: setLicenseVerified, label: 'Valid driving license seen in hand' },
+              { checked: paymentVerified, set: setPaymentVerified, label: 'Payment and security deposit received' },
+            ].map((item) => (
+              <label key={item.label} style={{ display: 'flex', gap: '10px', alignItems: 'center', fontWeight: 600, color: '#1E0426' }}>
                 <input
-                  type="number"
-                  min="0"
-                  required
-                  placeholder="e.g. 15420"
-                  value={startMileage || ''}
-                  onChange={(e) => setStartMileage(Number(e.target.value))}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    outline: 'none',
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    width: '100%',
-                    color: '#1E0426',
-                  }}
+                  type="checkbox"
+                  checked={item.checked}
+                  disabled={Boolean(report)}
+                  onChange={(e) => item.set(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: '#1E0426' }}
                 />
-                <span style={{ fontSize: '0.8125rem', color: '#685D73', fontWeight: 600 }}>KM</span>
-              </div>
-            </div>
-
-            {/* Fuel Level */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '8px' }}>
-                Fuel / Charge Level *
+                {item.label}
               </label>
-              <CustomSelect
-                value={startFuelLevel}
-                onChange={(val) => setStartFuelLevel(val)}
-                options={[
-                  { value: '100%', label: '100% (Full Tank)', icon: <Droplet size={16} color="#059669" /> },
-                  { value: '90%', label: '90%', icon: <Droplet size={16} color="#059669" /> },
-                  { value: '75%', label: '75% (3/4 Tank)', icon: <Droplet size={16} color="#059669" /> },
-                  { value: '50%', label: '50% (Half Tank)', icon: <Droplet size={16} color="#D97706" /> },
-                  { value: '25%', label: '25% (1/4 Tank)', icon: <Droplet size={16} color="#DC2626" /> },
-                ]}
-              />
-            </div>
-          </div>
+            ))}
+          </section>
 
-          {/* Notes */}
-          <div style={{ marginTop: '20px' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '8px' }}>
-              Handover Remarks / Pre-existing Notes
-            </label>
-            <textarea
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                borderRadius: '10px',
-                border: '1px solid #ECEAEF',
-                backgroundColor: '#F7F5F8',
-                fontSize: '0.875rem',
-                color: '#1E0426',
-                boxSizing: 'border-box',
-                fontFamily: 'inherit',
-              }}
-            />
-          </div>
-        </div>
+          {/* Step 2 */}
+          <section style={{ ...card, opacity: checksDone ? 1 : 0.55 }} aria-disabled={!checksDone}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
+              <ScanLine size={20} /> Step 2 · AI pickup inspection
+            </h3>
+            <p style={{ margin: 0, color: '#685D73', fontSize: '0.875rem' }}>
+              Photograph the car in daylight or good light, from about 3 metres, with the whole side in frame. The AI
+              records every existing scratch and dent so the customer is not charged for them at return.
+            </p>
 
-        {/* Mandatory Pre-Handover AI Baseline Inspection Card */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #1E0432 0%, #2E0949 100%)',
-            color: '#FFFFFF',
-            borderRadius: '18px',
-            padding: '24px',
-            border: pickupReport
-              ? '1.5px solid rgba(52, 211, 153, 0.45)'
-              : '1.5px solid rgba(250, 184, 38, 0.35)',
-            boxShadow: '0 10px 28px rgba(30, 4, 50, 0.18)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              flexWrap: 'wrap',
-              gap: '14px',
-              marginBottom: pickupReport ? '18px' : '0',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    padding: '3px 10px',
-                    borderRadius: '9999px',
-                    backgroundColor: pickupReport ? 'rgba(16, 185, 129, 0.18)' : 'rgba(250, 184, 38, 0.16)',
-                    color: pickupReport ? '#6EE7B7' : '#FAB826',
-                    border: pickupReport
-                      ? '1px solid rgba(110, 231, 183, 0.35)'
-                      : '1px solid rgba(250, 184, 38, 0.4)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  {pickupReport ? '✓ Pre-Handover Baseline Locked' : 'Required Before Key Release'}
-                </span>
-              </div>
-              <h3
-                style={{
-                  margin: 0,
-                  fontFamily: "var(--font-family-display, 'Archivo', sans-serif)",
-                  fontSize: '1.15rem',
-                  fontWeight: 800,
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Sparkles size={18} color="#FAB826" />
-                Pre-Handover AI 360° Vehicle Baseline Scan
-              </h3>
-              <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'rgba(255, 255, 255, 0.74)' }}>
-                Captures baseline exterior angles before handing over keys so any new return damage can be compared accurately.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              {pickupReport && (
-                <Button
-                  type="button"
-                  variant="glass"
-                  size="sm"
-                  onClick={() => setIsPdfModalOpen(true)}
-                >
-                  <FileText size={15} />
-                  <span>Handover Baseline PDF</span>
-                </Button>
-              )}
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => setIsScannerOpen(true)}
-              >
-                <Camera size={16} />
-                <span>{pickupReport ? 'Re-Scan Pickup Angles' : 'Run Pre-Handover AI Scan'}</span>
-              </Button>
-            </div>
-          </div>
-
-          {pickupReport && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px' }}>
-                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Detected Color</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                  <span
-                    style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      backgroundColor: pickupReport.detectedColor.hexCode,
-                      border: '1px solid #FFFFFF',
-                    }}
-                  />
-                  <strong style={{ fontSize: '13px' }}>{pickupReport.detectedColor.colorName}</strong>
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Pickup Baseline Score</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34D399', marginTop: '2px' }}>
-                  {pickupReport.overallScore}%
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Pre-Existing Scratches</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FAB826', marginTop: '2px' }}>
-                  {pickupReport.scratchesCount}
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.68)' }}>Pre-Existing Dents</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F87171', marginTop: '2px' }}>
-                  {pickupReport.dentsCount}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', flexWrap: 'wrap', paddingBottom: '24px' }}>
-          <Link
-            to="/admin/bookings"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '12px 24px',
-              borderRadius: '9999px',
-              backgroundColor: '#FFFFFF',
-              border: '1.5px solid #E0D8E3',
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              color: '#4A315A',
-              textDecoration: 'none',
-            }}
-          >
-            Cancel
-          </Link>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            disabled={submitting}
-          >
-            {submitting ? (
+            {!report ? (
               <>
-                <RotateCcw size={18} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-                <span>Dispatching Vehicle...</span>
+                <VehiclePhotoCapture value={photos} onChange={setPhotos} disabled={!checksDone || scanning} />
+                <textarea
+                  value={scanNotes}
+                  onChange={(e) => setScanNotes(e.target.value)}
+                  placeholder="Inspector notes (optional)"
+                  rows={2}
+                  disabled={!checksDone || scanning}
+                  style={{ width: '100%', borderRadius: '10px', border: '1px solid #ECEAEF', padding: '10px', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                />
+                {scanning ? (
+                  <div className="insp-progress" role="status">
+                    <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                    AI is inspecting the photos. This usually takes 10-60 seconds…
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    style={{ ...primaryButton, opacity: checksDone && missingViews.length === 0 ? 1 : 0.5, alignSelf: 'flex-start' }}
+                    disabled={!checksDone || missingViews.length > 0}
+                    onClick={runScan}
+                  >
+                    <ScanLine size={18} /> Run AI inspection
+                  </button>
+                )}
               </>
             ) : (
               <>
-                {pickupReport ? <CheckCircle2 size={18} /> : <KeyRound size={18} />}
-                <span>Confirm Handover & Release Keys</span>
+                <InspectionReportView report={report} currency={booking.currency} />
+                <button
+                  type="button"
+                  className="insp-btn-secondary"
+                  style={{ alignSelf: 'flex-start' }}
+                  onClick={() => {
+                    setReport(null);
+                    setPhotos({});
+                  }}
+                >
+                  <RotateCcw size={16} /> Retake photos and scan again
+                </button>
               </>
             )}
-          </Button>
-        </div>
-      </form>
+          </section>
 
-      {/* Pre-Handover AI Camera Scanner Modal */}
-      <AiCameraScannerModal
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        inspectionType="PICKUP"
-        vehicle={{
-          id: booking.vehicle.id,
-          brand: booking.vehicle.brand,
-          model: booking.vehicle.model,
-          year: Number((booking.vehicle as { year?: number }).year || 2026),
-          registrationNumber: booking.vehicle.registrationNumber,
-          vin: (booking.vehicle as { vin?: string }).vin,
-          color: (booking.vehicle as { color?: string }).color,
-          primaryImageUrl: getCarImage(booking.vehicle),
-        }}
-        onInspectionComplete={(report) => {
-          setPickupReport(report);
-          setError(null);
-        }}
-        onOpenPdfReport={(report) => {
-          setPickupReport(report);
-          setIsScannerOpen(false);
-          setIsPdfModalOpen(true);
-        }}
-      />
-
-      <InspectionReportPdfModal
-        isOpen={isPdfModalOpen}
-        onClose={() => setIsPdfModalOpen(false)}
-        report={pickupReport}
-      />
+          {/* Step 3 */}
+          <section style={{ ...card, opacity: report ? 1 : 0.55 }} aria-disabled={!report}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
+              <KeyRound size={20} /> Step 3 · Hand over the keys
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '14px' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
+                Odometer (km)
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={startMileage}
+                  disabled={!report}
+                  onChange={(e) => setStartMileage(e.target.value)}
+                  style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #ECEAEF' }}
+                />
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
+                Fuel level
+                <CustomSelect
+                  value={startFuelLevel}
+                  onChange={(v) => setStartFuelLevel(String(v))}
+                  options={FUEL_LEVELS}
+                  disabled={!report}
+                  size="md"
+                />
+              </div>
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Handover notes (optional)"
+              rows={2}
+              disabled={!report}
+              style={{ width: '100%', borderRadius: '10px', border: '1px solid #ECEAEF', padding: '10px', boxSizing: 'border-box', fontFamily: 'inherit' }}
+            />
+            <button
+              type="button"
+              style={{ ...primaryButton, opacity: report && !submitting ? 1 : 0.5, alignSelf: 'flex-start' }}
+              disabled={!report || submitting}
+              onClick={handover}
+            >
+              <KeyRound size={18} /> {submitting ? 'Handing over…' : 'Confirm handover and release keys'}
+            </button>
+          </section>
+        </>
+      )}
     </PageContainer>
   );
 }
