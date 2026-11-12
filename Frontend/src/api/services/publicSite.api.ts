@@ -37,6 +37,7 @@ export interface SiteInfo {
   address: string | null;
   openingHours: string | null;
   branches: PublicBranch[];
+  apps: { ios: string | null; android: string | null };
   social: {
     facebook: string | null;
     instagram: string | null;

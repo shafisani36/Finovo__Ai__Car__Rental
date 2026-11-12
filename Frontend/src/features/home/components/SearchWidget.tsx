@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { RentalType, SearchFormData } from '../../../types';
-import { Button } from '../../../components/common/Button';
+import { Calendar, Car, Search, AlertCircle } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
-import { MapPin, Calendar, Car, Search, CheckCircle2, AlertCircle } from 'lucide-react';
+import { vehiclesApi } from '../../../api/services/vehicles.api';
+
+const ALL_CATEGORIES = '';
 
 function localDateOffset(days: number): string {
   const d = new Date();
@@ -12,448 +13,250 @@ function localDateOffset(days: number): string {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
+/** Real vehicle categories from the fleet (empty list while loading or when there are none). */
+function useCategoryNames(): string[] {
+  const [names, setNames] = useState<string[]>([]);
+  useEffect(() => {
+    let active = true;
+    vehiclesApi
+      .getCategories()
+      .then((res) => {
+        if (!active) return;
+        const unique = Array.from(new Set((res?.categories || []).map((c) => c.name).filter(Boolean)));
+        setNames(unique.sort((a, b) => a.localeCompare(b)));
+      })
+      .catch(() => {
+        if (active) setNames([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  return names;
+}
+
+/**
+ * Hero booking bar: car category, pick-up date and return date.
+ * Opens the cars catalog with only the cars that are free for those dates.
+ */
 export function SearchWidget() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<SearchFormData>({
-    rentalType: 'daily',
-    pickupLocation: '',
-    dropoffLocation: '',
-    pickupDate: localDateOffset(1),
-    pickupTime: '10:00 AM',
-    dropoffDate: localDateOffset(4),
-    dropoffTime: '10:00 AM',
-    carCategory: 'All Luxury & Electric',
-    differentDropoff: false,
-    insuranceCover: true,
-  });
-
-  const [submitted, setSubmitted] = useState(false);
+  const categories = useCategoryNames();
+  const [category, setCategory] = useState(ALL_CATEGORIES);
+  const [pickupDate, setPickupDate] = useState(() => localDateOffset(1));
+  const [returnDate, setReturnDate] = useState(() => localDateOffset(4));
   const [validationError, setValidationError] = useState<string | null>(null);
-
-  const handleTabChange = (type: RentalType) => {
-    setFormData((prev) => ({ ...prev, rentalType: type }));
-  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!formData.pickupLocation.trim()) {
-      setValidationError(t('home.searchWidget.errorPickup'));
-      return;
-    }
-    if (!formData.pickupDate || !formData.dropoffDate || formData.dropoffDate < formData.pickupDate) {
+    if (!pickupDate || !returnDate || returnDate < pickupDate) {
       setValidationError(t('cars.dateErrorOrder'));
       return;
     }
-    if (formData.pickupDate < localDateOffset(0)) {
+    if (pickupDate < localDateOffset(0)) {
       setValidationError(t('cars.dateErrorPast'));
       return;
     }
     setValidationError(null);
-    setSubmitted(true);
-    // Open the cars catalog filtered to cars that are free for the selected dates
-    const query = new URLSearchParams({ pickupDate: formData.pickupDate, returnDate: formData.dropoffDate });
+    const query = new URLSearchParams({ pickupDate, returnDate });
+    if (category) query.set('category', category);
     navigate(`/cars?${query.toString()}`);
   };
 
-  const tabLabels: Record<RentalType, string> = {
-    daily: t('home.searchWidget.tabRent'),
-    monthly: t('home.searchWidget.tabSubscription'),
-    subscription: t('home.searchWidget.tabChauffeur'),
-  };
-
-  const bullets = [
-    t('home.searchWidget.bullet1'),
-    t('home.searchWidget.bullet2'),
-    t('home.searchWidget.bullet3'),
-  ];
+  const carIcon = <Car size={15} color="var(--color-accent-500)" />;
 
   return (
-    <div
-      id="search-form"
-      className="finovo-search-widget"
-      style={{
-        backgroundColor: 'rgba(24, 3, 38, 0.84)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255, 255, 255, 0.16)',
-        borderRadius: '24px',
-        padding: '20px 22px',
-        boxShadow: '0 24px 50px rgba(14, 1, 24, 0.45)',
-        width: '100%',
-        maxWidth: '540px',
-      }}
-    >
-      {/* 3 Rental Mode Tabs */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-          backgroundColor: 'rgba(255, 255, 255, 0.08)',
-          borderRadius: 'var(--radius-pill)',
-          padding: '4px',
-          marginBottom: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          gap: '4px',
-        }}
-        role="tablist"
-        aria-label={t('home.searchWidget.title')}
+    <div id="search-form" className="finovo-search-bar">
+      <form
+        onSubmit={handleSubmit}
+        className={`finovo-search-bar-form${categories.length > 0 ? ' has-category' : ''}`}
+        noValidate
       >
-        {(['daily', 'monthly', 'subscription'] as RentalType[]).map((tab) => {
-          const isActive = formData.rentalType === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => handleTabChange(tab)}
-              style={{
-                padding: '8px 10px',
-                fontSize: '0.82rem',
-                fontWeight: 700,
-                borderRadius: 'var(--radius-pill)',
-                transition: 'all var(--transition-fast)',
-                backgroundColor: isActive ? 'var(--color-accent-500)' : 'transparent',
-                color: isActive ? '#180226' : 'rgba(255, 255, 255, 0.88)',
-                boxShadow: isActive ? '0 2px 10px rgba(245, 183, 22, 0.35)' : 'none',
-                textAlign: 'center',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {tabLabels[tab]}
-            </button>
-          );
-        })}
-      </div>
+        {categories.length > 0 && (
+          <div className="finovo-search-field">
+            <label htmlFor="car-category-select" className="finovo-search-label">
+              {t('home.searchWidget.vehicleType')}
+            </label>
+            <CustomSelect
+              id="car-category-select"
+              variant="dark"
+              value={category}
+              onChange={(value) => setCategory(value)}
+              options={[
+                { value: ALL_CATEGORIES, label: t('home.searchWidget.allCategories'), icon: carIcon },
+                ...categories.map((name) => ({ value: name, label: name, icon: carIcon })),
+              ]}
+            />
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {/* Row 1: Pick-up Location */}
-        <div>
-          <label
-            htmlFor="pickup-location"
-            style={{
-              display: 'block',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'rgba(255, 255, 255, 0.74)',
-              marginBottom: '5px',
-            }}
-          >
-            {t('home.searchWidget.pickupLocation')}
+        <div className="finovo-search-field">
+          <label htmlFor="pickup-date" className="finovo-search-label">
+            {t('home.searchWidget.pickupDate')}
           </label>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.14)',
-              borderRadius: '12px',
-              minHeight: '42px',
-            }}
-          >
-            <MapPin size={15} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
+          <div className="hero-booking-input">
+            <Calendar size={15} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
             <input
-              id="pickup-location"
-              type="text"
-              value={formData.pickupLocation}
-              onChange={(e) => setFormData({ ...formData, pickupLocation: e.target.value })}
-              placeholder={t('home.searchWidget.pickupPlaceholder')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#FFFFFF',
-                fontSize: '0.84rem',
-                width: '100%',
-                minWidth: 0,
-                outline: 'none',
-                fontWeight: 500,
-              }}
+              id="pickup-date"
+              type="date"
+              min={localDateOffset(0)}
+              value={pickupDate}
+              onChange={(e) => setPickupDate(e.target.value)}
             />
           </div>
         </div>
 
-        {formData.differentDropoff && (
-          <div>
-            <label
-              htmlFor="dropoff-location"
-              style={{
-                display: 'block',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'rgba(255, 255, 255, 0.74)',
-                marginBottom: '5px',
-              }}
-            >
-              {t('home.searchWidget.returnLocation')}
-            </label>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '9px 12px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
-                borderRadius: '12px',
-                minHeight: '42px',
-              }}
-            >
-              <MapPin size={15} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
-              <input
-                id="dropoff-location"
-                type="text"
-                value={formData.dropoffLocation}
-                onChange={(e) => setFormData({ ...formData, dropoffLocation: e.target.value })}
-                placeholder={t('home.searchWidget.dropoffPlaceholder')}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  fontSize: '0.84rem',
-                  width: '100%',
-                  minWidth: 0,
-                  outline: 'none',
-                  fontWeight: 500,
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Row 2: Dates */}
-        <div
-          className="search-form-dates-row"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <label
-              htmlFor="pickup-date"
-              style={{
-                display: 'block',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'rgba(255, 255, 255, 0.74)',
-                marginBottom: '5px',
-              }}
-            >
-              {t('home.searchWidget.pickupDate')}
-            </label>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
-                borderRadius: '12px',
-                minHeight: '42px',
-              }}
-            >
-              <Calendar size={15} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
-              <input
-                id="pickup-date"
-                type="date"
-                value={formData.pickupDate}
-                onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  fontSize: '0.8rem',
-                  width: '100%',
-                  minWidth: 0,
-                  outline: 'none',
-                  colorScheme: 'dark',
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ minWidth: 0 }}>
-            <label
-              htmlFor="dropoff-date"
-              style={{
-                display: 'block',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'rgba(255, 255, 255, 0.74)',
-                marginBottom: '5px',
-              }}
-            >
-              {t('home.searchWidget.returnDate')}
-            </label>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
-                borderRadius: '12px',
-                minHeight: '42px',
-              }}
-            >
-              <Calendar size={15} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
-              <input
-                id="dropoff-date"
-                type="date"
-                value={formData.dropoffDate}
-                onChange={(e) => setFormData({ ...formData, dropoffDate: e.target.value })}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  fontSize: '0.8rem',
-                  width: '100%',
-                  minWidth: 0,
-                  outline: 'none',
-                  colorScheme: 'dark',
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Row 3: Vehicle Type */}
-        <div>
-          <label
-            htmlFor="car-category-select"
-            style={{
-              display: 'block',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'rgba(255, 255, 255, 0.74)',
-              marginBottom: '5px',
-            }}
-          >
-            {t('home.searchWidget.vehicleType')}
+        <div className="finovo-search-field">
+          <label htmlFor="dropoff-date" className="finovo-search-label">
+            {t('home.searchWidget.returnDate')}
           </label>
-          <CustomSelect
-            id="car-category-select"
-            variant="dark"
-            value={formData.carCategory}
-            onChange={(val) => setFormData({ ...formData, carCategory: val })}
-            options={[
-              {
-                value: 'All Luxury & Electric',
-                label: t('home.searchWidget.catAll'),
-                icon: <Car size={15} color="var(--color-accent-500)" />,
-              },
-              {
-                value: 'Executive Sedans',
-                label: t('home.searchWidget.catSedan'),
-                icon: <Car size={15} color="var(--color-accent-500)" />,
-              },
-              {
-                value: 'Luxury SUVs',
-                label: t('home.searchWidget.catSuv'),
-                icon: <Car size={15} color="var(--color-accent-500)" />,
-              },
-              {
-                value: 'Sports & Performance',
-                label: t('home.searchWidget.catSports'),
-                icon: <Car size={15} color="var(--color-accent-500)" />,
-              },
-            ]}
-          />
+          <div className="hero-booking-input">
+            <Calendar size={15} color="var(--color-accent-500)" style={{ flexShrink: 0 }} />
+            <input
+              id="dropoff-date"
+              type="date"
+              min={pickupDate || localDateOffset(0)}
+              value={returnDate}
+              onChange={(e) => setReturnDate(e.target.value)}
+            />
+          </div>
         </div>
 
-        {/* Value Bullets */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '4px 0 2px 0' }}>
-          {bullets.map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--color-accent-500)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <svg
-                  width="9"
-                  height="9"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#180226"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <span style={{ fontSize: '0.76rem', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
-                {item}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {validationError && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F87171', fontSize: '0.82rem' }}>
-            <AlertCircle size={14} style={{ flexShrink: 0 }} />
-            <span>{validationError}</span>
-          </div>
-        )}
-
-        {submitted && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4ADE80', fontSize: '0.84rem', fontWeight: 600 }}>
-            <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
-            <span>{t('home.searchWidget.successMessage')}</span>
-          </div>
-        )}
-
-        <Button
-          type="submit"
-          variant="primary"
-          size="md"
-          fullWidth
-          icon={<Search size={17} />}
-          style={{
-            marginTop: '4px',
-            backgroundColor: 'var(--color-accent-500)',
-            color: '#180226',
-            fontWeight: 800,
-            fontSize: '0.98rem',
-            padding: '13px 24px',
-            boxShadow: '0 8px 24px rgba(245, 183, 22, 0.4)',
-          }}
-        >
-          {t('home.searchWidget.searchCars')}
-        </Button>
+        <button type="submit" className="finovo-search-submit">
+          <Search size={17} />
+          <span>{t('home.searchWidget.searchCars')}</span>
+        </button>
       </form>
 
+      {validationError && (
+        <div className="finovo-search-error" role="alert">
+          <AlertCircle size={14} style={{ flexShrink: 0 }} />
+          <span>{validationError}</span>
+        </div>
+      )}
+
       <style>{`
-        @media (max-width: 460px) {
-          .finovo-search-widget {
-            padding: 16px 14px !important;
-            border-radius: 20px !important;
+        .finovo-search-bar {
+          width: 100%;
+          background-color: rgba(24, 3, 38, 0.84);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 22px;
+          padding: 16px 18px;
+          box-shadow: 0 24px 50px rgba(14, 1, 24, 0.45);
+        }
+        .finovo-search-bar-form {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+          gap: 12px;
+          align-items: end;
+        }
+        .finovo-search-bar-form.has-category {
+          grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+        }
+        .finovo-search-field {
+          min-width: 0;
+        }
+        .finovo-search-label {
+          display: block;
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.72);
+          margin-bottom: 6px;
+        }
+        .hero-booking-input {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0 12px;
+          min-height: 46px;
+          background-color: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 12px;
+          transition: border-color var(--transition-fast);
+        }
+        .hero-booking-input:focus-within {
+          border-color: var(--color-accent-500);
+        }
+        .hero-booking-input input {
+          background: transparent;
+          border: none;
+          outline: none;
+          width: 100%;
+          min-width: 0;
+          color: #FFFFFF;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color-scheme: dark;
+          /* Dates read left to right in every language, so RTL never clips the year */
+          direction: ltr;
+          text-align: start;
+        }
+        .finovo-search-bar .custom-select-container {
+          width: 100%;
+        }
+        .finovo-search-submit {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          min-height: 46px;
+          padding: 0 22px;
+          border: none;
+          border-radius: 12px;
+          background-color: var(--color-accent-500);
+          color: #180226;
+          font-weight: 800;
+          font-size: 0.95rem;
+          cursor: pointer;
+          box-shadow: 0 8px 24px rgba(245, 183, 22, 0.35);
+          transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+          white-space: nowrap;
+        }
+        .finovo-search-submit:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 28px rgba(245, 183, 22, 0.45);
+        }
+        .finovo-search-error {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 10px;
+          color: #F87171;
+          font-size: 0.82rem;
+        }
+        /* Tablets and phones: two columns, category and button span the full width */
+        @media (max-width: 900px) {
+          .finovo-search-bar-form,
+          .finovo-search-bar-form.has-category {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
-          .search-form-dates-row {
-            grid-template-columns: 1fr !important;
+          .finovo-search-bar-form.has-category .finovo-search-field:first-child,
+          .finovo-search-submit {
+            grid-column: 1 / -1;
+          }
+        }
+        @media (max-width: 560px) {
+          .finovo-search-bar {
+            padding: 14px;
+            border-radius: 18px;
+          }
+          .hero-booking-input {
+            padding: 0 10px;
+            gap: 6px;
+          }
+          .hero-booking-input input {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+          }
+          /* The native date picker already shows a calendar icon on small phones */
+          .hero-booking-input > svg {
+            display: none;
           }
         }
       `}</style>

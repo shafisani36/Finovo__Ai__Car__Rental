@@ -14,6 +14,7 @@ import { InsurancePage } from '../../pages/customer/InsurancePage';
 import { AboutUsPage } from '../../pages/customer/AboutUsPage';
 import { AiInspectionPage } from '../../pages/customer/AiInspectionPage';
 import { ContactUsPage } from '../../pages/customer/ContactUsPage';
+import { LegalPage } from '../../pages/customer/LegalPage';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
@@ -73,12 +74,14 @@ import { UsersManagementPage } from '../../features/users/pages/UsersManagementP
 import { CustomersListPage } from '../../features/customers/pages/CustomersListPage';
 
 import { CanonicalUrlManager } from '../../components/seo/CanonicalUrlManager';
+import { ScrollToTop } from '../../components/navigation/ScrollToTop';
 
 export function AppRouter() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <CanonicalUrlManager />
+        <ScrollToTop />
         <Routes>
           {/* Main Website Layout */}
           <Route path="/" element={<RootLayout />}>
@@ -89,6 +92,9 @@ export function AppRouter() {
             <Route path="about" element={<AboutUsPage />} />
             <Route path="ai-inspection" element={<AiInspectionPage />} />
             <Route path="contact" element={<ContactUsPage />} />
+            <Route path="privacy" element={<LegalPage kind="privacy" />} />
+            <Route path="terms" element={<LegalPage kind="terms" />} />
+            <Route path="cookies" element={<LegalPage kind="cookies" />} />
           </Route>
 
           {/* Guest Only Auth Routes */}

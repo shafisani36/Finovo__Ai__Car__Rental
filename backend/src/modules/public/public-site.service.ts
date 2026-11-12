@@ -105,6 +105,10 @@ export class PublicSiteService {
           email: b.email,
           openingHours: b.openingHours,
         })),
+        apps: {
+          ios: process.env.APP_STORE_URL || null,
+          android: process.env.PLAY_STORE_URL || null,
+        },
         social: {
           facebook: process.env.SOCIAL_FACEBOOK_URL || null,
           instagram: process.env.SOCIAL_INSTAGRAM_URL || null,

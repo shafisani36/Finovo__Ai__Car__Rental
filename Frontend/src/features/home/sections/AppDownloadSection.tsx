@@ -1,15 +1,19 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSiteInfo } from '../../../hooks/usePublicSite';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { Sparkles, Apple, Play } from 'lucide-react';
 
 export function AppDownloadSection() {
   const { t } = useTranslation();
+  const site = useSiteInfo();
+  const hasApp = Boolean(site?.apps?.ios || site?.apps?.android);
   const containerRef = useRef<HTMLElement>(null);
 
   useGSAP(
     () => {
+      if (!hasApp) return;
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (prefersReducedMotion) return;
 
@@ -43,8 +47,11 @@ export function AppDownloadSection() {
         '-=0.45'
       );
     },
-    { scope: containerRef }
+    { scope: containerRef, dependencies: [hasApp] }
   );
+
+  // Only advertise the mobile app once a store link is configured (APP_STORE_URL / PLAY_STORE_URL)
+  if (!hasApp) return null;
 
   return (
     <section
@@ -216,8 +223,11 @@ export function AppDownloadSection() {
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
                 {/* App Store Button */}
+                {site?.apps?.ios && (
                 <a
-                  href="#"
+                  href={site?.apps?.ios}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -245,10 +255,14 @@ export function AppDownloadSection() {
                     <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>App Store</div>
                   </div>
                 </a>
+                )}
 
                 {/* Google Play Button */}
+                {site?.apps?.android && (
                 <a
-                  href="#"
+                  href={site?.apps?.android}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -276,6 +290,7 @@ export function AppDownloadSection() {
                     <div style={{ fontSize: '0.95rem', fontWeight: 700 }}>Google Play</div>
                   </div>
                 </a>
+                )}
               </div>
             </div>
           </div>

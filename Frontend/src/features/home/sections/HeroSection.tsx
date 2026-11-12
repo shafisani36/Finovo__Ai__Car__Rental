@@ -157,10 +157,6 @@ export function HeroSection() {
                 )}
               </div>
             )}
-
-            <div className="hero-search-wrapper" style={{ width: '100%' }}>
-              <SearchWidget />
-            </div>
           </div>
 
           {/* End Column: Interactive Luxury Architectural AI Vehicle Podium (real catalog cars only) */}
@@ -254,6 +250,11 @@ export function HeroSection() {
           </div>
           )}
         </div>
+
+        {/* Full-width booking bar under the messaging and the car podium */}
+        <div className="hero-search-wrapper finovo-hero-search-row">
+          <SearchWidget />
+        </div>
       </div>
 
       {/* Smooth warm champagne curve transition to CarCategorySection */}
@@ -264,8 +265,12 @@ export function HeroSection() {
           position: relative;
           overflow: hidden;
           background: linear-gradient(155deg, #160122 0%, #2C0644 48%, #4C126E 78%, #DFBE9F 100%);
-          padding: 112px 0 64px;
+          padding: 108px 0 56px;
           color: #FFFFFF;
+        }
+
+        .finovo-hero-search-row {
+          margin-top: 32px;
         }
 
         .finovo-hero-glow {
@@ -313,13 +318,13 @@ export function HeroSection() {
         .finovo-hero-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
-          gap: 36px;
+          gap: 48px;
           align-items: center;
         }
 
         /* No catalog car with a photo yet: the search column takes the stage alone */
         .finovo-hero-grid.is-single {
-          grid-template-columns: minmax(0, 720px);
+          grid-template-columns: minmax(0, 760px);
         }
 
         .finovo-hero-content {
@@ -689,16 +694,54 @@ export function HeroSection() {
           height: 24px;
         }
 
+        /* Laptop screens (1366x768 and similar): keep the booking bar above the fold */
+        @media (min-width: 1025px) and (max-height: 880px) {
+          .finovo-hero-stage {
+            padding: 96px 0 40px;
+          }
+          .finovo-hero-search-row {
+            margin-top: 24px;
+          }
+          .finovo-hero-podium {
+            padding: 16px;
+          }
+          .finovo-podium-visual-stage {
+            height: 200px;
+          }
+          .finovo-podium-halo {
+            height: 180px;
+          }
+          .finovo-podium-car-img {
+            max-height: 175px;
+          }
+          .finovo-hero-title {
+            font-size: clamp(2.2rem, 3.6vw, 3.1rem);
+          }
+        }
+
         @media (max-width: 1024px) {
           .finovo-hero-stage {
             padding: 96px 0 48px;
           }
-          .finovo-hero-grid {
-            grid-template-columns: 1fr;
+          /* Stacked order on tablets and phones: message, booking bar, then the car podium */
+          .finovo-hero-container {
+            display: flex;
+            flex-direction: column;
             gap: 28px;
           }
+          .finovo-hero-grid {
+            display: contents;
+          }
           .finovo-hero-content {
+            order: 1;
             align-items: flex-start;
+          }
+          .finovo-hero-search-row {
+            order: 2;
+            margin-top: 0;
+          }
+          .finovo-hero-podium {
+            order: 3;
           }
           .finovo-podium-visual-stage {
             height: 240px;

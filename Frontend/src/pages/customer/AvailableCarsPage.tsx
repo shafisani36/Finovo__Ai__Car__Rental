@@ -79,7 +79,6 @@ export function AvailableCarsPage() {
   // Primary State Pipeline
   const [period, setPeriod] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
   const [search, setSearch] = useState('');
-  const [selectedType, setSelectedType] = useState('All Types');
   const [selectedPriceRange, setSelectedPriceRange] = useState('Any Price');
   const [selectedTransmission, setSelectedTransmission] = useState('Any');
   const [selectedFuel, setSelectedFuel] = useState('Any');
@@ -100,6 +99,8 @@ export function AvailableCarsPage() {
   // Date Range State (pre-filled from ?pickupDate=YYYY-MM-DD&returnDate=YYYY-MM-DD)
   const [searchParams, setSearchParams] = useSearchParams();
   // ?brand=Toyota from the home page brand cards
+  // ?category=SUV from the home page booking bar
+  const [selectedType, setSelectedType] = useState(() => searchParams.get('category')?.trim() || 'All Types');
   const [selectedBrand, setSelectedBrand] = useState(() => searchParams.get('brand')?.trim() || 'All Brands');
   const initialStart = isIsoDate(searchParams.get('pickupDate')) ? searchParams.get('pickupDate')! : '';
   const initialEnd = isIsoDate(searchParams.get('returnDate')) ? searchParams.get('returnDate')! : '';

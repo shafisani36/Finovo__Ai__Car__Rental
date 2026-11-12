@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -110,10 +111,10 @@ export function Footer() {
             <div style={{ display: 'flex', gap: '10px' }}>
               {/* Only the company's configured profiles (SOCIAL_*_URL in the backend .env) */}
               {[
-                { icon: <InstagramIcon />, label: 'Instagram', href: site?.social.instagram },
-                { icon: <FacebookIcon />, label: 'Facebook', href: site?.social.facebook },
-                { icon: <TwitterIcon />, label: 'X', href: site?.social.x },
-                { icon: <LinkedinIcon />, label: 'LinkedIn', href: site?.social.linkedin },
+                { icon: <InstagramIcon />, label: 'Instagram', href: site?.social?.instagram },
+                { icon: <FacebookIcon />, label: 'Facebook', href: site?.social?.facebook },
+                { icon: <TwitterIcon />, label: 'X', href: site?.social?.x },
+                { icon: <LinkedinIcon />, label: 'LinkedIn', href: site?.social?.linkedin },
               ].filter((s) => Boolean(s.href)).map((s) => (
                 <a
                   key={s.label}
@@ -164,8 +165,8 @@ export function Footer() {
                 { label: t('nav.contact'), to: '/contact' },
               ].map((item) => (
                 <li key={item.to}>
-                  <a
-                    href={item.to}
+                  <Link
+                    to={item.to}
                     style={{
                       color: 'var(--text-white-secondary)',
                       fontSize: '0.9rem',
@@ -174,7 +175,7 @@ export function Footer() {
                     }}
                   >
                     {item.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -226,7 +227,8 @@ export function Footer() {
             </div>
           </div>
 
-          {/* App Download Column */}
+          {/* App Download Column (only when a store link is configured) */}
+          {(site?.apps?.ios || site?.apps?.android) && (
           <div className="footer-col-anim">
             <h4
               style={{
@@ -252,7 +254,9 @@ export function Footer() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <a
-                href="#app-download"
+                href={site?.apps?.ios || site?.apps?.android || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -276,6 +280,7 @@ export function Footer() {
               </a>
             </div>
           </div>
+          )}
         </div>
 
         {/* Bottom Legal Bar */}
@@ -296,9 +301,9 @@ export function Footer() {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              <a href="#" style={{ color: 'inherit' }}>{t('footer.privacyPolicy')}</a>
-              <a href="#" style={{ color: 'inherit' }}>{t('footer.termsOfService')}</a>
-              <a href="#" style={{ color: 'inherit' }}>{t('footer.cookiePolicy')}</a>
+              <Link to="/privacy" style={{ color: 'inherit' }}>{t('footer.privacyPolicy')}</Link>
+              <Link to="/terms" style={{ color: 'inherit' }}>{t('footer.termsOfService')}</Link>
+              <Link to="/cookies" style={{ color: 'inherit' }}>{t('footer.cookiePolicy')}</Link>
             </div>
             <LanguageSelector variant="customer" />
           </div>
