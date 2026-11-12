@@ -60,3 +60,6 @@ htmlcov/
 .venv/
 venv/
 ENV/
+
+# Customer inspection photos are runtime uploads, never committed
+backend/uploads/inspections/
