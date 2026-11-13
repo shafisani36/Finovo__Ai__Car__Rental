@@ -1,9 +1,11 @@
+import { initMonitoring, captureError, flushMonitoring } from './infrastructure/monitoring/monitoring';
 import { createApp } from './bootstrap/app';
 import { env, validateEnv } from './config/env.config';
 import { prisma } from './infrastructure/prisma/prisma.client';
 
 async function bootstrap() {
   validateEnv();
+  initMonitoring();
   const app = createApp();
 
   // Test database connection
@@ -23,6 +25,7 @@ async function bootstrap() {
   const shutdown = async (signal: string) => {
     console.log(`\nReceived ${signal}. Gracefully shutting down...`);
     server.close(async () => {
+      await flushMonitoring();
       await prisma.$disconnect();
       console.log(' Server and database connections closed cleanly.');
       process.exit(0);
@@ -35,9 +38,11 @@ async function bootstrap() {
   // Log instead of silently losing async failures; a crashing process is restarted by the process manager
   process.on('unhandledRejection', (reason) => {
     console.error('[unhandledRejection]', reason);
+    captureError(reason, { source: 'unhandledRejection' });
   });
   process.on('uncaughtException', (err) => {
     console.error('[uncaughtException]', err);
+    captureError(err, { source: 'uncaughtException' });
     shutdown('uncaughtException');
     setTimeout(() => process.exit(1), 10_000).unref();
   });

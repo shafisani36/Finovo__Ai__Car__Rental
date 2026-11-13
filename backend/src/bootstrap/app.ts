@@ -1,3 +1,4 @@
+import { prisma } from '../infrastructure/prisma/prisma.client';
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -132,6 +133,17 @@ export function createApp(): Application {
       },
     })
   );
+
+  // Readiness check for uptime monitors and load balancers: also confirms the database answers
+  app.get('/api/health/ready', async (_req: Request, res: Response) => {
+    const started = Date.now();
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.status(200).json({ status: 'READY', database: 'UP', latencyMs: Date.now() - started });
+    } catch {
+      res.status(503).json({ status: 'NOT_READY', database: 'DOWN' });
+    }
+  });
 
   // Health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {

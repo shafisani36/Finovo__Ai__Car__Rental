@@ -1,9 +1,10 @@
+import { captureError } from '../infrastructure/monitoring/monitoring';
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
 import { AppError } from '../shared/errors/app-error';
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   // Handle Zod validation errors
   if (err instanceof ZodError) {
     const formattedErrors = err.errors.map((e) => ({
@@ -79,6 +80,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
 
   // Handle unexpected errors
   console.error('[Unhandled Exception]:', err);
+  captureError(err, { method: req.method, path: req.originalUrl.split('?')[0] });
 
   const isDev = process.env.NODE_ENV !== 'production';
   res.status(500).json({

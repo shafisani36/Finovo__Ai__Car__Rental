@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { EmailVerificationBanner } from '../../features/auth/components/EmailVerificationBanner';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../features/auth/context';
@@ -295,6 +296,7 @@ export function CustomerLayout() {
 
         {/* Page Content Outlet */}
         <main className="customer-main-view">
+          <EmailVerificationBanner />
           <Outlet />
         </main>
       </div>

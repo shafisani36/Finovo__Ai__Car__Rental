@@ -1,5 +1,6 @@
 import { Prisma, $Enums } from '@prisma/client';
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { AuthService } from '../auth/auth.service';
 import { AppError } from '../../shared/errors/app-error';
 import { RentalPricingService, QuoteAddonInput } from '../fleet/rental-pricing.service';
 
@@ -293,6 +294,9 @@ export class BookingService {
 
     if (!dto || !dto.vehicleId) {
       throw AppError.badRequest('vehicleId is required');
+    }
+    if (!isStaff) {
+      await AuthService.assertEmailVerified(actorUserId);
     }
 
     const pickupDate = new Date(dto.pickupDateTime);

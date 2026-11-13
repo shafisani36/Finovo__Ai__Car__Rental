@@ -1,6 +1,7 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { BookingService } from '../bookings/booking.service';
+import { AuthService } from '../auth/auth.service';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -684,6 +685,7 @@ export class CustomerPortalService {
    * Process a payment for a booking
    */
   static async processPayment(userId: string, payload: ProcessPaymentDTO) {
+    await AuthService.assertEmailVerified(userId);
     const customer = await this.getOrCreateCustomer(userId);
 
     const booking = await prisma.booking.findUnique({

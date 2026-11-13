@@ -15,5 +15,8 @@ authRouter.post('/forgot-password', authRateLimiter, AuthController.forgotPasswo
 authRouter.post('/verify-code', authRateLimiter, AuthController.verifyResetCode);
 authRouter.post('/reset-password', authRateLimiter, AuthController.resetPassword);
 
+authRouter.post('/verify-email', authRateLimiter, AuthController.verifyEmail);
+authRouter.post('/resend-verification', authRateLimiter, authenticate, AuthController.resendVerification);
+
 authRouter.get('/me', authenticate, AuthController.getMe);
 authRouter.put('/profile/language', authenticate, TranslationController.updateLanguagePreference);

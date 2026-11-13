@@ -6,8 +6,7 @@ import {
   loginSchema,
   forgotPasswordSchema,
   verifyCodeSchema,
-  resetPasswordSchema,
-} from './auth.validation';
+  resetPasswordSchema, verifyEmailSchema } from './auth.validation';
 
 export class AuthController {
   private static setAuthCookies(
@@ -61,7 +60,37 @@ export class AuthController {
       const userAgent = req.headers['user-agent'] || '';
 
       const result = await AuthService.register(validated, ip, userAgent);
-      res.status(201).json({ success: true, ...result });
+      // Identical answer for new and already-registered emails
+      res.status(201).json({ success: true, message: result.message });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email, token } = verifyEmailSchema.parse(req.body);
+      const result = await AuthService.verifyEmail(email, token, req.ip, req.headers['user-agent'] || '');
+      res.status(200).json({
+        success: true,
+        alreadyVerified: result.alreadyVerified,
+        message: 'Your email address is verified. You can now book cars.',
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async resendVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await AuthService.resendVerification(req.user!.userId);
+      res.status(200).json({
+        success: true,
+        alreadyVerified: result.alreadyVerified,
+        message: result.alreadyVerified
+          ? 'Your email address is already verified.'
+          : 'A new verification link has been sent to your email.',
+      });
     } catch (err) {
       next(err);
     }

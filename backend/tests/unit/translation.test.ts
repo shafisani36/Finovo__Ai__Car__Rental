@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { prisma } from '../../src/infrastructure/prisma/prisma.client';
 import { TranslationService } from '../../src/modules/translations/translation.service';
 import { detectLanguage } from '../../src/modules/translations/translation.provider';
 import { translateSchema, userLanguagePreferenceSchema } from '../../src/modules/translations/translation.validation';
@@ -9,6 +10,7 @@ async function runTests() {
   console.log('======================================================\n');
 
   let passed = 0;
+  let failed = 0;
 
   // 1. Language Detection Tests
   try {
@@ -22,6 +24,7 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Language detection failed:', err);
+    failed++;
   }
 
   // 2. Validation Schema Tests
@@ -55,6 +58,7 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Validation schema test failed:', err);
+    failed++;
   }
 
   // 3. User Language Preference Validation
@@ -71,6 +75,7 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Preference schema test failed:', err);
+    failed++;
   }
 
   // 4. Identical Source & Target Language Short-Circuit
@@ -88,6 +93,7 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Short-circuit test failed:', err);
+    failed++;
   }
 
   // 5. Translation with MySQL Cache Round-Trip
@@ -117,6 +123,7 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Cache round-trip failed:', err);
+    failed++;
   }
 
   // 6. Arabic Translation & RTL Verification
@@ -132,6 +139,7 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Arabic translation failed:', err);
+    failed++;
   }
 
   // 7. Urdu Translation Verification
@@ -147,6 +155,7 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] Urdu translation failed:', err);
+    failed++;
   }
 
   // 8. French, Spanish & German Translation Verification
@@ -176,11 +185,17 @@ async function runTests() {
     passed++;
   } catch (err) {
     console.error(' [FAIL] European language translations failed:', err);
+    failed++;
   }
 
   console.log('\n======================================================');
-  console.log(`TEST SUMMARY: ${passed} Passed, 0 Failed`);
+  console.log(`TEST SUMMARY: ${passed} Passed, ${failed} Failed`);
   console.log('======================================================\n');
+
+  // Close the database pool so the process ends on its own (CI waits for it)
+  await prisma.$disconnect();
+  // Exit explicitly: a leftover timer or socket must never keep CI waiting
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 runTests().catch((e) => {

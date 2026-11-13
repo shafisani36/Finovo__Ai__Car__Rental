@@ -82,13 +82,30 @@ async function deliver(email: OutgoingEmail): Promise<void> {
 export class EmailService {
   /** Sends an account verification email. */
   static async sendVerificationEmail(email: string, token: string, fullName: string): Promise<void> {
-    const url = `${env.CORS.ORIGIN}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+    const url = `${env.CORS.ORIGIN}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     await deliver({
       to: email,
       subject: 'Verify your Finovo account',
-      text: `Hi ${fullName},\n\nPlease verify your email address by opening this link:\n${url}\n\nThank you for joining Finovo.`,
+      text: `Hi ${fullName},\n\nPlease verify your email address by opening this link (valid for 24 hours):\n${url}\n\nThank you for joining Finovo.`,
       paragraphs: [`Hi ${fullName},`, 'Please confirm your email address to activate your Finovo account.'],
       action: { label: 'Verify email', url },
+    });
+  }
+
+  /** Tells the owner of an email address that someone tried to sign up with it again. */
+  static async sendAccountExistsNotice(email: string, fullName: string): Promise<void> {
+    const loginUrl = `${env.CORS.ORIGIN}/login`;
+    const resetUrl = `${env.CORS.ORIGIN}/forgot-password`;
+    await deliver({
+      to: email,
+      subject: 'You already have a Finovo account',
+      text: `Hi ${fullName},\n\nSomeone (hopefully you) tried to create a new Finovo account with this email address, but you already have one.\n\nSign in: ${loginUrl}\nForgot your password? ${resetUrl}\n\nIf this was not you, you can ignore this email. Your account has not been changed.`,
+      paragraphs: [
+        `Hi ${fullName},`,
+        'Someone (hopefully you) tried to create a new Finovo account with this email address, but you already have one.',
+        'If this was not you, you can ignore this email. Your account has not been changed.',
+      ],
+      action: { label: 'Sign in', url: loginUrl },
     });
   }
 

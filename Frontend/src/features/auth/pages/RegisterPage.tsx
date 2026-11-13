@@ -59,9 +59,9 @@ export function RegisterPage() {
       setIsSuccess(true);
       setTimeout(() => {
         navigate('/login', {
-          state: { message: t('auth.registrationSuccessMsg') },
+          state: { message: t('auth.checkInboxBody') },
         });
-      }, 2500);
+      }, 4500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('auth.errors.registerFailed');
       setServerError(msg);
@@ -132,9 +132,12 @@ export function RegisterPage() {
           >
             <CheckCircle2 size={44} color="#0E9F6E" style={{ margin: '0 auto 12px' }} />
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 6px 0' }}>
-              {t('auth.accountCreated')}
+              {t('auth.checkInboxTitle')}
             </h3>
-            <p style={{ fontSize: '0.9rem', margin: 0 }}>
+            <p style={{ fontSize: '0.9rem', margin: '0 0 6px' }}>
+              {t('auth.checkInboxBody')}
+            </p>
+            <p style={{ fontSize: '0.8rem', margin: 0, opacity: 0.8 }}>
               {t('auth.redirectingSignIn')}
             </p>
           </div>

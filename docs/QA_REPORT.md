@@ -104,8 +104,9 @@ All critical and high issues found are now fixed and re-tested.
 ## Remaining recommendations (not blockers)
 
 - **Access token in `localStorage`.** It is short-lived (15 minutes) and the refresh token is httpOnly, but moving the access token to memory only would further reduce the impact of any future XSS.
-- **Registration reveals whether an email exists** (409 "already exists"). This is a common usability trade-off; consider a generic message if account privacy matters.
-- **Email verification is sent but not enforced** before booking.
-- **Automated tests in CI.** Add the security checks from this report as integration tests and run them on every push.
-- **Monitoring.** Add error tracking (for example Sentry) and uptime checks before launch.
+- ~~Registration reveals whether an email exists~~ **Done:** signup now gives the same answer for every email, and the real owner gets an email notice.
+- ~~Email verification is sent but not enforced~~ **Done:** booking and payment need a verified email; there is a `/verify-email` page and a "Resend" banner on the dashboard.
+- ~~Automated tests in CI~~ **Done:** `.github/workflows/ci.yml` runs type checks, the unit tests against MySQL, lint and builds on every push and pull request. A next step would be to add the security checks from this report as API integration tests.
+- ~~Monitoring~~ **Done (needs a DSN):** Sentry is built in for backend and frontend and turns on when `SENTRY_DSN` / `VITE_SENTRY_DSN` are set. `GET /api/health/ready` checks the database for uptime monitors.
+- **Frontend bundle size.** The main JavaScript file is about 1.8 MB (467 KB gzip). Lazy-loading the admin and customer pages per route would make the first visit noticeably faster on mobile data.
 - **Not testable in this environment:** live Stripe payments and the Gemini inspection call. Both were verified earlier on the developer machine and should get one more end-to-end run on staging with test keys.

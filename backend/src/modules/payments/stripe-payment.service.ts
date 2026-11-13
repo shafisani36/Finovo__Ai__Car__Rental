@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 import Stripe from 'stripe';
 import { Prisma, type payments_status } from '@prisma/client';
 import { prisma } from '../../infrastructure/prisma/prisma.client';
@@ -84,6 +85,7 @@ export class StripePaymentService {
     if (!bookingId) {
       throw AppError.badRequest('bookingId is required');
     }
+    await AuthService.assertEmailVerified(userId);
     const stripe = getStripe();
     const { customer, booking } = await this.getCustomerBooking(userId, bookingId);
 

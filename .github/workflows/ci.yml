@@ -1,0 +1,109 @@
+# Runs on every push and pull request to main: type checks, unit tests against a real
+# MySQL database, lint and a production build. A red cross on GitHub means do not deploy.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (type check + tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: finovo_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/finovo_ci
+      JWT_ACCESS_SECRET: ci_access_secret_that_is_long_enough_0123456789abcdef
+      JWT_REFRESH_SECRET: ci_refresh_secret_that_is_long_enough_9876543210fedcba
+      CORS_ORIGIN: http://localhost:5176
+      EMAIL_PROVIDER: mock
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Type check
+        run: npx tsc --noEmit -p .
+
+      - name: Create database schema
+        run: npx prisma db push --skip-generate
+
+      - name: Unit tests
+        # Each suite gets a hard time limit so a stuck test can never hang the pipeline
+        run: |
+          for suite in auth pricing translation booking-availability inspection-assessment inspection-consistency; do
+            echo "::group::$suite"
+            timeout 180 npx tsx "tests/unit/$suite.test.ts"
+            echo "::endgroup::"
+          done
+
+      - name: Production build
+        run: npm run build
+
+  frontend:
+    name: Frontend (type check + lint + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: Frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+        env:
+          VITE_API_URL: https://api.example.com/api/v1
+          VITE_SITE_URL: https://www.example.com

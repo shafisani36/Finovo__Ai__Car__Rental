@@ -15,7 +15,79 @@ import {
   ResetPasswordInput,
 } from './auth.validation';
 
+/** Same answer whether or not the email was already registered (no account enumeration). */
+export const REGISTER_RESPONSE_MESSAGE =
+  'Thanks! If this email can be used, your account is ready and we have sent a verification link to your inbox.';
+
+const VERIFICATION_TOKEN_HOURS = 24;
+
 export class AuthService {
+  /** Creates a fresh single-use email verification link and emails it. Older links stop working. */
+  static async issueVerificationEmail(user: { id: string; email: string; fullName: string }) {
+    const rawToken = TokenHashService.generateRandomToken(32);
+    await prisma.$transaction([
+      prisma.verificationToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+      prisma.verificationToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: TokenHashService.hashToken(rawToken),
+          expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_HOURS * 60 * 60 * 1000),
+        },
+      }),
+    ]);
+    await EmailService.sendVerificationEmail(user.email, rawToken, user.fullName);
+  }
+
+  /** Confirms an email address from the link in the verification email. */
+  static async verifyEmail(email: string, rawToken: string, ipAddress?: string, userAgent?: string) {
+    const invalid = AppError.badRequest('This verification link is invalid or has expired. Please request a new one.');
+    const record = await prisma.verificationToken.findUnique({
+      where: { tokenHash: TokenHashService.hashToken(rawToken) },
+      include: { user: { select: { id: true, email: true, isEmailVerified: true } } },
+    });
+    if (!record || record.user.email !== email) throw invalid;
+    if (record.user.isEmailVerified) return { alreadyVerified: true };
+    if (record.usedAt || record.expiresAt < new Date()) throw invalid;
+
+    await prisma.$transaction([
+      prisma.verificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+      prisma.user.update({
+        where: { id: record.user.id },
+        data: { isEmailVerified: true, emailVerifiedAt: new Date() },
+      }),
+    ]);
+    await AuditService.log({ userId: record.user.id, event: 'AUTH_EMAIL_VERIFIED', ipAddress, userAgent });
+    return { alreadyVerified: false };
+  }
+
+  /** Sends a new verification link to a signed-in user who has not confirmed their email yet. */
+  static async resendVerification(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, fullName: true, isEmailVerified: true },
+    });
+    if (!user) throw AppError.notFound('Account not found');
+    if (user.isEmailVerified) return { alreadyVerified: true };
+    await AuthService.issueVerificationEmail(user);
+    return { alreadyVerified: false };
+  }
+
+  /** Customers must confirm their email before booking or paying; staff accounts are created verified. */
+  static async assertEmailVerified(userId: string | undefined) {
+    if (!userId) return;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isEmailVerified: true } });
+    if (user && !user.isEmailVerified) {
+      throw new AppError(
+        'Please verify your email address before booking. Check your inbox or request a new link from your dashboard.',
+        403,
+        'EMAIL_NOT_VERIFIED'
+      );
+    }
+  }
+
   /**
    * Registers a new user with Argon2id password hashing and default least-privilege role
    */
@@ -24,17 +96,23 @@ export class AuthService {
       where: { email: input.email },
     });
 
+    // Hash first in both cases so a taken email answers just as slowly as a new one
+    const passwordHash = await PasswordService.hashPassword(input.password);
+
     if (existing) {
       await AuditService.log({
+        userId: existing.id,
         event: 'AUTH_REGISTER_DUPLICATE_ATTEMPT',
         ipAddress,
         userAgent,
         metadata: { email: input.email },
       });
-      throw AppError.conflict('An account with this email address already exists');
+      // Tell the real owner by email instead of telling the visitor that the address is registered
+      EmailService.sendAccountExistsNotice(existing.email, existing.fullName).catch((err) =>
+        console.error('[AuthService] Account-exists notice delivery failed:', err)
+      );
+      return { created: false as const, message: REGISTER_RESPONSE_MESSAGE };
     }
-
-    const passwordHash = await PasswordService.hashPassword(input.password);
 
     // Atomic transaction: create user and assign default role
     const user = await prisma.$transaction(async (tx) => {
@@ -99,7 +177,8 @@ export class AuthService {
     });
 
     return {
-      message: 'Registration successful! Verification email sent.',
+      created: true as const,
+      message: REGISTER_RESPONSE_MESSAGE,
       user: {
         id: user.newUser.id,
         email: user.newUser.email,

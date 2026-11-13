@@ -1,7 +1,7 @@
 import { PasswordService } from '../../src/security/password/password.service';
 import { TokenHashService } from '../../src/security/tokens/token-hash.service';
 import { JwtService } from '../../src/security/tokens/jwt.service';
-import { AuthService } from '../../src/modules/auth/auth.service';
+import { AuthService, REGISTER_RESPONSE_MESSAGE } from '../../src/modules/auth/auth.service';
 import { SessionService } from '../../src/modules/sessions/session.service';
 import { prisma } from '../../src/infrastructure/prisma/prisma.client';
 
@@ -72,7 +72,7 @@ async function runTests() {
       email: testEmail,
       password: 'SecurePassword123!',
     });
-    if (!res.user.id || res.user.email !== testEmail) {
+    if (!res.created || !res.user.id || res.user.email !== testEmail) {
       throw new Error('User creation failed');
     }
 
@@ -83,6 +83,43 @@ async function runTests() {
     if (!dbUser) throw new Error('User not found in MySQL');
     const hasCustomerRole = dbUser.userRoles.some((r) => r.role.name === 'CUSTOMER');
     if (!hasCustomerRole) throw new Error('Default CUSTOMER role was not assigned');
+  });
+
+  await test('AuthService.register gives the same answer for an existing email (no enumeration)', async () => {
+    const first = await AuthService.register({ fullName: 'Someone Else', email: testEmail, password: 'AnotherPass123!' });
+    if (first.created) throw new Error('Duplicate email created a second account');
+    if (first.message !== REGISTER_RESPONSE_MESSAGE) throw new Error('Duplicate signup answer differs from a new signup');
+    const count = await prisma.user.count({ where: { email: testEmail } });
+    if (count !== 1) throw new Error('Duplicate user row created');
+  });
+
+  await test('Email verification: unverified users are blocked, a valid link verifies once', async () => {
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: testEmail } });
+    let blocked = false;
+    try {
+      await AuthService.assertEmailVerified(user.id);
+    } catch (e) {
+      blocked = (e as { code?: string }).code === 'EMAIL_NOT_VERIFIED';
+    }
+    if (!blocked) throw new Error('Unverified user was not blocked');
+
+    // Issue a known token the way the email link does
+    const rawToken = TokenHashService.generateRandomToken(32);
+    await prisma.verificationToken.create({
+      data: { userId: user.id, tokenHash: TokenHashService.hashToken(rawToken), expiresAt: new Date(Date.now() + 60_000) },
+    });
+    let wrongEmailRejected = false;
+    try {
+      await AuthService.verifyEmail('someone.else@finovo.test', rawToken);
+    } catch {
+      wrongEmailRejected = true;
+    }
+    if (!wrongEmailRejected) throw new Error('Token accepted for a different email');
+
+    await AuthService.verifyEmail(testEmail, rawToken);
+    await AuthService.assertEmailVerified(user.id);
+    const second = await AuthService.verifyEmail(testEmail, rawToken);
+    if (!second.alreadyVerified) throw new Error('Second use of the link should report already verified');
   });
 
   // 5. Login & Session Issuance Test
@@ -159,6 +196,7 @@ async function runTests() {
     const newLogin = await AuthService.login({
       email: testEmail,
       password: 'BrandNewPassword2026!',
+      rememberMe: false,
     });
     if (!newLogin.accessToken) throw new Error('Login with new password failed');
   });
@@ -178,7 +216,8 @@ async function runTests() {
   console.log('======================================================\n');
 
   await prisma.$disconnect();
-  if (failed > 0) process.exit(1);
+  // Exit explicitly: a leftover timer or socket must never keep CI waiting
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 runTests().catch((e) => {

@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { RotateCcw, Home, ChevronDown, ChevronUp, Bug, ShieldAlert } from 'lucide-react';
+import { reportError } from '../../utils/monitoring';
 
 interface Props {
   children: ReactNode;
@@ -29,6 +30,7 @@ export class DynamicErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('[DynamicErrorBoundary Caught Exception]:', error, errorInfo);
+    reportError(error, { componentStack: errorInfo.componentStack, path: window.location.pathname });
     this.setState({ errorInfo });
   }
 

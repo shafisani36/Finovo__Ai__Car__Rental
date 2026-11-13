@@ -81,3 +81,8 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type VerifyCodeInput = z.infer<typeof verifyCodeSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const verifyEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Please enter a valid email address'),
+  token: z.string().trim().min(16, 'Invalid verification link').max(256, 'Invalid verification link'),
+});

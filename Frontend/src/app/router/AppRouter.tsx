@@ -19,6 +19,7 @@ import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
 import { VerifyCodePage } from '../../features/auth/pages/VerifyCodePage';
+import { VerifyEmailPage } from '../../features/auth/pages/VerifyEmailPage';
 import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
 import { CustomerLayout } from '../layouts/CustomerLayout';
 import { CustomerDashboardOverviewPage } from '../../features/customers/pages/CustomerDashboardOverviewPage';
@@ -122,6 +123,8 @@ export function AppRouter() {
               </GuestRoute>
             }
           />
+          {/* Email verification link: works signed in or signed out */}
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route
             path="/verify-code"
             element={
