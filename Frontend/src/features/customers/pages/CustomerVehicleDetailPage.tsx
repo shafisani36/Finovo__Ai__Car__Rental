@@ -13,13 +13,7 @@ import {
   Car,
 } from 'lucide-react';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
-import {
-  getCarImage,
-  getCarGallery,
-  getCarGalleryEntries,
-  isFullBleedCarPhoto,
-  resolveVehiclePricing,
-} from '../../../utils/carImageHelper';
+import { getCarImage, getCarGallery, getCarGalleryEntries, isFullBleedCarPhoto, resolveVehiclePricing, formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerVehicleDetailPage() {
@@ -128,7 +122,8 @@ export function CustomerVehicleDetailPage() {
   );
 
   const subtotal = vehicle ? vehicle.dailyRate * daysCount : 0;
-  const estimatedTax = subtotal * 0.1;
+  // Same tax rate the server applies to bookings (BOOKING_TAX_RATE_PERCENT)
+  const estimatedTax = subtotal * 0.08;
   const estimatedTotal = subtotal + estimatedTax;
 
   if (isLoading) {
@@ -419,16 +414,16 @@ export function CustomerVehicleDetailPage() {
                 <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{daysCount} {daysCount === 1 ? 'day' : 'days'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Daily Rate (${vehicle.dailyRate} × {daysCount}):</span>
-                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>${subtotal.toFixed(2)}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>Daily Rate ({formatMoney(vehicle.dailyRate, vehicle.currency)} × {daysCount}):</span>
+                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(subtotal, vehicle.currency, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Estimated Sales Tax (10%):</span>
-                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>${estimatedTax.toFixed(2)}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>Estimated Tax (8%):</span>
+                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(estimatedTax, vehicle.currency, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--cp-text-muted)' }}>Refundable Security Deposit:</span>
-                <span style={{ fontWeight: 700, color: '#10B981' }}>${vehicle.depositAmount.toFixed(2)}</span>
+                <span style={{ fontWeight: 700, color: '#10B981' }}>{formatMoney(vehicle.depositAmount, vehicle.currency, 2)}</span>
               </div>
               <div
                 style={{
@@ -441,7 +436,7 @@ export function CustomerVehicleDetailPage() {
               >
                 <span style={{ fontWeight: 800, color: 'var(--cp-primary)' }}>Estimated Total:</span>
                 <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-                  ${estimatedTotal.toFixed(2)}
+                  {formatMoney(estimatedTotal, vehicle.currency, 2)}
                 </span>
               </div>
             </div>

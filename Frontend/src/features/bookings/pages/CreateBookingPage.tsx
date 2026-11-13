@@ -9,7 +9,7 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  DollarSign,
+  Banknote,
   User,
   ShieldCheck,
   Sparkles,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader, Button } from '../../../components/common';
+import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
 
 interface BranchOption {
   id: string;
@@ -31,6 +32,9 @@ interface CustomerOption {
   email: string;
   phone?: string;
 }
+
+/** Chauffeur fee per day; must match DEFAULT_DRIVER_FEE_PER_DAY in the backend pricing service. */
+const DRIVER_FEE_PER_DAY = 150;
 
 export function CreateBookingPage() {
   const navigate = useNavigate();
@@ -232,7 +236,7 @@ export function CreateBookingPage() {
                   options={vehicles.map((v) => ({
                     value: v.id,
                     label: `${v.brand} ${v.model} (${v.registrationNumber})`,
-                    sublabel: `${v.pricingMethod?.toUpperCase() || 'DAILY'}: ${v.currency || 'PKR'} ${Number(
+                    sublabel: `${v.pricingMethod?.toUpperCase() || 'DAILY'}: ${v.currency || APP_CURRENCY} ${Number(
                       v.pricingMethod === 'per_km'
                         ? v.perKmRate || 0
                         : v.pricingMethod === 'hourly'
@@ -275,7 +279,7 @@ export function CreateBookingPage() {
                     </span>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: '#66566A' }}>
-                    Deposit: {selectedCar.currency || 'PKR'} {Number(selectedCar.securityDeposit || 0).toLocaleString()} (Refundable)
+                    Deposit: {selectedCar.currency || APP_CURRENCY} {Number(selectedCar.securityDeposit || 0).toLocaleString()} (Refundable)
                   </span>
                 </div>
               )}
@@ -432,7 +436,7 @@ export function CreateBookingPage() {
                     style={{ width: '16px', height: '16px', accentColor: '#6C1E84' }}
                   />
                   <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E0426' }}>
-                    Add Professional Chauffeur / Driver (+PKR 2,500/day)
+                    Add Professional Chauffeur / Driver (+{formatMoney(DRIVER_FEE_PER_DAY)}/day)
                   </span>
                 </label>
               </div>
@@ -466,7 +470,7 @@ export function CreateBookingPage() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <DollarSign size={20} color="#059669" />
+                <Banknote size={20} color="#059669" />
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Pricing Breakdown</h3>
               </div>
 
@@ -497,7 +501,7 @@ export function CreateBookingPage() {
                           </span>
                         </div>
                         <span style={{ fontWeight: 600 }}>
-                          {quote.currency || 'PKR'} {item.amount.toLocaleString()}
+                          {quote.currency || APP_CURRENCY} {item.amount.toLocaleString()}
                         </span>
                       </div>
                     ))
@@ -509,15 +513,15 @@ export function CreateBookingPage() {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#4B5563' }}>Daily Rate</span>
-                        <span>{quote.currency || 'PKR'} {quote.dailyRate.toLocaleString()}/day</span>
+                        <span>{quote.currency || APP_CURRENCY} {quote.dailyRate.toLocaleString()}/day</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#4B5563' }}>Base Subtotal</span>
-                        <span>{quote.currency || 'PKR'} {quote.subtotal.toLocaleString()}</span>
+                        <span>{quote.currency || APP_CURRENCY} {quote.subtotal.toLocaleString()}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#4B5563' }}>Taxes & Fees</span>
-                        <span>{quote.currency || 'PKR'} {quote.taxAmount.toLocaleString()}</span>
+                        <span>{quote.currency || APP_CURRENCY} {quote.taxAmount.toLocaleString()}</span>
                       </div>
                     </>
                   )}
@@ -545,7 +549,7 @@ export function CreateBookingPage() {
                       </div>
                     </div>
                     <span style={{ color: '#1E40AF', fontWeight: 800 }}>
-                      {quote.currency || 'PKR'} {quote.depositAmount.toLocaleString()}
+                      {quote.currency || APP_CURRENCY} {quote.depositAmount.toLocaleString()}
                     </span>
                   </div>
 
@@ -553,7 +557,7 @@ export function CreateBookingPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800 }}>
                       <span>Estimated Grand Total</span>
                       <span style={{ color: '#059669' }}>
-                        {quote.currency || 'PKR'} {(quote.grandTotal ?? quote.totalAmount).toLocaleString()}
+                        {quote.currency || APP_CURRENCY} {(quote.grandTotal ?? quote.totalAmount).toLocaleString()}
                       </span>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>

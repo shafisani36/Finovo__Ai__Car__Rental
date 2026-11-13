@@ -399,7 +399,7 @@ export const de = {
     insurance: {
       title: 'Vollumfänglicher Versicherungsschutz',
       subtitle: 'Fahren Sie mit 100 % Sorgenfreiheit. Vollkaskoschutz ohne Selbstbeteiligung, 24/7 Pannenhilfe und digitale Sofortregulierung inklusive.',
-      bullet1: '0 € Selbstbeteiligung bei Kollision',
+      bullet1: 'Kollisionsschutz ohne Selbstbeteiligung',
       bullet2: 'Glas- & Reifenschutz',
       bullet3: '24/7 Sofort-Ersatzfahrzeug',
       cta: 'Versicherungspläne entdecken',

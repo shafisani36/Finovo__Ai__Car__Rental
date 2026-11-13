@@ -399,7 +399,7 @@ export const es = {
     insurance: {
       title: 'Cobertura de Seguro',
       subtitle: 'Conduce con 100% tranquilidad. Protección sin franquicia, asistencia en carretera 24/7 y resolución digital instantánea.',
-      bullet1: 'Colisión con $0 franquicia',
+      bullet1: 'Cobertura de colisión sin franquicia',
       bullet2: 'Protección de lunas y neumáticos',
       bullet3: 'Reemplazo rápido 24/7',
       cta: 'Explorar planes de seguro',

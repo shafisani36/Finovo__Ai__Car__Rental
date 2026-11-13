@@ -266,7 +266,7 @@ model Vehicle {
   ownershipType           String?               @default("OWNED") @db.VarChar(32)
   vehicleCode             String?               @db.VarChar(64)
   billingIncrementMinutes Int?                  @default(60)
-  currency                String                @default("PKR") @db.VarChar(8)
+  currency                String                @default("SAR") @db.VarChar(8)
   gracePeriodMinutes      Int?                  @default(0)
   hourlyRate              Decimal?              @db.Decimal(10, 2)
   minimumBillableHours    Int?                  @default(1)
@@ -351,7 +351,7 @@ model VehicleMaintenance {
   completedDate         DateTime?
   odometerReading       Int?
   cost                  Decimal?          @db.Decimal(10, 2)
-  currency              String            @default("USD") @db.VarChar(8)
+  currency              String            @default("SAR") @db.VarChar(8)
   invoiceNumber         String?           @db.VarChar(64)
   nextServiceDueMileage Int?
   nextServiceDueDate    DateTime?
@@ -380,7 +380,7 @@ model VehicleDamageReport {
   description         String         @db.Text
   estimatedRepairCost Decimal?       @db.Decimal(10, 2)
   actualRepairCost    Decimal?       @db.Decimal(10, 2)
-  currency            String         @default("USD") @db.VarChar(8)
+  currency            String         @default("SAR") @db.VarChar(8)
   photoUrls           String?        @db.Text
   resolvedAt          DateTime?
   notes               String?        @db.Text
@@ -433,7 +433,7 @@ model VehiclePricingTier {
   rateName                String        @db.VarChar(64)
   billingUnit             String        @default("DAY") @db.VarChar(16)
   baseRate                Decimal       @db.Decimal(10, 2)
-  currency                String        @default("PKR") @db.VarChar(8)
+  currency                String        @default("SAR") @db.VarChar(8)
   securityDeposit         Decimal?      @db.Decimal(10, 2)
   includedKmPerDay        Int?          @default(250)
   extraKmRate             Decimal?      @db.Decimal(10, 2)
@@ -518,7 +518,7 @@ model Booking {
   taxAmount          Decimal                   @default(0.00) @db.Decimal(10, 2)
   depositAmount      Decimal                   @default(0.00) @db.Decimal(10, 2)
   totalAmount        Decimal                   @db.Decimal(10, 2)
-  currency           String                    @default("PKR") @db.VarChar(8)
+  currency           String                    @default("SAR") @db.VarChar(8)
   notes              String?                   @db.Text
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
@@ -551,7 +551,7 @@ model BookingPricingSnapshot {
   id                      String        @id @default(cuid())
   bookingId               String        @unique
   pricingMethod           PricingMethod
-  currency                String        @default("PKR") @db.VarChar(8)
+  currency                String        @default("SAR") @db.VarChar(8)
   dailyRate               Decimal?      @db.Decimal(10, 2)
   perKmRate               Decimal?      @db.Decimal(10, 2)
   hourlyRate              Decimal?      @db.Decimal(10, 2)
@@ -586,7 +586,7 @@ model BookingPricingBreakdown {
   unit        String   @default("UNIT") @db.VarChar(32)
   unitPrice   Decimal  @db.Decimal(10, 2)
   amount      Decimal  @db.Decimal(10, 2)
-  currency    String   @default("PKR") @db.VarChar(8)
+  currency    String   @default("SAR") @db.VarChar(8)
   isTaxable   Boolean  @default(false)
   taxAmount   Decimal  @default(0.00) @db.Decimal(10, 2)
   metadata    String?  @db.Text
@@ -746,7 +746,7 @@ model damage_charges {
   description        String                @db.VarChar(255)
   proposedAmount     Decimal               @db.Decimal(10, 2)
   approvedAmount     Decimal               @default(0.00) @db.Decimal(10, 2)
-  currency           String                @default("PKR") @db.VarChar(8)
+  currency           String                @default("SAR") @db.VarChar(8)
   status             damage_charges_status @default(PROPOSED)
   approvedById       String?               @db.VarChar(64)
   approvedAt         DateTime?
@@ -835,7 +835,7 @@ model payments {
   id              String          @id
   bookingId       String
   amount          Decimal         @db.Decimal(10, 2)
-  currency        String          @default("PKR") @db.VarChar(8)
+  currency        String          @default("SAR") @db.VarChar(8)
   status          payments_status @default(PENDING)
   provider        String          @default("stripe") @db.VarChar(32)
   paymentIntentId String?         @unique @db.VarChar(128)
@@ -860,7 +860,7 @@ model price_quotes {
   pickupDateTime DateTime
   returnDateTime DateTime
   pricingMethod  price_quotes_pricingMethod @default(daily)
-  currency       String                     @default("PKR") @db.VarChar(8)
+  currency       String                     @default("SAR") @db.VarChar(8)
   totalAmount    Decimal                    @db.Decimal(10, 2)
   depositAmount  Decimal                    @default(0.00) @db.Decimal(10, 2)
   quoteSnapshot  String                     @db.MediumText

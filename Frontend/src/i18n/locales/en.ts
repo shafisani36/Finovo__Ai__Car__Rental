@@ -399,7 +399,7 @@ export const en = {
     insurance: {
       title: 'Car Insurance Coverage',
       subtitle: 'Drive with 100% peace of mind. Zero-deductible collision protection, 24/7 roadside assistance, and instant digital claim resolution included.',
-      bullet1: '$0 Deductible Collision',
+      bullet1: 'Zero-excess collision cover',
       bullet2: 'Glass & Tire Protection',
       bullet3: '24/7 Rapid Replacement',
       cta: 'Explore Insurance Plans',

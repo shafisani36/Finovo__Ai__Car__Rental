@@ -26,6 +26,7 @@ import {
   Modal,
 } from '../../../components/common';
 import { useConfirm } from '../../../components/common/ConfirmModal';
+import { formatMoney } from '../../../utils/carImageHelper';
 
 export function CustomersListPage() {
   const { confirm } = useConfirm();
@@ -737,7 +738,7 @@ export function CustomersListPage() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 800, color: '#1E0426' }}>${Number(b.totalAmount).toFixed(2)}</div>
+                    <div style={{ fontWeight: 800, color: '#1E0426' }}>{formatMoney(Number(b.totalAmount), undefined, 2)}</div>
                     <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700 }}>{b.status}</div>
                   </div>
                 </div>

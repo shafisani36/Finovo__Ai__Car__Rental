@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import { BookingService } from '../bookings/booking.service';
 import { AuthService } from '../auth/auth.service';
@@ -743,7 +744,7 @@ export class CustomerPortalService {
         id: paymentId,
         bookingId: booking.id,
         amount,
-        currency: booking.currency || 'PKR',
+        currency: booking.currency || env.CURRENCY,
         status: 'PENDING',
         provider: method.toLowerCase(),
         metadata: JSON.stringify({ type: payload.type || 'RENTAL_PAYMENT' }),
@@ -756,7 +757,7 @@ export class CustomerPortalService {
         customerId: customer.id,
         category: 'PAYMENT',
         title: 'Payment Submitted',
-        message: `Your ${method.replace('_', ' ').toLowerCase()} payment of ${booking.currency || 'PKR'} ${amount.toLocaleString()} for booking #${booking.bookingNumber} is awaiting verification.`,
+        message: `Your ${method.replace('_', ' ').toLowerCase()} payment of ${booking.currency || env.CURRENCY} ${amount.toLocaleString()} for booking #${booking.bookingNumber} is awaiting verification.`,
         actionUrl: '/customer/payments',
       },
     });
@@ -1132,7 +1133,7 @@ export class CustomerPortalService {
     });
     if (latestBooking?.currency) return latestBooking.currency;
     const anyVehicle = await prisma.vehicle.findFirst({ select: { currency: true } });
-    return anyVehicle?.currency || 'PKR';
+    return anyVehicle?.currency || env.CURRENCY;
   }
 
   /**

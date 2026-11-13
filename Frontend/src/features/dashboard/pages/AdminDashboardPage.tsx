@@ -17,7 +17,7 @@ import {
   Clock,
   Wrench,
   TrendingUp,
-  DollarSign,
+  Banknote,
   Plus,
   RefreshCw,
   AlertTriangle,
@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Users,
 } from 'lucide-react';
+import { formatMoney } from '../../../utils/carImageHelper';
 
 
 
@@ -256,8 +257,8 @@ export function AdminDashboardPage() {
         />
         <StatCard
           label={t('admin.totalRevenue')}
-          value={`$${financials.monthlyRevenue.toLocaleString()}`}
-          icon={DollarSign}
+          value={formatMoney(financials.monthlyRevenue, financials.currency)}
+          icon={Banknote}
           variant="gold"
           subtext="Gross bookings this month"
         />
@@ -341,7 +342,7 @@ export function AdminDashboardPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '3px' }}>
                       <span style={{ fontWeight: 600, color: '#1F2937' }}>{cat.name}</span>
                       <span style={{ color: '#6B7280' }}>
-                        {cat.available} / {cat.totalVehicles} available (${cat.baseRate}/day)
+                        {cat.available} / {cat.totalVehicles} available ({formatMoney(Number(cat.baseRate || 0))}/day)
                       </span>
                     </div>
                     <div style={{ height: '7px', backgroundColor: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
@@ -560,7 +561,7 @@ export function AdminDashboardPage() {
                     {formatDate(b.pickupDateTime)}
                   </td>
                   <td style={{ fontWeight: 700, color: '#111827' }}>
-                    ${b.totalAmount.toFixed(2)}
+                    {formatMoney(b.totalAmount, b.currency, 2)}
                   </td>
                   <td>
                     <StatusBadge status={b.status} />

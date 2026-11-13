@@ -18,7 +18,7 @@ import {
 import { DamageComparisonView } from '../../inspections/components/DamageComparisonView';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader } from '../../../components/common';
-import { formatMoney, getCarImage } from '../../../utils/carImageHelper';
+import { formatMoney, getCarImage, APP_CURRENCY } from '../../../utils/carImageHelper';
 import '../../inspections/components/inspection.css';
 
 const FUEL_LEVELS = ['100%', '75%', '50%', '25%', '10%'].map((v) => ({ value: v, label: v }));
@@ -116,7 +116,7 @@ export function ReturnVehiclePage() {
     return refs;
   }, [pickupInspection]);
   const missingViews = missingRequiredViews(photos);
-  const currency = rental?.booking.currency || 'PKR';
+  const currency = rental?.booking.currency || APP_CURRENCY;
 
   // Live settlement preview (damage fines come from the comparison on the server)
   const mileageNumber = Number(endMileage);

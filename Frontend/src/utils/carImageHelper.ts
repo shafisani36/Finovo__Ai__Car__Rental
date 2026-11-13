@@ -35,16 +35,19 @@ export function resolveVehiclePricing(v: any): ResolvedVehiclePricing {
   };
 }
 
+/** The one currency used for every price and payment on the site (must match the backend APP_CURRENCY). */
+export const APP_CURRENCY = 'SAR';
+
 /**
- * Formats a money amount with its ISO currency code, e.g. "PKR 8,000".
+ * Formats a money amount with its ISO currency code, e.g. "SAR 8,000".
  */
 export function formatMoney(amount: number, currency?: string, fractionDigits = 0): string {
-  const value = Number.isFinite(amount) ? amount : 0;
+  const value = Number.isFinite(Number(amount)) ? Number(amount) : 0;
   const formatted = value.toLocaleString(undefined, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
-  return currency ? `${currency} ${formatted}` : formatted;
+  return `${currency || APP_CURRENCY} ${formatted}`;
 }
 
 /**

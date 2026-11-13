@@ -120,7 +120,8 @@ export class StripePaymentService {
       amount = Math.min(parsed, balance);
     }
 
-    const currency = (booking.currency || 'PKR').toLowerCase();
+    // Every charge is made in the app currency, so card payments always match the prices shown
+    const currency = env.CURRENCY.toLowerCase();
     const minorAmount = toMinorUnits(amount, currency);
 
     // Reuse an open PaymentIntent for the same amount instead of creating duplicates
@@ -131,13 +132,14 @@ export class StripePaymentService {
       const existing = await stripe.paymentIntents.retrieve(openPayment.paymentIntentId);
       if (
         existing.amount === minorAmount &&
+        existing.currency === currency &&
         ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existing.status)
       ) {
         return {
           paymentIntentId: existing.id,
           clientSecret: existing.client_secret,
           amount,
-          currency: booking.currency,
+          currency: env.CURRENCY,
         };
       }
     }
@@ -167,7 +169,7 @@ export class StripePaymentService {
           id: `PAY-${intent.id}`,
           bookingId: booking.id,
           amount,
-          currency: booking.currency,
+          currency: env.CURRENCY,
           status: 'PENDING',
           provider: 'stripe',
           paymentIntentId: intent.id,
@@ -185,7 +187,7 @@ export class StripePaymentService {
       paymentIntentId: intent.id,
       clientSecret: intent.client_secret,
       amount,
-      currency: booking.currency,
+      currency: env.CURRENCY,
     };
   }
 

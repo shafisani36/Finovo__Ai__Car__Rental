@@ -17,11 +17,12 @@ import {
   LayoutGrid,
   List,
   Car,
-  DollarSign,
+  Banknote,
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
 import './CategoriesManagementPage.css';
+import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
 
 export type CategoryWithCount = VehicleCategory & {
   _count?: { vehicles: number };
@@ -54,7 +55,7 @@ export function CategoriesManagementPage() {
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState('');
-  const [baseRate, setBaseRate] = useState<string>('8000');
+  const [baseRate, setBaseRate] = useState<string>('150');
   const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -378,11 +379,11 @@ export function CategoriesManagementPage() {
         <div className="cat-kpi-card">
           <div className="cat-kpi-content">
             <div className="cat-kpi-label">Avg Baseline Rate</div>
-            <div className="cat-kpi-value">PKR {avgBaseRate.toLocaleString()}</div>
+            <div className="cat-kpi-value">{formatMoney(avgBaseRate)}</div>
             <div className="cat-kpi-subtext">Per calendar day</div>
           </div>
           <div className="cat-kpi-icon" style={{ backgroundColor: '#FEF8E7', color: '#D97706' }}>
-            <DollarSign size={20} />
+            <Banknote size={20} />
           </div>
         </div>
 
@@ -576,7 +577,7 @@ export function CategoriesManagementPage() {
                       {/* Base Rate */}
                       <td>
                         <div style={{ fontWeight: 800, color: '#1E0432', fontSize: 'clamp(0.88rem, 1.3vw, 0.95rem)' }}>
-                          PKR {Number(cat.baseRate || 0).toLocaleString()}
+                          {formatMoney(Number(cat.baseRate || 0))}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#8A7090' }}>/ day standard</div>
                       </td>
@@ -697,7 +698,7 @@ export function CategoriesManagementPage() {
                   <div>
                     <div className="cat-card-rate-label">Base Rate</div>
                     <div className="cat-card-rate-value">
-                      PKR {Number(cat.baseRate || 0).toLocaleString()}
+                      {formatMoney(Number(cat.baseRate || 0))}
                       <span className="cat-card-rate-unit"> / day</span>
                     </div>
                   </div>
@@ -903,7 +904,7 @@ export function CategoriesManagementPage() {
                       marginBottom: '6px',
                     }}
                   >
-                    Baseline Daily Rate (PKR / Day) *
+                    Baseline Daily Rate ({APP_CURRENCY} / Day) *
                   </label>
                   <div
                     style={{
@@ -929,7 +930,7 @@ export function CategoriesManagementPage() {
                         borderRight: '1px solid #E5DCE8',
                       }}
                     >
-                      PKR
+                      {APP_CURRENCY}
                     </span>
                     <input
                       type="number"

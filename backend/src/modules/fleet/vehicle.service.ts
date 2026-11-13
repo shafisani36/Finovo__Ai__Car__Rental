@@ -3,6 +3,7 @@
 
 
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import { AuditService } from '../audit/audit.service';
 import { blockingBookingWhere } from '../bookings/booking.service';
@@ -559,7 +560,7 @@ export class VehicleService {
         colorHex: input.colorHex || null,
         mileage: input.mileage,
         pricingMethod: input.pricingMethod || 'daily',
-        currency: input.currency || 'PKR',
+        currency: env.CURRENCY,
         dailyRate: input.dailyRate,
         weeklyRate: input.weeklyRate || null,
         monthlyRate: input.monthlyRate || null,
@@ -667,7 +668,7 @@ export class VehicleService {
               : 'DAY',
         pricingMethod: input.pricingMethod || 'daily',
         baseRate: activeBaseRate,
-        currency: input.currency || 'PKR',
+        currency: env.CURRENCY,
         hourlyRate: input.hourlyRate || null,
         perKmRate: input.perKmRate || null,
         monthlyRate: input.monthlyRate || null,
@@ -824,7 +825,7 @@ export class VehicleService {
         colorHex: input.colorHex,
         mileage: input.mileage,
         pricingMethod: input.pricingMethod,
-        currency: input.currency,
+        currency: env.CURRENCY,
         dailyRate: input.dailyRate,
         weeklyRate: input.weeklyRate,
         monthlyRate: input.monthlyRate,
@@ -958,7 +959,7 @@ export class VehicleService {
                 : 'DAY',
           pricingMethod: effectiveMethod,
           baseRate: effectiveBaseRate,
-          currency: updated.currency || 'PKR',
+          currency: updated.currency || env.CURRENCY,
           hourlyRate: updated.hourlyRate,
           perKmRate: updated.perKmRate,
           monthlyRate: updated.monthlyRate,
@@ -980,7 +981,7 @@ export class VehicleService {
           vehicleId: updated.id,
           userId: adminUserId,
           action: 'PRICING_UPDATED',
-          details: `Pricing configuration updated to ${effectiveMethod}. Rate: ${updated.currency || 'PKR'} ${effectiveBaseRate}`,
+          details: `Pricing configuration updated to ${effectiveMethod}. Rate: ${updated.currency || env.CURRENCY} ${effectiveBaseRate}`,
           changes: JSON.stringify({
             oldMethod: existing.pricingMethod,
             newMethod: effectiveMethod,
@@ -1339,7 +1340,7 @@ export class VehicleService {
         odometerReading:
           input.odometerReading || input.odometerValue || null,
         cost: input.cost ?? input.costAmount ?? null,
-        currency: input.currency || 'USD',
+        currency: env.CURRENCY,
         invoiceNumber: input.invoiceNumber || null,
         nextServiceDueMileage:
           input.nextServiceDueMileage || input.nextServiceMileage || null,
@@ -1416,7 +1417,7 @@ export class VehicleService {
           : undefined,
         odometerReading: input.odometerReading,
         cost: input.cost,
-        currency: input.currency,
+        currency: env.CURRENCY,
         invoiceNumber: input.invoiceNumber,
         nextServiceDueMileage: input.nextServiceDueMileage,
         nextServiceDueDate: input.nextServiceDueDate
@@ -1524,7 +1525,7 @@ export class VehicleService {
         description: input.description,
         estimatedRepairCost: input.estimatedRepairCost || null,
         actualRepairCost: input.actualRepairCost || null,
-        currency: input.currency || 'USD',
+        currency: env.CURRENCY,
         photoUrls: photosJson,
         resolvedAt: input.resolvedAt
           ? new Date(input.resolvedAt)
@@ -1587,7 +1588,7 @@ export class VehicleService {
         description: input.description,
         estimatedRepairCost: input.estimatedRepairCost,
         actualRepairCost: input.actualRepairCost,
-        currency: input.currency,
+        currency: env.CURRENCY,
         photoUrls: photosJson,
         resolvedAt: input.resolvedAt
           ? new Date(input.resolvedAt)
@@ -1774,7 +1775,7 @@ export class VehicleService {
         rateName: input.rateName,
         billingUnit: input.billingUnit,
         baseRate: input.baseRate,
-        currency: input.currency || 'USD',
+        currency: env.CURRENCY,
         securityDeposit: input.securityDeposit || null,
         includedKmPerDay: input.includedKmPerDay ?? 250,
         extraKmRate: input.extraKmRate || null,
@@ -1821,7 +1822,7 @@ export class VehicleService {
         rateName: input.rateName,
         billingUnit: input.billingUnit,
         baseRate: input.baseRate,
-        currency: input.currency,
+        currency: env.CURRENCY,
         securityDeposit: input.securityDeposit,
         includedKmPerDay: input.includedKmPerDay,
         extraKmRate: input.extraKmRate,

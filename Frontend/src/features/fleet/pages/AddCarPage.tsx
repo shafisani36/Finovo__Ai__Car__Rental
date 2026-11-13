@@ -24,7 +24,7 @@ import {
   ChevronRight,
   ArrowLeft,
   AlertCircle,
-  DollarSign,
+  Banknote,
   Layers,
   Camera,
   Palette,
@@ -40,6 +40,7 @@ import { CustomSelect } from '../../../components/common/CustomSelect';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import { parseVehicleNotes, stringifyVehicleNotes } from '../../../utils/vehicleNotesHelper';
 import './AddCarPage.css';
+import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
 
 const POPULAR_COLORS = [
   { name: 'White', hex: '#FFFFFF', border: '#D1D5DB' },
@@ -129,7 +130,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   // 4. Commercial Rates & Rental Calculation Rules
   const [pricingState, setPricingState] = useState<VehiclePricingState>({
     pricingMethod: 'daily',
-    currency: 'PKR',
+    currency: APP_CURRENCY,
     dailyRate: '8000',
     weeklyRate: '48000',
     monthlyRate: '180000',
@@ -414,7 +415,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
 
           setPricingState({
             pricingMethod: (v.pricingMethod as any) || 'daily',
-            currency: v.currency || 'PKR',
+            currency: APP_CURRENCY,
             dailyRate: String(v.dailyRate || 8000),
             weeklyRate: v.weeklyRate ? String(v.weeklyRate) : '',
             monthlyRate: v.monthlyRate ? String(v.monthlyRate) : '',
@@ -1244,7 +1245,7 @@ features: carFeatures
             </div>
           </div>
           <div className="car-kpi-icon" style={{ backgroundColor: '#FEF8E7', color: '#B45309' }}>
-            <DollarSign size={24} />
+            <Banknote size={24} />
           </div>
         </div>
 
@@ -1847,7 +1848,7 @@ features: carFeatures
                   options={categories.map((c) => ({
                     value: c.id,
                     label: c.name,
-                    sublabel: `Standard Base: PKR ${c.baseRate || 0}/day`,
+                    sublabel: `Standard Base: ${formatMoney(Number(c.baseRate || 0))}/day`,
                   }))}
                 />
               </div>

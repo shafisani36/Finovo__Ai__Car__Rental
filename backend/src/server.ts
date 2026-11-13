@@ -2,6 +2,7 @@ import { initMonitoring, captureError, flushMonitoring } from './infrastructure/
 import { createApp } from './bootstrap/app';
 import { env, validateEnv } from './config/env.config';
 import { prisma } from './infrastructure/prisma/prisma.client';
+import { normalizeStoredCurrency } from './infrastructure/prisma/currency-normalizer';
 
 async function bootstrap() {
   validateEnv();
@@ -15,6 +16,14 @@ async function bootstrap() {
   } catch (err) {
     console.error(' Database connection failed on startup:', err);
     process.exit(1);
+  }
+
+  // Keep every stored record in the single app currency (no-op once everything matches)
+  try {
+    await normalizeStoredCurrency();
+  } catch (err) {
+    console.error(' Currency normalization failed:', err);
+    captureError(err);
   }
 
   const server = app.listen(env.PORT, () => {

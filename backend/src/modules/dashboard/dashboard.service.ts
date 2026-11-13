@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { env } from '../../config/env.config';
 
 export class DashboardService {
   /**
@@ -194,7 +195,7 @@ export class DashboardService {
         totalRevenue,
         monthlyRevenue,
         averageDailyRate: avgDailyRate,
-        currency: 'USD',
+        currency: env.CURRENCY,
       },
       inspections: {
         total: inspectionsCount,

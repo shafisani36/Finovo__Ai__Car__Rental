@@ -6,7 +6,7 @@ import {
   customerPortalApi,
   type PortalOverviewResponse,
 } from '../api/customerPortalApi';
-import { getCarImage } from '../../../utils/carImageHelper';
+import { getCarImage, formatMoney } from '../../../utils/carImageHelper';
 import {
   Car,
   CalendarCheck,
@@ -258,7 +258,7 @@ export function CustomerDashboardOverviewPage() {
           <div>
             <div className="cp-stat-label">{t('portal.pendingBalance')}</div>
             <div className="cp-stat-value" style={{ color: 'var(--cp-warning)' }}>
-              ${stats.pendingBalanceTotal.toLocaleString()}
+              {formatMoney(stats.pendingBalanceTotal, stats.currency)}
             </div>
           </div>
         </div>
@@ -523,7 +523,7 @@ export function CustomerDashboardOverviewPage() {
                   </div>
                   <div style={{ textAlign: 'end' }}>
                     <div style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '0.9rem' }}>
-                      ${Number(b.totalAmount).toLocaleString()}
+                      {formatMoney(Number(b.totalAmount))}
                     </div>
                     <span
                       className={`cp-badge ${

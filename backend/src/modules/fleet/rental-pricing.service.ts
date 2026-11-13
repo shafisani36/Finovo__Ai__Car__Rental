@@ -1,5 +1,9 @@
 import { PricingMethod } from '@prisma/client';
 import { AppError } from '../../shared/errors/app-error';
+import { env } from '../../config/env.config';
+
+/** Default chauffeur fee per day, in the app currency, when a vehicle does not set its own. */
+const DEFAULT_DRIVER_FEE_PER_DAY = 150;
 
 export interface VehiclePricingConfig {
   id?: string;
@@ -313,7 +317,7 @@ export class RentalPricingService {
       throw AppError.badRequest('Return date must be strictly after pickup date');
     }
 
-    const currency = pricingConfig.currency || 'PKR';
+    const currency = env.CURRENCY;
     const method = pricingConfig.pricingMethod || 'daily';
     const taxRatePercent = Number(req.taxRatePercent ?? 8); // Default 8% tax
     const discountPercent = Math.max(0, Math.min(100, Number(req.discountPercent || 0)));
@@ -560,7 +564,7 @@ export class RentalPricingService {
     // Driver fee (if selected)
     let driverFee = 0;
     if (req.driverRequired) {
-      const dailyDriverFee = Number(req.driverFeePerDay || 2500); // PKR 2500/day
+      const dailyDriverFee = Number(req.driverFeePerDay || DEFAULT_DRIVER_FEE_PER_DAY);
       const effectiveDays = Math.max(1, billableDays || Math.ceil(billableHours / 24) || 1);
       driverFee = this.roundMoney(effectiveDays * dailyDriverFee);
       lineItems.push({
@@ -696,7 +700,7 @@ export class RentalPricingService {
    */
   public static calculateSettlement(req: SettlementCalculationRequest): SettlementResult {
     const { snapshot } = req;
-    const currency = snapshot.currency || 'PKR';
+    const currency = snapshot.currency || env.CURRENCY;
     const method = snapshot.pricingMethod || 'daily';
 
     const agreedPickup = new Date(req.agreedPickupDateTime);

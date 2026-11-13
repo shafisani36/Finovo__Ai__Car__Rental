@@ -1,6 +1,7 @@
-import { DollarSign, Clock, Navigation, Calendar, Info, Check, Sparkles } from 'lucide-react';
+import { Banknote, Clock, Navigation, Calendar, Info, Check, Sparkles } from 'lucide-react';
 import type { PricingMethod } from '../types/fleet.types';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import { APP_CURRENCY } from '../../../utils/carImageHelper';
 
 export interface VehiclePricingState {
   pricingMethod: PricingMethod;
@@ -74,7 +75,7 @@ const PRICING_METHODS: Array<{
     id: 'monthly',
     name: 'Monthly Lease',
     shortTag: 'Monthly',
-    icon: <DollarSign size={18} />,
+    icon: <Banknote size={18} />,
     description: 'Long-term corporate fleet lease with partial-month daily proration.',
     bestFor: 'Corporate fleets & long-term expat rentals (30+ days)',
   },
@@ -109,7 +110,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
   // Real-time sample calculation for the preview card
   const calculateSampleQuote = () => {
-    const cur = currency || 'PKR';
+    const cur = currency || APP_CURRENCY;
     const deposit = parseFloat(securityDeposit) || 0;
 
     switch (pricingMethod) {
@@ -211,7 +212,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
       <div className="car-card-header">
         <div className="car-card-header-left">
           <div className="car-card-icon-badge">
-            <DollarSign size={20} />
+            <Banknote size={20} />
           </div>
           <div>
             <h2 className="car-card-title">4. Commercial Pricing & Rental Policy</h2>
@@ -224,20 +225,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         {/* Currency Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654' }}>Currency:</span>
-          <div style={{ width: '135px' }}>
-            <CustomSelect
-              size="sm"
-              value={currency}
-              onChange={(val) => onChange('currency', val)}
-              options={[
-                { value: 'PKR', label: 'PKR (₨)' },
-                { value: 'USD', label: 'USD ($)' },
-                { value: 'EUR', label: 'EUR (€)' },
-                { value: 'AED', label: 'AED (د.إ)' },
-                { value: 'GBP', label: 'GBP (£)' },
-              ]}
-            />
-          </div>
+          {/* The whole site prices and charges in one currency, so it is shown but not editable */}
+          <span
+            style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#1E0426', padding: '6px 12px', borderRadius: '8px', background: '#F4EEF6' }}
+          >
+            {APP_CURRENCY}
+          </span>
         </div>
       </div>
 

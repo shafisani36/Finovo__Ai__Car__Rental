@@ -1,5 +1,6 @@
 import { Prisma, $Enums } from '@prisma/client';
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { env } from '../../config/env.config';
 import { AuthService } from '../auth/auth.service';
 import { AppError } from '../../shared/errors/app-error';
 import { RentalPricingService, QuoteAddonInput } from '../fleet/rental-pricing.service';
@@ -263,7 +264,7 @@ export class BookingService {
     const pricingQuote = RentalPricingService.calculateQuote({
       pricingConfig: {
         pricingMethod: vehicle.pricingMethod,
-        currency: vehicle.currency,
+        currency: env.CURRENCY,
         dailyRate: vehicle.dailyRate ? Number(vehicle.dailyRate) : null,
         weeklyRate: vehicle.weeklyRate ? Number(vehicle.weeklyRate) : null,
         monthlyRate: vehicle.monthlyRate ? Number(vehicle.monthlyRate) : null,

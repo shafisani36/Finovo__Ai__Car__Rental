@@ -5,7 +5,7 @@ import type {
   InspectionReport,
 } from '../api/inspectionApi';
 import { CLASSIFICATION_LABEL, VIEW_LABELS } from './inspectionHelpers';
-import { formatMoney } from '../../../utils/carImageHelper';
+import { formatMoney, APP_CURRENCY } from '../../../utils/carImageHelper';
 import './inspection.css';
 
 const SEVERITY_LABEL = { LOW: 'Minor', MEDIUM: 'Moderate', HIGH: 'Severe' } as const;
@@ -58,7 +58,7 @@ interface InspectionReportViewProps {
 /** Full inspection report: condition %, annotated photos and the damage table. Prints as a monochrome PDF. */
 export function InspectionReportView({ report, currency, hidePrint }: InspectionReportViewProps) {
   const numberOf = (finding: InspectionFinding) => report.findings.findIndex((f) => f.id === finding.id) + 1;
-  const reportCurrency = currency || report.rental?.booking?.currency || 'PKR';
+  const reportCurrency = currency || report.rental?.booking?.currency || APP_CURRENCY;
   const title =
     report.type === 'PICKUP' ? 'Pickup Inspection Report' : report.type === 'RETURN' ? 'Return Inspection Report' : 'Inspection Report';
 

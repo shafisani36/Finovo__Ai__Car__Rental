@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { FeaturedCar } from '../../../types';
 import { Fuel, Gauge, Star } from 'lucide-react';
-import { isFullBleedCarPhoto } from '../../../utils/carImageHelper';
+import { isFullBleedCarPhoto, formatMoney } from '../../../utils/carImageHelper';
 
 interface CarCardProps {
   car: FeaturedCar;
@@ -90,7 +90,7 @@ export function CarCard({ car, onRent }: CarCardProps) {
   };
 
   const subtitle = car.subtitle || car.type.toUpperCase();
-  const priceDisplay = car.priceDisplay || `$${car.dailyRate} ${t('common.perDay')}`;
+  const priceDisplay = car.priceDisplay || `${formatMoney(car.dailyRate)} ${t('common.perDay')}`;
   // Only real review averages are shown; cars without reviews show no stars
   const rating = car.rating && car.rating > 0 ? car.rating : null;
 

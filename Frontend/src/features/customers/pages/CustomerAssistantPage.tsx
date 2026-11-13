@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { customerPortalApi } from '../api/customerPortalApi';
 import './CustomerPortal.css';
+import { formatMoney } from '../../../utils/carImageHelper';
 
 interface Message {
   id: string;
@@ -215,7 +216,7 @@ export function CustomerAssistantPage() {
                           <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>{car.category}</div>
                             <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cp-primary)' }}>{car.name}</div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--cp-primary)' }}>${car.price} / day</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--cp-primary)' }}>{formatMoney(Number(car.price))} / day</div>
                             <Link
                               to={`/customer/bookings/new?vehicleId=${car.id}`}
                               className="cp-btn-primary"

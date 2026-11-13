@@ -10,7 +10,7 @@ import {
   User,
   MapPin,
   Clock,
-  DollarSign
+  Banknote
 } from 'lucide-react';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import {
@@ -19,6 +19,7 @@ import {
   StatusBadge,
   Modal,
 } from '../../../components/common';
+import { formatMoney } from '../../../utils/carImageHelper';
 
 function VehicleThumbnail({ src, brand, model }: { src?: string; brand: string; model: string }) {
   const [hasError, setHasError] = useState(false);
@@ -525,17 +526,17 @@ export function BookingsListPage() {
                         flexShrink: 0,
                       }}
                     >
-                      <DollarSign size={18} color="#059669" />
+                      <Banknote size={18} color="#059669" />
                     </div>
                     <div>
                       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Total Amount
                       </div>
                       <div style={{ fontWeight: 800, color: '#1E0426', fontSize: '1.25rem', lineHeight: '1.2' }}>
-                        ${Number(b.totalAmount).toFixed(2)}
+                        {formatMoney(Number(b.totalAmount), b.currency, 2)}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px' }}>
-                        ${Number(b.dailyRate).toFixed(2)} / day
+                        {formatMoney(Number(b.dailyRate), b.currency, 2)} / day
                       </div>
                     </div>
                   </div>
@@ -699,7 +700,7 @@ export function BookingsListPage() {
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>Duration & Branches</div>
-                <div style={{ fontWeight: 700 }}>{selectedBooking.totalDays} Days (${Number(selectedBooking.dailyRate).toFixed(2)}/day)</div>
+                <div style={{ fontWeight: 700 }}>{selectedBooking.totalDays} Days ({formatMoney(Number(selectedBooking.dailyRate), selectedBooking.currency, 2)}/day)</div>
                 <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>Pickup: {selectedBooking.pickupBranch.name}</div>
               </div>
             </div>
@@ -707,19 +708,19 @@ export function BookingsListPage() {
             <div style={{ borderTop: '1px solid #ECEAEF', paddingTop: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span>Subtotal</span>
-                <strong>${Number(selectedBooking.subtotal).toFixed(2)}</strong>
+                <strong>{formatMoney(Number(selectedBooking.subtotal), selectedBooking.currency, 2)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span>Taxes & Fees</span>
-                <strong>${Number(selectedBooking.taxAmount).toFixed(2)}</strong>
+                <strong>{formatMoney(Number(selectedBooking.taxAmount), selectedBooking.currency, 2)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span>Security Deposit (Refundable)</span>
-                <strong>${Number(selectedBooking.depositAmount).toFixed(2)}</strong>
+                <strong>{formatMoney(Number(selectedBooking.depositAmount), selectedBooking.currency, 2)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 800, borderTop: '1px solid #ECEAEF', paddingTop: '8px' }}>
                 <span>Total Amount</span>
-                <span style={{ color: '#059669' }}>${Number(selectedBooking.totalAmount).toFixed(2)}</span>
+                <span style={{ color: '#059669' }}>{formatMoney(Number(selectedBooking.totalAmount), selectedBooking.currency, 2)}</span>
               </div>
             </div>
           </div>

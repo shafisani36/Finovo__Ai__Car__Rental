@@ -11,7 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
-import { getCarImage, isFullBleedCarPhoto, resolveVehiclePricing } from '../../../utils/carImageHelper';
+import { getCarImage, isFullBleedCarPhoto, resolveVehiclePricing, formatMoney } from '../../../utils/carImageHelper';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 
@@ -178,7 +178,7 @@ export function CustomerCarsPage() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
               <label className="cp-label">Max Price / Day</label>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--cp-primary)' }}>${maxPrice}</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(maxPrice)}</span>
             </div>
             <input
               type="range"
@@ -265,7 +265,7 @@ export function CustomerCarsPage() {
                   }}
                 >
                   <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--cp-accent)' }}>
-                    ${car.dailyRate}
+                    {formatMoney(car.dailyRate)}
                   </span>
                   <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>/ day</span>
                 </div>

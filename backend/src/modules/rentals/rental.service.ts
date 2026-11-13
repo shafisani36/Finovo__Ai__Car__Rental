@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import { RentalPricingService } from '../fleet/rental-pricing.service';
 import { PICKUP_SCAN_VALID_HOURS } from '../inspections/inspection.service';
@@ -34,7 +35,7 @@ export class RentalService {
       const snap = booking.pricingSnapshot;
       return {
         pricingMethod: snap.pricingMethod,
-        currency: snap.currency || 'PKR',
+        currency: snap.currency || env.CURRENCY,
         dailyRate: snap.dailyRate ? Number(snap.dailyRate) : null,
         perKmRate: snap.perKmRate ? Number(snap.perKmRate) : null,
         hourlyRate: snap.hourlyRate ? Number(snap.hourlyRate) : null,
@@ -55,7 +56,7 @@ export class RentalService {
     // Fallback for legacy records
     return {
       pricingMethod: booking.pricingMethod || 'daily',
-      currency: booking.currency || 'PKR',
+      currency: booking.currency || env.CURRENCY,
       dailyRate: Number(booking.dailyRate || 0),
       perKmRate: null,
       hourlyRate: null,

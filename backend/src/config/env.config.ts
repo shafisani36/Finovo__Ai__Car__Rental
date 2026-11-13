@@ -13,6 +13,8 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   IS_PRODUCTION: isProduction,
   PORT: parseInt(process.env.PORT || '5000', 10),
+  /** The one currency used for every price, booking, invoice and Stripe charge (ISO 4217 code). */
+  CURRENCY: (process.env.APP_CURRENCY || 'SAR').trim().toUpperCase(),
   DATABASE_URL: process.env.DATABASE_URL || 'mysql://root:@localhost:3306/finovo_car_rental',
   
   JWT: {

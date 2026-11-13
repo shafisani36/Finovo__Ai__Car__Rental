@@ -16,6 +16,8 @@ export interface CustomerPortalStats {
   totalBookings: number;
   activeBookings: number;
   pendingBalanceTotal: number;
+  /** Currency of the money totals above */
+  currency?: string;
   rewardPoints: number;
   unreadNotificationsCount: number;
 }

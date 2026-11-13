@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getCarImage, getCarGallery } from '../../../utils/carImageHelper';
+import { getCarImage, getCarGallery, APP_CURRENCY } from '../../../utils/carImageHelper';
 import { fleetApi } from '../api/fleetApi';
 import type {
   Vehicle,
@@ -40,7 +40,7 @@ import {
   ChevronRight,
   Scan,
   Minimize2,
-  DollarSign,
+  Banknote,
   AlertTriangle,
   Archive,
   RotateCcw,
@@ -703,17 +703,17 @@ export function CarDetailPage() {
                     : 'Daily'}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#8A7090', fontWeight: 600 }}>
-                  {vehicle.currency || 'PKR'}
+                  {vehicle.currency || APP_CURRENCY}
                 </span>
               </div>
               <div className="car-stat-value">
                 {vehicle.pricingMethod === 'per_km'
-                  ? `${vehicle.currency || 'PKR'} ${Number(vehicle.perKmRate || 0).toLocaleString()}`
+                  ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.perKmRate || 0).toLocaleString()}`
                   : vehicle.pricingMethod === 'hourly'
-                  ? `${vehicle.currency || 'PKR'} ${Number(vehicle.hourlyRate || 0).toLocaleString()}`
+                  ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.hourlyRate || 0).toLocaleString()}`
                   : vehicle.pricingMethod === 'monthly'
-                  ? `${vehicle.currency || 'PKR'} ${Number(vehicle.monthlyRate || 0).toLocaleString()}`
-                  : `${vehicle.currency || 'PKR'} ${Number(vehicle.dailyRate || 0).toLocaleString()}`}
+                  ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.monthlyRate || 0).toLocaleString()}`
+                  : `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.dailyRate || 0).toLocaleString()}`}
                 <span className="car-stat-unit">
                   {vehicle.pricingMethod === 'per_km'
                     ? '/km'
@@ -727,14 +727,14 @@ export function CarDetailPage() {
               <div className="car-stat-label">Active Rental Rate</div>
               <div className="car-stat-sub">
                 {vehicle.pricingMethod === 'per_km'
-                  ? `Min Trip: ${vehicle.currency || 'PKR'} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()} • Dep: ${vehicle.currency || 'PKR'} ${Number(vehicle.securityDeposit || 0).toLocaleString()}`
+                  ? `Min Trip: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()} • Dep: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()}`
                   : vehicle.pricingMethod === 'hourly'
                   ? `Min: ${vehicle.minimumBillableHours || 1}h • Step: ${vehicle.billingIncrementMinutes || 60}m • Grace: ${vehicle.gracePeriodMinutes || 0}m`
                   : vehicle.pricingMethod === 'monthly'
-                  ? `Deposit: ${vehicle.currency || 'PKR'} ${Number(vehicle.securityDeposit || 0).toLocaleString()} • ${vehicle.partialMonthPolicy === 'prorated_daily' ? 'Prorated Daily' : 'Full Month'}`
+                  ? `Deposit: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()} • ${vehicle.partialMonthPolicy === 'prorated_daily' ? 'Prorated Daily' : 'Full Month'}`
                   : vehicle.pricingMethod === 'daily_extra_km'
-                  ? `Inc: ${vehicle.mileageLimitPerDay || 200} km/day • Extra: ${vehicle.currency || 'PKR'} ${Number(vehicle.extraMileageCharge || 0)}/km`
-                  : `Deposit: ${vehicle.currency || 'PKR'} ${Number(vehicle.securityDeposit || 0).toLocaleString()} • Inc: ${vehicle.mileageLimitPerDay ? `${vehicle.mileageLimitPerDay} km/day` : 'Unlimited'}`}
+                  ? `Inc: ${vehicle.mileageLimitPerDay || 200} km/day • Extra: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.extraMileageCharge || 0)}/km`
+                  : `Deposit: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()} • Inc: ${vehicle.mileageLimitPerDay ? `${vehicle.mileageLimitPerDay} km/day` : 'Unlimited'}`}
               </div>
             </div>
           </div>
@@ -803,7 +803,7 @@ export function CarDetailPage() {
             className={`car-tab-btn ${activeTab === 'pricing' ? 'active' : ''}`}
             onClick={() => setActiveTab('pricing')}
           >
-            <DollarSign size={16} />
+            <Banknote size={16} />
             <span>Pricing & Policies</span>
             <span className="car-tab-badge">{pricingTiers.length}</span>
           </button>
@@ -1460,7 +1460,7 @@ export function CarDetailPage() {
             <div className="car-stat-card">
               <div className="car-stat-body">
                 <div className="car-stat-value">
-                  {vehicle.currency || 'PKR'}{' '}
+                  {vehicle.currency || APP_CURRENCY}{' '}
                   {vehicle.pricingMethod === 'per_km'
                     ? Number(vehicle.perKmRate || 0).toLocaleString()
                     : vehicle.pricingMethod === 'hourly'
@@ -1495,7 +1495,7 @@ export function CarDetailPage() {
               <div className="car-stat-body">
                 <div className="car-stat-value" style={{ fontSize: '1.25rem' }}>
                   {vehicle.pricingMethod === 'per_km'
-                    ? `${vehicle.currency || 'PKR'} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()}`
+                    ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()}`
                     : vehicle.pricingMethod === 'hourly'
                     ? `${vehicle.minimumBillableHours || 1} hrs min`
                     : vehicle.pricingMethod === 'monthly'
@@ -1512,7 +1512,7 @@ export function CarDetailPage() {
                     : vehicle.pricingMethod === 'monthly'
                     ? 'Partial Month Policy'
                     : vehicle.pricingMethod === 'daily_extra_km'
-                    ? `Extra: ${vehicle.currency || 'PKR'} ${Number(vehicle.extraMileageCharge || 0)}/km`
+                    ? `Extra: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.extraMileageCharge || 0)}/km`
                     : 'Daily Mileage Allowance'}
                 </div>
               </div>
@@ -1522,7 +1522,7 @@ export function CarDetailPage() {
             <div className="car-stat-card">
               <div className="car-stat-body">
                 <div className="car-stat-value">
-                  {vehicle.currency || 'PKR'} {Number(vehicle.securityDeposit || 0).toLocaleString()}
+                  {vehicle.currency || APP_CURRENCY} {Number(vehicle.securityDeposit || 0).toLocaleString()}
                 </div>
                 <div className="car-stat-label">Refundable Security Deposit</div>
               </div>
@@ -1575,12 +1575,12 @@ export function CarDetailPage() {
                       </span>
                     </td>
                     <td style={{ fontWeight: 700, color: '#1A0322' }}>
-                      {tier.currency || 'PKR'} {Number(tier.baseRate).toLocaleString()}
+                      {tier.currency || APP_CURRENCY} {Number(tier.baseRate).toLocaleString()}
                     </td>
-                    <td>{tier.currency || 'PKR'} {Number(tier.securityDeposit || 0).toLocaleString()}</td>
+                    <td>{tier.currency || APP_CURRENCY} {Number(tier.securityDeposit || 0).toLocaleString()}</td>
                     <td>{tier.includedKmPerDay ? `${tier.includedKmPerDay} km` : 'Unlimited'}</td>
                     <td>
-                      {tier.extraKmRate ? `${tier.currency || 'PKR'} ${Number(tier.extraKmRate).toLocaleString()}/km` : '—'}
+                      {tier.extraKmRate ? `${tier.currency || APP_CURRENCY} ${Number(tier.extraKmRate).toLocaleString()}/km` : '—'}
                     </td>
                     <td style={{ fontSize: '0.8rem', color: '#66566A' }}>
                       {tier.validFrom ? new Date(tier.validFrom).toLocaleDateString() : 'Always'} →{' '}
@@ -1618,13 +1618,13 @@ export function CarDetailPage() {
                     <td colSpan={9}>
                       <div className="car-empty-box">
                         <div className="car-empty-icon">
-                          <DollarSign size={24} />
+                          <Banknote size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
                           Standard Base Rate Active
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          This vehicle is currently billed using its standard {vehicle.pricingMethod} rate ({vehicle.currency || 'PKR'}{' '}
+                          This vehicle is currently billed using its standard {vehicle.pricingMethod} rate ({vehicle.currency || APP_CURRENCY}{' '}
                           {Number(
                             vehicle.pricingMethod === 'per_km'
                               ? vehicle.perKmRate || 0

@@ -4,7 +4,7 @@ import {
   History,
   Star,
   Gauge,
-  DollarSign,
+  Banknote,
   CheckCircle2,
   X,
 } from 'lucide-react';
@@ -12,7 +12,7 @@ import {
   customerPortalApi,
   type RentalHistoryItem,
 } from '../api/customerPortalApi';
-import { getCarImage } from '../../../utils/carImageHelper';
+import { getCarImage, formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerHistoryPage() {
@@ -114,11 +114,11 @@ export function CustomerHistoryPage() {
 
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' }}>
-            <DollarSign size={18} color="var(--cp-primary)" />
+            <Banknote size={18} color="var(--cp-primary)" />
             Total Past Spend
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-            ${totalSpent.toFixed(2)}
+            {formatMoney(totalSpent, history[0]?.currency, 2)}
           </div>
         </div>
       </div>
@@ -185,7 +185,7 @@ export function CustomerHistoryPage() {
                         Odometer: <strong>{item.odometerStart}</strong> → <strong>{item.odometerEnd} KM</strong>
                       </span>
                       <span>
-                        Total Paid: <strong>${item.totalAmount?.toFixed(2)}</strong>
+                        Total Paid: <strong>{formatMoney(item.totalAmount || 0, item.currency, 2)}</strong>
                       </span>
                     </div>
 
