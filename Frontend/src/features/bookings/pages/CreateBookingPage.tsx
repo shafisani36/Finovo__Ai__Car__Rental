@@ -330,7 +330,7 @@ export function CreateBookingPage() {
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>3. Schedule, Route & Options</h3>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     Pickup Date & Time *
@@ -357,7 +357,7 @@ export function CreateBookingPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     Pickup Branch *

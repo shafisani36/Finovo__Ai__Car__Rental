@@ -58,3 +58,25 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     next(err);
   }
 }
+
+/** Roles that may see internal fleet, booking and customer data. */
+export const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'OPERATOR', 'FLEET_MANAGER', 'EMPLOYEE', 'MANAGER'];
+
+export function isStaffUser(user?: { roles?: string[] }): boolean {
+  return Boolean(user?.roles?.some((role) => STAFF_ROLES.includes(role)));
+}
+
+/**
+ * For endpoints open to guests: attaches req.user when a valid token is sent,
+ * and otherwise continues as a guest instead of failing.
+ */
+export async function optionalAuthenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (!req.headers.authorization?.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+  await authenticate(req, res, (err?: unknown) => {
+    if (err) req.user = undefined;
+    next();
+  });
+}

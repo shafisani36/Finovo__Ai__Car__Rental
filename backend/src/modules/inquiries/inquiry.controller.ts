@@ -16,7 +16,7 @@ export class InquiryController {
       res.status(201).json({
         success: true,
         message: 'Your inquiry has been submitted successfully. Our team will contact you shortly.',
-        inquiry,
+        inquiry: { id: inquiry.id, createdAt: inquiry.createdAt },
       });
     } catch (err) {
       next(err);

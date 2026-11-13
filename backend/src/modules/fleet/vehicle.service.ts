@@ -58,10 +58,50 @@ export class VehicleService {
     return uniqueIds;
   }
 
+  /** Internal fields that guests and customers must never receive. */
+  private static readonly INTERNAL_FIELDS = [
+    'notes',
+    'acquisitionCost',
+    'acquisitionDate',
+    'insurancePolicyNumber',
+    'insuranceExpiry',
+    'telematicsDeviceId',
+    'parkingSpot',
+    'ownershipType',
+    'deletedAt',
+    'registrationExpiry',
+    'lastServiceDate',
+    'lastServiceMileage',
+    'nextServiceMileage',
+  ] as const;
+
+  /** Average approved review rating per vehicle (only vehicles that have reviews appear). */
+  static async ratingsFor(vehicleIds: string[]): Promise<Map<string, { average: number; count: number }>> {
+    if (vehicleIds.length === 0) return new Map();
+    const rows = await prisma.vehicleReview.groupBy({
+      by: ['vehicleId'],
+      where: { vehicleId: { in: vehicleIds }, isApproved: true },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+    return new Map(
+      rows.map((row) => [
+        row.vehicleId,
+        { average: Math.round((row._avg.rating ?? 0) * 10) / 10, count: row._count._all },
+      ])
+    );
+  }
+
+  static toPublicVehicle<T extends Record<string, unknown>>(vehicle: T): T {
+    const copy: Record<string, unknown> = { ...vehicle };
+    for (const field of VehicleService.INTERNAL_FIELDS) delete copy[field];
+    return copy as T;
+  }
+
   /**
    * Retrieves paginated vehicles with filtering and sorting
    */
-  static async listVehicles(filters: VehicleFilterInput) {
+  static async listVehicles(filters: VehicleFilterInput, options: { includeInternal?: boolean } = {}) {
     const { page, limit, search, category, status, sortBy, sortOrder, availableFrom, availableTo, publicCatalog } =
       filters;
     const skip = (page - 1) * limit;
@@ -147,29 +187,36 @@ export class VehicleService {
               feature: true,
             },
           },
-          documents: {
-            select: {
-              id: true,
-              documentType: true,
-              expiresAt: true,
-              title: true,
-            },
-          },
-          maintenanceRecords: {
-            where: { status: { in: ['SCHEDULED', 'IN_PROGRESS'] } },
-            take: 1,
-            select: {
-              id: true,
-              status: true,
-              scheduledDate: true,
-            },
-          },
+          ...(options.includeInternal
+            ? {
+                documents: {
+                  select: {
+                    id: true,
+                    documentType: true,
+                    expiresAt: true,
+                    title: true,
+                  },
+                },
+                maintenanceRecords: {
+                  where: { status: { in: ['SCHEDULED', 'IN_PROGRESS'] as MaintenanceStatus[] } },
+                  take: 1,
+                  select: {
+                    id: true,
+                    status: true,
+                    scheduledDate: true,
+                  },
+                },
+              }
+            : {}),
         },
       }),
     ]);
 
+    const ratings = await VehicleService.ratingsFor(vehicles.map((v) => v.id));
+    const withRating = vehicles.map((v) => ({ ...v, rating: ratings.get(v.id) ?? { average: null, count: 0 } }));
+
     return {
-      vehicles,
+      vehicles: options.includeInternal ? withRating : withRating.map((v) => VehicleService.toPublicVehicle(v)),
       pagination: {
         page,
         limit,
@@ -324,7 +371,28 @@ export class VehicleService {
   /**
    * Retrieves single vehicle details by ID
    */
-  static async getById(id: string) {
+  static async getById(id: string, options: { includeInternal?: boolean } = {}) {
+    if (!options.includeInternal) {
+      const publicVehicle = await prisma.vehicle.findFirst({
+        where: { id, deletedAt: null },
+        include: {
+          category: true,
+          branch: { select: { id: true, name: true, code: true, city: true, address: true, phone: true, openingHours: true } },
+          photos: { orderBy: { order: 'asc' } },
+          vehicleFeatures: { include: { feature: true } },
+          pricingTiers: { where: { isActive: true }, orderBy: { createdAt: 'desc' } },
+        },
+      });
+      if (!publicVehicle) {
+        throw AppError.notFound('Vehicle not found');
+      }
+      const ratings = await VehicleService.ratingsFor([publicVehicle.id]);
+      return {
+        ...VehicleService.toPublicVehicle(publicVehicle),
+        rating: ratings.get(publicVehicle.id) ?? { average: null, count: 0 },
+      };
+    }
+
     const vehicle = await prisma.vehicle.findUnique({
       where: { id },
       include: {

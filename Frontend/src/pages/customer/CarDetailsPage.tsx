@@ -319,16 +319,27 @@ export function CarDetailsPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
               <div>
                 <h1 style={{ fontSize: 'clamp(1.65rem, 4vw, 2.375rem)', fontWeight: 800, margin: '0 0 6px' }}>{carName}</h1>
-                <p style={{ fontSize: '15px', opacity: 0.85, margin: 0 }}>{t('cars.details.tagline')}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
-                  <div style={{ display: 'flex', color: '#FAB826' }}>
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={15} fill="#FAB826" />
-                    ))}
+                <p style={{ fontSize: '15px', opacity: 0.85, margin: 0 }}>
+                  {[vehicle?.category?.name, vehicle?.year].filter(Boolean).join(' · ')}
+                </p>
+                {/* Real rating from approved customer reviews; hidden until the car has one */}
+                {vehicle?.rating?.count > 0 && vehicle.rating.average !== null && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', color: '#FAB826' }} aria-hidden="true">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={15}
+                          fill={i < Math.round(vehicle.rating.average) ? '#FAB826' : 'transparent'}
+                        />
+                      ))}
+                    </div>
+                    <strong style={{ fontSize: '14px' }}>{Number(vehicle.rating.average).toFixed(1)}</strong>
+                    <span style={{ fontSize: '12px', opacity: 0.75 }}>
+                      {t('cars.details.reviewCount', { count: vehicle.rating.count })}
+                    </span>
                   </div>
-                  <strong style={{ fontSize: '14px' }}>4.8</strong>
-                  <span style={{ fontSize: '12px', opacity: 0.75 }}>{t('cars.details.verifiedBookings')}</span>
-                </div>
+                )}
               </div>
 
               {brandName.toLowerCase().includes('lambo') ? (

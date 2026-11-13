@@ -91,7 +91,8 @@ export function CarCard({ car, onRent }: CarCardProps) {
 
   const subtitle = car.subtitle || car.type.toUpperCase();
   const priceDisplay = car.priceDisplay || `$${car.dailyRate} ${t('common.perDay')}`;
-  const rating = car.rating || 5;
+  // Only real review averages are shown; cars without reviews show no stars
+  const rating = car.rating && car.rating > 0 ? car.rating : null;
 
   const handleAction = () => {
     if (onRent) {
@@ -305,18 +306,22 @@ export function CarCard({ car, onRent }: CarCardProps) {
           padding: '2px 4px 0 4px',
         }}
       >
-        {/* 5 Gold Stars */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} aria-label={`${rating} out of 5 stars`}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star
-              key={i}
-              size={13}
-              fill="#F5B716"
-              color="#F5B716"
-              strokeWidth={0}
-            />
-          ))}
-        </div>
+        {/* Review stars (real average, hidden when the car has no reviews yet) */}
+        {rating !== null ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} aria-label={`${rating} out of 5 stars`}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                size={13}
+                fill={i < Math.round(rating) ? '#F5B716' : 'rgba(245, 183, 22, 0.25)'}
+                color="#F5B716"
+                strokeWidth={0}
+              />
+            ))}
+          </div>
+        ) : (
+          <span />
+        )}
 
         {/* Price Tag */}
         <div

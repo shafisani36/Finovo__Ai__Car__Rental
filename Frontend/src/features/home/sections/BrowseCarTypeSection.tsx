@@ -35,7 +35,7 @@ export function BrowseCarTypeSection({ onRentCar }: BrowseCarTypeSectionProps) {
             type: catName,
             dailyRate: pricing.dailyRate,
             priceDisplay: formatMoney(pricing.dailyRate, pricing.currency),
-            rating: 5,
+            rating: v.rating?.count ? v.rating.average ?? undefined : undefined,
             image: getCarImage(v),
             specs: {
               transmission: v.transmission === 'MANUAL' ? 'Manual' : 'Automatic',

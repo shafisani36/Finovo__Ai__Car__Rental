@@ -60,6 +60,21 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
       res.status(409).json({ success: false, error: { code: 'IN_USE', message: 'This record is linked to other records and cannot be changed.' } });
       return;
     }
+    if (err.code === 'P2034') {
+      res.status(409).json({ success: false, error: { code: 'CONFLICT', message: 'Another request changed this record at the same time. Please try again.' } });
+      return;
+    }
+    if (err.code === 'P2000') {
+      res.status(400).json({ success: false, error: { code: 'VALUE_TOO_LONG', message: 'One of the values is too long.' } });
+      return;
+    }
+  }
+
+  // Wrong or missing fields that reached the database layer are a bad request, not a server crash
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    console.warn('[Rejected request] invalid data for the database:', err.message.split('\n').slice(-1)[0]);
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Some of the submitted data is missing or invalid.' } });
+    return;
   }
 
   // Handle unexpected errors

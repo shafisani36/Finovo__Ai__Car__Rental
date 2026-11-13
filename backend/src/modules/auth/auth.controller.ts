@@ -57,7 +57,7 @@ export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validated = registerSchema.parse(req.body);
-      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+      const ip = req.ip || req.socket.remoteAddress || '';
       const userAgent = req.headers['user-agent'] || '';
 
       const result = await AuthService.register(validated, ip, userAgent);
@@ -70,7 +70,7 @@ export class AuthController {
   static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validated = loginSchema.parse(req.body);
-      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+      const ip = req.ip || req.socket.remoteAddress || '';
       const userAgent = req.headers['user-agent'] || '';
 
       const result = await AuthService.login(validated, ip, userAgent);
@@ -85,8 +85,7 @@ export class AuthController {
       res.status(200).json({
         success: true,
         accessToken: result.accessToken,
-        sessionToken: result.rawSessionToken,
-        refreshToken: result.rawRefreshToken,
+        // Session and refresh tokens live only in httpOnly cookies so page scripts can never read them
         user: result.user,
       });
     } catch (err) {
@@ -99,7 +98,7 @@ export class AuthController {
       const sessionToken = req.cookies[env.COOKIE.SESSION_NAME] || req.body.sessionToken;
       const refreshToken = req.cookies[env.COOKIE.REFRESH_NAME] || req.body.refreshToken;
 
-      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+      const ip = req.ip || req.socket.remoteAddress || '';
       const userAgent = req.headers['user-agent'] || '';
 
       const result = await AuthService.refresh(sessionToken, refreshToken, ip, userAgent);
@@ -111,7 +110,6 @@ export class AuthController {
       res.status(200).json({
         success: true,
         accessToken: result.accessToken,
-        refreshToken: result.rawRefreshToken,
         user: result.user,
       });
     } catch (err) {
@@ -122,7 +120,7 @@ export class AuthController {
   static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const sessionToken = req.cookies[env.COOKIE.SESSION_NAME] || req.body.sessionToken;
-      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+      const ip = req.ip || req.socket.remoteAddress || '';
       const userAgent = req.headers['user-agent'] || '';
 
       const result = await AuthService.logout(sessionToken, ip, userAgent);
@@ -137,7 +135,7 @@ export class AuthController {
   static async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validated = forgotPasswordSchema.parse(req.body);
-      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+      const ip = req.ip || req.socket.remoteAddress || '';
       const userAgent = req.headers['user-agent'] || '';
 
       const result = await AuthService.requestPasswordReset(validated, ip, userAgent);
@@ -160,7 +158,7 @@ export class AuthController {
   static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validated = resetPasswordSchema.parse(req.body);
-      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
+      const ip = req.ip || req.socket.remoteAddress || '';
       const userAgent = req.headers['user-agent'] || '';
 
       const result = await AuthService.resetPassword(validated, ip, userAgent);

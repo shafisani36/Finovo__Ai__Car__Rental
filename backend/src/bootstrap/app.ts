@@ -125,6 +125,11 @@ export function createApp(): Application {
       index: false,
       dotfiles: 'deny',
       maxAge: env.IS_PRODUCTION ? '7d' : 0,
+      setHeaders: (res) => {
+        // An uploaded file (even an SVG logo) is shown as a file and can never run scripts
+        res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+      },
     })
   );
 

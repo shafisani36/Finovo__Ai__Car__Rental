@@ -116,7 +116,12 @@ export function StatGrid({
   style?: CSSProperties;
 }) {
   const gridStyle: CSSProperties = {
-    ...(columns ? { gridTemplateColumns: `repeat(${columns}, 1fr)` } : {}),
+    // `columns` is the most cards per row; narrower screens wrap to fewer (each card at least 150px wide)
+    ...(columns
+      ? {
+          gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, max(150px, calc((100% - ${columns - 1} * 16px) / ${columns}))), 1fr))`,
+        }
+      : {}),
     ...style,
   };
 

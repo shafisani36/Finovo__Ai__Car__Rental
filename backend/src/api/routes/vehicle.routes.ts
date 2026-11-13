@@ -1,18 +1,24 @@
 import { Router } from 'express';
 import { VehicleController } from '../../modules/fleet/vehicle.controller';
 import { BrandController } from '../../modules/fleet/brand.controller';
-import { authenticate } from '../../middleware/authenticate';
+import { authenticate, optionalAuthenticate } from '../../middleware/authenticate';
 import { requireRole } from '../../middleware/authorize';
 import { CarFeatureController } from '../../modules/fleet/car-feature.controller';
 
 export const vehicleRouter = Router();
 
+/** Internal fleet data (documents, maintenance, GPS, audit trail, bookings, metrics) is staff-only. */
+const staffOnly = [
+  authenticate,
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'),
+] as const;
+
 // ==========================================
 // 1. COLLECTION & AGGREGATION ENDPOINTS
 // ==========================================
-vehicleRouter.get('/', VehicleController.list);
-vehicleRouter.get('/metrics', VehicleController.metrics);
-vehicleRouter.get('/dashboard-stats', VehicleController.dashboardStats);
+vehicleRouter.get('/', optionalAuthenticate, VehicleController.list);
+vehicleRouter.get('/metrics', ...staffOnly, VehicleController.metrics);
+vehicleRouter.get('/dashboard-stats', ...staffOnly, VehicleController.dashboardStats);
 vehicleRouter.get('/categories', VehicleController.categories);
 vehicleRouter.post(
   '/categories',
@@ -149,7 +155,7 @@ vehicleRouter.post(
 // ==========================================
 // 3. SINGLE VEHICLE CORE CRUD & AVAILABILITY
 // ==========================================
-vehicleRouter.get('/:id', VehicleController.getById);
+vehicleRouter.get('/:id', optionalAuthenticate, VehicleController.getById);
 vehicleRouter.get('/:id/availability', VehicleController.checkAvailability);
 
 vehicleRouter.put(
@@ -183,7 +189,7 @@ vehicleRouter.post(
 // ==========================================
 // 4. SUB-RESOURCE: DOCUMENTS & EXPIRIES
 // ==========================================
-vehicleRouter.get('/:id/documents', VehicleController.listDocuments);
+vehicleRouter.get('/:id/documents', ...staffOnly, VehicleController.listDocuments);
 vehicleRouter.post(
   '/:id/documents',
   authenticate,
@@ -200,7 +206,7 @@ vehicleRouter.delete(
 // ==========================================
 // 5. SUB-RESOURCE: MAINTENANCE & REPAIRS
 // ==========================================
-vehicleRouter.get('/:id/maintenance', VehicleController.listMaintenance);
+vehicleRouter.get('/:id/maintenance', ...staffOnly, VehicleController.listMaintenance);
 vehicleRouter.post(
   '/:id/maintenance',
   authenticate,
@@ -223,7 +229,7 @@ vehicleRouter.delete(
 // ==========================================
 // 6. SUB-RESOURCE: DAMAGE REPORTS
 // ==========================================
-vehicleRouter.get('/:id/damage-reports', VehicleController.listDamageReports);
+vehicleRouter.get('/:id/damage-reports', ...staffOnly, VehicleController.listDamageReports);
 vehicleRouter.post(
   '/:id/damage-reports',
   authenticate,
@@ -246,7 +252,7 @@ vehicleRouter.delete(
 // ==========================================
 // 7. SUB-RESOURCE: ODOMETER LOGS
 // ==========================================
-vehicleRouter.get('/:id/odometer-logs', VehicleController.listOdometerLogs);
+vehicleRouter.get('/:id/odometer-logs', ...staffOnly, VehicleController.listOdometerLogs);
 vehicleRouter.post(
   '/:id/odometer-logs',
   authenticate,
@@ -257,7 +263,7 @@ vehicleRouter.post(
 // ==========================================
 // 8. SUB-RESOURCE: LOCATION LOGS
 // ==========================================
-vehicleRouter.get('/:id/locations', VehicleController.listLocationLogs);
+vehicleRouter.get('/:id/locations', ...staffOnly, VehicleController.listLocationLogs);
 vehicleRouter.post(
   '/:id/locations',
   authenticate,
@@ -291,11 +297,10 @@ vehicleRouter.delete(
 // ==========================================
 // 10. SUB-RESOURCE: AUDIT LOGS
 // ==========================================
-vehicleRouter.get('/:id/audit-logs', VehicleController.listAuditLogs);
+vehicleRouter.get('/:id/audit-logs', ...staffOnly, VehicleController.listAuditLogs);
 
 // ==========================================
 // 11. SUB-RESOURCE: BOOKINGS & AVAILABILITY
 // ==========================================
-vehicleRouter.get('/:id/bookings', VehicleController.listBookings);
-vehicleRouter.get('/:id/availability', VehicleController.checkAvailability);
+vehicleRouter.get('/:id/bookings', ...staffOnly, VehicleController.listBookings);
 

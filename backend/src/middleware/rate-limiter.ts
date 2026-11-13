@@ -28,3 +28,18 @@ export const apiRateLimiter = rateLimit({
     },
   },
 });
+
+/** Public forms (contact inquiries): a person sends a few, a spam bot sends hundreds. */
+export const publicFormRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX_PUBLIC_FORM || 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many messages from this connection. Please try again in an hour or call us directly.',
+    },
+  },
+});

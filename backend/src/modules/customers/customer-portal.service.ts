@@ -3,6 +3,42 @@ import { AppError } from '../../shared/errors/app-error';
 import { BookingService } from '../bookings/booking.service';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
+
+const CUSTOMER_DOCUMENT_TYPES: UploadDocumentDTO['documentType'][] = [
+  'DRIVER_LICENSE_FRONT',
+  'DRIVER_LICENSE_BACK',
+  'PASSPORT',
+  'NATIONAL_ID',
+  'UTILITY_BILL',
+];
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+
+/** Recognises the real file type from its first bytes, so a renamed HTML or script file is rejected. */
+function detectDocumentType(buffer: Buffer): 'jpg' | 'png' | 'webp' | 'pdf' | null {
+  if (buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
+  if (buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (buffer.length > 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'webp';
+  if (buffer.length > 5 && buffer.toString('ascii', 0, 5) === '%PDF-') return 'pdf';
+  return null;
+}
+
+/** Saves an identity document under a random, unguessable name inside uploads/documents only. */
+function storeCustomerDocument(dataUrl: string): { url: string; size: number } {
+  const match = /^data:[\w.+/-]+;base64,(.+)$/s.exec(String(dataUrl));
+  if (!match) throw AppError.badRequest('The document must be sent as a base64 data URL');
+  const buffer = Buffer.from(match[1], 'base64');
+  if (buffer.length === 0) throw AppError.badRequest('The document file is empty');
+  if (buffer.length > MAX_DOCUMENT_BYTES) throw AppError.badRequest('The document must be 10 MB or smaller');
+  const ext = detectDocumentType(buffer);
+  if (!ext) throw AppError.badRequest('Only JPG, PNG, WEBP or PDF documents are accepted');
+
+  const dir = path.join(process.cwd(), 'uploads', 'documents');
+  fs.mkdirSync(dir, { recursive: true });
+  const filename = `doc-${crypto.randomBytes(16).toString('hex')}.${ext}`;
+  fs.writeFileSync(path.join(dir, filename), buffer);
+  return { url: `/uploads/documents/${filename}`, size: buffer.length };
+}
 
 export interface CustomerProfileUpdateDTO {
   fullName?: string;
@@ -753,21 +789,26 @@ export class CustomerPortalService {
   static async uploadDocument(userId: string, payload: UploadDocumentDTO) {
     const customer = await this.getOrCreateCustomer(userId);
 
-    let fileUrl = payload.fileUrl || '';
+    if (!CUSTOMER_DOCUMENT_TYPES.includes(payload.documentType)) {
+      throw AppError.badRequest('Unsupported document type');
+    }
+    if (!payload.title || String(payload.title).trim().length === 0 || String(payload.title).length > 150) {
+      throw AppError.badRequest('Document title is required (up to 150 characters)');
+    }
+    if (payload.documentNumber && String(payload.documentNumber).length > 64) {
+      throw AppError.badRequest('Document number is too long');
+    }
+    if (payload.expiresAt && Number.isNaN(new Date(payload.expiresAt).getTime())) {
+      throw AppError.badRequest('Invalid expiry date');
+    }
 
-    // If Base64 image provided, decode and save to /uploads/documents/
-    if (payload.fileBase64 && payload.fileBase64.includes(';base64,')) {
-      const parts = payload.fileBase64.split(';base64,');
-      const ext = parts[0].includes('png') ? 'png' : parts[0].includes('pdf') ? 'pdf' : 'jpg';
-      const buffer = Buffer.from(parts[1], 'base64');
-      const dir = path.join(process.cwd(), 'uploads', 'documents');
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      const filename = `doc-${customer.id}-${payload.documentType}-${Date.now()}.${ext}`;
-      const filePath = path.join(dir, filename);
-      fs.writeFileSync(filePath, buffer);
-      fileUrl = `/uploads/documents/${filename}`;
+    // Files are only ever stored by the server; a client-supplied URL is never trusted
+    let fileUrl = '';
+    let storedSize: number | undefined;
+    if (payload.fileBase64) {
+      const stored = storeCustomerDocument(payload.fileBase64);
+      fileUrl = stored.url;
+      storedSize = stored.size;
     }
 
     // Upsert document record
@@ -783,14 +824,17 @@ export class CustomerPortalService {
           title: payload.title,
           documentNumber: payload.documentNumber || existing.documentNumber,
           fileUrl: fileUrl || existing.fileUrl,
-          fileName: payload.fileName || existing.fileName,
-          fileSize: payload.fileSize || existing.fileSize,
+          fileName: payload.fileName ? String(payload.fileName).slice(0, 255) : existing.fileName,
+          fileSize: storedSize ?? existing.fileSize,
           verificationStatus: 'PENDING_VERIFICATION',
           expiresAt: payload.expiresAt ? new Date(payload.expiresAt) : existing.expiresAt,
           updatedAt: new Date(),
         },
       });
     } else {
+      if (!fileUrl) {
+        throw AppError.badRequest('Please attach the document file');
+      }
       doc = await prisma.customerDocument.create({
         data: {
           customerId: customer.id,
@@ -798,8 +842,8 @@ export class CustomerPortalService {
           title: payload.title,
           documentNumber: payload.documentNumber,
           fileUrl,
-          fileName: payload.fileName,
-          fileSize: payload.fileSize,
+          fileName: payload.fileName ? String(payload.fileName).slice(0, 255) : null,
+          fileSize: storedSize ?? null,
           verificationStatus: 'PENDING_VERIFICATION',
           expiresAt: payload.expiresAt ? new Date(payload.expiresAt) : null,
         },
@@ -1186,6 +1230,15 @@ export class CustomerPortalService {
     userId: string,
     payload: { bookingId: string; vehicleId: string; rating: number; comment?: string }
   ) {
+    const rating = Number(payload.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw AppError.badRequest('Rating must be a whole number from 1 to 5');
+    }
+    if (typeof payload.bookingId !== 'string' || payload.bookingId.length === 0) {
+      throw AppError.badRequest('bookingId is required');
+    }
+    const comment = payload.comment ? String(payload.comment).trim().slice(0, 1000) : null;
+
     const customer = await this.getOrCreateCustomer(userId);
 
     const booking = await prisma.booking.findUnique({
@@ -1207,15 +1260,16 @@ export class CustomerPortalService {
     const review = await prisma.vehicleReview.upsert({
       where: { bookingId: payload.bookingId },
       update: {
-        rating: Math.min(5, Math.max(1, payload.rating)),
-        comment: payload.comment || null,
+        rating,
+        comment,
       },
       create: {
         bookingId: payload.bookingId,
-        vehicleId: payload.vehicleId || booking.vehicleId,
+        // Always the car that was actually rented, never one chosen by the client
+        vehicleId: booking.vehicleId,
         customerId: customer.id,
-        rating: Math.min(5, Math.max(1, payload.rating)),
-        comment: payload.comment || null,
+        rating,
+        comment,
         isApproved: true,
       },
     });

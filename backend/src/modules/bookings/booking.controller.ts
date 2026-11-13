@@ -1,10 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
 import { BookingService, BOOKING_ADDON_CATALOG } from './booking.service';
+import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { AppError } from '../../shared/errors/app-error';
+import { isStaffUser } from '../../middleware/authenticate';
 
 export class BookingController {
+  /** Customers only ever see their own bookings; staff see everything. */
+  private static async ownCustomerId(req: Request): Promise<string | null> {
+    if (isStaffUser(req.user)) return null;
+    const customer = await prisma.customer.findFirst({ where: { userId: req.user!.userId }, select: { id: true } });
+    // A user without a customer profile owns no bookings: match nothing
+    return customer?.id ?? '__no_customer_profile__';
+  }
+
   static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await BookingService.listBookings(req.query);
+      const ownCustomerId = await BookingController.ownCustomerId(req);
+      const filters = ownCustomerId ? { ...req.query, customerId: ownCustomerId } : req.query;
+      const result = await BookingService.listBookings(filters);
       res.status(200).json({ success: true, ...result });
     } catch (err) {
       next(err);
@@ -14,7 +27,12 @@ export class BookingController {
   static async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const ownCustomerId = await BookingController.ownCustomerId(req);
       const booking = await BookingService.getById(id);
+      if (ownCustomerId && booking.customerId !== ownCustomerId) {
+        // Same answer as a missing booking so ids cannot be probed
+        throw AppError.notFound('Booking not found');
+      }
       res.status(200).json({ success: true, booking });
     } catch (err) {
       next(err);

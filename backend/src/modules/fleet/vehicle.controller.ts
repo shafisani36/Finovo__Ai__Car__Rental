@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { VehicleService } from './vehicle.service';
+import { isStaffUser } from '../../middleware/authenticate';
 import { VehicleImageService } from './vehicle-image.service';
 import {
   vehicleFilterSchema,
@@ -18,11 +19,32 @@ import {
   checkAvailabilitySchema,
 } from './vehicle.validation';
 
+const PUBLIC_LIST_CACHE_MS = 10_000;
+const PUBLIC_LIST_CACHE_MAX = 300;
+const publicListCache = new Map<string, { body: unknown; expiresAt: number }>();
+
 export class VehicleController {
   static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const filters = vehicleFilterSchema.parse(req.query);
-      const result = await VehicleService.listVehicles(filters);
+      const staff = isStaffUser(req.user);
+
+      // The public catalog is the busiest endpoint: guests share a 10 second cache per query
+      if (!staff) {
+        const key = req.originalUrl;
+        const cached = publicListCache.get(key);
+        if (cached && cached.expiresAt > Date.now()) {
+          res.status(200).json(cached.body);
+          return;
+        }
+        const body = { success: true, ...(await VehicleService.listVehicles(filters, { includeInternal: false })) };
+        if (publicListCache.size >= PUBLIC_LIST_CACHE_MAX) publicListCache.clear();
+        publicListCache.set(key, { body, expiresAt: Date.now() + PUBLIC_LIST_CACHE_MS });
+        res.status(200).json(body);
+        return;
+      }
+
+      const result = await VehicleService.listVehicles(filters, { includeInternal: true });
       res.status(200).json({ success: true, ...result });
     } catch (err) {
       next(err);
@@ -50,7 +72,7 @@ export class VehicleController {
   static async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const vehicleId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const vehicle = await VehicleService.getById(vehicleId);
+      const vehicle = await VehicleService.getById(vehicleId, { includeInternal: isStaffUser(req.user) });
       res.status(200).json({ success: true, vehicle });
     } catch (err) {
       next(err);

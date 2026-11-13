@@ -153,7 +153,10 @@ export class CustomerPortalController {
 
   static async askAiAssistant(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const data = await CustomerPortalService.handleAiAssistant(req.user!.userId, req.body.prompt || '');
+      const data = await CustomerPortalService.handleAiAssistant(
+        req.user!.userId,
+        String(req.body?.prompt ?? '').slice(0, 1000)
+      );
       res.status(200).json({ success: true, ...data });
     } catch (err) {
       next(err);

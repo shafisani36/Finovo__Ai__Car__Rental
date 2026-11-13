@@ -173,6 +173,24 @@ adminRouter.get('/users/:id', async (req: Request, res: Response, next: NextFunc
 });
 
 // Create new user (Admin provisioned)
+
+/**
+ * Only a SUPER_ADMIN may create, change or delete SUPER_ADMIN accounts,
+ * and nobody may change their own role.
+ */
+function assertCanManageUser(req: Request, targetRoles: string[], requestedRole?: string, targetUserId?: string) {
+  const actorIsSuperAdmin = Boolean(req.user?.roles.includes('SUPER_ADMIN'));
+  if (!actorIsSuperAdmin && targetRoles.includes('SUPER_ADMIN')) {
+    throw AppError.forbidden('Only a super admin can manage super admin accounts.');
+  }
+  if (!actorIsSuperAdmin && requestedRole === 'SUPER_ADMIN') {
+    throw AppError.forbidden('Only a super admin can grant the super admin role.');
+  }
+  if (requestedRole && targetUserId && targetUserId === req.user?.userId) {
+    throw AppError.badRequest('You cannot change your own role.');
+  }
+}
+
 adminRouter.post('/users', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, fullName, password, phone, role } = req.body;
@@ -191,6 +209,7 @@ adminRouter.post('/users', async (req: Request, res: Response, next: NextFunctio
 
     // Role assignment: default CUSTOMER unless specified
     const targetRoleName = role || 'CUSTOMER';
+    assertCanManageUser(req, [], targetRoleName);
     const roleRecord = await prisma.role.findUnique({ where: { name: targetRoleName } });
     if (!roleRecord) {
       throw AppError.badRequest(`Role '${targetRoleName}' does not exist.`);
@@ -264,6 +283,15 @@ adminRouter.patch('/users/:id', async (req: Request, res: Response, next: NextFu
     if (!user) {
       throw AppError.notFound(`User with ID ${userId} not found.`);
     }
+    assertCanManageUser(
+      req,
+      user.userRoles.map((ur: { role: { name: string } }) => ur.role.name),
+      role ? String(role) : undefined,
+      userId
+    );
+    if (status !== undefined && status !== 'ACTIVE' && userId === req.user?.userId) {
+      throw AppError.badRequest('You cannot suspend your own account.');
+    }
 
     const updateData: any = {};
     if (fullName !== undefined) updateData.fullName = String(fullName).trim();
@@ -303,6 +331,14 @@ adminRouter.patch('/users/:id', async (req: Request, res: Response, next: NextFu
           },
         });
       }
+
+      // A suspended account, a new password or a new role must take effect immediately
+      if (role || updateData.passwordHash || (updateData.status && updateData.status !== 'ACTIVE')) {
+        await tx.session.updateMany({
+          where: { userId, isRevoked: false },
+          data: { isRevoked: true, revokedAt: new Date(), revokedReason: 'ADMIN_ACCOUNT_CHANGE' },
+        });
+      }
     });
 
     const refreshed = await prisma.user.findUnique({
@@ -334,17 +370,21 @@ adminRouter.patch('/users/:id', async (req: Request, res: Response, next: NextFu
 // Delete user account (with protection against deleting current admin)
 adminRouter.delete('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const currentUserId = (req as any).user?.id;
+    const currentUserId = req.user?.userId;
     const targetUserId = String(req.params.id);
 
     if (currentUserId && currentUserId === targetUserId) {
       throw AppError.badRequest('You cannot delete your own administrative account.');
     }
 
-    const user = await prisma.user.findUnique({ where: { id: targetUserId } });
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { userRoles: { include: { role: true } } },
+    });
     if (!user) {
       throw AppError.notFound(`User with ID ${targetUserId} not found.`);
     }
+    assertCanManageUser(req, user.userRoles.map((ur: { role: { name: string } }) => ur.role.name));
 
     await prisma.user.delete({ where: { id: targetUserId } });
 

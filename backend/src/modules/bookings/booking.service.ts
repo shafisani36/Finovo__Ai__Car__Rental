@@ -77,6 +77,29 @@ export const BOOKING_ADDON_CATALOG: Record<string, QuoteAddonInput> = {
   EXTRA_DRIVER: { code: 'EXTRA_DRIVER', description: 'Additional driver', unitPrice: 15, chargeUnit: 'DAY' },
 };
 
+/** Longest rental and furthest pickup date a customer can book online. */
+export const MAX_ONLINE_RENTAL_DAYS = 90;
+export const MAX_ADVANCE_BOOKING_DAYS = 365;
+
+/**
+ * Two people booking the same car at the same moment make MySQL abort one serializable transaction.
+ * Retry it a few times; if it still collides, the car was taken by the other request.
+ */
+async function withSerializableRetry<T>(run: () => Promise<T>, attempts = 3): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run();
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code !== 'P2034') throw err;
+      if (attempt >= attempts) {
+        throw AppError.conflict('This car was just booked by someone else for these dates. Please pick other dates or another car.');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 40 * attempt + Math.floor(Math.random() * 40)));
+    }
+  }
+}
+
 const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'OPERATOR', 'FLEET_MANAGER', 'EMPLOYEE', 'MANAGER'];
 
 /**
@@ -279,13 +302,29 @@ export class BookingService {
       throw AppError.badRequest('Invalid pickup or return date format');
     }
 
+    if (returnDate.getTime() <= pickupDate.getTime()) {
+      throw AppError.badRequest('Return date must be after the pickup date');
+    }
+
     // Customers cannot book in the past (15 minute tolerance for clock skew)
     if (!isStaff && pickupDate.getTime() < Date.now() - 15 * 60 * 1000) {
       throw AppError.badRequest('Pickup date/time cannot be in the past');
     }
 
+    // Online bookings have sane limits so nobody can block a car for years
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    if (!isStaff && returnDate.getTime() - pickupDate.getTime() > MAX_ONLINE_RENTAL_DAYS * DAY_MS) {
+      throw AppError.badRequest(`Online bookings can be at most ${MAX_ONLINE_RENTAL_DAYS} days. Contact us for longer rentals.`);
+    }
+    if (!isStaff && pickupDate.getTime() - Date.now() > MAX_ADVANCE_BOOKING_DAYS * DAY_MS) {
+      throw AppError.badRequest(`Bookings can be made up to ${MAX_ADVANCE_BOOKING_DAYS} days in advance.`);
+    }
+
     // Initial availability pre-check
     const availCheck = await this.checkAvailability(dto.vehicleId, pickupDate, returnDate);
+    if (availCheck.conflictReason === 'Vehicle does not exist.') {
+      throw AppError.notFound('Vehicle not found');
+    }
     if (!availCheck.available) {
       throw AppError.conflict(availCheck.conflictReason || 'Vehicle is not available for requested interval');
     }
@@ -361,7 +400,7 @@ export class BookingService {
     const initialSettlement = isStaff ? 'PENDING' : AWAITING_PAYMENT_STATUS;
 
     // Execute atomic booking creation in a serializable transaction to prevent double booking
-    const booking = await prisma.$transaction(async (tx) => {
+    const booking = await withSerializableRetry(() => prisma.$transaction(async (tx) => {
       const conflicts = await tx.booking.findMany({
         where: { vehicleId: dto.vehicleId, ...blockingBookingWhere(pickupDate, returnDate) },
         take: 1,
@@ -469,7 +508,7 @@ export class BookingService {
       });
 
       return created;
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
 
     return booking;
   }

@@ -7,8 +7,10 @@ export const rentalRouter = Router();
 
 rentalRouter.use(authenticate);
 
-rentalRouter.get('/', RentalController.list);
-rentalRouter.get('/:id', RentalController.getById);
+// Rental records hold every customer's data: staff only (customers use /customers/portal)
+const STAFF = ['ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'];
+rentalRouter.get('/', requireRole(...STAFF), RentalController.list);
+rentalRouter.get('/:id', requireRole(...STAFF), RentalController.getById);
 
 rentalRouter.post(
   '/handover',

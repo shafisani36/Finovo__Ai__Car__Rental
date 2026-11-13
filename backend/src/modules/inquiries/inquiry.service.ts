@@ -15,17 +15,32 @@ export class InquiryService {
    * Submit new customer inquiry
    */
   static async createInquiry(dto: CreateInquiryDto) {
-    if (!dto.name || !dto.email || !dto.subject || !dto.message) {
+    const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+    const name = text(dto.name);
+    const email = text(dto.email).toLowerCase();
+    const subject = text(dto.subject);
+    const message = text(dto.message);
+    const phone = text(dto.phone);
+    if (!name || !email || !subject || !message) {
       throw AppError.badRequest('Name, email, subject, and message are required.');
+    }
+    if (name.length > 120 || subject.length > 200 || message.length > 5000 || phone.length > 32 || email.length > 254) {
+      throw AppError.badRequest('One of the fields is too long.');
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw AppError.badRequest('Please enter a valid email address.');
+    }
+    if (phone && !/^[+\d][\d\s()-]{5,30}$/.test(phone)) {
+      throw AppError.badRequest('Please enter a valid phone number.');
     }
 
     const inquiry = await prisma.inquiry.create({
       data: {
-        name: dto.name.trim(),
-        email: dto.email.trim().toLowerCase(),
-        phone: dto.phone?.trim() || null,
-        subject: dto.subject.trim(),
-        message: dto.message.trim(),
+        name,
+        email,
+        phone: phone || null,
+        subject,
+        message,
         status: 'NEW',
       },
     });

@@ -41,6 +41,8 @@ export interface VehicleFeature {
 
 export interface Vehicle {
   id: string;
+  /** Average of approved customer reviews; count 0 means no reviews yet */
+  rating?: { average: number | null; count: number };
   brand: string;
   model: string;
   year: number;

@@ -1,10 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 
-const prisma = new PrismaClient();
 
 export class BrandService {
   private static uploadsDir = path.join(process.cwd(), 'uploads', 'brands');

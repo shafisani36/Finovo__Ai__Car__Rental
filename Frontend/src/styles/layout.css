@@ -151,6 +151,8 @@
 .finovo-stat-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
   gap: 4px;
   min-width: 0;
 }
@@ -499,7 +501,7 @@
     justify-content: flex-start;
   }
   .finovo-stat-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
   .finovo-stat-card {
@@ -521,7 +523,7 @@
 
 @media (max-width: 480px) {
   .finovo-stat-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
   .finovo-page-title {
@@ -550,7 +552,8 @@
 -------------------------------------------------------------------------- */
 .finovo-two-col-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  /* minmax(0, …) lets columns shrink below their content on small screens */
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 24px;
   width: 100%;
   box-sizing: border-box;
@@ -558,7 +561,7 @@
 
 @media (max-width: 960px) {
   .finovo-two-col-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
 }
