@@ -3,6 +3,9 @@ import { BookingService, BOOKING_ADDON_CATALOG } from './booking.service';
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { isStaffUser } from '../../middleware/authenticate';
+import { CustomerPortalService } from '../customers/customer-portal.service';
+
+let lastExpirySweep = 0;
 
 export class BookingController {
   /** Customers only ever see their own bookings; staff see everything. */
@@ -16,6 +19,11 @@ export class BookingController {
   static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const ownCustomerId = await BookingController.ownCustomerId(req);
+      // Close checkouts that were abandoned without payment (at most once a minute)
+      if (Date.now() - lastExpirySweep > 60_000) {
+        lastExpirySweep = Date.now();
+        await CustomerPortalService.expireAbandonedCheckouts();
+      }
       const filters = ownCustomerId ? { ...req.query, customerId: ownCustomerId } : req.query;
       const result = await BookingService.listBookings(filters);
       res.status(200).json({ success: true, ...result });

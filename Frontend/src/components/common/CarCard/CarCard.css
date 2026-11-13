@@ -279,3 +279,58 @@
     font-size: 13.5px;
   }
 }
+
+/* Save and compare toggles on the photo */
+.finovo-car-card-actions {
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 14px;
+  z-index: 6;
+  display: flex;
+  gap: 8px;
+}
+
+.finovo-car-card-action {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(30, 4, 38, 0.55);
+  color: #FFFFFF;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.finovo-car-card-action:hover {
+  transform: scale(1.08);
+}
+
+.finovo-car-card-action:focus-visible {
+  outline: 2px solid #FAB826;
+  outline-offset: 2px;
+}
+
+.finovo-car-card-action.is-on {
+  background: #FAB826;
+  border-color: #FAB826;
+  color: #1E0426;
+}
+
+.finovo-car-card-action.is-saved {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  color: #E11D48;
+}
+
+.finovo-car-card-monogram {
+  display: grid;
+  place-items: center;
+  background: #1E0426;
+  color: #FAB826;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border-radius: 50%;
+}

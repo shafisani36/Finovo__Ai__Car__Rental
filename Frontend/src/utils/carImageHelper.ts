@@ -92,35 +92,21 @@ export function getCarImage(v: any): string {
   const brand = (typeof v.brand === 'object' && v.brand ? v.brand.name : v.brand || '').toLowerCase();
   const model = (typeof v.model === 'object' && v.model ? v.model.name : v.model || '').toLowerCase();
   const color = (v.color || '').toLowerCase();
-  const reg = (v.registrationNumber || '').toUpperCase();
-  const cat = (
-    typeof v.category === 'object' && v.category
-      ? v.category.slug || v.category.name
-      : v.categoryName || v.category || ''
-  ).toLowerCase();
+  // Studio photos are only used for the exact make and model they show
+  if (brand.includes('lambo') && model.includes('urus')) return '/cars/studio-lambo-urus.jpg';
+  if (brand.includes('lambo') && model.includes('hurac')) return '/cars/orange-car.jpg';
+  if (brand.includes('bmw') && model.includes('m4')) return '/cars/studio-bmw-m4.jpg';
+  if (brand.includes('bmw') && model.includes('x5')) return '/cars/studio-bmw-x5.jpg';
+  if (brand.includes('bmw') && model.includes('740')) return '/cars/studio-bmw-740i.jpg';
 
-  if (model.includes('urus')) return '/cars/studio-lambo-urus.jpg';
-  if (model.includes('hurac') || brand.includes('lambo') || reg.includes('-01')) {
-    return '/cars/orange-car.jpg';
+  // Otherwise a neutral illustration in the car's own colour, never another brand's car
+  if (color.includes('red') || color.includes('maroon')) return '/cars/finovo-red-car.png';
+  if (color.includes('blue') || color.includes('navy')) return '/cars/finovo-blue-car.png';
+  if (color.includes('green')) return '/cars/finovo-green-car.png';
+  if (color.includes('yellow') || color.includes('gold') || color.includes('orange')) return '/cars/finovo-yellow-car.png';
+  if (color.includes('gray') || color.includes('grey') || color.includes('silver') || color.includes('black')) {
+    return '/cars/finovo-gray-car.png';
   }
-  if (model.includes('m4') || reg.includes('-12')) return '/cars/studio-bmw-m4.jpg';
-  if (model.includes('x5') || (brand.includes('bmw') && cat.includes('suv'))) {
-    return '/cars/studio-bmw-x5.jpg';
-  }
-  if (model.includes('740') || cat.includes('luxury')) return '/cars/studio-bmw-740i.jpg';
-  if (model.includes('tucson') || brand.includes('hyundai')) return '/cars/finovo-blue-car.png';
-  if (model.includes('cooper') || brand.includes('mini')) return '/cars/finovo-green-car.png';
-  if (model.includes('focus') || brand.includes('ford') || cat.includes('hatch')) {
-    return '/cars/finovo-yellow-car.png';
-  }
-  if (brand.includes('tesla') || v.fuelType === 'ELECTRIC') {
-    return color.includes('red') ? '/cars/finovo-red-car.png' : '/cars/finovo-gray-car.png';
-  }
-  if (model.includes('corolla') || brand.includes('toyota')) return '/cars/finovo-white-car.png';
-  if (brand.includes('bmw')) return '/cars/bmw.png';
-  if (cat.includes('suv')) return '/cars/studio-bmw-x5.jpg';
-  if (cat.includes('sport') || cat.includes('coupe')) return '/cars/studio-bmw-m4.jpg';
-
   return '/cars/finovo-white-car.png';
 }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -22,6 +23,14 @@ import { formatMoney, getCarImage } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerCheckoutPage() {
+  const { t, i18n } = useTranslation();
+  // Formats a YYYY-MM-DD date (and optional HH:mm time) in the reader's language
+  const formatSchedule = (date: string, time?: string) => {
+    if (!date) return '';
+    const value = new Date(`${date}T${time || '00:00'}`);
+    if (Number.isNaN(value.getTime())) return time ? `${date} ${time}` : date;
+    return new Intl.DateTimeFormat(i18n.language, time ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(value);
+  };
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
@@ -88,7 +97,7 @@ export function CustomerCheckoutPage() {
       setLoadError(null);
       try {
         if (!vehicleIdParam) {
-          throw new Error('No vehicle selected. Please choose a car first.');
+          throw new Error(t('portalPages.checkout.errNoVehicle'));
         }
 
         const [bRes, vRes] = await Promise.all([branchesApi.list(), vehiclesApi.getById(vehicleIdParam)]);
@@ -96,11 +105,11 @@ export function CustomerCheckoutPage() {
 
         const loadedBranches = (bRes.branches || []).filter((b: any) => b.isActive !== false);
         if (loadedBranches.length === 0) {
-          throw new Error('No rental branches are configured. Please contact support.');
+          throw new Error(t('portalPages.checkout.errNoBranches'));
         }
         const vehicleRecord = (vRes as any)?.vehicle;
         if (!vehicleRecord) {
-          throw new Error('The selected vehicle could not be found.');
+          throw new Error(t('portalPages.checkout.errVehicleNotFound'));
         }
 
         const hasBranch = (id: string | null) => Boolean(id && loadedBranches.some((b: any) => b.id === id));
@@ -122,7 +131,7 @@ export function CustomerCheckoutPage() {
           // Profile pre-fill is optional
         }
       } catch (err: any) {
-        if (isMounted) setLoadError(err?.message || 'Failed to load checkout.');
+        if (isMounted) setLoadError(err?.message || t('portalPages.checkout.errLoad'));
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -182,12 +191,12 @@ export function CustomerCheckoutPage() {
         }),
       });
       if (!res.success || !res.booking) {
-        throw new Error('The booking could not be created. Please try again.');
+        throw new Error(t('portalPages.checkout.errCreate'));
       }
       setPendingBooking(res.booking);
       setStep(5);
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Failed to reserve this car. Please verify your selected dates.');
+      setErrorMessage(err?.message || t('portalPages.checkout.errReserve'));
     } finally {
       setIsSubmitting(false);
     }
@@ -214,9 +223,9 @@ export function CustomerCheckoutPage() {
       <div className="cp-page-container" style={{ maxWidth: '640px', margin: '40px auto' }}>
         <div className="cp-card" style={{ textAlign: 'center', padding: '36px 24px' }}>
           <AlertCircle size={40} color="var(--cp-danger)" style={{ margin: '0 auto 12px' }} />
-          <h2 className="cp-card-title">{loadError || 'The selected vehicle could not be found.'}</h2>
+          <h2 className="cp-card-title">{loadError || t('portalPages.checkout.errVehicleNotFound')}</h2>
           <Link to="/cars" className="cp-btn-primary" style={{ marginTop: '16px', display: 'inline-flex' }}>
-            Browse Cars
+            {t('portalPages.checkout.browseCars')}
           </Link>
         </div>
       </div>
@@ -248,15 +257,15 @@ export function CustomerCheckoutPage() {
             className="cp-badge cp-badge-success"
             style={{ marginBottom: '12px', fontSize: '13px', padding: '6px 16px' }}
           >
-            ● Reservation Confirmed & Paid
+            ● {t('portalPages.checkout.confirmedPaid')}
           </span>
 
           <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--cp-primary)', margin: '0 0 8px 0' }}>
-            Reservation Confirmed!
+            {t('portalPages.checkout.confirmedTitle')}
           </h2>
 
           <p style={{ color: 'var(--cp-text-muted)', fontSize: '1rem', margin: '0 0 24px 0' }}>
-            Booking Reference: <strong>#{bookingSuccess.bookingNumber || bookingSuccess.id}</strong>
+            {t('portalPages.checkout.bookingReference')} <strong>#{bookingSuccess.bookingNumber || bookingSuccess.id}</strong>
           </p>
 
           {/* Certificate & Specs Summary Box */}
@@ -274,30 +283,30 @@ export function CustomerCheckoutPage() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--cp-text-muted)' }}>Reserved Vehicle:</span>
+              <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.reservedVehicle')}</span>
               <strong style={{ color: 'var(--cp-primary)' }}>
                 {vehicle?.brand} {vehicle?.model} ({vehicle?.year})
               </strong>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--cp-text-muted)' }}>Pickup Schedule:</span>
+              <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.pickupSchedule')}</span>
               <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>
-                {pickupDate} at {pickupTime}
+                {formatSchedule(pickupDate, pickupTime)}
               </span>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--cp-text-muted)' }}>Return Schedule:</span>
+              <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.returnSchedule')}</span>
               <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>
-                {returnDate} at {returnTime}
+                {formatSchedule(returnDate, returnTime)}
               </span>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--cp-text-muted)' }}>Payment:</span>
+              <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.payment')}</span>
               <span style={{ color: '#10B981', fontWeight: 700 }}>
-                ● Paid via Stripe
+                ● {t('portalPages.checkout.paidViaStripe')}
                 {paymentResult?.payment.cardBrand
                   ? ` (${paymentResult.payment.cardBrand.toUpperCase()} •••• ${paymentResult.payment.cardNumberLast4})`
                   : ''}
@@ -305,7 +314,7 @@ export function CustomerCheckoutPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--cp-text-muted)' }}>Total Amount Charged:</span>
+              <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.totalCharged')}</span>
               <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1.25rem' }}>
                 {paymentResult ? formatMoney(paymentResult.payment.amount, paymentResult.payment.currency, 2) : '—'}
               </span>
@@ -318,12 +327,12 @@ export function CustomerCheckoutPage() {
               to={`/customer/bookings/${bookingSuccess.id}`}
               className="cp-btn-secondary"
             >
-              View Booking Details
+              {t('portalPages.checkout.viewBooking')}
               <ChevronRight size={16} />
             </Link>
 
             <Link to="/customer/dashboard" className="cp-btn-outline">
-              Back to Overview
+              {t('portalPages.checkout.backToOverview')}
             </Link>
           </div>
         </div>
@@ -336,9 +345,9 @@ export function CustomerCheckoutPage() {
       {/* Page Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Reserve Your Vehicle</h1>
+          <h1 className="cp-page-title">{t('portalPages.checkout.title')}</h1>
           <p className="cp-page-subtitle">
-            Industry standard booking with Stripe payments and pre-trained AI damage scanning.
+            {t('portalPages.checkout.subtitle')}
           </p>
         </div>
       </div>
@@ -347,11 +356,11 @@ export function CustomerCheckoutPage() {
       <div className="cp-card" style={{ padding: '16px 20px' }}>
         <div className="cp-stepper">
           {[
-            { num: 1, label: 'Trip Dates' },
-            { num: 2, label: 'Protection & Extras' },
-            { num: 3, label: 'Driver Details' },
-            { num: 4, label: 'Terms & Inspection' },
-            { num: 5, label: 'Secure Payment' },
+            { num: 1, label: t('portalPages.checkout.stepTrip') },
+            { num: 2, label: t('portalPages.checkout.stepExtras') },
+            { num: 3, label: t('portalPages.checkout.stepDriver') },
+            { num: 4, label: t('portalPages.checkout.stepTerms') },
+            { num: 5, label: t('portalPages.checkout.stepPayment') },
           ].map((s) => (
             <button
               type="button"
@@ -400,26 +409,26 @@ export function CustomerCheckoutPage() {
           {step === 1 && (
             <div className="cp-card">
               <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>
-                Step 1: Dates & Pickup Location
+                {t('portalPages.checkout.step1Title')}
               </h2>
               <div className="cp-subgrid-2col" style={{ marginBottom: '16px' }}>
                 <div>
-                  <label className="cp-label">Pickup Branch</label>
+                  <label className="cp-label">{t('portalPages.checkout.pickupBranch')}</label>
                   <CustomSelect
                     value={pickupBranchId}
                     onChange={(val) => setPickupBranchId(String(val))}
                     options={branchOptions}
-                    placeholder="Select Pickup Branch"
+                    placeholder={t('portalPages.checkout.selectPickupBranch')}
                     size="md"
                   />
                 </div>
                 <div>
-                  <label className="cp-label">Return Branch</label>
+                  <label className="cp-label">{t('portalPages.checkout.returnBranch')}</label>
                   <CustomSelect
                     value={returnBranchId}
                     onChange={(val) => setReturnBranchId(String(val))}
                     options={branchOptions}
-                    placeholder="Select Return Branch"
+                    placeholder={t('portalPages.checkout.selectReturnBranch')}
                     size="md"
                   />
                 </div>
@@ -427,7 +436,7 @@ export function CustomerCheckoutPage() {
 
               <div className="cp-subgrid-2col" style={{ marginBottom: '24px' }}>
                 <div>
-                  <label className="cp-label">Pickup Date & Time</label>
+                  <label className="cp-label">{t('portalPages.checkout.pickupDateTime')}</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="date"
@@ -447,7 +456,7 @@ export function CustomerCheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="cp-label">Return Date & Time</label>
+                  <label className="cp-label">{t('portalPages.checkout.returnDateTime')}</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="date"
@@ -469,7 +478,7 @@ export function CustomerCheckoutPage() {
 
               {isUnavailable && (
                 <div role="alert" className="cp-alert-unavailable" style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '12px', background: 'var(--cp-danger-bg)', color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.9rem' }}>
-                  {availability?.conflictReason || `This car is not available from ${pickupDate} to ${returnDate}.`}
+                  {availability?.conflictReason || t('portalPages.checkout.unavailable', { from: formatSchedule(pickupDate), to: formatSchedule(returnDate) })}
                 </div>
               )}
               {quoteError && !isUnavailable && (
@@ -480,7 +489,7 @@ export function CustomerCheckoutPage() {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button className="cp-btn-primary" onClick={() => setStep(2)} disabled={!canContinueTrip} style={{ opacity: canContinueTrip ? 1 : 0.6 }}>
-                  Continue to Protection & Extras
+                  {t('portalPages.checkout.continueToExtras')}
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -491,7 +500,7 @@ export function CustomerCheckoutPage() {
           {step === 2 && (
             <div className="cp-card">
               <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>
-                Step 2: Protection Tier & Add-ons
+                {t('portalPages.checkout.step2Title')}
               </h2>
 
               <div className="cp-subgrid-2col" style={{ marginBottom: '24px' }}>
@@ -511,11 +520,11 @@ export function CustomerCheckoutPage() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                    <strong style={{ fontSize: '1.05rem', color: 'var(--cp-primary)' }}>Standard CDW</strong>
-                    <span className="cp-badge cp-badge-accent">+{addonPrice('PROTECTION_STANDARD')}/day</span>
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--cp-primary)' }}>{t('portalPages.checkout.standardCdw')}</strong>
+                    <span className="cp-badge cp-badge-accent">{t('portalPages.checkout.perDay', { price: addonPrice('PROTECTION_STANDARD') })}</span>
                   </div>
                   <p style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', margin: '8px 0 0 0', lineHeight: 1.45 }}>
-                    Collision Damage Waiver with reduced deductible. Third-party liability included.
+                    {t('portalPages.checkout.standardCdwDesc')}
                   </p>
                 </div>
 
@@ -536,12 +545,12 @@ export function CustomerCheckoutPage() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                     <strong style={{ fontSize: '1.05rem', color: 'var(--cp-primary)' }}>
-                      Full Shield Premium
+                      {t('portalPages.checkout.premium')}
                     </strong>
-                    <span className="cp-badge cp-badge-accent">+{addonPrice('PROTECTION_PREMIUM')}/day</span>
+                    <span className="cp-badge cp-badge-accent">{t('portalPages.checkout.perDay', { price: addonPrice('PROTECTION_PREMIUM') })}</span>
                   </div>
                   <p style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', margin: '8px 0 0 0', lineHeight: 1.45 }}>
-                    Zero deductible. Complete windshield, tyre, wheel, and undercarriage coverage.
+                    {t('portalPages.checkout.premiumDesc')}
                   </p>
                 </div>
               </div>
@@ -556,8 +565,8 @@ export function CustomerCheckoutPage() {
                     style={{ width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
                   />
                   <div>
-                    <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>Satellite GPS Navigation (+{addonPrice('GPS')}/day)</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)' }}>Live traffic routing and offline maps</div>
+                    <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.checkout.gps', { price: addonPrice('GPS') })}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.gpsDesc')}</div>
                   </div>
                 </label>
 
@@ -569,8 +578,8 @@ export function CustomerCheckoutPage() {
                     style={{ width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
                   />
                   <div>
-                    <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>ISOFIX Child Safety Seat (+{addonPrice('CHILD_SEAT')}/day)</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)' }}>Certified for infants and toddlers</div>
+                    <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.checkout.childSeat', { price: addonPrice('CHILD_SEAT') })}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.childSeatDesc')}</div>
                   </div>
                 </label>
 
@@ -582,8 +591,8 @@ export function CustomerCheckoutPage() {
                     style={{ width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
                   />
                   <div>
-                    <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>Additional Authorized Driver (+{addonPrice('EXTRA_DRIVER')}/day)</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)' }}>Covers secondary driver on insurance policy</div>
+                    <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.checkout.extraDriver', { price: addonPrice('EXTRA_DRIVER') })}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.extraDriverDesc')}</div>
                   </div>
                 </label>
               </div>
@@ -591,10 +600,10 @@ export function CustomerCheckoutPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button className="cp-btn-outline" onClick={() => setStep(1)}>
                   <ChevronLeft size={16} />
-                  Back
+                  {t('portalPages.checkout.back')}
                 </button>
                 <button className="cp-btn-primary" onClick={() => setStep(3)}>
-                  Continue to Driver Details
+                  {t('portalPages.checkout.continueToDriver')}
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -605,11 +614,11 @@ export function CustomerCheckoutPage() {
           {step === 3 && (
             <div className="cp-card">
               <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>
-                Step 3: Primary Driver Profile
+                {t('portalPages.checkout.step3Title')}
               </h2>
               <div className="cp-subgrid-2col" style={{ marginBottom: '16px' }}>
                 <div>
-                  <label className="cp-label">Full Legal Name</label>
+                  <label className="cp-label">{t('portalPages.checkout.fullName')}</label>
                   <input
                     type="text"
                     className="cp-input"
@@ -618,7 +627,7 @@ export function CustomerCheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="cp-label">Email Address</label>
+                  <label className="cp-label">{t('portalPages.checkout.email')}</label>
                   <input
                     type="email"
                     className="cp-input"
@@ -630,7 +639,7 @@ export function CustomerCheckoutPage() {
 
               <div className="cp-subgrid-2col" style={{ marginBottom: '24px' }}>
                 <div>
-                  <label className="cp-label">Phone Number</label>
+                  <label className="cp-label">{t('portalPages.checkout.phone')}</label>
                   <input
                     type="tel"
                     className="cp-input"
@@ -639,7 +648,7 @@ export function CustomerCheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="cp-label">Driver's License Number</label>
+                  <label className="cp-label">{t('portalPages.checkout.license')}</label>
                   <input
                     type="text"
                     className="cp-input"
@@ -653,7 +662,7 @@ export function CustomerCheckoutPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button className="cp-btn-outline" onClick={() => setStep(2)}>
                   <ChevronLeft size={16} />
-                  Back
+                  {t('portalPages.checkout.back')}
                 </button>
                 <button
                   className="cp-btn-primary"
@@ -661,7 +670,7 @@ export function CustomerCheckoutPage() {
                   disabled={!validDriverDetails}
                   style={{ opacity: validDriverDetails ? 1 : 0.6 }}
                 >
-                  Continue to Rental Terms
+                  {t('portalPages.checkout.continueToTerms')}
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -672,13 +681,13 @@ export function CustomerCheckoutPage() {
           {step === 4 && (
             <div className="cp-card">
               <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>
-                Step 4: Rental Terms & Vehicle Inspection
+                {t('portalPages.checkout.step4Title')}
               </h2>
               <ul style={{ margin: '0 0 20px', paddingInlineStart: '20px', color: 'var(--cp-text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                <li>At pickup, our staff photograph the car from all sides and an AI inspection records its exact condition (condition % and every existing scratch or dent). You receive this report.</li>
-                <li>At return, the car is photographed again and compared side by side with the pickup report.</li>
-                <li>You are only charged for new damage that was not in the pickup report, using our published repair cost table. Existing damage is never charged.</li>
-                <li>The security deposit is refunded after the return, minus any new-damage, fuel or late-return charges.</li>
+                <li>{t('portalPages.checkout.term1')}</li>
+                <li>{t('portalPages.checkout.term2')}</li>
+                <li>{t('portalPages.checkout.term3')}</li>
+                <li>{t('portalPages.checkout.term4')}</li>
               </ul>
 
               {/* Agreement checkbox */}
@@ -691,7 +700,7 @@ export function CustomerCheckoutPage() {
                     style={{ marginTop: '3px', width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
                   />
                   <span style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', lineHeight: '1.4' }}>
-                    I agree to the rental terms and the pickup / return AI inspection policy described above.
+                    {t('portalPages.checkout.agree')}
                   </span>
                 </label>
               </div>
@@ -699,7 +708,7 @@ export function CustomerCheckoutPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button className="cp-btn-outline" onClick={() => setStep(3)} disabled={Boolean(pendingBooking)}>
                   <ChevronLeft size={16} />
-                  Back
+                  {t('portalPages.checkout.back')}
                 </button>
                 <button
                   className="cp-btn-primary"
@@ -707,7 +716,7 @@ export function CustomerCheckoutPage() {
                   onClick={handleProceedToPayment}
                   style={{ opacity: isSubmitting || !agreedToTerms || !canContinueTrip ? 0.6 : 1 }}
                 >
-                  {isSubmitting ? 'Reserving your car...' : 'Continue to Secure Payment'}
+                  {isSubmitting ? t('portalPages.checkout.reserving') : t('portalPages.checkout.continueToPayment')}
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -718,10 +727,10 @@ export function CustomerCheckoutPage() {
           {step === 5 && pendingBooking && (
             <div className="cp-card">
               <h2 className="cp-card-title" style={{ marginBottom: '6px' }}>
-                Step 5: Secure Payment
+                {t('portalPages.checkout.step5Title')}
               </h2>
               <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--cp-text-muted)' }}>
-                Booking #{pendingBooking.bookingNumber} is held for you for 30 minutes. Complete the payment to confirm it.
+                {t('portalPages.checkout.heldNotice', { number: pendingBooking.bookingNumber })}
               </p>
               <StripePaymentForm
                 bookingId={pendingBooking.id}
@@ -736,7 +745,7 @@ export function CustomerCheckoutPage() {
         <div>
           <div className="cp-card" style={{ position: 'sticky', top: '24px' }}>
             <h3 className="cp-card-title" style={{ marginBottom: '16px' }}>
-              Reservation Summary
+              {t('portalPages.checkout.summaryTitle')}
             </h3>
 
             {/* Vehicle preview */}
@@ -752,7 +761,7 @@ export function CustomerCheckoutPage() {
               >
                 <img
                   src={getCarImage(vehicle)}
-                  alt={`${vehicle?.brand || ''} ${vehicle?.model || ''}`.trim() || 'Vehicle'}
+                  alt={`${vehicle?.brand || ''} ${vehicle?.model || ''}`.trim() || t('portalPages.checkout.vehicleAlt')}
                   style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#24052E' }}
                 />
               </div>
@@ -767,9 +776,9 @@ export function CustomerCheckoutPage() {
             </div>
 
             <div style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.88rem' }}>
-              {isQuoteLoading && !quote && <div style={{ color: 'var(--cp-text-muted)' }}>Calculating price…</div>}
+              {isQuoteLoading && !quote && <div style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.calculating')}</div>}
               {!isQuoteLoading && !quote && (
-                <div style={{ color: 'var(--cp-text-muted)' }}>Select valid dates to see the price.</div>
+                <div style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.checkout.selectDates')}</div>
               )}
               {quote && (
                 <>
@@ -793,17 +802,17 @@ export function CustomerCheckoutPage() {
                       color: 'var(--cp-primary)',
                     }}
                   >
-                    <span>Rental Total:</span>
+                    <span>{t('portalPages.checkout.rentalTotal')}</span>
                     <span>{formatMoney(quote.totalAmount, currency, 2)}</span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
-                    <span>Security Deposit (Refundable):</span>
+                    <span>{t('portalPages.checkout.deposit')}</span>
                     <span>{formatMoney(quote.depositAmount, currency, 2)}</span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--cp-primary)' }}>
-                    <span>Due Today:</span>
+                    <span>{t('portalPages.checkout.dueToday')}</span>
                     <span>{formatMoney(quote.grandTotal ?? quote.totalAmount + quote.depositAmount, currency, 2)}</span>
                   </div>
                 </>
@@ -826,7 +835,7 @@ export function CustomerCheckoutPage() {
               }}
             >
               <ShieldCheck size={18} />
-              <span>AI condition report at pickup and return included with every reservation.</span>
+              <span>{t('portalPages.checkout.aiIncluded')}</span>
             </div>
           </div>
         </div>

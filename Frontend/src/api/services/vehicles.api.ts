@@ -66,6 +66,13 @@ export const vehiclesApi = {
   /**
    * Vehicle categories dictionary
    */
+  /** Public availability calendar: busy periods only, no customer data. */
+  getBusyPeriods: async (
+    id: string
+  ): Promise<{ success: boolean; from: string; to: string; vehicleUnavailable: boolean; busy: { start: string; end: string }[] }> => {
+    return apiClient.get(`/vehicles/${id}/busy-periods`, { skipAuth: true });
+  },
+
   getCategories: async (): Promise<{ success: boolean; categories: VehicleCategory[] }> => {
     return apiClient.get(API_ENDPOINTS.VEHICLES.CATEGORIES);
   },

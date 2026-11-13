@@ -131,6 +131,39 @@ export function blockingBookingWhere(
   };
 }
 
+/** How far ahead the public availability calendar looks. */
+export const AVAILABILITY_CALENDAR_DAYS = 120;
+
+/**
+ * Busy periods of one car for the public calendar: start and end times only,
+ * never who booked it. Includes the turnaround buffer and live payment holds.
+ */
+export async function getBusyPeriods(vehicleId: string, days = AVAILABILITY_CALENDAR_DAYS) {
+  const from = new Date();
+  const to = new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
+  const vehicle = await prisma.vehicle.findFirst({
+    where: { id: vehicleId, deletedAt: null },
+    select: { id: true, status: true },
+  });
+  if (!vehicle) throw AppError.notFound('Vehicle not found');
+
+  const bookings = await prisma.booking.findMany({
+    where: { vehicleId, ...blockingBookingWhere(from, to, { withBuffer: false }) },
+    select: { pickupDateTime: true, returnDateTime: true },
+    orderBy: { pickupDateTime: 'asc' },
+  });
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+    // Whole fleet unavailability (maintenance, retired) is reported separately
+    vehicleUnavailable: vehicle.status === 'MAINTENANCE' || vehicle.status === 'ARCHIVED',
+    busy: bookings.map((b) => ({
+      start: new Date(b.pickupDateTime.getTime() - TURNAROUND_BUFFER_MS).toISOString(),
+      end: new Date(b.returnDateTime.getTime() + TURNAROUND_BUFFER_MS).toISOString(),
+    })),
+  };
+}
+
 function resolveAddons(codes?: unknown): QuoteAddonInput[] {
   if (!Array.isArray(codes)) return [];
   const unique = Array.from(new Set(codes.map((c) => String(c).trim().toUpperCase())));

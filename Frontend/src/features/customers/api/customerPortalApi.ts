@@ -234,20 +234,15 @@ export interface SupportTicketItem {
 }
 
 export interface RewardsSummary {
-  tier: string;
-  nextTier: string;
+  tier: 'Silver' | 'Gold' | 'Platinum';
+  nextTier: 'Gold' | 'Platinum' | null;
   progressPercent: number;
   pointsBalance: number;
   totalSpent: number;
-  referralCode: string;
-  referralBonusPoints: number;
-  vouchers: Array<{
-    code: string;
-    discount: string;
-    description: string;
-    validUntil: string;
-    isAvailable: boolean;
-  }>;
+  currency: string;
+  completedRentals: number;
+  pointsPerHundred: number;
+  pointsToNextTier: number;
 }
 
 export interface RentalHistoryItem {

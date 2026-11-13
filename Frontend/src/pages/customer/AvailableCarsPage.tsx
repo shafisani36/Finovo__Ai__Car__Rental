@@ -20,18 +20,20 @@ import {
   RotateCcw,
   Users,
   Sparkles,
+  Heart,
 } from 'lucide-react';
 import { vehiclesApi } from '../../api/services/vehicles.api';
 import type { Vehicle } from '../../features/fleet/types/fleet.types';
 import { formatMoney, getCarImage, resolveVehiclePricing } from '../../utils/carImageHelper';
 import './AvailableCarsPage.css';
 import { CarCard } from '../../components/common/CarCard';
+import { CompareTray } from '../../components/cars/CompareTray';
+import { useBrandLogos } from '../../hooks/useBrandLogos';
+import { useRecentlyViewed, useSavedCars } from '../../hooks/useCarShortlists';
 import { CustomSelect } from '../../components/common/CustomSelect';
 
 // Master Visual Assets matching Figma Design Specification
 import heroCarImg from '../../assets/cars/finovo-available-hero-car.png';
-import bmwLogo from '../../assets/cars/finovo-bmw-logo.png';
-import lamboLogo from '../../assets/cars/finovo-lamborghini-logo.png';
 
 export interface CatalogCar {
   id: string;
@@ -45,10 +47,11 @@ export interface CatalogCar {
   seats: number;
   pricePerDay: number;
   currency?: string;
-  isWideHero?: boolean;
+  /** Number of approved reviews (used by the Most Popular sort) */
+  popularity: number;
+  ratingAverage: number;
   tagline?: string;
   image: string;
-  logo: string;
   mileageLimit: string;
   available: boolean;
   unlimitedMileage?: boolean;
@@ -76,6 +79,10 @@ function toBackendRange(start: string, end: string): { from: string; to: string 
 
 export function AvailableCarsPage() {
   const { t } = useTranslation();
+  const brandLogos = useBrandLogos();
+  const { saved } = useSavedCars();
+  const { recent } = useRecentlyViewed();
+  const [savedOnly, setSavedOnly] = useState(false);
   // Primary State Pipeline
   const [period, setPeriod] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
   const [search, setSearch] = useState('');
@@ -148,7 +155,6 @@ export function AvailableCarsPage() {
         });
         if (!isMounted) return;
         const apiCars: CatalogCar[] = (res?.vehicles || []).map((v: Vehicle) => {
-          const isLambo = v.brand?.toLowerCase().includes('lambo');
           const pricing = resolveVehiclePricing(v);
           return {
             id: v.id,
@@ -164,9 +170,9 @@ export function AvailableCarsPage() {
             seats: v.seats,
             pricePerDay: pricing.dailyRate,
             currency: pricing.currency,
-            isWideHero: isLambo,
+            popularity: v.rating?.count ?? 0,
+            ratingAverage: v.rating?.average ?? 0,
             image: getCarImage(v),
-            logo: isLambo ? lamboLogo : bmwLogo,
             mileageLimit: v.mileageLimitPerDay ? `${v.mileageLimitPerDay} km` : t('cars.unlimitedMileage'),
             // Inside a selected range the backend already removed booked cars
             available: range ? true : v.status === 'AVAILABLE',
@@ -216,11 +222,25 @@ export function AvailableCarsPage() {
 
   const labelBrand = (val: string) => (val === 'All Brands' ? t('cars.allBrands') : val);
   const labelType = (val: string) => (val === 'All Types' ? t('cars.allTypes') : val);
+  // Price bands come from the real fleet prices (thirds), in the fleet's own currency
+  const priceBands = useMemo(() => {
+    const prices = fleet.map((c) => c.pricePerDay).filter((p) => p > 0).sort((a, b) => a - b);
+    if (prices.length < 3) return null;
+    const nice = (value: number) => {
+      const step = value >= 10_000 ? 1000 : value >= 1000 ? 100 : 10;
+      return Math.round(value / step) * step;
+    };
+    const low = nice(prices[Math.floor(prices.length / 3)]);
+    const high = nice(prices[Math.floor((prices.length * 2) / 3)]);
+    if (low <= 0 || high <= low) return null;
+    return { low, high, currency: fleet.find((c) => c.currency)?.currency || '' };
+  }, [fleet]);
   const labelPrice = (val: string) => {
-    if (val === 'Any Price') return t('cars.anyPrice');
-    if (val === 'SAR 500 or less') return t('cars.priceUnder500');
-    if (val === 'SAR 500–1,000') return t('cars.price500to1000');
-    if (val === 'Above SAR 1,000') return t('cars.priceAbove1000');
+    if (val === 'Any Price' || !priceBands) return t('cars.anyPrice');
+    const money = (amount: number) => formatMoney(amount, priceBands.currency);
+    if (val === 'low') return t('catalog.priceUpTo', { amount: money(priceBands.low) });
+    if (val === 'mid') return t('catalog.priceBetween', { from: money(priceBands.low), to: money(priceBands.high) });
+    if (val === 'high') return t('catalog.priceAbove', { amount: money(priceBands.high) });
     return val;
   };
   const labelTrans = (val: string) => {
@@ -256,7 +276,7 @@ export function AvailableCarsPage() {
     return ['All Types', ...types];
   }, [fleet]);
 
-  const priceOptions = ['Any Price', 'SAR 500 or less', 'SAR 500–1,000', 'Above SAR 1,000'];
+  const priceOptions = priceBands ? ['Any Price', 'low', 'mid', 'high'] : ['Any Price'];
   const transmissionOptions = ['Any', 'Automatic', 'Manual'];
   const fuelOptions = ['Any', 'Petrol', 'Electric', 'Hybrid', 'Diesel'];
 
@@ -285,9 +305,11 @@ export function AvailableCarsPage() {
         }
 
         // 4. Price Filter
-        if (selectedPriceRange === 'SAR 500 or less' && car.pricePerDay > 500) return false;
-        if (selectedPriceRange === 'SAR 500–1,000' && (car.pricePerDay <= 500 || car.pricePerDay > 1000)) return false;
-        if (selectedPriceRange === 'Above SAR 1,000' && car.pricePerDay <= 1000) return false;
+        if (priceBands) {
+          if (selectedPriceRange === 'low' && car.pricePerDay > priceBands.low) return false;
+          if (selectedPriceRange === 'mid' && (car.pricePerDay <= priceBands.low || car.pricePerDay > priceBands.high)) return false;
+          if (selectedPriceRange === 'high' && car.pricePerDay <= priceBands.high) return false;
+        }
 
         // 5. Transmission
         if (selectedTransmission !== 'Any' && car.transmission.toLowerCase() !== selectedTransmission.toLowerCase()) {
@@ -305,6 +327,7 @@ export function AvailableCarsPage() {
           if (selectedSeats === '4-5 Seats' && car.seats < 4) return false;
           if (selectedSeats === '7+ Seats' && car.seats < 7) return false;
         }
+        if (savedOnly && !saved.includes(car.id)) return false;
         if (zeroDepositOnly && !car.zeroDeposit) return false;
         if (unlimitedMileageOnly && !car.unlimitedMileage) return false;
 
@@ -313,7 +336,7 @@ export function AvailableCarsPage() {
       .sort((a, b) => {
         if (sortOption === 'Price: Low to High') return a.pricePerDay - b.pricePerDay;
         if (sortOption === 'Price: High to Low') return b.pricePerDay - a.pricePerDay;
-        if (sortOption === 'Most Popular') return (b.isWideHero ? 1 : 0) - (a.isWideHero ? 1 : 0);
+        if (sortOption === 'Most Popular') return b.popularity - a.popularity || b.ratingAverage - a.ratingAverage;
         return b.year - a.year;
       });
   }, [
@@ -328,7 +351,15 @@ export function AvailableCarsPage() {
     zeroDepositOnly,
     unlimitedMileageOnly,
     sortOption,
+    priceBands,
+    savedOnly,
+    saved,
   ]);
+
+  const recentCars = useMemo(
+    () => recent.map((id) => fleet.find((c) => c.id === id)).filter((c): c is CatalogCar => Boolean(c)).slice(0, 6),
+    [recent, fleet]
+  );
 
   // Pagination Slice
   const totalPages = Math.max(1, Math.ceil(filteredCars.length / pageSize));
@@ -773,6 +804,17 @@ export function AvailableCarsPage() {
               />
             </div>
 
+            {/* Saved cars only (hearts on the cards) */}
+            <button
+              type="button"
+              className={`cars-saved-toggle ${savedOnly ? 'active' : ''}`}
+              onClick={() => setSavedOnly((v) => !v)}
+              aria-pressed={savedOnly}
+            >
+              <Heart size={15} fill={savedOnly ? 'currentColor' : 'none'} />
+              <span>{t('catalog.savedOnly', { count: saved.length })}</span>
+            </button>
+
             {/* View Mode Toggle */}
             <div className="cars-view-toggle-group" role="group" aria-label="View layout switch">
               <button
@@ -794,6 +836,24 @@ export function AvailableCarsPage() {
             </div>
           </div>
         </div>
+
+        {/* Recently viewed cars from this browser */}
+        {recentCars.length > 0 && !isLoadingFleet && (
+          <section className="cars-recent" aria-label={t('catalog.recentlyViewed')}>
+            <h3>{t('catalog.recentlyViewed')}</h3>
+            <div className="cars-recent-row">
+              {recentCars.map((car) => (
+                <Link key={car.id} to={`/cars/${car.id}${detailsSearch}`} className="cars-recent-item">
+                  <img src={car.image} alt="" loading="lazy" />
+                  <span>
+                    <strong>{car.name}</strong>
+                    <small>{formatMoney(car.pricePerDay, car.currency)} / {t('catalog.day')}</small>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 4. CARS CATALOG: ASYMMETRIC GRID OR LIST */}
         {isLoadingFleet ? (
@@ -896,7 +956,7 @@ export function AvailableCarsPage() {
                 periodLabel={periodLabel}
                 mileageLimit={car.mileageLimit}
                 image={car.image}
-                logo={car.logo}
+                logo={brandLogos.get(car.brand.trim().toLowerCase())}
                 available={car.available}
                 linkSearch={detailsSearch}
               />
@@ -1220,6 +1280,7 @@ export function AvailableCarsPage() {
           </div>
         </div>
       )}
+      <CompareTray />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { telHref, useSiteInfo } from '../../hooks/usePublicSite';
 import { EmailVerificationBanner } from '../../features/auth/components/EmailVerificationBanner';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,7 @@ import {
 import './CustomerLayout.css';
 
 export function CustomerLayout() {
+  const site = useSiteInfo();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -187,9 +189,11 @@ export function CustomerLayout() {
             <p className="concierge-text">
               {t('nav.roadsideDesc')}
             </p>
-            <a href="tel:+966114009000" className="concierge-tel phone-number">
-              +966 11 400 9000
-            </a>
+            {site?.supportPhone && (
+              <a href={telHref(site.supportPhone)} className="concierge-tel phone-number">
+                {site.supportPhone}
+              </a>
+            )}
           </div>
 
           <button onClick={handleLogout} className="sidebar-logout-btn">

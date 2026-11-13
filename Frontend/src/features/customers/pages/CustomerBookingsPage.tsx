@@ -9,10 +9,33 @@ import {
   ChevronRight,
   Camera,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { customerPortalApi, type CustomerBookingItem } from '../api/customerPortalApi';
+import { formatMoney, getCarImage } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
+const STATUS_TABS = ['ALL', 'PENDING', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED'] as const;
+const CANCELLABLE_STATUSES = ['PENDING', 'RESERVED', 'CONFIRMED', 'READY_FOR_PICKUP'];
+
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  PENDING: 'cp-badge-warning',
+  REQUIRES_REVIEW: 'cp-badge-warning',
+  RESERVED: 'cp-badge-info',
+  CONFIRMED: 'cp-badge-info',
+  READY_FOR_PICKUP: 'cp-badge-info',
+  ACTIVE: 'cp-badge-warning',
+  RETURN_INSPECTION: 'cp-badge-info',
+  COMPLETED: 'cp-badge-success',
+  CANCELLED: 'cp-badge-danger',
+  REJECTED: 'cp-badge-danger',
+  EXPIRED: 'cp-badge-danger',
+};
+
 export function CustomerBookingsPage() {
+  const { t, i18n } = useTranslation();
+  const formatDateTime = (value: string) =>
+    new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const [bookings, setBookings] = useState<CustomerBookingItem[]>([]);
   const [activeTab, setActiveTab] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,12 +78,13 @@ export function CustomerBookingsPage() {
     if (!cancelModalBooking) return;
     try {
       setIsCancelling(true);
+      setCancelError(null);
       await customerPortalApi.cancelBooking(cancelModalBooking.id, cancelReason);
       setCancelModalBooking(null);
       setCancelReason('');
       await fetchBookings();
     } catch (err: any) {
-      alert(err.message || 'Failed to cancel booking');
+      setCancelError(err?.message || t('portalPages.bookings.errCancel'));
     } finally {
       setIsCancelling(false);
     }
@@ -76,25 +100,18 @@ export function CustomerBookingsPage() {
       setExtendModalBooking(null);
       await fetchBookings();
     } catch (err: any) {
-      setExtendError(err.message || 'Unable to extend booking for selected date');
+      setExtendError(err?.message || t('portalPages.bookings.errExtend'));
     } finally {
       setIsExtending(false);
     }
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED':
-        return <span className="cp-badge cp-badge-info">Confirmed</span>;
-      case 'ACTIVE':
-        return <span className="cp-badge cp-badge-warning">In Progress</span>;
-      case 'COMPLETED':
-        return <span className="cp-badge cp-badge-success">Completed</span>;
-      case 'CANCELLED':
-        return <span className="cp-badge cp-badge-danger">Cancelled</span>;
-      default:
-        return <span className="cp-badge cp-badge-primary">{status}</span>;
-    }
+    return (
+      <span className={`cp-badge ${STATUS_BADGE_CLASS[status] || 'cp-badge-primary'}`}>
+        {t(`portalPages.bookings.status.${status}`, { defaultValue: status })}
+      </span>
+    );
   };
 
   return (
@@ -102,13 +119,13 @@ export function CustomerBookingsPage() {
       {/* Page Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">My Rental Bookings</h1>
-          <p className="cp-page-subtitle">Track, manage, and inspect your reservations in real-time.</p>
+          <h1 className="cp-page-title">{t('portalPages.bookings.title')}</h1>
+          <p className="cp-page-subtitle">{t('portalPages.bookings.subtitle')}</p>
         </div>
         <div className="cp-header-actions">
           <Link to="/customer/cars" className="cp-btn-primary">
             <Car size={16} />
-            Reserve New Vehicle
+            {t('portalPages.bookings.reserveNew')}
           </Link>
         </div>
       </div>
@@ -117,13 +134,13 @@ export function CustomerBookingsPage() {
       <div className="cp-card" style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div className="cp-tabs-bar" style={{ border: 'none', padding: 0 }}>
-            {['ALL', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED'].map((tab) => (
+            {STATUS_TABS.map((tab) => (
               <button
                 key={tab}
                 className={`cp-tab-btn ${activeTab === tab ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab)}
               >
-                {tab === 'ALL' ? 'All Bookings' : tab.charAt(0) + tab.slice(1).toLowerCase()}
+                {t(`portalPages.bookings.tabs.${tab}`)}
               </button>
             ))}
           </div>
@@ -132,7 +149,7 @@ export function CustomerBookingsPage() {
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--cp-text-muted)' }} />
             <input
               type="text"
-              placeholder="Search reference or vehicle..."
+              placeholder={t('portalPages.bookings.searchPlaceholder')}
               className="cp-input"
               style={{ paddingLeft: '38px', paddingRight: '12px', height: '40px' }}
               value={searchQuery}
@@ -154,33 +171,21 @@ export function CustomerBookingsPage() {
           <div className="cp-empty-icon">
             <Calendar size={32} />
           </div>
-          <h3 className="cp-empty-title">No Bookings Found</h3>
+          <h3 className="cp-empty-title">{t('portalPages.bookings.emptyTitle')}</h3>
           <p className="cp-empty-desc">
-            {activeTab !== 'ALL'
-              ? `You do not have any ${activeTab.toLowerCase()} bookings.`
-              : 'You have not reserved any cars yet. Discover our premium fleet and start driving today!'}
+            {activeTab !== 'ALL' || searchQuery.trim()
+              ? t('portalPages.bookings.emptyFiltered')
+              : t('portalPages.bookings.emptyAll')}
           </p>
           <Link to="/customer/cars" className="cp-btn-primary">
-            Explore Available Cars
+            {t('portalPages.bookings.exploreCars')}
           </Link>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {bookings.map((booking) => {
-            const pickupFormatted = new Date(booking.pickupDateTime).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-            const returnFormatted = new Date(booking.returnDateTime).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
+            const pickupFormatted = formatDateTime(booking.pickupDateTime);
+            const returnFormatted = formatDateTime(booking.returnDateTime);
 
             return (
               <div key={booking.id} className="cp-card" style={{ padding: '24px' }}>
@@ -198,11 +203,8 @@ export function CustomerBookingsPage() {
                       }}
                     >
                       <img
-                        src={
-                          booking.vehicle?.primaryImageUrl ||
-                          'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=400&q=80'
-                        }
-                        alt="Vehicle"
+                        src={booking.vehicle?.primaryImageUrl || getCarImage(booking.vehicle)}
+                        alt={booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : t('portalPages.bookings.vehicle')}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </div>
@@ -210,13 +212,13 @@ export function CustomerBookingsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1.2rem' }}>
-                          {booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Premium Rental'}
+                          {booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : t('portalPages.bookings.vehicle')}
                         </span>
                         {getStatusBadge(booking.status)}
                       </div>
 
                       <div style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)' }}>
-                        Booking ID: <strong style={{ color: 'var(--cp-primary)' }}>#{booking.bookingNumber}</strong>
+                        {t('portalPages.bookings.bookingId')} <strong style={{ color: 'var(--cp-primary)' }}>#{booking.bookingNumber}</strong>
                       </div>
 
                       {/* Locations & Dates */}
@@ -224,7 +226,7 @@ export function CustomerBookingsPage() {
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.85rem' }}>
                           <MapPin size={16} color="var(--cp-accent)" style={{ marginTop: '2px', flexShrink: 0 }} />
                           <div>
-                            <div style={{ color: 'var(--cp-text-muted)' }}>Pickup: {booking.pickupBranch?.name || 'Central Hub'}</div>
+                            <div style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.bookings.pickupAt', { branch: booking.pickupBranch?.name || '—' })}</div>
                             <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{pickupFormatted}</div>
                           </div>
                         </div>
@@ -232,7 +234,7 @@ export function CustomerBookingsPage() {
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.85rem' }}>
                           <Clock size={16} color="var(--cp-primary)" style={{ marginTop: '2px', flexShrink: 0 }} />
                           <div>
-                            <div style={{ color: 'var(--cp-text-muted)' }}>Return: {booking.returnBranch?.name || 'Central Hub'}</div>
+                            <div style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.bookings.returnAt', { branch: booking.returnBranch?.name || '—' })}</div>
                             <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{returnFormatted}</div>
                           </div>
                         </div>
@@ -242,12 +244,12 @@ export function CustomerBookingsPage() {
 
                   {/* Right Column: Price & Main Action */}
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)' }}>Total Amount</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)' }}>{t('portalPages.bookings.totalAmount')}</div>
                     <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-                      ${Number(booking.totalAmount).toFixed(2)}
+                      {formatMoney(Number(booking.totalAmount), booking.currency, 2)}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--cp-text-muted)' }}>
-                      Deposit: ${Number(booking.depositAmount).toFixed(2)}
+                      {t('portalPages.bookings.depositAmount', { amount: formatMoney(Number(booking.depositAmount), booking.currency, 2) })}
                     </div>
                   </div>
                 </div>
@@ -268,16 +270,25 @@ export function CustomerBookingsPage() {
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <Link to={`/customer/bookings/${booking.id}/inspection`} className="cp-btn-outline" style={{ fontSize: '0.85rem' }}>
                       <Camera size={14} color="#FAB826" />
-                      AI Inspection Report
+                      {t('portalPages.bookings.inspectionReport')}
                     </Link>
 
-                    {booking.status === 'CONFIRMED' && (
+                    {booking.status === 'PENDING' && (
+                      <Link to="/customer/payments" className="cp-btn-primary" style={{ fontSize: '0.85rem' }}>
+                        {t('portalPages.bookings.payNow')}
+                      </Link>
+                    )}
+
+                    {CANCELLABLE_STATUSES.includes(booking.status) && (
                       <button
                         className="cp-btn-danger"
                         style={{ fontSize: '0.85rem' }}
-                        onClick={() => setCancelModalBooking(booking)}
+                        onClick={() => {
+                          setCancelError(null);
+                          setCancelModalBooking(booking);
+                        }}
                       >
-                        Cancel Reservation
+                        {t('portalPages.bookings.cancelReservation')}
                       </button>
                     )}
 
@@ -291,13 +302,13 @@ export function CustomerBookingsPage() {
                         }}
                       >
                         <Clock size={14} />
-                        Extend Trip
+                        {t('portalPages.bookings.extendTrip')}
                       </button>
                     )}
                   </div>
 
                   <Link to={`/customer/bookings/${booking.id}`} className="cp-btn-secondary" style={{ fontSize: '0.85rem' }}>
-                    View Full Details
+                    {t('portalPages.bookings.viewDetails')}
                     <ChevronRight size={14} />
                   </Link>
                 </div>
@@ -312,22 +323,26 @@ export function CustomerBookingsPage() {
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
             <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>
-              Cancel Booking #{cancelModalBooking.bookingNumber}
+              {t('portalPages.bookings.cancelTitle', { number: cancelModalBooking.bookingNumber })}
             </h2>
             <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              Are you sure you want to cancel your reservation for the{' '}
-              <strong>
-                {cancelModalBooking.vehicle?.brand} {cancelModalBooking.vehicle?.model}
-              </strong>
-              ? You will receive a full refund if canceled 24 hours prior to pickup.
+              {t('portalPages.bookings.cancelQuestion', {
+                vehicle: `${cancelModalBooking.vehicle?.brand || ''} ${cancelModalBooking.vehicle?.model || ''}`.trim(),
+              })}
             </p>
 
+            {cancelError && (
+              <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '12px' }}>
+                {cancelError}
+              </div>
+            )}
+
             <div className="cp-form-group">
-              <label className="cp-label">Reason for cancellation (optional)</label>
+              <label className="cp-label">{t('portalPages.bookings.reasonOptional')}</label>
               <textarea
                 className="cp-textarea"
                 rows={3}
-                placeholder="Change of plans, found alternate transport, etc..."
+                placeholder={t('portalPages.bookings.reasonPlaceholder')}
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
               />
@@ -339,14 +354,14 @@ export function CustomerBookingsPage() {
                 disabled={isCancelling}
                 onClick={() => setCancelModalBooking(null)}
               >
-                Keep Booking
+                {t('portalPages.bookings.keepBooking')}
               </button>
               <button
                 className="cp-btn-danger"
                 disabled={isCancelling}
                 onClick={handleCancelBooking}
               >
-                {isCancelling ? 'Processing...' : 'Confirm Cancellation'}
+                {isCancelling ? t('portalPages.bookings.processing') : t('portalPages.bookings.confirmCancel')}
               </button>
             </div>
           </div>
@@ -358,11 +373,10 @@ export function CustomerBookingsPage() {
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
             <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>
-              Extend Trip for #{extendModalBooking.bookingNumber}
+              {t('portalPages.bookings.extendTitle', { number: extendModalBooking.bookingNumber })}
             </h2>
             <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              Current Return Date:{' '}
-              <strong>{new Date(extendModalBooking.returnDateTime).toLocaleDateString()}</strong>. Choose your new return date:
+              {t('portalPages.bookings.extendCurrent', { date: formatDateTime(extendModalBooking.returnDateTime) })}
             </p>
 
             {extendError && (
@@ -381,7 +395,7 @@ export function CustomerBookingsPage() {
             )}
 
             <div className="cp-form-group">
-              <label className="cp-label">New Return Date</label>
+              <label className="cp-label">{t('portalPages.bookings.newReturnDate')}</label>
               <input
                 type="date"
                 className="cp-input"
@@ -400,14 +414,14 @@ export function CustomerBookingsPage() {
                   setExtendError(null);
                 }}
               >
-                Cancel
+                {t('portalPages.bookings.cancel')}
               </button>
               <button
                 className="cp-btn-primary"
                 disabled={isExtending || !extendDate}
                 onClick={handleExtendBooking}
               >
-                {isExtending ? 'Updating Trip...' : 'Confirm Trip Extension'}
+                {isExtending ? t('portalPages.bookings.updating') : t('portalPages.bookings.confirmExtend')}
               </button>
             </div>
           </div>

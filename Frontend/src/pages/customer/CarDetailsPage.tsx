@@ -5,7 +5,8 @@ import {
   Check,
   ArrowRight,
   Heart,
-  ShoppingCart,
+  Share2,
+  GitCompareArrows,
   Rotate3d,
   Cog,
   Gauge,
@@ -44,6 +45,26 @@ import {
 } from '../../utils/carImageHelper';
 import { parseVehicleNotes } from '../../utils/vehicleNotesHelper';
 import { CustomSelect } from '../../components/common/CustomSelect';
+import { CompareTray } from '../../components/cars/CompareTray';
+import { AvailabilityCalendar } from '../../components/cars/AvailabilityCalendar';
+import { MAX_COMPARE, useCompareCars, useRecentlyViewed, useSavedCars } from '../../hooks/useCarShortlists';
+
+const secondaryActionStyle = (active: boolean): React.CSSProperties => ({
+  flex: 1,
+  minWidth: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  padding: '12px 10px',
+  borderRadius: '12px',
+  backgroundColor: active ? '#FAB826' : 'rgba(255, 255, 255, 0.12)',
+  color: active ? '#1E0426' : '#FFFFFF',
+  border: '1px solid rgba(255, 255, 255, 0.25)',
+  fontWeight: 700,
+  fontSize: '13px',
+  cursor: 'pointer',
+});
 
 // Assets
 import carMain from '../../assets/car-detail/car-main.jpg';
@@ -96,8 +117,10 @@ export function CarDetailsPage() {
   const [isLoadingVehicle, setIsLoadingVehicle] = useState(true);
   const [vehicleError, setVehicleError] = useState<string | null>(null);
   const [similarCars, setSimilarCars] = useState<any[]>([]);
-  const [cartAdded, setCartAdded] = useState(false);
-  const [wishlistAdded, setWishlistAdded] = useState(false);
+  const { isSaved, toggleSaved } = useSavedCars();
+  const { isCompared, toggleCompare } = useCompareCars();
+  const { addRecent } = useRecentlyViewed();
+  const [shareNote, setShareNote] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,6 +133,7 @@ export function CarDetailsPage() {
         if (!isMounted) return;
         if (res && res.vehicle) {
           setVehicle(res.vehicle);
+          addRecent(res.vehicle.id);
         } else {
           setVehicle(null);
           setVehicleError(t('cars.details.notFound'));
@@ -275,6 +299,23 @@ export function CarDetailsPage() {
         ? `${pretrainedSpec.topSpeedKmH} km/h`
         : '—';
   const transVal = vehicle?.transmission || pretrainedSpec?.transmission || '—';
+
+  const shareCar = async () => {
+    const url = `${window.location.origin}/cars/${vehicle.id}`;
+    const title = `${carName} | ${t('common.appName')}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareNote(t('shortlists.linkCopied'));
+    } catch (err) {
+      // Closing the share sheet is not an error
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setShareNote(url);
+    }
+  };
 
   const handleBookNow = () => {
     if (isUnavailable || !quote) return;
@@ -675,50 +716,68 @@ export function CarDetailsPage() {
               </button>
 
               <div style={{ display: 'flex', gap: '10px' }}>
+                {/* Compare with up to two other cars */}
                 <button
                   type="button"
-                  onClick={() => setCartAdded(true)}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    backgroundColor: cartAdded ? '#10B981' : 'rgba(255, 255, 255, 0.12)',
-                    color: '#FFFFFF',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    cursor: 'pointer',
+                  onClick={() => {
+                    if (!toggleCompare(vehicle.id)) setShareNote(t('shortlists.compareFull', { count: MAX_COMPARE }));
                   }}
+                  aria-pressed={isCompared(vehicle.id)}
+                  style={secondaryActionStyle(isCompared(vehicle.id))}
                 >
-                  <ShoppingCart size={16} />
-                  <span>{cartAdded ? t('cars.details.addedToCart') : t('cars.details.addToCart')}</span>
+                  <GitCompareArrows size={16} />
+                  <span>{isCompared(vehicle.id) ? t('shortlists.inCompare') : t('shortlists.addCompare')}</span>
                 </button>
 
+                {/* Share this car (native share sheet on phones, copy link elsewhere) */}
+                <button type="button" onClick={shareCar} style={secondaryActionStyle(false)} aria-label={t('shortlists.share')}>
+                  <Share2 size={16} />
+                  <span>{t('shortlists.share')}</span>
+                </button>
+
+                {/* Save to this browser's saved cars */}
                 <button
                   type="button"
-                  onClick={() => setWishlistAdded(!wishlistAdded)}
-                  aria-label="Save to Wishlist"
+                  onClick={() => toggleSaved(vehicle.id)}
+                  aria-pressed={isSaved(vehicle.id)}
+                  aria-label={isSaved(vehicle.id) ? t('shortlists.removeSaved') : t('shortlists.save')}
+                  title={isSaved(vehicle.id) ? t('shortlists.removeSaved') : t('shortlists.save')}
                   style={{
                     width: '46px',
+                    flexShrink: 0,
                     borderRadius: '12px',
-                    backgroundColor: wishlistAdded ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.12)',
-                    color: wishlistAdded ? '#EF4444' : '#FFFFFF',
+                    backgroundColor: isSaved(vehicle.id) ? '#FFFFFF' : 'rgba(255, 255, 255, 0.12)',
+                    color: isSaved(vehicle.id) ? '#E11D48' : '#FFFFFF',
                     border: '1px solid rgba(255, 255, 255, 0.25)',
                     display: 'grid',
                     placeItems: 'center',
                     cursor: 'pointer',
                   }}
                 >
-                  <Heart size={18} fill={wishlistAdded ? '#EF4444' : 'none'} />
+                  <Heart size={18} fill={isSaved(vehicle.id) ? 'currentColor' : 'none'} />
                 </button>
               </div>
+              {shareNote && (
+                <p role="status" style={{ margin: '10px 0 0', fontSize: '12px', color: '#FDE68A' }}>
+                  {shareNote}
+                </p>
+              )}
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Availability for the next months (busy days only, never who booked) */}
+      <section style={{ maxWidth: '1240px', margin: '48px auto 0', padding: '0 clamp(16px, 4vw, 24px)' }}>
+        <AvailabilityCalendar
+          vehicleId={vehicle.id}
+          selectedStart={pickupDate}
+          selectedEnd={dropoffDate}
+          onSelectRange={(start, end) => {
+            setPickupDate(start);
+            setDropoffDate(end);
+          }}
+        />
       </section>
 
       {/* Technical Specifications Grid */}
@@ -930,6 +989,7 @@ export function CarDetailsPage() {
           </div>
         </section>
       )}
+      <CompareTray />
     </div>
   );
 }

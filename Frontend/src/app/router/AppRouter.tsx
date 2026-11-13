@@ -15,6 +15,7 @@ import { AboutUsPage } from '../../pages/customer/AboutUsPage';
 import { AiInspectionPage } from '../../pages/customer/AiInspectionPage';
 import { ContactUsPage } from '../../pages/customer/ContactUsPage';
 import { LegalPage } from '../../pages/customer/LegalPage';
+import { CompareCarsPage } from '../../pages/customer/CompareCarsPage';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { RegisterPage } from '../../features/auth/pages/RegisterPage';
 import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
@@ -93,6 +94,7 @@ export function AppRouter() {
             <Route path="about" element={<AboutUsPage />} />
             <Route path="ai-inspection" element={<AiInspectionPage />} />
             <Route path="contact" element={<ContactUsPage />} />
+            <Route path="compare" element={<CompareCarsPage />} />
             <Route path="privacy" element={<LegalPage kind="privacy" />} />
             <Route path="terms" element={<LegalPage kind="terms" />} />
             <Route path="cookies" element={<LegalPage kind="cookies" />} />

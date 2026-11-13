@@ -10,10 +10,21 @@ import {
   CheckCircle2,
   Mail,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { customerPortalApi, type CustomerBookingDetail } from '../api/customerPortalApi';
+import { formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
+const CANCELLABLE_STATUSES = ['PENDING', 'RESERVED', 'CONFIRMED', 'READY_FOR_PICKUP'];
+const COMPLETED_STATUSES = ['COMPLETED'];
+const STARTED_STATUSES = ['ACTIVE', 'RETURN_INSPECTION', 'COMPLETED'];
+
 export function CustomerBookingDetailPage() {
+  const { t, i18n } = useTranslation();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const formatDate = (value: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(value));
+  const formatDateTime = (value: string) =>
+    new Intl.DateTimeFormat(i18n.language, { dateStyle: 'full', timeStyle: 'short' }).format(new Date(value));
   const { bookingId } = useParams<{ bookingId: string }>();
 
   const [booking, setBooking] = useState<CustomerBookingDetail | null>(null);
@@ -40,7 +51,7 @@ export function CustomerBookingDetailPage() {
       }
     } catch (err: any) {
       console.error('Failed to load booking details:', err);
-      setErrorMessage(err.message || 'Unable to retrieve reservation details');
+      setErrorMessage(err?.message || t('portalPages.bookingDetail.errLoad'));
     } finally {
       setIsLoading(false);
     }
@@ -54,12 +65,13 @@ export function CustomerBookingDetailPage() {
     if (!booking || !newReturnDate) return;
     try {
       setIsExtending(true);
+      setActionError(null);
       const timePart = booking.returnDateTime.split('T')[1] || '10:00:00.000Z';
       await customerPortalApi.extendBooking(booking.id, `${newReturnDate}T${timePart}`);
       setIsExtendOpen(false);
       await loadBooking();
     } catch (err: any) {
-      alert(err.message || 'Failed to extend trip');
+      setActionError(err?.message || t('portalPages.bookings.errExtend'));
     } finally {
       setIsExtending(false);
     }
@@ -69,11 +81,12 @@ export function CustomerBookingDetailPage() {
     if (!booking) return;
     try {
       setIsCancelling(true);
+      setActionError(null);
       await customerPortalApi.cancelBooking(booking.id, cancelReason);
       setIsCancelOpen(false);
       await loadBooking();
     } catch (err: any) {
-      alert(err.message || 'Failed to cancel reservation');
+      setActionError(err?.message || t('portalPages.bookings.errCancel'));
     } finally {
       setIsCancelling(false);
     }
@@ -92,33 +105,20 @@ export function CustomerBookingDetailPage() {
       <div className="cp-page-container">
         <div className="cp-card cp-empty-state">
           <AlertCircle size={36} color="var(--cp-danger)" />
-          <h2 className="cp-empty-title">Booking Not Found</h2>
-          <p className="cp-empty-desc">{errorMessage || 'The requested booking could not be found or you do not have permission to view it.'}</p>
+          <h2 className="cp-empty-title">{t('portalPages.bookingDetail.notFound')}</h2>
+          <p className="cp-empty-desc">{errorMessage || t('portalPages.bookingDetail.notFoundDesc')}</p>
           <Link to="/customer/bookings" className="cp-btn-primary">
-            Back to My Bookings
+            {t('portalPages.bookingDetail.backToBookings')}
           </Link>
         </div>
       </div>
     );
   }
 
-  const pickupDateFormatted = new Date(booking.pickupDateTime).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const pickupDateFormatted = formatDateTime(booking.pickupDateTime);
 
-  const returnDateFormatted = new Date(booking.returnDateTime).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const returnDateFormatted = formatDateTime(booking.returnDateTime);
+  const money = (amount: number) => formatMoney(Number(amount), booking.currency, 2);
 
   return (
     <div className="cp-page-container">
@@ -138,7 +138,7 @@ export function CustomerBookingDetailPage() {
           }}
         >
           <ArrowLeft size={16} />
-          Back to Bookings
+          {t('portalPages.bookingDetail.backToBookings')}
         </Link>
       </div>
 
@@ -173,11 +173,11 @@ export function CustomerBookingDetailPage() {
                       : '#F87171',
                 }}
               >
-                {booking.status}
+                {t(`portalPages.bookings.status.${booking.status}`, { defaultValue: booking.status })}
               </span>
             </div>
             <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: 0 }}>
-              {booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model} (${booking.vehicle.year})` : 'Vehicle Reservation'}
+              {booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model} (${booking.vehicle.year})` : t('portalPages.bookings.vehicle')}
             </h1>
           </div>
 
@@ -188,11 +188,11 @@ export function CustomerBookingDetailPage() {
               style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', borderColor: 'rgba(255, 255, 255, 0.2)' }}
             >
               <Printer size={16} />
-              Print Receipt
+              {t('portalPages.bookingDetail.printReceipt')}
             </button>
             <Link to={`/customer/bookings/${booking.id}/inspection`} className="cp-btn-primary">
               <Camera size={16} />
-              AI Damage Inspection
+              {t('portalPages.bookingDetail.inspection')}
             </Link>
           </div>
         </div>
@@ -204,18 +204,34 @@ export function CustomerBookingDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Trip Timeline Tracker */}
           <div className="cp-card">
-            <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>Rental Progress Timeline</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>{t('portalPages.bookingDetail.timeline')}</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
-                { title: 'Booking Confirmed', done: true, time: new Date(booking.createdAt).toLocaleDateString() },
                 {
-                  title: 'Pre-Trip Computer Vision Inspection',
-                  done: booking.inspections.some((i) => i.type === 'PICKUP') || booking.status === 'ACTIVE' || booking.status === 'COMPLETED',
-                  time: 'Scheduled at branch handover',
+                  title: t('portalPages.bookingDetail.stepBooked'),
+                  done: true,
+                  time: formatDate(booking.createdAt),
                 },
-                { title: 'Vehicle Handover & Drive Off', done: booking.hasRentalStarted || booking.status === 'ACTIVE' || booking.status === 'COMPLETED', time: pickupDateFormatted },
-                { title: 'Trip Return & AI Damage Scan', done: booking.status === 'COMPLETED', time: returnDateFormatted },
-                { title: 'Final Settlement & Security Deposit Release', done: booking.status === 'COMPLETED', time: 'Instant automated release' },
+                {
+                  title: t('portalPages.bookingDetail.stepPickupInspection'),
+                  done: booking.inspections.some((i) => i.type === 'PICKUP') || STARTED_STATUSES.includes(booking.status),
+                  time: t('portalPages.bookingDetail.stepPickupInspectionTime'),
+                },
+                {
+                  title: t('portalPages.bookingDetail.stepHandover'),
+                  done: booking.hasRentalStarted || STARTED_STATUSES.includes(booking.status),
+                  time: pickupDateFormatted,
+                },
+                {
+                  title: t('portalPages.bookingDetail.stepReturn'),
+                  done: booking.inspections.some((i) => i.type === 'RETURN') || COMPLETED_STATUSES.includes(booking.status),
+                  time: returnDateFormatted,
+                },
+                {
+                  title: t('portalPages.bookingDetail.stepSettlement'),
+                  done: COMPLETED_STATUSES.includes(booking.status),
+                  time: t('portalPages.bookingDetail.stepSettlementTime'),
+                },
               ].map((step, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
                   <div
@@ -249,10 +265,10 @@ export function CustomerBookingDetailPage() {
             <div className="cp-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.85rem', marginBottom: '8px' }}>
                 <MapPin size={16} color="var(--cp-accent)" />
-                Pickup Station
+                {t('portalPages.bookingDetail.pickupBranch')}
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--cp-primary)', margin: '0 0 6px 0' }}>
-                {booking.pickupBranch?.name || 'Central Hub'}
+                {booking.pickupBranch?.name || '—'}
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '0 0 12px 0' }}>
                 {booking.pickupBranch?.address || booking.pickupBranch?.city || '—'}
@@ -265,10 +281,10 @@ export function CustomerBookingDetailPage() {
             <div className="cp-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.85rem', marginBottom: '8px' }}>
                 <MapPin size={16} color="var(--cp-primary)" />
-                Return Station
+                {t('portalPages.bookingDetail.returnBranch')}
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--cp-primary)', margin: '0 0 6px 0' }}>
-                {booking.returnBranch?.name || 'Central Hub'}
+                {booking.returnBranch?.name || '—'}
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '0 0 12px 0' }}>
                 {booking.returnBranch?.address || booking.returnBranch?.city || '—'}
@@ -281,28 +297,40 @@ export function CustomerBookingDetailPage() {
 
           {/* Manage Trip Actions */}
           <div className="cp-card">
-            <h2 className="cp-card-title" style={{ marginBottom: '14px' }}>Trip Operations</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '14px' }}>{t('portalPages.bookingDetail.manageTrip')}</h2>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              {booking.status === 'CONFIRMED' && (
-                <button className="cp-btn-danger" onClick={() => setIsCancelOpen(true)}>
-                  Cancel Booking
+              {booking.status === 'PENDING' && (
+                <Link to="/customer/payments" className="cp-btn-primary">
+                  {t('portalPages.bookings.payNow')}
+                </Link>
+              )}
+              {CANCELLABLE_STATUSES.includes(booking.status) && (
+                <button
+                  className="cp-btn-danger"
+                  onClick={() => {
+                    setActionError(null);
+                    setIsCancelOpen(true);
+                  }}
+                >
+                  {t('portalPages.bookingDetail.cancelBooking')}
                 </button>
               )}
               {booking.status === 'ACTIVE' && (
                 <button
                   className="cp-btn-outline"
                   onClick={() => {
+                    setActionError(null);
                     setNewReturnDate(booking.returnDateTime.split('T')[0]);
                     setIsExtendOpen(true);
                   }}
                 >
                   <Clock size={16} />
-                  Extend Return Date
+                  {t('portalPages.bookingDetail.extendReturn')}
                 </button>
               )}
               <Link to="/customer/support" className="cp-btn-outline">
                 <Mail size={16} />
-                Need Assistance? Contact Support
+                {t('portalPages.bookingDetail.contactSupport')}
               </Link>
             </div>
           </div>
@@ -311,25 +339,26 @@ export function CustomerBookingDetailPage() {
         {/* Right Column: Financial Breakdown */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="cp-card">
-            <h3 className="cp-card-title" style={{ marginBottom: '16px' }}>Invoice Breakdown</h3>
+            <h3 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.bookingDetail.invoice')}</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.9rem' }}>
               {booking.breakdownItems && booking.breakdownItems.length > 0 ? (
-                booking.breakdownItems.map((item) => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--cp-text-muted)' }}>{item.description}:</span>
-                    <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>${Number(item.amount).toFixed(2)}</span>
+                // The deposit is shown on its own line below, so it is left out of the rental lines
+                booking.breakdownItems.filter((item) => item.lineType !== 'deposit').map((item) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                    <span style={{ color: 'var(--cp-text-muted)' }}>{item.description}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--cp-primary)', whiteSpace: 'nowrap' }}>{money(item.amount)}</span>
                   </div>
                 ))
               ) : (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--cp-text-muted)' }}>Rental Base ({booking.totalDays} days):</span>
-                    <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>${Number(booking.subtotal).toFixed(2)}</span>
+                    <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.bookingDetail.rentalBase', { count: booking.totalDays })}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{money(booking.subtotal)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--cp-text-muted)' }}>Tax (VAT):</span>
-                    <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>${Number(booking.taxAmount).toFixed(2)}</span>
+                    <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.bookingDetail.tax')}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{money(booking.taxAmount)}</span>
                   </div>
                 </>
               )}
@@ -343,15 +372,15 @@ export function CustomerBookingDetailPage() {
                   alignItems: 'baseline',
                 }}
               >
-                <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1rem' }}>Total Reservation:</span>
+                <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1rem' }}>{t('portalPages.bookingDetail.total')}</span>
                 <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1.4rem' }}>
-                  ${Number(booking.totalAmount).toFixed(2)}
+                  {money(booking.totalAmount)}
                 </span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Security Deposit Hold:</span>
-                <span style={{ fontWeight: 700, color: '#10B981' }}>${Number(booking.depositAmount).toFixed(2)}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.bookingDetail.deposit')}</span>
+                <span style={{ fontWeight: 700, color: '#10B981' }}>{money(booking.depositAmount)}</span>
               </div>
             </div>
 
@@ -359,7 +388,7 @@ export function CustomerBookingDetailPage() {
             {booking.payments && booking.payments.length > 0 && (
               <div style={{ marginTop: '20px', borderTop: '1px solid var(--cp-border)', paddingTop: '16px' }}>
                 <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cp-primary)', marginBottom: '10px' }}>
-                  Recorded Transactions
+                  {t('portalPages.bookingDetail.payments')}
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {booking.payments.map((p) => (
@@ -376,10 +405,10 @@ export function CustomerBookingDetailPage() {
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{p.provider} Payment</div>
-                        <div style={{ color: 'var(--cp-text-subtle)' }}>{new Date(p.createdAt).toLocaleDateString()}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.bookingDetail.providerPayment', { provider: p.provider })}</div>
+                        <div style={{ color: 'var(--cp-text-subtle)' }}>{formatDate(p.createdAt)}</div>
                       </div>
-                      <div style={{ fontWeight: 800, color: '#10B981' }}>+${Number(p.amount).toFixed(2)}</div>
+                      <div style={{ fontWeight: 800, color: '#10B981' }}>+{formatMoney(Number(p.amount), p.currency || booking.currency, 2)}</div>
                     </div>
                   ))}
                 </div>
@@ -393,12 +422,17 @@ export function CustomerBookingDetailPage() {
       {isExtendOpen && (
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
-            <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>Extend Reservation</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>{t('portalPages.bookingDetail.extendTitle')}</h2>
             <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              Select your preferred new return date:
+              {t('portalPages.bookingDetail.extendDesc')}
             </p>
+            {actionError && (
+              <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '12px' }}>
+                {actionError}
+              </div>
+            )}
             <div className="cp-form-group">
-              <label className="cp-label">New Return Date</label>
+              <label className="cp-label">{t('portalPages.bookingDetail.newReturnDate')}</label>
               <input
                 type="date"
                 className="cp-input"
@@ -409,10 +443,10 @@ export function CustomerBookingDetailPage() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
               <button className="cp-btn-outline" onClick={() => setIsExtendOpen(false)}>
-                Cancel
+                {t('portalPages.bookingDetail.cancel')}
               </button>
               <button className="cp-btn-primary" disabled={isExtending} onClick={handleExtend}>
-                {isExtending ? 'Saving...' : 'Confirm Extension'}
+                {isExtending ? t('portalPages.bookings.updating') : t('portalPages.bookings.confirmExtend')}
               </button>
             </div>
           </div>
@@ -423,26 +457,31 @@ export function CustomerBookingDetailPage() {
       {isCancelOpen && (
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
-            <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>Cancel Reservation</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>{t('portalPages.bookingDetail.cancelTitle')}</h2>
             <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              Are you sure you want to cancel booking #{booking.bookingNumber}?
+              {t('portalPages.bookingDetail.cancelQuestion', { number: booking.bookingNumber })}
             </p>
+            {actionError && (
+              <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '12px' }}>
+                {actionError}
+              </div>
+            )}
             <div className="cp-form-group">
-              <label className="cp-label">Reason</label>
+              <label className="cp-label">{t('portalPages.bookingDetail.reason')}</label>
               <textarea
                 className="cp-textarea"
                 rows={3}
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Reason for cancellation..."
+                placeholder={t('portalPages.bookingDetail.reasonPlaceholder')}
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
               <button className="cp-btn-outline" onClick={() => setIsCancelOpen(false)}>
-                Keep Booking
+                {t('portalPages.bookingDetail.keepBooking')}
               </button>
               <button className="cp-btn-danger" disabled={isCancelling} onClick={handleCancel}>
-                {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                {isCancelling ? t('portalPages.bookings.processing') : t('portalPages.bookings.confirmCancel')}
               </button>
             </div>
           </div>

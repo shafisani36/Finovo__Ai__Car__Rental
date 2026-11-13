@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { telHref, useSiteInfo } from '../../../hooks/usePublicSite';
 import {
   customerPortalApi,
   type PortalOverviewResponse,
@@ -25,6 +26,7 @@ import {
 import './CustomerPortal.css';
 
 export function CustomerDashboardOverviewPage() {
+  const site = useSiteInfo();
   const { t } = useTranslation();
   const [data, setData] = useState<PortalOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -659,8 +661,9 @@ export function CustomerDashboardOverviewPage() {
               </div>
               <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t('nav.roadsideDesc')}</div>
             </div>
+{site?.supportPhone && (
             <a
-              href="tel:+966114009000"
+              href={telHref(site.supportPhone)}
               className="cp-btn-primary"
               style={{
                 padding: '8px 16px',
@@ -672,6 +675,7 @@ export function CustomerDashboardOverviewPage() {
               <Phone size={14} />
               {t('contact.callUs')}
             </a>
+            )}
           </div>
         </div>
       </div>

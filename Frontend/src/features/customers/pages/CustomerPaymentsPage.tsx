@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   CreditCard,
   Receipt,
@@ -15,6 +16,9 @@ import { formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerPaymentsPage() {
+  const { t, i18n } = useTranslation();
+  const formatDate = (value: string | Date) =>
+    new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(value));
   const [data, setData] = useState<CustomerPaymentSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -65,7 +69,7 @@ export function CustomerPaymentsPage() {
   };
 
   const handlePaymentSuccess = () => {
-    setPaySuccessMessage('Payment processed successfully!');
+    setPaySuccessMessage(t('portalPages.payments.paySuccess'));
     setTimeout(() => {
       closePayModal();
       fetchPayments();
@@ -92,14 +96,14 @@ export function CustomerPaymentsPage() {
       {/* Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Payments, Invoices & Deposits</h1>
-          <p className="cp-page-subtitle">Track your transaction history, view invoices, and settle balances.</p>
+          <h1 className="cp-page-title">{t('portalPages.payments.title')}</h1>
+          <p className="cp-page-subtitle">{t('portalPages.payments.subtitle')}</p>
         </div>
         {summary.totalOutstanding > 0 && (
           <div className="cp-header-actions">
             <button className="cp-btn-primary" onClick={() => setIsPayModalOpen(true)}>
               <CreditCard size={16} />
-              Pay Outstanding ({formatMoney(summary.totalOutstanding, summary.currency, 2)})
+              {t('portalPages.payments.payOutstanding', { amount: formatMoney(summary.totalOutstanding, summary.currency, 2) })}
             </button>
           </div>
         )}
@@ -110,20 +114,20 @@ export function CustomerPaymentsPage() {
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '8px' }}>
             <CheckCircle2 size={18} color="#10B981" />
-            Total Settled & Paid
+            {t('portalPages.payments.totalPaid')}
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
             {formatMoney(summary.totalPaid, summary.currency, 2)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
-            Across all completed & active rentals
+            {t('portalPages.payments.totalPaidNote')}
           </div>
         </div>
 
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '8px' }}>
             <AlertCircle size={18} color={summary.totalOutstanding > 0 ? '#EF4444' : '#10B981'} />
-            Outstanding Balance Due
+            {t('portalPages.payments.outstanding')}
           </div>
           <div
             style={{
@@ -135,39 +139,40 @@ export function CustomerPaymentsPage() {
             {formatMoney(summary.totalOutstanding, summary.currency, 2)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
-            {summary.totalOutstanding > 0 ? 'Pending payment settlement' : 'All accounts settled'}
+            {summary.totalOutstanding > 0 ? t('portalPages.payments.pendingSettlement') : t('portalPages.payments.allSettled')}
           </div>
         </div>
 
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '8px' }}>
             <ShieldCheck size={18} color="#FAB826" />
-            Security Deposits Held
+            {t('portalPages.payments.depositsHeld')}
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
             {formatMoney(summary.securityDepositsHeld, summary.currency, 2)}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
-            Refunded automatically upon trip completion
+            {t('portalPages.payments.depositsNote')}
           </div>
         </div>
       </div>
 
       {/* Invoices List */}
       <div className="cp-card">
-        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Rental Invoices & Billing Statements</h2>
+        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.payments.invoicesTitle')}</h2>
         {data?.invoices && data.invoices.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--cp-border)', color: 'var(--cp-text-muted)' }}>
-                  <th style={{ padding: '12px 8px' }}>Booking</th>
-                  <th style={{ padding: '12px 8px' }}>Vehicle</th>
-                  <th style={{ padding: '12px 8px' }}>Date</th>
-                  <th style={{ padding: '12px 8px' }}>Total Amount</th>
-                  <th style={{ padding: '12px 8px' }}>Balance Due</th>
-                  <th style={{ padding: '12px 8px' }}>Status</th>
-                  <th style={{ padding: '12px 8px', textAlign: 'right' }}>Action</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.booking')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.vehicle')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.date')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.rentalTotal')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.deposit')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.balanceDue')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.statusLabel')}</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right' }}>{t('portalPages.payments.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,9 +182,12 @@ export function CustomerPaymentsPage() {
                       #{inv.bookingNumber}
                     </td>
                     <td style={{ padding: '14px 8px', color: 'var(--cp-primary)' }}>{inv.vehicleName}</td>
-                    <td style={{ padding: '14px 8px', color: 'var(--cp-text-muted)' }}>{inv.date}</td>
+                    <td style={{ padding: '14px 8px', color: 'var(--cp-text-muted)' }}>{formatDate(inv.date)}</td>
                     <td style={{ padding: '14px 8px', fontWeight: 700, color: 'var(--cp-primary)' }}>
                       {formatMoney(inv.totalAmount, inv.currency || summary.currency, 2)}
+                    </td>
+                    <td style={{ padding: '14px 8px', color: 'var(--cp-text-muted)' }}>
+                      {formatMoney(inv.depositAmount || 0, inv.currency || summary.currency, 2)}
                     </td>
                     <td
                       style={{
@@ -200,7 +208,7 @@ export function CustomerPaymentsPage() {
                             : 'cp-badge-danger'
                         }`}
                       >
-                        {inv.status}
+                        {t(`portalPages.payments.status.${inv.status}`, { defaultValue: inv.status })}
                       </span>
                     </td>
                     <td style={{ padding: '14px 8px', textAlign: 'right' }}>
@@ -210,7 +218,7 @@ export function CustomerPaymentsPage() {
                         onClick={() => setSelectedInvoice(inv)}
                       >
                         <Receipt size={14} />
-                        View
+                        {t('portalPages.payments.view')}
                       </button>
                     </td>
                   </tr>
@@ -219,24 +227,24 @@ export function CustomerPaymentsPage() {
             </table>
           </div>
         ) : (
-          <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', margin: 0 }}>No invoices generated yet.</p>
+          <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', margin: 0 }}>{t('portalPages.payments.noInvoices')}</p>
         )}
       </div>
 
       {/* Transactions History */}
       <div className="cp-card">
-        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Payment Transactions Log</h2>
+        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.payments.transactionsTitle')}</h2>
         {data?.transactions && data.transactions.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--cp-border)', color: 'var(--cp-text-muted)' }}>
-                  <th style={{ padding: '12px 8px' }}>Transaction ID</th>
-                  <th style={{ padding: '12px 8px' }}>Booking</th>
-                  <th style={{ padding: '12px 8px' }}>Provider</th>
-                  <th style={{ padding: '12px 8px' }}>Date</th>
-                  <th style={{ padding: '12px 8px' }}>Amount</th>
-                  <th style={{ padding: '12px 8px' }}>Status</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.transactionId')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.booking')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.provider')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.date')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.amount')}</th>
+                  <th style={{ padding: '12px 8px' }}>{t('portalPages.payments.statusLabel')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,13 +258,15 @@ export function CustomerPaymentsPage() {
                     </td>
                     <td style={{ padding: '14px 8px', color: 'var(--cp-text-muted)' }}>{tx.provider}</td>
                     <td style={{ padding: '14px 8px', color: 'var(--cp-text-muted)' }}>
-                      {new Date(tx.createdAt).toLocaleDateString()}
+                      {formatDate(tx.createdAt)}
                     </td>
                     <td style={{ padding: '14px 8px', fontWeight: 700, color: '#10B981' }}>
                       +{formatMoney(tx.amount, tx.currency, 2)}
                     </td>
                     <td style={{ padding: '14px 8px' }}>
-                      <span className="cp-badge cp-badge-success">{tx.status}</span>
+                      <span className={`cp-badge ${tx.status === 'SUCCEEDED' ? 'cp-badge-success' : tx.status === 'REFUNDED' ? 'cp-badge-warning' : 'cp-badge-danger'}`}>
+                        {t(`portalPages.payments.status.${tx.status}`, { defaultValue: tx.status })}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -264,7 +274,7 @@ export function CustomerPaymentsPage() {
             </table>
           </div>
         ) : (
-          <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', margin: 0 }}>No transactions recorded yet.</p>
+          <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', margin: 0 }}>{t('portalPages.payments.noTransactions')}</p>
         )}
       </div>
 
@@ -272,7 +282,7 @@ export function CustomerPaymentsPage() {
       {isPayModalOpen && (
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
-            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Settle Rental Payment</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.payments.settleTitle')}</h2>
 
             {paySuccessMessage ? (
               <div style={{ textAlign: 'center', padding: '24px 0' }}>
@@ -286,7 +296,7 @@ export function CustomerPaymentsPage() {
                 {stripeAmount === null ? (
                   <>
                     <div className="cp-form-group">
-                      <label className="cp-label">Select Booking</label>
+                      <label className="cp-label">{t('portalPages.payments.selectBooking')}</label>
                       <CustomSelect
                         value={selectedBookingId}
                         onChange={(val) => {
@@ -299,18 +309,19 @@ export function CustomerPaymentsPage() {
                           .filter((inv) => inv.balanceDue > 0)
                           .map((inv) => ({
                             value: inv.bookingId,
-                            label: `Booking #${inv.bookingNumber} - ${inv.vehicleName}`,
-                            sublabel: `Balance: ${formatMoney(inv.balanceDue, inv.currency, 2)}`,
-                            badge: inv.status,
+                            label: t('portalPages.payments.bookingOption', { number: inv.bookingNumber, vehicle: inv.vehicleName }),
+                            sublabel: t('portalPages.payments.balanceOption', { amount: formatMoney(inv.balanceDue, inv.currency, 2) }),
+                            badge: t(`portalPages.payments.status.${inv.status}`, { defaultValue: inv.status }),
                           }))}
-                        placeholder="Select a booking invoice..."
+                        placeholder={t('portalPages.payments.selectBookingPlaceholder')}
                         size="md"
                       />
                     </div>
 
                     <div className="cp-form-group">
                       <label className="cp-label">
-                        Amount to Pay{selectedInvoiceForPay?.currency ? ` (${selectedInvoiceForPay.currency})` : ''}
+                        {t('portalPages.payments.amountToPay')}
+                        {selectedInvoiceForPay?.currency ? ` (${selectedInvoiceForPay.currency})` : ''}
                       </label>
                       <input
                         type="number"
@@ -325,14 +336,14 @@ export function CustomerPaymentsPage() {
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
                       <button className="cp-btn-outline" onClick={closePayModal}>
-                        Cancel
+                        {t('portalPages.payments.cancel')}
                       </button>
                       <button
                         className="cp-btn-primary"
                         disabled={!selectedBookingId || payAmount <= 0 || payAmount > maxPayable}
                         onClick={() => setStripeAmount(Math.round(payAmount * 100) / 100)}
                       >
-                        Continue to Card Payment
+                        {t('portalPages.payments.continueToCard')}
                       </button>
                     </div>
                   </>
@@ -356,8 +367,10 @@ export function CustomerPaymentsPage() {
           <div className="cp-modal-box printable-document" style={{ maxWidth: '640px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <span className="cp-badge cp-badge-accent">Finovo Tax Invoice</span>
-                <h2 className="cp-card-title" style={{ marginTop: '6px' }}>Invoice #{selectedInvoice.bookingNumber}</h2>
+                <span className="cp-badge cp-badge-accent">{t('portalPages.payments.taxInvoice')}</span>
+                <h2 className="cp-card-title" style={{ marginTop: '6px' }}>
+                  {t('portalPages.payments.invoiceNumber', { number: selectedInvoice.bookingNumber })}
+                </h2>
               </div>
               <button
                 className="no-print"
@@ -370,42 +383,48 @@ export function CustomerPaymentsPage() {
 
             <div style={{ background: '#F8F6F9', padding: '16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Vehicle:</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.vehicleColon')}</span>
                 <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{selectedInvoice.vehicleName}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Issued Date:</span>
-                <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{selectedInvoice.date}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.issuedDate')}</span>
+                <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{formatDate(selectedInvoice.date)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Payment Status:</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.paymentStatus')}</span>
                 <span className={`cp-badge ${selectedInvoice.status === 'PAID' ? 'cp-badge-success' : 'cp-badge-danger'}`}>
-                  {selectedInvoice.status}
+                  {t(`portalPages.payments.status.${selectedInvoice.status}`, { defaultValue: selectedInvoice.status })}
                 </span>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.9rem', marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Subtotal:</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.subtotal')}</span>
                 <span style={{ fontWeight: 600 }}>{formatMoney(selectedInvoice.subtotal, selectedInvoice.currency || summary.currency, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>VAT (10%):</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.tax')}</span>
                 <span style={{ fontWeight: 600 }}>{formatMoney(selectedInvoice.taxAmount, selectedInvoice.currency || summary.currency, 2)}</span>
               </div>
               <div style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 800 }}>Total:</span>
+                <span style={{ fontWeight: 800 }}>{t('portalPages.payments.total')}</span>
                 <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--cp-primary)' }}>
                   {formatMoney(selectedInvoice.totalAmount, selectedInvoice.currency || summary.currency, 2)}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Amount Paid:</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.refundableDeposit')}</span>
+                <span style={{ fontWeight: 600 }}>
+                  +{formatMoney(selectedInvoice.depositAmount || 0, selectedInvoice.currency || summary.currency, 2)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.amountPaid')}</span>
                 <span style={{ fontWeight: 700, color: '#10B981' }}>-{formatMoney(selectedInvoice.paidAmount, selectedInvoice.currency || summary.currency, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Balance Remaining:</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.payments.balanceRemaining')}</span>
                 <span style={{ fontWeight: 800, color: selectedInvoice.balanceDue > 0 ? 'var(--cp-danger)' : '#10B981' }}>
                   {formatMoney(selectedInvoice.balanceDue, selectedInvoice.currency || summary.currency, 2)}
                 </span>
@@ -415,7 +434,7 @@ export function CustomerPaymentsPage() {
             <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button onClick={() => window.print()} className="cp-btn-secondary">
                 <Printer size={16} />
-                Print Invoice
+                {t('portalPages.payments.printInvoice')}
               </button>
             </div>
           </div>

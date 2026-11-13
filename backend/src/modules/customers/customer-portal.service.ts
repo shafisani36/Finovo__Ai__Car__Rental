@@ -78,10 +78,31 @@ export interface ProcessPaymentDTO {
   type?: 'RENTAL_PAYMENT' | 'SECURITY_DEPOSIT' | 'DAMAGE_FEE' | 'EXTENSION_PAYMENT';
 }
 
+/** Unpaid online checkouts older than this are closed automatically. */
+const ABANDONED_CHECKOUT_HOURS = 24;
+
 export class CustomerPortalService {
   /**
    * Resolves or automatically initializes a Customer profile record for the authenticated user.
    */
+  /**
+   * Online checkouts that were never paid within a day are closed as EXPIRED,
+   * so they stop showing as "pending" and as money owed.
+   */
+  static async expireAbandonedCheckouts(customerId?: string) {
+    const cutoff = new Date(Date.now() - ABANDONED_CHECKOUT_HOURS * 60 * 60 * 1000);
+    await prisma.booking.updateMany({
+      where: {
+        ...(customerId ? { customerId } : {}),
+        status: 'PENDING',
+        settlementStatus: 'AWAITING_PAYMENT',
+        createdAt: { lt: cutoff },
+        payments: { none: { status: 'SUCCEEDED' } },
+      },
+      data: { status: 'EXPIRED', settlementStatus: 'EXPIRED' },
+    });
+  }
+
   static async getOrCreateCustomer(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -93,6 +114,7 @@ export class CustomerPortalService {
     }
 
     if (user.customerProfile) {
+      await this.expireAbandonedCheckouts(user.customerProfile.id);
       return user.customerProfile;
     }
 
@@ -187,26 +209,20 @@ export class CustomerPortalService {
       },
     });
 
-    // 5. Pending payments
-    const pendingPaymentBookings = await prisma.booking.findMany({
-      where: {
-        customerId: customer.id,
-        status: { notIn: ['CANCELLED', 'REJECTED'] },
-        settlementStatus: 'PENDING',
-      },
-      select: {
-        id: true,
-        bookingNumber: true,
-        totalAmount: true,
-        depositAmount: true,
-        currency: true,
-      },
+    // 5. Outstanding balance: same rule as the Payments page (rental total + deposit - payments)
+    const openBookings = await prisma.booking.findMany({
+      where: { customerId: customer.id, status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED', 'COMPLETED'] } },
+      select: { id: true, totalAmount: true, depositAmount: true, currency: true },
     });
-
-    const pendingBalanceTotal = pendingPaymentBookings.reduce(
-      (sum, b) => sum + Number(b.totalAmount),
-      0
-    );
+    const succeededPayments = await prisma.payments.findMany({
+      where: { bookingId: { in: openBookings.map((b) => b.id) }, status: 'SUCCEEDED' },
+      select: { bookingId: true, amount: true },
+    });
+    const pendingBalanceTotal = openBookings.reduce((sum, b) => {
+      const paid = succeededPayments.filter((p) => p.bookingId === b.id).reduce((s2, p) => s2 + Number(p.amount), 0);
+      return sum + Math.max(0, Number(b.totalAmount) + Number(b.depositAmount || 0) - paid);
+    }, 0);
+    const balanceCurrency = openBookings[0]?.currency || (await this.resolveCurrency(customer.id));
 
     // 6. Documents status
     const documents = await prisma.customerDocument.findMany({
@@ -246,6 +262,7 @@ export class CustomerPortalService {
         totalBookings: totalBookingsCount,
         activeBookings: activeBookingsCount,
         pendingBalanceTotal,
+        currency: balanceCurrency,
         rewardPoints,
         unreadNotificationsCount,
       },
@@ -273,7 +290,7 @@ export class CustomerPortalService {
                 id: 'pending-balance',
                 type: 'INFO',
                 title: 'Outstanding Trip Balance',
-                message: `You have PKR ${pendingBalanceTotal.toLocaleString()} pending settlement across active reservations.`,
+                message: `You have ${balanceCurrency} ${pendingBalanceTotal.toLocaleString()} pending settlement across active reservations.`,
                 actionLabel: 'View Invoices',
                 actionUrl: '/customer/payments',
               },
@@ -304,14 +321,19 @@ export class CustomerPortalService {
       if (s === 'UPCOMING') {
         where.status = { in: ['CONFIRMED', 'PENDING', 'RESERVED'] };
         where.pickupDateTime = { gte: new Date() };
+      } else if (s === 'PENDING') {
+        where.status = { in: ['PENDING', 'REQUIRES_REVIEW'] };
+      } else if (s === 'CONFIRMED') {
+        where.status = { in: ['CONFIRMED', 'RESERVED', 'READY_FOR_PICKUP'] };
       } else if (s === 'ACTIVE') {
-        where.status = { in: ['ACTIVE', 'CONFIRMED'] };
+        where.status = 'ACTIVE';
       } else if (s === 'COMPLETED') {
         where.status = { in: ['COMPLETED', 'RETURN_INSPECTION'] };
       } else if (s === 'CANCELLED') {
-        where.status = { in: ['CANCELLED', 'REJECTED'] };
+        where.status = { in: ['CANCELLED', 'REJECTED', 'EXPIRED'] };
       } else {
-        where.status = s;
+        // Unknown filter values match nothing instead of reaching Prisma as an invalid enum
+        where.status = { in: [] };
       }
     }
 
@@ -645,7 +667,7 @@ export class CustomerPortalService {
         totalPaid,
         totalOutstanding,
         securityDepositsHeld,
-        currency: bookings[0]?.currency || 'PKR',
+        currency: bookings[0]?.currency || (await this.resolveCurrency(customer.id)),
       },
       transactions: paymentsList.map((p) => ({
         id: p.id,
@@ -1100,7 +1122,21 @@ export class CustomerPortalService {
   }
 
   /**
-   * Rewards, Loyalty Tier & Personal Referral Program
+   * Currency used for a customer's totals: their latest booking, otherwise the fleet's currency.
+   */
+  private static async resolveCurrency(customerId: string): Promise<string> {
+    const latestBooking = await prisma.booking.findFirst({
+      where: { customerId },
+      orderBy: { createdAt: 'desc' },
+      select: { currency: true },
+    });
+    if (latestBooking?.currency) return latestBooking.currency;
+    const anyVehicle = await prisma.vehicle.findFirst({ select: { currency: true } });
+    return anyVehicle?.currency || 'PKR';
+  }
+
+  /**
+   * Rewards and loyalty tier, computed from completed rentals
    */
   static async getRewardsSummary(userId: string) {
     const customer = await this.getOrCreateCustomer(userId);
@@ -1118,11 +1154,11 @@ export class CustomerPortalService {
 
     // Determine tier
     let tier = 'Silver';
-    let nextTier = 'Gold';
-    let progressPercent = 35;
+    let nextTier: string | null = 'Gold';
+    let progressPercent = 0;
     if (pointsBalance >= 2000) {
       tier = 'Platinum';
-      nextTier = 'VIP Diamond';
+      nextTier = null;
       progressPercent = 100;
     } else if (pointsBalance >= 500) {
       tier = 'Gold';
@@ -1132,39 +1168,17 @@ export class CustomerPortalService {
       progressPercent = Math.min(100, Math.round((pointsBalance / 500) * 100));
     }
 
-    const referralCode = `FINOVO-REF-${customer.id.slice(-6).toUpperCase()}`;
-
     return {
       tier,
       nextTier,
       progressPercent,
       pointsBalance,
       totalSpent,
-      referralCode,
-      referralBonusPoints: 150,
-      vouchers: [
-        {
-          code: 'WELCOME10',
-          discount: '10% OFF',
-          description: '10% discount on any booking over 3 days',
-          validUntil: '2026-12-31',
-          isAvailable: true,
-        },
-        {
-          code: 'FREEDRIVER',
-          discount: 'Free Add-on',
-          description: 'Free additional driver fee on luxury rentals',
-          validUntil: '2026-11-30',
-          isAvailable: pointsBalance >= 200,
-        },
-        {
-          code: 'WEEKEND20',
-          discount: 'PKR 2,000 OFF',
-          description: 'Flat PKR 2,000 discount on weekend getaways',
-          validUntil: '2026-12-15',
-          isAvailable: pointsBalance >= 400,
-        },
-      ],
+      currency: completedBookings[0]?.currency || (await this.resolveCurrency(customer.id)),
+      completedRentals: completedBookings.length,
+      // Points are earned at 1 point per 100 currency units on completed rentals
+      pointsPerHundred: 1,
+      pointsToNextTier: tier === 'Platinum' ? 0 : (tier === 'Gold' ? 2000 : 500) - pointsBalance,
     };
   }
 

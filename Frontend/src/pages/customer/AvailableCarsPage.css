@@ -1547,3 +1547,82 @@
   0% { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
 }
+
+/* Saved-cars toggle next to the sort control */
+.cars-saved-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #E5DDEB;
+  background: #FFFFFF;
+  color: #3B2A4A;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cars-saved-toggle.active {
+  background: #FFF1F3;
+  border-color: #FDA4AF;
+  color: #BE123C;
+}
+
+/* Recently viewed strip */
+.cars-recent {
+  margin: 0 0 24px;
+}
+.cars-recent h3 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1E0426;
+  margin: 0 0 10px;
+}
+.cars-recent-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.cars-recent-item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 240px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1px solid #ECE6F1;
+  text-decoration: none;
+  color: inherit;
+}
+.cars-recent-item:hover {
+  border-color: #FAB826;
+}
+.cars-recent-item img {
+  width: 72px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #F4F0F7;
+  flex-shrink: 0;
+}
+.cars-recent-item span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cars-recent-item strong {
+  font-size: 0.85rem;
+  color: #1E0426;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cars-recent-item small {
+  font-size: 0.76rem;
+  color: #6B5A78;
+}

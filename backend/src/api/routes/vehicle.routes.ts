@@ -155,6 +155,7 @@ vehicleRouter.post(
 // ==========================================
 // 3. SINGLE VEHICLE CORE CRUD & AVAILABILITY
 // ==========================================
+vehicleRouter.get('/:id/busy-periods', VehicleController.busyPeriods);
 vehicleRouter.get('/:id', optionalAuthenticate, VehicleController.getById);
 vehicleRouter.get('/:id/availability', VehicleController.checkAvailability);
 

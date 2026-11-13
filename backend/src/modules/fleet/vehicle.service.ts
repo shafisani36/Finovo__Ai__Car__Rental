@@ -60,7 +60,6 @@ export class VehicleService {
 
   /** Internal fields that guests and customers must never receive. */
   private static readonly INTERNAL_FIELDS = [
-    'notes',
     'acquisitionCost',
     'acquisitionDate',
     'insurancePolicyNumber',
@@ -92,9 +91,38 @@ export class VehicleService {
     );
   }
 
+  /**
+   * Vehicle notes hold staff remarks plus public spec data (luggage, 0-100, fuel policy...).
+   * Only the spec data may leave the server.
+   */
+  static publicSpecsFromNotes(rawNotes: unknown): string | null {
+    let current: unknown = rawNotes;
+    let specs: Record<string, unknown> | null = null;
+    for (let depth = 0; depth < 10 && typeof current === 'string'; depth++) {
+      const trimmed = current.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('"')) break;
+      try {
+        const parsed: unknown = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object') {
+          const obj = parsed as { extraSpecs?: unknown; notes?: unknown };
+          if (obj.extraSpecs && typeof obj.extraSpecs === 'object') {
+            specs = { ...(specs || {}), ...(obj.extraSpecs as Record<string, unknown>) };
+          }
+          current = obj.notes;
+        } else {
+          current = parsed;
+        }
+      } catch {
+        break;
+      }
+    }
+    return specs ? JSON.stringify({ notes: '', extraSpecs: specs }) : null;
+  }
+
   static toPublicVehicle<T extends Record<string, unknown>>(vehicle: T): T {
     const copy: Record<string, unknown> = { ...vehicle };
     for (const field of VehicleService.INTERNAL_FIELDS) delete copy[field];
+    copy.notes = VehicleService.publicSpecsFromNotes(vehicle.notes);
     return copy as T;
   }
 

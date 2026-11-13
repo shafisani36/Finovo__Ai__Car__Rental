@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { VehicleService } from './vehicle.service';
 import { isStaffUser } from '../../middleware/authenticate';
+import { getBusyPeriods } from '../bookings/booking.service';
 import { VehicleImageService } from './vehicle-image.service';
 import {
   vehicleFilterSchema,
@@ -24,6 +25,17 @@ const PUBLIC_LIST_CACHE_MAX = 300;
 const publicListCache = new Map<string, { body: unknown; expiresAt: number }>();
 
 export class VehicleController {
+  /** GET /vehicles/:id/busy-periods: public availability calendar (no customer data). */
+  static async busyPeriods(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await getBusyPeriods(String(req.params.id));
+      res.setHeader('Cache-Control', 'public, max-age=60');
+      res.status(200).json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const filters = vehicleFilterSchema.parse(req.query);

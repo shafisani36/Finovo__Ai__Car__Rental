@@ -634,7 +634,7 @@ export function UsersManagementPage() {
               </label>
               <input
                 type="text"
-                placeholder="+966 50 123 4567"
+                placeholder="+92 300 1234567"
                 value={createForm.phone}
                 onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
                 style={{
