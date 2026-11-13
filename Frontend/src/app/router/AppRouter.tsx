@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '../../features/auth/context/AuthContext';
 import { GuestRoute } from '../../features/auth/guards/GuestRoute';
@@ -6,77 +7,80 @@ import {
   RoleBasedDashboardRedirect,
 } from '../../features/auth/guards/RoleMiddlewareRoute';
 import { RootLayout } from '../layouts/RootLayout';
-import { AdminLayout } from '../layouts/AdminLayout';
 import { HomePage } from '../../features/home/HomePage';
-import { AvailableCarsPage } from '../../pages/customer/AvailableCarsPage';
-import { CarDetailsPage } from '../../pages/customer/CarDetailsPage';
-import { InsurancePage } from '../../pages/customer/InsurancePage';
-import { AboutUsPage } from '../../pages/customer/AboutUsPage';
-import { AiInspectionPage } from '../../pages/customer/AiInspectionPage';
-import { ContactUsPage } from '../../pages/customer/ContactUsPage';
-import { LegalPage } from '../../pages/customer/LegalPage';
-import { CompareCarsPage } from '../../pages/customer/CompareCarsPage';
-import { LoginPage } from '../../features/auth/pages/LoginPage';
-import { RegisterPage } from '../../features/auth/pages/RegisterPage';
-import { ForgotPasswordPage } from '../../features/auth/pages/ForgotPasswordPage';
-import { VerifyCodePage } from '../../features/auth/pages/VerifyCodePage';
-import { VerifyEmailPage } from '../../features/auth/pages/VerifyEmailPage';
-import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage';
-import { CustomerLayout } from '../layouts/CustomerLayout';
-import { CustomerDashboardOverviewPage } from '../../features/customers/pages/CustomerDashboardOverviewPage';
-import { CustomerCarsPage } from '../../features/customers/pages/CustomerCarsPage';
-import { CustomerVehicleDetailPage } from '../../features/customers/pages/CustomerVehicleDetailPage';
-import { CustomerCheckoutPage } from '../../features/customers/pages/CustomerCheckoutPage';
-import { CustomerBookingsPage } from '../../features/customers/pages/CustomerBookingsPage';
-import { CustomerBookingDetailPage } from '../../features/customers/pages/CustomerBookingDetailPage';
-import { CustomerInspectionPage } from '../../features/customers/pages/CustomerInspectionPage';
-import { CustomerPaymentsPage } from '../../features/customers/pages/CustomerPaymentsPage';
-import { CustomerProfilePage } from '../../features/customers/pages/CustomerProfilePage';
-import { CustomerDocumentsPage } from '../../features/customers/pages/CustomerDocumentsPage';
-import { CustomerNotificationsPage } from '../../features/customers/pages/CustomerNotificationsPage';
-import { CustomerSupportPage } from '../../features/customers/pages/CustomerSupportPage';
-import { CustomerAssistantPage } from '../../features/customers/pages/CustomerAssistantPage';
-import { CustomerRewardsPage } from '../../features/customers/pages/CustomerRewardsPage';
-import { CustomerLocationsPage } from '../../features/customers/pages/CustomerLocationsPage';
-import { CustomerHistoryPage } from '../../features/customers/pages/CustomerHistoryPage';
-import { UnauthorizedPage } from '../../features/auth/pages/UnauthorizedPage';
-import { NotFoundPage } from '../../pages/NotFoundPage';
 
 // Fleet & Vehicle Management Pages (Matching Figma Screens)
-import { AdminDashboardPage } from '../../features/dashboard/pages/AdminDashboardPage';
-import { CarsDirectoryPage } from '../../features/fleet/pages/CarsDirectoryPage';
-import { CarDetailPage } from '../../features/fleet/pages/CarDetailPage';
-import { AddCarPage } from '../../features/fleet/pages/AddCarPage';
-import { EditCarPage } from '../../features/fleet/pages/EditCarPage';
-import { BrandsManagementPage } from '../../features/fleet/pages/BrandsManagementPage';
-import { ModelsManagementPage } from '../../features/fleet/pages/ModelsManagementPage';
-import { CategoriesManagementPage } from '../../features/fleet/pages/CategoriesManagementPage';
 
 // Bookings & Calendar
-import { BookingsListPage } from '../../features/bookings/pages/BookingsListPage';
-import { CreateBookingPage } from '../../features/bookings/pages/CreateBookingPage';
-import { BookingCalendarPage } from '../../features/bookings/pages/BookingCalendarPage';
 
 // Rental Operations
-import { RentalsListPage } from '../../features/rentals/pages/RentalsListPage';
-import { HandoverVehiclePage } from '../../features/rentals/pages/HandoverVehiclePage';
-import { ReturnVehiclePage } from '../../features/rentals/pages/ReturnVehiclePage';
 
 // AI Computer Vision Inspections
-import { InspectionsListPage } from '../../features/inspections/pages/InspectionsListPage';
-import { NewInspectionPage } from '../../features/inspections/pages/NewInspectionPage';
-import { InspectionDetailPage } from '../../features/inspections/pages/InspectionDetailPage';
 
 // Staff, Administration, Branches, & Audit Trail
-import { EmployeesListPage } from '../../features/employees/pages/EmployeesListPage';
-import { BranchesListPage } from '../../features/branches/pages/BranchesListPage';
-import { AuditLogsPage } from '../../features/audit-logs/pages/AuditLogsPage';
-import { InquiriesListPage } from '../../features/inquiries/pages/InquiriesListPage';
-import { UsersManagementPage } from '../../features/users/pages/UsersManagementPage';
-import { CustomersListPage } from '../../features/customers/pages/CustomersListPage';
 
+import { LoadingState } from '../../components/common/LoadingState';
 import { CanonicalUrlManager } from '../../components/seo/CanonicalUrlManager';
 import { ScrollToTop } from '../../components/navigation/ScrollToTop';
+
+// Pages are loaded on demand so the first visit only downloads the code it needs
+const CustomerLayout = lazy(() => import('../layouts/CustomerLayout').then((module) => ({ default: module.CustomerLayout })));
+const AdminLayout = lazy(() => import('../layouts/AdminLayout').then((module) => ({ default: module.AdminLayout })));
+const AvailableCarsPage = lazy(() => import('../../pages/customer/AvailableCarsPage').then((module) => ({ default: module.AvailableCarsPage })));
+const CarDetailsPage = lazy(() => import('../../pages/customer/CarDetailsPage').then((module) => ({ default: module.CarDetailsPage })));
+const InsurancePage = lazy(() => import('../../pages/customer/InsurancePage').then((module) => ({ default: module.InsurancePage })));
+const AboutUsPage = lazy(() => import('../../pages/customer/AboutUsPage').then((module) => ({ default: module.AboutUsPage })));
+const AiInspectionPage = lazy(() => import('../../pages/customer/AiInspectionPage').then((module) => ({ default: module.AiInspectionPage })));
+const ContactUsPage = lazy(() => import('../../pages/customer/ContactUsPage').then((module) => ({ default: module.ContactUsPage })));
+const LegalPage = lazy(() => import('../../pages/customer/LegalPage').then((module) => ({ default: module.LegalPage })));
+const CompareCarsPage = lazy(() => import('../../pages/customer/CompareCarsPage').then((module) => ({ default: module.CompareCarsPage })));
+const LoginPage = lazy(() => import('../../features/auth/pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('../../features/auth/pages/RegisterPage').then((module) => ({ default: module.RegisterPage })));
+const ForgotPasswordPage = lazy(() => import('../../features/auth/pages/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })));
+const VerifyCodePage = lazy(() => import('../../features/auth/pages/VerifyCodePage').then((module) => ({ default: module.VerifyCodePage })));
+const VerifyEmailPage = lazy(() => import('../../features/auth/pages/VerifyEmailPage').then((module) => ({ default: module.VerifyEmailPage })));
+const ResetPasswordPage = lazy(() => import('../../features/auth/pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
+const CustomerDashboardOverviewPage = lazy(() => import('../../features/customers/pages/CustomerDashboardOverviewPage').then((module) => ({ default: module.CustomerDashboardOverviewPage })));
+const CustomerCarsPage = lazy(() => import('../../features/customers/pages/CustomerCarsPage').then((module) => ({ default: module.CustomerCarsPage })));
+const CustomerVehicleDetailPage = lazy(() => import('../../features/customers/pages/CustomerVehicleDetailPage').then((module) => ({ default: module.CustomerVehicleDetailPage })));
+const CustomerCheckoutPage = lazy(() => import('../../features/customers/pages/CustomerCheckoutPage').then((module) => ({ default: module.CustomerCheckoutPage })));
+const CustomerBookingsPage = lazy(() => import('../../features/customers/pages/CustomerBookingsPage').then((module) => ({ default: module.CustomerBookingsPage })));
+const CustomerBookingDetailPage = lazy(() => import('../../features/customers/pages/CustomerBookingDetailPage').then((module) => ({ default: module.CustomerBookingDetailPage })));
+const CustomerInspectionPage = lazy(() => import('../../features/customers/pages/CustomerInspectionPage').then((module) => ({ default: module.CustomerInspectionPage })));
+const CustomerPaymentsPage = lazy(() => import('../../features/customers/pages/CustomerPaymentsPage').then((module) => ({ default: module.CustomerPaymentsPage })));
+const CustomerProfilePage = lazy(() => import('../../features/customers/pages/CustomerProfilePage').then((module) => ({ default: module.CustomerProfilePage })));
+const CustomerDocumentsPage = lazy(() => import('../../features/customers/pages/CustomerDocumentsPage').then((module) => ({ default: module.CustomerDocumentsPage })));
+const CustomerNotificationsPage = lazy(() => import('../../features/customers/pages/CustomerNotificationsPage').then((module) => ({ default: module.CustomerNotificationsPage })));
+const CustomerSupportPage = lazy(() => import('../../features/customers/pages/CustomerSupportPage').then((module) => ({ default: module.CustomerSupportPage })));
+const CustomerAssistantPage = lazy(() => import('../../features/customers/pages/CustomerAssistantPage').then((module) => ({ default: module.CustomerAssistantPage })));
+const CustomerRewardsPage = lazy(() => import('../../features/customers/pages/CustomerRewardsPage').then((module) => ({ default: module.CustomerRewardsPage })));
+const CustomerLocationsPage = lazy(() => import('../../features/customers/pages/CustomerLocationsPage').then((module) => ({ default: module.CustomerLocationsPage })));
+const CustomerHistoryPage = lazy(() => import('../../features/customers/pages/CustomerHistoryPage').then((module) => ({ default: module.CustomerHistoryPage })));
+const UnauthorizedPage = lazy(() => import('../../features/auth/pages/UnauthorizedPage').then((module) => ({ default: module.UnauthorizedPage })));
+const NotFoundPage = lazy(() => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
+const AdminDashboardPage = lazy(() => import('../../features/dashboard/pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
+const CarsDirectoryPage = lazy(() => import('../../features/fleet/pages/CarsDirectoryPage').then((module) => ({ default: module.CarsDirectoryPage })));
+const CarDetailPage = lazy(() => import('../../features/fleet/pages/CarDetailPage').then((module) => ({ default: module.CarDetailPage })));
+const AddCarPage = lazy(() => import('../../features/fleet/pages/AddCarPage').then((module) => ({ default: module.AddCarPage })));
+const EditCarPage = lazy(() => import('../../features/fleet/pages/EditCarPage').then((module) => ({ default: module.EditCarPage })));
+const BrandsManagementPage = lazy(() => import('../../features/fleet/pages/BrandsManagementPage').then((module) => ({ default: module.BrandsManagementPage })));
+const ModelsManagementPage = lazy(() => import('../../features/fleet/pages/ModelsManagementPage').then((module) => ({ default: module.ModelsManagementPage })));
+const CategoriesManagementPage = lazy(() => import('../../features/fleet/pages/CategoriesManagementPage').then((module) => ({ default: module.CategoriesManagementPage })));
+const BookingsListPage = lazy(() => import('../../features/bookings/pages/BookingsListPage').then((module) => ({ default: module.BookingsListPage })));
+const CreateBookingPage = lazy(() => import('../../features/bookings/pages/CreateBookingPage').then((module) => ({ default: module.CreateBookingPage })));
+const BookingCalendarPage = lazy(() => import('../../features/bookings/pages/BookingCalendarPage').then((module) => ({ default: module.BookingCalendarPage })));
+const RentalsListPage = lazy(() => import('../../features/rentals/pages/RentalsListPage').then((module) => ({ default: module.RentalsListPage })));
+const HandoverVehiclePage = lazy(() => import('../../features/rentals/pages/HandoverVehiclePage').then((module) => ({ default: module.HandoverVehiclePage })));
+const ReturnVehiclePage = lazy(() => import('../../features/rentals/pages/ReturnVehiclePage').then((module) => ({ default: module.ReturnVehiclePage })));
+const InspectionsListPage = lazy(() => import('../../features/inspections/pages/InspectionsListPage').then((module) => ({ default: module.InspectionsListPage })));
+const NewInspectionPage = lazy(() => import('../../features/inspections/pages/NewInspectionPage').then((module) => ({ default: module.NewInspectionPage })));
+const InspectionDetailPage = lazy(() => import('../../features/inspections/pages/InspectionDetailPage').then((module) => ({ default: module.InspectionDetailPage })));
+const EmployeesListPage = lazy(() => import('../../features/employees/pages/EmployeesListPage').then((module) => ({ default: module.EmployeesListPage })));
+const BranchesListPage = lazy(() => import('../../features/branches/pages/BranchesListPage').then((module) => ({ default: module.BranchesListPage })));
+const AuditLogsPage = lazy(() => import('../../features/audit-logs/pages/AuditLogsPage').then((module) => ({ default: module.AuditLogsPage })));
+const InquiriesListPage = lazy(() => import('../../features/inquiries/pages/InquiriesListPage').then((module) => ({ default: module.InquiriesListPage })));
+const UsersManagementPage = lazy(() => import('../../features/users/pages/UsersManagementPage').then((module) => ({ default: module.UsersManagementPage })));
+const CustomersListPage = lazy(() => import('../../features/customers/pages/CustomersListPage').then((module) => ({ default: module.CustomersListPage })));
 
 export function AppRouter() {
   return (
@@ -84,6 +88,7 @@ export function AppRouter() {
       <BrowserRouter>
         <CanonicalUrlManager />
         <ScrollToTop />
+        <Suspense fallback={<LoadingState minHeight="100vh" />}>
         <Routes>
           {/* Main Website Layout */}
           <Route path="/" element={<RootLayout />}>
@@ -225,6 +230,7 @@ export function AppRouter() {
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

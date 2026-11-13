@@ -7,6 +7,10 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
+/** Support ticket categories and priorities the customer portal can send. */
+const SUPPORT_CATEGORIES = ['BOOKING', 'PAYMENT', 'INSPECTION', 'ROADSIDE', 'GENERAL', 'BILLING', 'VEHICLE_ISSUE', 'DAMAGE_DISPUTE'];
+const SUPPORT_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
+
 const CUSTOMER_DOCUMENT_TYPES: UploadDocumentDTO['documentType'][] = [
   'DRIVER_LICENSE_FRONT',
   'DRIVER_LICENSE_BACK',
@@ -64,7 +68,7 @@ export interface UploadDocumentDTO {
 
 export interface CreateSupportTicketDTO {
   subject: string;
-  category: 'BOOKING' | 'BILLING' | 'VEHICLE_ISSUE' | 'DAMAGE_DISPUTE' | 'GENERAL';
+  category: string;
   priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
   bookingId?: string;
   message: string;
@@ -787,15 +791,16 @@ export class CustomerPortalService {
     });
 
     // Checklist status
+    // Each checklist item lists the document types that satisfy it (an ID card or a passport both prove identity)
     const requiredTypes = [
-      { type: 'DRIVER_LICENSE_FRONT', label: "Driver's License (Front View)" },
-      { type: 'DRIVER_LICENSE_BACK', label: "Driver's License (Back View)" },
-      { type: 'NATIONAL_ID', label: 'National Identity Card or Passport' },
-      { type: 'UTILITY_BILL', label: 'Proof of Address (Utility Bill / Bank Statement)' },
+      { type: 'DRIVER_LICENSE_FRONT', label: "Driver's License (Front View)", accepts: ['DRIVER_LICENSE_FRONT'] },
+      { type: 'DRIVER_LICENSE_BACK', label: "Driver's License (Back View)", accepts: ['DRIVER_LICENSE_BACK'] },
+      { type: 'NATIONAL_ID', label: 'National Identity Card or Passport', accepts: ['NATIONAL_ID', 'PASSPORT'] },
+      { type: 'UTILITY_BILL', label: 'Proof of Address (Utility Bill / Bank Statement)', accepts: ['UTILITY_BILL'] },
     ];
 
     const checklist = requiredTypes.map((req) => {
-      const doc = documents.find((d) => d.documentType === req.type);
+      const doc = documents.find((d) => req.accepts.includes(d.documentType));
       return {
         type: req.type,
         label: req.label,
@@ -1000,8 +1005,9 @@ export class CustomerPortalService {
         customerId: customer.id,
         bookingId: payload.bookingId || null,
         subject: payload.subject,
-        category: payload.category || 'GENERAL',
-        priority: payload.priority || 'NORMAL',
+        // Unknown values from the client fall back to safe defaults instead of being stored as-is
+        category: SUPPORT_CATEGORIES.includes(String(payload.category)) ? String(payload.category) : 'GENERAL',
+        priority: SUPPORT_PRIORITIES.includes(String(payload.priority)) ? String(payload.priority) : 'NORMAL',
         status: 'OPEN',
         messages: {
           create: {
@@ -1051,75 +1057,115 @@ export class CustomerPortalService {
   }
 
   /**
-   * AI Rental Assistant Handler
-   * Responds intelligently based on real fleet data, policies, and customer bookings.
+   * Rental assistant: answers from the live fleet, the customer's bookings and the real rental rules.
+   * The reply comes back as a code with values (replyKey, replyParams) so the website can show it
+   * in the customer's language; `reply` keeps an English copy for other clients.
+   * `topic` is sent by the suggestion buttons so they work whatever language the customer types in.
    */
-  static async handleAiAssistant(userId: string, prompt: string) {
+  static async handleAiAssistant(userId: string, prompt: string, topic?: string) {
     const customer = await this.getOrCreateCustomer(userId);
     const cleanPrompt = prompt.toLowerCase().trim();
+    const has = (...words: string[]) => words.some((word) => cleanPrompt.includes(word));
 
-    // Contextual query to live fleet
     const vehicles = await prisma.vehicle.findMany({
       where: { status: 'AVAILABLE', isListed: true },
       include: { category: true },
-      take: 6,
+      take: 24,
       orderBy: { dailyRate: 'asc' },
     });
 
-    // Customer bookings context
-    const customerBookings = await prisma.booking.findMany({
+    const latestBooking = await prisma.booking.findFirst({
       where: { customerId: customer.id },
       include: { vehicle: { select: { brand: true, model: true } } },
-      take: 2,
       orderBy: { createdAt: 'desc' },
     });
 
-    let reply = '';
-    let suggestedVehicles: Array<{ id: string; name: string; category: string; price: number; image?: string | null }> = [];
+    const toSuggestion = (v: (typeof vehicles)[number]) => ({
+      id: v.id,
+      name: `${v.brand} ${v.model}`,
+      category: v.category.name,
+      price: Number(v.dailyRate),
+      image: v.primaryImageUrl,
+    });
 
-    if (cleanPrompt.includes('suv') || cleanPrompt.includes('spacious') || cleanPrompt.includes('family')) {
-      const suvs = vehicles.filter((v) => v.category.name.toLowerCase().includes('suv') || v.seats >= 5);
-      reply = `We have ${suvs.length} excellent SUV options ready for your trip. SUVs in our fleet offer high ride height, premium comfort, and generous cargo capacity for luggage or family outings.`;
-      suggestedVehicles = suvs.map((v) => ({
-        id: v.id,
-        name: `${v.brand} ${v.model}`,
-        category: v.category.name,
-        price: Number(v.dailyRate),
-        image: v.primaryImageUrl,
-      }));
-    } else if (cleanPrompt.includes('price') || cleanPrompt.includes('cheap') || cleanPrompt.includes('budget') || cleanPrompt.includes('cost')) {
-      const budget = vehicles.slice(0, 3);
-      reply = `Our most cost-effective vehicle options start from PKR ${Number(budget[0]?.dailyRate || 1000).toLocaleString()}/day, including comprehensive maintenance and 250 km included allowance per day.`;
-      suggestedVehicles = budget.map((v) => ({
-        id: v.id,
-        name: `${v.brand} ${v.model}`,
-        category: v.category.name,
-        price: Number(v.dailyRate),
-        image: v.primaryImageUrl,
-      }));
-    } else if (cleanPrompt.includes('document') || cleanPrompt.includes('license') || cleanPrompt.includes('requirement')) {
-      reply = `To rent a vehicle with Finovo, you need:\n1. A valid driving license (held for at least 1 year)\n2. National Identity Card or Passport\n3. Proof of address / utility bill\n\nYou can upload and verify these directly in your Driver Documents tab.`;
-    } else if (cleanPrompt.includes('fuel') || cleanPrompt.includes('mileage') || cleanPrompt.includes('policy')) {
-      reply = `Finovo operates on a standard **Same-to-Same Fuel Policy** (return with the same fuel level as pickup). Standard daily rentals include **250 km per day**, with additional kilometers charged at transparent excess mileage rates displayed on each vehicle card.`;
-    } else if (cleanPrompt.includes('my booking') || cleanPrompt.includes('trip') || cleanPrompt.includes('status')) {
-      if (customerBookings.length > 0) {
-        const b = customerBookings[0];
-        reply = `You have reservation #${b.bookingNumber} for a **${b.vehicle.brand} ${b.vehicle.model}** currently in **${b.status}** status. Pickup is scheduled for ${new Date(b.pickupDateTime).toLocaleDateString()}.`;
-      } else {
-        reply = `You do not have any active reservations right now. Feel free to browse our fleet and pick the ideal car for your upcoming trip!`;
+    type Intent = 'suv' | 'budget' | 'documents' | 'fuel' | 'deposit' | 'inspection' | 'electric' | 'booking' | 'greeting';
+    const knownTopics: Intent[] = ['suv', 'budget', 'documents', 'fuel', 'deposit', 'inspection', 'electric', 'booking'];
+    let intent: Intent = 'greeting';
+    if (topic && knownTopics.includes(topic as Intent)) intent = topic as Intent;
+    else if (has('suv', 'spacious', 'family')) intent = 'suv';
+    else if (has('electric', ' ev', 'ev ', 'hybrid')) intent = 'electric';
+    else if (has('deposit', 'refund')) intent = 'deposit';
+    else if (has('inspection', 'damage', 'scratch', 'dent')) intent = 'inspection';
+    else if (has('price', 'cheap', 'budget', 'cost')) intent = 'budget';
+    else if (has('document', 'license', 'licence', 'requirement')) intent = 'documents';
+    else if (has('fuel', 'mileage', 'kilomet', ' km')) intent = 'fuel';
+    else if (has('my booking', 'reservation', 'trip', 'status')) intent = 'booking';
+
+    let replyKey: string = intent;
+    let replyParams: Record<string, string | number> = {};
+    let suggestedVehicles: ReturnType<typeof toSuggestion>[] = [];
+
+    switch (intent) {
+      case 'suv': {
+        const suvs = vehicles.filter((v) => v.category.name.toLowerCase().includes('suv') || v.seats >= 7);
+        replyKey = suvs.length > 0 ? 'suv' : 'suvNone';
+        replyParams = { count: suvs.length };
+        suggestedVehicles = suvs.slice(0, 4).map(toSuggestion);
+        break;
       }
-    } else {
-      reply = `Hello ${customer.fullName}! I'm Finovo's AI Rental Assistant. I can help you search available vehicles, clarify fuel and deposit policies, review your current bookings, or guide you through vehicle inspection and pickup. What can I help you with today?`;
-      suggestedVehicles = vehicles.slice(0, 2).map((v) => ({
-        id: v.id,
-        name: `${v.brand} ${v.model}`,
-        category: v.category.name,
-        price: Number(v.dailyRate),
-        image: v.primaryImageUrl,
-      }));
+      case 'electric': {
+        const electric = vehicles.filter((v) => v.fuelType === 'ELECTRIC' || v.fuelType === 'HYBRID');
+        replyKey = electric.length > 0 ? 'electric' : 'electricNone';
+        replyParams = { count: electric.length };
+        suggestedVehicles = electric.slice(0, 4).map(toSuggestion);
+        break;
+      }
+      case 'budget': {
+        const cheapest = vehicles.slice(0, 3);
+        replyKey = cheapest.length > 0 ? 'budget' : 'noCars';
+        replyParams = { price: `${env.CURRENCY} ${Number(cheapest[0]?.dailyRate || 0).toLocaleString('en-US')}` };
+        suggestedVehicles = cheapest.map(toSuggestion);
+        break;
+      }
+      case 'booking': {
+        if (latestBooking) {
+          replyKey = 'bookingStatus';
+          replyParams = {
+            number: latestBooking.bookingNumber,
+            vehicle: `${latestBooking.vehicle.brand} ${latestBooking.vehicle.model}`,
+            status: latestBooking.status,
+            pickup: latestBooking.pickupDateTime.toISOString(),
+          };
+        } else {
+          replyKey = 'bookingNone';
+        }
+        break;
+      }
+      case 'greeting':
+        replyParams = { name: customer.fullName || '' };
+        suggestedVehicles = vehicles.slice(0, 2).map(toSuggestion);
+        break;
+      default:
+        break;
     }
 
-    return { reply, suggestedVehicles };
+    const englishReplies: Record<string, string> = {
+      suv: `We have ${replyParams.count} SUV and large cars available right now.`,
+      suvNone: 'No SUV is available right now. Please check the full list of cars.',
+      electric: `We have ${replyParams.count} electric or hybrid cars available right now.`,
+      electricNone: 'No electric or hybrid car is available right now.',
+      budget: `Our most affordable car starts from ${replyParams.price} per day.`,
+      noCars: 'No car is available right now. Please try again later.',
+      documents: 'To rent a car you need a valid driving licence and an ID card or passport. You can upload them in Driver Documents.',
+      fuel: 'Please return the car with the same fuel level as at pickup. The included distance per day and the extra distance price are shown on each car.',
+      deposit: 'A refundable security deposit is taken with each booking. It is returned after the car is returned and inspected, minus any new-damage, fuel or late-return charges.',
+      inspection: 'At pickup and at return the car is photographed and checked by our AI. You only pay for new damage that was not in the pickup report.',
+      bookingStatus: `Your latest booking #${replyParams.number} for the ${replyParams.vehicle} is ${replyParams.status}.`,
+      bookingNone: 'You do not have any bookings yet.',
+      greeting: `Hello ${replyParams.name}! I can help you find a car, explain the deposit, fuel and inspection rules, or check your booking.`,
+    };
+
+    return { reply: englishReplies[replyKey] || englishReplies.greeting, replyKey, replyParams, suggestedVehicles };
   }
 
   /**

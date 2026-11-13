@@ -19,10 +19,10 @@ import {
 import { inquiryApi } from '../../api/services/inquiry.api';
 import { telHref, useSiteInfo } from '../../hooks/usePublicSite';
 
-import heroImg from '../../assets/contact/hero-car.jpg';
+import heroImg from '../../assets/contact/hero-car.webp';
 import officeImg from '../../assets/contact/office-car.jpg';
 import show1Img from '../../assets/contact/showroom-1.jpg';
-import show2Img from '../../assets/contact/showroom-2.jpg';
+import show2Img from '../../assets/contact/showroom-2.webp';
 
 const contactLinkStyle: React.CSSProperties = { color: 'inherit', textDecoration: 'none', overflowWrap: 'anywhere' };
 

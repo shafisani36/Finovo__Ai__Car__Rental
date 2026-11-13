@@ -27,7 +27,10 @@ import './CustomerPortal.css';
 
 export function CustomerDashboardOverviewPage() {
   const site = useSiteInfo();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const formatDate = (value: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(value));
+  const formatDateTime = (value: string) =>
+    new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
   const [data, setData] = useState<PortalOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -269,7 +272,7 @@ export function CustomerDashboardOverviewPage() {
           </div>
           <div>
             <div className="cp-stat-label">{t('portal.rewardPoints')}</div>
-            <div className="cp-stat-value">{stats.rewardPoints} pts</div>
+            <div className="cp-stat-value">{t('portalPages.dashboard.points', { count: stats.rewardPoints })}</div>
           </div>
         </div>
       </div>
@@ -313,7 +316,7 @@ export function CustomerDashboardOverviewPage() {
                   letterSpacing: '0.05em',
                 }}
               >
-                LIVE ACTIVE TRIP • #{activeRental.booking.bookingNumber}
+                {t('portalPages.dashboard.activeTrip', { number: activeRental.booking.bookingNumber })}
               </span>
             </div>
             <Link
@@ -363,8 +366,11 @@ export function CustomerDashboardOverviewPage() {
                 {activeRental.vehicle.brand} {activeRental.vehicle.model} ({activeRental.vehicle.year})
               </h3>
               <p style={{ margin: '0 0 12px 0', color: 'var(--cp-text-muted)', fontSize: '0.85rem' }}>
-                Pickup: <strong>{activeRental.booking.pickupBranch?.name}</strong> • Scheduled Return:{' '}
-                <strong>{new Date(activeRental.booking.returnDateTime).toLocaleDateString()}</strong> at {activeRental.booking.returnBranch?.name}
+                {t('portalPages.dashboard.activeTripLine', {
+                  pickup: activeRental.booking.pickupBranch?.name || '—',
+                  date: formatDate(activeRental.booking.returnDateTime),
+                  returnBranch: activeRental.booking.returnBranch?.name || '—',
+                })}
               </p>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <Link
@@ -372,14 +378,14 @@ export function CustomerDashboardOverviewPage() {
                   className="cp-btn-secondary"
                   style={{ padding: '8px 16px', fontSize: '0.825rem', minHeight: '36px' }}
                 >
-                  Manage Active Trip
+                  {t('portalPages.dashboard.manageTrip')}
                 </Link>
                 <Link
                   to={`/customer/bookings/${activeRental.booking.id}/inspection`}
                   className="cp-btn-outline"
                   style={{ padding: '8px 16px', fontSize: '0.825rem', minHeight: '36px' }}
                 >
-                  Damage & Condition Scans
+                  {t('portalPages.dashboard.conditionReports')}
                 </Link>
               </div>
             </div>
@@ -424,10 +430,10 @@ export function CustomerDashboardOverviewPage() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span className="cp-badge cp-badge-accent">
-                  NEXT TRIP • #{nextUpcomingBooking.bookingNumber}
+                  {t('portalPages.dashboard.nextTrip', { number: nextUpcomingBooking.bookingNumber })}
                 </span>
                 <span className="cp-badge cp-badge-info">
-                  {nextUpcomingBooking.status}
+                  {t(`portalPages.bookings.status.${nextUpcomingBooking.status}`, { defaultValue: nextUpcomingBooking.status })}
                 </span>
               </div>
               <h3
@@ -441,12 +447,10 @@ export function CustomerDashboardOverviewPage() {
                 {nextUpcomingBooking.vehicle.brand} {nextUpcomingBooking.vehicle.model}
               </h3>
               <p style={{ margin: 0, color: 'var(--cp-text-muted)', fontSize: '0.85rem' }}>
-                Pickup:{' '}
-                <strong>
-                  {new Date(nextUpcomingBooking.pickupDateTime).toLocaleDateString()} at{' '}
-                  {new Date(nextUpcomingBooking.pickupDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </strong>{' '}
-                ({nextUpcomingBooking.pickupBranch?.city || 'Central Hub'})
+                {t('portalPages.dashboard.nextTripLine', {
+                  date: formatDateTime(nextUpcomingBooking.pickupDateTime),
+                  city: nextUpcomingBooking.pickupBranch?.city || '—',
+                })}
               </p>
             </div>
           </div>

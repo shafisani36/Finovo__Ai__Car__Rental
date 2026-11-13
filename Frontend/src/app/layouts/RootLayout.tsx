@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+import { LoadingState } from '../../components/common/LoadingState';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/layout/Header';
 import { Footer } from '../../components/layout/Footer';
@@ -20,7 +22,9 @@ export function RootLayout() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
       <Header onSignInClick={handleSignIn} />
       <div style={{ flex: 1 }}>
-        <Outlet />
+        <Suspense fallback={<LoadingState />}>
+          <Outlet />
+        </Suspense>
       </div>
       <Footer />
     </div>

@@ -10,6 +10,7 @@ import { AnnotatedPhoto } from './InspectionReportView';
 import { CLASSIFICATION_LABEL, VIEW_LABELS } from './inspectionHelpers';
 import { formatMoney } from '../../../utils/carImageHelper';
 import './inspection.css';
+import { useTranslation } from 'react-i18next';
 
 interface DamageComparisonViewProps {
   comparison: DamageComparison;
@@ -20,6 +21,7 @@ interface DamageComparisonViewProps {
 
 /** Pickup vs return, angle by angle, with the resulting fines. */
 export function DamageComparisonView({ comparison, onChange, editable }: DamageComparisonViewProps) {
+  const { t } = useTranslation();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pickup = comparison.pickupInspection;
@@ -37,7 +39,7 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
       const res = await inspectionApi.reviewCharge(chargeId, decision);
       if (res.comparison) onChange?.(res.comparison);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update the charge');
+      setError(err instanceof Error ? err.message : t('inspectionReport.errCharge'));
     } finally {
       setBusyId(null);
     }
@@ -47,8 +49,8 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
     <section className="insp-report printable-document">
       <header className="insp-report-header">
         <div>
-          <p className="insp-eyebrow">Pickup vs return comparison · Booking #{comparison.bookingNumber}</p>
-          <h2>{isClean ? 'Vehicle returned in the same condition' : 'New damage found at return'}</h2>
+          <p className="insp-eyebrow">{t('inspectionReport.compareEyebrow', { number: comparison.bookingNumber })}</p>
+          <h2>{isClean ? t('inspectionReport.sameCondition') : t('inspectionReport.newDamageFound')}</h2>
           {comparison.vehicle && (
             <p className="insp-muted">
               {comparison.vehicle.year} {comparison.vehicle.brand} {comparison.vehicle.model} ·{' '}
@@ -60,26 +62,26 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
         </div>
         <div className={`insp-verdict ${isClean ? 'ok' : 'bad'}`}>
           {isClean ? <CheckCircle2 size={28} /> : <AlertTriangle size={28} />}
-          <span>{isClean ? 'Match' : `${comparison.newDamageCount} new`}</span>
+          <span>{isClean ? t('inspectionReport.match') : t('inspectionReport.newCount', { count: comparison.newDamageCount })}</span>
         </div>
       </header>
 
       <section className="insp-stats">
         <div>
           <strong>{pickup?.overallScore ?? '—'}%</strong>
-          <span>Condition at pickup</span>
+          <span>{t('inspectionReport.conditionPickup')}</span>
         </div>
         <div>
           <strong>{ret?.overallScore ?? '—'}%</strong>
-          <span>Condition at return</span>
+          <span>{t('inspectionReport.conditionReturn')}</span>
         </div>
         <div>
           <strong>{comparison.preExistingCount}</strong>
-          <span>Pre-existing items</span>
+          <span>{t('inspectionReport.preExisting')}</span>
         </div>
         <div>
           <strong>{comparison.inconclusiveCount}</strong>
-          <span>Need staff review</span>
+          <span>{t('inspectionReport.needsReview')}</span>
         </div>
       </section>
 
@@ -90,10 +92,10 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
           if (!pickupPhoto && !returnPhoto) return null;
           return (
             <div key={view} className="insp-compare-row">
-              <h4>{VIEW_LABELS[view]}</h4>
+              <h4>{t(`inspectionReport.views.${view}`, { defaultValue: VIEW_LABELS[view] })}</h4>
               <div className="insp-compare-pair">
                 <div>
-                  <p className="insp-small insp-muted">Pickup</p>
+                  <p className="insp-small insp-muted">{t('inspectionReport.pickup')}</p>
                   {pickupPhoto ? (
                     <AnnotatedPhoto
                       photo={pickupPhoto}
@@ -101,11 +103,11 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
                       numberOf={pickupNumber}
                     />
                   ) : (
-                    <p className="insp-muted">No pickup photo</p>
+                    <p className="insp-muted">{t('inspectionReport.noPickupPhoto')}</p>
                   )}
                 </div>
                 <div>
-                  <p className="insp-small insp-muted">Return</p>
+                  <p className="insp-small insp-muted">{t('inspectionReport.return')}</p>
                   {returnPhoto ? (
                     <AnnotatedPhoto
                       photo={returnPhoto}
@@ -113,7 +115,7 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
                       numberOf={returnNumber}
                     />
                   ) : (
-                    <p className="insp-muted">No return photo</p>
+                    <p className="insp-muted">{t('inspectionReport.noReturnPhoto')}</p>
                   )}
                 </div>
               </div>
@@ -124,29 +126,33 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
 
       {ret && ret.findings.length > 0 && (
         <section>
-          <h3 className="insp-section-title">Return findings</h3>
+          <h3 className="insp-section-title">{t('inspectionReport.returnFindings')}</h3>
           <div className="insp-table-wrap">
             <table className="insp-table">
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Angle</th>
-                  <th>Part</th>
-                  <th>Damage</th>
-                  <th>Status</th>
-                  <th>AI confidence</th>
+                  <th>{t('inspectionReport.angle')}</th>
+                  <th>{t('inspectionReport.part')}</th>
+                  <th>{t('inspectionReport.damage')}</th>
+                  <th>{t('inspectionReport.status')}</th>
+                  <th>{t('inspectionReport.confidence')}</th>
                 </tr>
               </thead>
               <tbody>
                 {ret.findings.map((f, i) => (
                   <tr key={f.id}>
                     <td>{i + 1}</td>
-                    <td>{VIEW_LABELS[f.view]}</td>
+                    <td>{t(`inspectionReport.views.${f.view}`, { defaultValue: VIEW_LABELS[f.view] })}</td>
                     <td>{f.part}</td>
                     <td>
-                      {f.damageType} ({f.severity.toLowerCase()})
+                      {f.damageType} ({t(`inspectionReport.severities.${f.severity}`)})
                     </td>
-                    <td>{f.classification ? CLASSIFICATION_LABEL[f.classification] : '—'}</td>
+                    <td>
+                      {f.classification
+                        ? t(`inspectionReport.classifications.${f.classification}`, { defaultValue: CLASSIFICATION_LABEL[f.classification] })
+                        : '—'}
+                    </td>
                     <td>{f.confidence}%</td>
                   </tr>
                 ))}
@@ -157,18 +163,18 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
       )}
 
       <section>
-        <h3 className="insp-section-title">Damage fines</h3>
+        <h3 className="insp-section-title">{t('inspectionReport.fines')}</h3>
         {comparison.charges.length === 0 ? (
-          <p className="insp-muted">No fines: nothing new was damaged during this rental.</p>
+          <p className="insp-muted">{t('inspectionReport.noFines')}</p>
         ) : (
           <div className="insp-table-wrap">
             <table className="insp-table">
               <thead>
                 <tr>
-                  <th>Item</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  {editable && <th className="no-print">Action</th>}
+                  <th>{t('inspectionReport.item')}</th>
+                  <th>{t('inspectionReport.amount')}</th>
+                  <th>{t('inspectionReport.status')}</th>
+                  {editable && <th className="no-print">{t('inspectionReport.action')}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -176,7 +182,13 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
                   <tr key={c.id} className={c.status === 'REJECTED' ? 'insp-row-waived' : ''}>
                     <td>{c.description}</td>
                     <td>{formatMoney(c.proposedAmount, c.currency)}</td>
-                    <td>{c.status === 'REJECTED' ? 'Waived' : c.status === 'SETTLED' ? 'Charged' : 'To be charged'}</td>
+                    <td>
+                      {c.status === 'REJECTED'
+                        ? t('inspectionReport.waived')
+                        : c.status === 'SETTLED'
+                          ? t('inspectionReport.charged')
+                          : t('inspectionReport.toBeCharged')}
+                    </td>
                     {editable && (
                       <td className="no-print">
                         {c.status === 'REJECTED' ? (
@@ -186,7 +198,7 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
                             disabled={busyId === c.id}
                             onClick={() => review(c.id, 'APPROVED')}
                           >
-                            <RotateCcw size={14} /> Restore
+                            <RotateCcw size={14} /> {t('inspectionReport.restore')}
                           </button>
                         ) : c.status !== 'SETTLED' ? (
                           <button
@@ -195,7 +207,7 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
                             disabled={busyId === c.id}
                             onClick={() => review(c.id, 'REJECTED')}
                           >
-                            <Ban size={14} /> Waive
+                            <Ban size={14} /> {t('inspectionReport.waive')}
                           </button>
                         ) : null}
                       </td>
@@ -206,14 +218,14 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
               <tfoot>
                 <tr>
                   <td>
-                    <strong>Total damage fine</strong>
+                    <strong>{t('inspectionReport.totalFine')}</strong>
                   </td>
                   <td colSpan={editable ? 3 : 2}>
                     <strong>{formatMoney(comparison.totalActiveCharges, currency)}</strong>
                     {comparison.depositAmount > 0 && (
                       <span className="insp-muted insp-small">
                         {' '}
-                        · security deposit {formatMoney(comparison.depositAmount, currency)}
+                        · {t('inspectionReport.depositNote', { amount: formatMoney(comparison.depositAmount, currency) })}
                       </span>
                     )}
                   </td>

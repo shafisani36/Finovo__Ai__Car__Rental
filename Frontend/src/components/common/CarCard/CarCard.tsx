@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Gauge, Tag, ChevronRight, GitCompareArrows, Heart } from 'lucide-react';
 import { isFullBleedCarPhoto } from '../../../utils/carImageHelper';
 import './CarCard.css';
-import cityBackdrop from '../../../assets/cars/finovo-city.png';
+import cityBackdrop from '../../../assets/cars/finovo-city.webp';
 
 export interface CarCardProps {
   id: string;

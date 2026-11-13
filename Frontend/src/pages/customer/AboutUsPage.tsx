@@ -4,18 +4,18 @@ import { ArrowRight } from 'lucide-react';
 import { formatCount, usePublicStats, useSiteInfo } from '../../hooks/usePublicSite';
 import '../../styles/about-page.css';
 
-import heroImg from '../../assets/about/finovo-hero.png';
-import steeringImg from '../../assets/about/finovo-steering.png';
-import missionImg from '../../assets/about/finovo-mission.png';
-import visionImg from '../../assets/about/finovo-vision.png';
-import shieldImg from '../../assets/about/finovo-shield.png';
-import carImg from '../../assets/about/finovo-car.png';
-import supportImg from '../../assets/about/finovo-support.png';
-import calendarImg from '../../assets/about/finovo-calendar.png';
+import heroImg from '../../assets/about/finovo-hero.webp';
+import steeringImg from '../../assets/about/finovo-steering.webp';
+import missionImg from '../../assets/about/finovo-mission.webp';
+import visionImg from '../../assets/about/finovo-vision.webp';
+import shieldImg from '../../assets/about/finovo-shield.webp';
+import carImg from '../../assets/about/finovo-car.webp';
+import supportImg from '../../assets/about/finovo-support.webp';
+import calendarImg from '../../assets/about/finovo-calendar.webp';
 import teamOne from '../../assets/about/finovo-team-one.png';
 import teamTwo from '../../assets/about/finovo-team-two.png';
-import teamThree from '../../assets/about/finovo-team-three.png';
-import journeyImg from '../../assets/about/finovo-journey.png';
+import teamThree from '../../assets/about/finovo-team-three.webp';
+import journeyImg from '../../assets/about/finovo-journey.webp';
 
 export function AboutUsPage() {
   const { t } = useTranslation();

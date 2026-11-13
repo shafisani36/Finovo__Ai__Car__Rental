@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { telHref, useSiteInfo } from '../../hooks/usePublicSite';
 import { EmailVerificationBanner } from '../../features/auth/components/EmailVerificationBanner';
+import { LoadingState } from '../../components/common/LoadingState';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../features/auth/context';
@@ -143,7 +144,7 @@ export function CustomerLayout() {
             <button
               className="sidebar-close-btn"
               onClick={() => setMobileSidebarOpen(false)}
-              aria-label="Close Sidebar"
+              aria-label={t('portalPages.layout.closeMenu')}
             >
               <X size={18} />
             </button>
@@ -216,7 +217,7 @@ export function CustomerLayout() {
             <button
               className="mobile-menu-btn"
               onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-              aria-label="Toggle Navigation"
+              aria-label={t('portalPages.layout.openMenu')}
             >
               {mobileSidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -301,7 +302,9 @@ export function CustomerLayout() {
         {/* Page Content Outlet */}
         <main className="customer-main-view">
           <EmailVerificationBanner />
+          <Suspense fallback={<LoadingState />}>
           <Outlet />
+        </Suspense>
         </main>
       </div>
     </div>

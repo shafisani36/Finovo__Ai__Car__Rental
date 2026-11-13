@@ -13,8 +13,15 @@ import { customerPortalApi, type SupportTicketItem } from '../api/customerPortal
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
 import { telHref, useSiteInfo } from '../../../hooks/usePublicSite';
+import { useTranslation } from 'react-i18next';
 
 export function CustomerSupportPage() {
+  const { t, i18n } = useTranslation();
+  const formatDate = (value: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(value));
+  const formatDateTime = (value: string) =>
+    new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+  const [formError, setFormError] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
   const site = useSiteInfo();
   const [tickets, setTickets] = useState<SupportTicketItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +67,7 @@ export function CustomerSupportPage() {
     if (!subject || !message) return;
     try {
       setIsCreating(true);
+      setFormError(null);
       const res = await customerPortalApi.createSupportTicket({
         subject,
         category,
@@ -75,7 +83,7 @@ export function CustomerSupportPage() {
         await fetchTickets();
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to submit ticket');
+      setFormError(err?.message || t('portalPages.support.errCreate'));
     } finally {
       setIsCreating(false);
     }
@@ -86,26 +94,32 @@ export function CustomerSupportPage() {
     if (!selectedTicket || !replyMessage.trim()) return;
     try {
       setIsReplying(true);
+      setReplyError(null);
       await customerPortalApi.replySupportTicket(selectedTicket.id, replyMessage.trim());
       setReplyMessage('');
       await fetchTickets();
     } catch (err: any) {
-      alert(err.message || 'Failed to send reply');
+      setReplyError(err?.message || t('portalPages.support.errReply'));
     } finally {
       setIsReplying(false);
     }
   };
 
+  const openNewTicket = () => {
+    setFormError(null);
+    setIsNewTicketOpen(true);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return <span className="cp-badge cp-badge-warning">Open</span>;
+        return <span className="cp-badge cp-badge-warning">{t('portalPages.support.status.OPEN')}</span>;
       case 'IN_PROGRESS':
-        return <span className="cp-badge cp-badge-info">In Progress</span>;
+        return <span className="cp-badge cp-badge-info">{t('portalPages.support.status.IN_PROGRESS')}</span>;
       case 'RESOLVED':
-        return <span className="cp-badge cp-badge-success">Resolved</span>;
+        return <span className="cp-badge cp-badge-success">{t('portalPages.support.status.RESOLVED')}</span>;
       default:
-        return <span className="cp-badge cp-badge-primary">Closed</span>;
+        return <span className="cp-badge cp-badge-primary">{t('portalPages.support.status.CLOSED')}</span>;
     }
   };
 
@@ -122,13 +136,13 @@ export function CustomerSupportPage() {
       {/* Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Customer Concierge & Support</h1>
-          <p className="cp-page-subtitle">24/7 Priority support, roadside assistance dispatch, and ticket inquiry hub.</p>
+          <h1 className="cp-page-title">{t('portalPages.support.title')}</h1>
+          <p className="cp-page-subtitle">{t('portalPages.support.subtitle')}</p>
         </div>
         <div className="cp-header-actions">
-          <button className="cp-btn-primary" onClick={() => setIsNewTicketOpen(true)}>
+          <button className="cp-btn-primary" onClick={openNewTicket}>
             <Plus size={16} />
-            Open New Ticket
+            {t('portalPages.support.newTicket')}
           </button>
         </div>
       </div>
@@ -139,7 +153,7 @@ export function CustomerSupportPage() {
         <div className="cp-card" style={{ background: '#FFFDF5', borderColor: '#FDE68A' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <Phone size={20} color="#D97706" />
-            <span style={{ fontWeight: 800, color: '#92400E', fontSize: '1rem' }}>24/7 Roadside Emergency</span>
+            <span style={{ fontWeight: 800, color: '#92400E', fontSize: '1rem' }}>{t('portalPages.support.phoneTitle')}</span>
           </div>
           <a
             href={telHref(site.supportPhone)}
@@ -149,7 +163,7 @@ export function CustomerSupportPage() {
             {site.supportPhone}
           </a>
           <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '6px 0 0 0' }}>
-            Direct technician and emergency towing dispatch across all highways.
+            {t('portalPages.support.phoneDesc')}
           </p>
         </div>
         )}
@@ -158,7 +172,7 @@ export function CustomerSupportPage() {
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <Mail size={20} color="var(--cp-primary)" />
-            <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1rem' }}>Concierge Email Desk</span>
+            <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1rem' }}>{t('portalPages.support.emailTitle')}</span>
           </div>
           <a
             href={`mailto:${site.supportEmail}`}
@@ -167,7 +181,7 @@ export function CustomerSupportPage() {
             {site.supportEmail}
           </a>
           <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '6px 0 0 0' }}>
-            Average response time: <strong>under 15 minutes</strong> for active reservations.
+            {t('portalPages.support.emailDesc')}
           </p>
         </div>
         )}
@@ -175,13 +189,13 @@ export function CustomerSupportPage() {
 
       {/* Tickets List */}
       <div className="cp-card">
-        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>My Support Tickets</h2>
+        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.support.listTitle')}</h2>
 
         {tickets.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {tickets.map((t) => (
+            {tickets.map((ticket) => (
               <div
-                key={t.id}
+                key={ticket.id}
                 style={{
                   border: '1px solid var(--cp-border)',
                   borderRadius: '12px',
@@ -194,7 +208,10 @@ export function CustomerSupportPage() {
                   cursor: 'pointer',
                   transition: 'var(--cp-transition)',
                 }}
-                onClick={() => setSelectedTicket(t)}
+                onClick={() => {
+                  setReplyError(null);
+                  setSelectedTicket(ticket);
+                }}
                 className="hover-card"
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -214,20 +231,24 @@ export function CustomerSupportPage() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontWeight: 700, color: 'var(--cp-primary)', fontSize: '0.98rem' }}>
-                        {t.subject}
+                        {ticket.subject}
                       </span>
-                      {getStatusBadge(t.status)}
+                      {getStatusBadge(ticket.status)}
                     </div>
                     <div style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', marginTop: '2px' }}>
-                      Ticket #{t.ticketNumber} • Category: {t.category} • Priority: {t.priority} • Last updated:{' '}
-                      {new Date(t.updatedAt).toLocaleDateString()}
+                      {t('portalPages.support.ticketLine', {
+                        number: ticket.ticketNumber,
+                        category: t(`portalPages.support.categories.${ticket.category}`, { defaultValue: ticket.category }),
+                        priority: t(`portalPages.support.priorities.${ticket.priority}`, { defaultValue: ticket.priority }),
+                        date: formatDate(ticket.updatedAt),
+                      })}
                     </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)' }}>
-                    {t.messages?.length || 1} messages
+                    {t('portalPages.support.messages', { count: ticket.messages?.length || 1 })}
                   </span>
                   <ChevronRight size={16} color="var(--cp-text-muted)" />
                 </div>
@@ -239,12 +260,12 @@ export function CustomerSupportPage() {
             <div className="cp-empty-icon">
               <LifeBuoy size={32} />
             </div>
-            <h3 className="cp-empty-title">No Support Inquiries</h3>
+            <h3 className="cp-empty-title">{t('portalPages.support.emptyTitle')}</h3>
             <p className="cp-empty-desc">
-              Have a question regarding your booking, invoice, or vehicle return? Open a ticket anytime.
+              {t('portalPages.support.emptyDesc')}
             </p>
-            <button className="cp-btn-primary" onClick={() => setIsNewTicketOpen(true)}>
-              Open First Ticket
+            <button className="cp-btn-primary" onClick={openNewTicket}>
+              {t('portalPages.support.firstTicket')}
             </button>
           </div>
         )}
@@ -255,9 +276,10 @@ export function CustomerSupportPage() {
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 className="cp-card-title">Open Support Ticket</h2>
+              <h2 className="cp-card-title">{t('portalPages.support.modalTitle')}</h2>
               <button
                 onClick={() => setIsNewTicketOpen(false)}
+                aria-label={t('portalPages.support.close')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cp-text-muted)' }}
               >
                 <X size={20} />
@@ -265,12 +287,17 @@ export function CustomerSupportPage() {
             </div>
 
             <form onSubmit={handleCreateTicket}>
+              {formError && (
+                <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '12px' }}>
+                  {formError}
+                </div>
+              )}
               <div className="cp-form-group">
-                <label className="cp-label">Subject</label>
+                <label className="cp-label">{t('portalPages.support.subject')}</label>
                 <input
                   type="text"
                   className="cp-input"
-                  placeholder="e.g. Question about deposit return"
+                  placeholder={t('portalPages.support.subjectPlaceholder')}
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   required
@@ -279,31 +306,30 @@ export function CustomerSupportPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div className="cp-form-group">
-                  <label className="cp-label">Category</label>
+                  <label className="cp-label">{t('portalPages.support.category')}</label>
                   <CustomSelect
                     value={category}
                     onChange={(val) => setCategory(String(val))}
                     options={[
-                      { value: 'BOOKING', label: 'Booking & Scheduling' },
-                      { value: 'PAYMENT', label: 'Billing & Security Deposit' },
-                      { value: 'INSPECTION', label: 'Damage Inspection Dispute' },
-                      { value: 'ROADSIDE', label: 'Roadside Assistance' },
-                      { value: 'GENERAL', label: 'General Inquiries' },
+                      ...(['BOOKING', 'PAYMENT', 'INSPECTION', 'ROADSIDE', 'GENERAL'] as const).map((value) => ({
+                        value,
+                        label: t(`portalPages.support.categories.${value}`),
+                      })),
                     ]}
                     size="md"
                   />
                 </div>
 
                 <div className="cp-form-group">
-                  <label className="cp-label">Priority</label>
+                  <label className="cp-label">{t('portalPages.support.priority')}</label>
                   <CustomSelect
                     value={priority}
                     onChange={(val) => setPriority(String(val))}
                     options={[
-                      { value: 'LOW', label: 'Low' },
-                      { value: 'NORMAL', label: 'Normal' },
-                      { value: 'HIGH', label: 'High' },
-                      { value: 'URGENT', label: 'Urgent (Immediate Callback)', badge: 'VIP' },
+                      ...(['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const).map((value) => ({
+                        value,
+                        label: t(`portalPages.support.priorities.${value}`),
+                      })),
                     ]}
                     size="md"
                   />
@@ -311,11 +337,11 @@ export function CustomerSupportPage() {
               </div>
 
               <div className="cp-form-group">
-                <label className="cp-label">Detailed Message</label>
+                <label className="cp-label">{t('portalPages.support.message')}</label>
                 <textarea
                   className="cp-textarea"
                   rows={4}
-                  placeholder="Please describe how we can assist you..."
+                  placeholder={t('portalPages.support.messagePlaceholder')}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   required
@@ -324,10 +350,10 @@ export function CustomerSupportPage() {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
                 <button type="button" className="cp-btn-outline" onClick={() => setIsNewTicketOpen(false)}>
-                  Cancel
+                  {t('portalPages.support.cancel')}
                 </button>
                 <button type="submit" className="cp-btn-primary" disabled={isCreating}>
-                  {isCreating ? 'Submitting...' : 'Submit Ticket'}
+                  {isCreating ? t('portalPages.support.submitting') : t('portalPages.support.submit')}
                 </button>
               </div>
             </form>
@@ -352,6 +378,7 @@ export function CustomerSupportPage() {
               </div>
               <button
                 onClick={() => setSelectedTicket(null)}
+                aria-label={t('portalPages.support.close')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cp-text-muted)' }}
               >
                 <X size={20} />
@@ -375,7 +402,7 @@ export function CustomerSupportPage() {
                     }}
                   >
                     <div style={{ fontSize: '0.75rem', opacity: 0.8, marginBottom: '4px', fontWeight: 600 }}>
-                      {msg.senderName} • {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {msg.senderName} • {formatDateTime(msg.createdAt)}
                     </div>
                     <div style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>{msg.message}</div>
                   </div>
@@ -383,11 +410,17 @@ export function CustomerSupportPage() {
               })}
             </div>
 
+            {replyError && (
+              <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.85rem', paddingTop: '8px' }}>
+                {replyError}
+              </div>
+            )}
+
             {/* Reply Input Bar */}
             <form onSubmit={handleSendReply} style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '16px', display: 'flex', gap: '10px' }}>
               <input
                 type="text"
-                placeholder="Type your reply to the concierge team..."
+                placeholder={t('portalPages.support.replyPlaceholder')}
                 className="cp-input"
                 value={replyMessage}
                 onChange={(e) => setReplyMessage(e.target.value)}
@@ -395,7 +428,7 @@ export function CustomerSupportPage() {
               />
               <button type="submit" className="cp-btn-primary" disabled={isReplying || !replyMessage.trim()}>
                 <Send size={16} />
-                Send
+                {t('portalPages.support.send')}
               </button>
             </form>
           </div>

@@ -9,7 +9,9 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { branchesApi } from '../../../api/services/branches.api';
+import { telHref, useSiteInfo } from '../../../hooks/usePublicSite';
 import './CustomerPortal.css';
+import { useTranslation } from 'react-i18next';
 
 interface BranchDisplay {
   id: string;
@@ -24,6 +26,8 @@ interface BranchDisplay {
 
 
 export function CustomerLocationsPage() {
+  const { t } = useTranslation();
+  const site = useSiteInfo();
   const [branches, setBranches] = useState<BranchDisplay[]>([]);
   const [searchCity, setSearchCity] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -72,9 +76,9 @@ export function CustomerLocationsPage() {
       {/* Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Pickup & Return Stations</h1>
+          <h1 className="cp-page-title">{t('portalPages.locations.title')}</h1>
           <p className="cp-page-subtitle">
-            Find airport fast-lanes, luxury city hubs, and 24/7 key drop-off stations.
+            {t('portalPages.locations.subtitle')}
           </p>
         </div>
 
@@ -83,7 +87,7 @@ export function CustomerLocationsPage() {
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--cp-text-muted)' }} />
             <input
               type="text"
-              placeholder="Filter by city or location..."
+              placeholder={t('portalPages.locations.search')}
               className="cp-input"
               style={{ paddingLeft: '38px' }}
               value={searchCity}
@@ -119,22 +123,20 @@ export function CustomerLocationsPage() {
             </div>
             <div>
               <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: 800 }}>
-                Anywhere Return & Roadside VIP Dispatch
+                {t('portalPages.locations.helpTitle')}
               </h3>
               <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-                Need to change your return station mid-trip? Or need urgent roadside assistance? We're available 24/7 nationwide.
+                {t('portalPages.locations.helpDesc')}
               </p>
             </div>
           </div>
 
-          <a
-            href="tel:+966114009000"
-            className="cp-btn-primary"
-            style={{ textDecoration: 'none' }}
-          >
-            <Phone size={16} />
-            Call Concierge: +966 11 400 9000
-          </a>
+          {site?.supportPhone && (
+            <a href={telHref(site.supportPhone)} className="cp-btn-primary" style={{ textDecoration: 'none' }}>
+              <Phone size={16} />
+              {t('portalPages.locations.call', { phone: site.supportPhone })}
+            </a>
+          )}
         </div>
       </div>
 
@@ -148,10 +150,10 @@ export function CustomerLocationsPage() {
       ) : filteredBranches.length === 0 ? (
         <div className="cp-card cp-empty-state">
           <MapPin size={32} color="var(--cp-primary)" />
-          <h3 className="cp-empty-title">No Stations Found</h3>
-          <p className="cp-empty-desc">We couldn't find any rental stations matching your search.</p>
+          <h3 className="cp-empty-title">{t('portalPages.locations.emptyTitle')}</h3>
+          <p className="cp-empty-desc">{t('portalPages.locations.emptyDesc')}</p>
           <button className="cp-btn-secondary" onClick={() => setSearchCity('')}>
-            Show All Locations
+            {t('portalPages.locations.showAll')}
           </button>
         </div>
       ) : (
@@ -170,7 +172,7 @@ export function CustomerLocationsPage() {
                 </h3>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.88rem', color: 'var(--cp-text-muted)' }}>
                   <MapPin size={16} color="var(--cp-accent)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <span>{branch.address}</span>
+                  <span>{branch.address || '—'}</span>
                 </div>
               </div>
 
@@ -186,27 +188,34 @@ export function CustomerLocationsPage() {
                   fontSize: '0.84rem',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-main)' }}>
-                  <Clock size={14} color="var(--cp-primary)" />
-                  <span>{branch.openingHours}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-main)' }}>
-                  <Phone size={14} color="var(--cp-primary)" />
-                  <a href={`tel:${branch.phone}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
-                    {branch.phone}
-                  </a>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-main)' }}>
-                  <Mail size={14} color="var(--cp-primary)" />
-                  <span>{branch.email}</span>
-                </div>
+                {branch.openingHours && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-main)' }}>
+                    <Clock size={14} color="var(--cp-primary)" />
+                    <span>{branch.openingHours}</span>
+                  </div>
+                )}
+                {branch.phone && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-main)' }}>
+                    <Phone size={14} color="var(--cp-primary)" />
+                    <a href={telHref(branch.phone)} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                      {branch.phone}
+                    </a>
+                  </div>
+                )}
+                {branch.email && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-main)' }}>
+                    <Mail size={14} color="var(--cp-primary)" />
+                    <a href={`mailto:${branch.email}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      {branch.email}
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Amenities */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '0.75rem' }}>
-                <span className="cp-badge cp-badge-success">Automated Key Drop</span>
-                <span className="cp-badge cp-badge-info">High-Speed EV Chargers</span>
-                <span className="cp-badge cp-badge-accent">AI Inspection Bay</span>
+                {/* Only services every branch really offers */}
+                <span className="cp-badge cp-badge-accent">{t('portalPages.locations.aiInspection')}</span>
               </div>
 
               {/* Action Buttons */}
@@ -219,7 +228,7 @@ export function CustomerLocationsPage() {
                   style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center' }}
                 >
                   <ExternalLink size={14} />
-                  Open in Google Maps
+                  {t('portalPages.locations.openMap')}
                 </a>
               </div>
             </div>

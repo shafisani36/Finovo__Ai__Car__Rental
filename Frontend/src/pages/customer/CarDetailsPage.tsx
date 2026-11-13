@@ -68,7 +68,7 @@ const secondaryActionStyle = (active: boolean): React.CSSProperties => ({
 
 // Assets
 import carMain from '../../assets/car-detail/car-main.jpg';
-import lamboLogo from '../../assets/car-detail/lambo-logo.jpg';
+import lamboLogo from '../../assets/car-detail/lambo-logo.webp';
 
 interface InsurancePlan {
   id: 'basic' | 'standard' | 'premium';

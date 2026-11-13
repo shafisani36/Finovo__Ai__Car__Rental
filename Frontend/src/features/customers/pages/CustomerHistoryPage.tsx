@@ -14,8 +14,12 @@ import {
 } from '../api/customerPortalApi';
 import { getCarImage, formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
+import { useTranslation } from 'react-i18next';
 
 export function CustomerHistoryPage() {
+  const { t, i18n } = useTranslation();
+  const formatNumber = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
+  const formatDate = (value: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(value));
   const [history, setHistory] = useState<RentalHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,6 +29,7 @@ export function CustomerHistoryPage() {
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const fetchHistory = async () => {
     try {
@@ -49,6 +54,7 @@ export function CustomerHistoryPage() {
     if (!reviewBooking) return;
     try {
       setIsSubmittingReview(true);
+      setReviewError(null);
       await customerPortalApi.submitReview({
         bookingId: reviewBooking.id,
         vehicleId: reviewBooking.vehicle.id,
@@ -60,7 +66,7 @@ export function CustomerHistoryPage() {
       setRating(5);
       await fetchHistory();
     } catch (err: any) {
-      alert(err.message || 'Failed to submit review');
+      setReviewError(err?.message || t('portalPages.history.errReview'));
     } finally {
       setIsSubmittingReview(false);
     }
@@ -85,8 +91,8 @@ export function CustomerHistoryPage() {
       {/* Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Rental History & Reviews</h1>
-          <p className="cp-page-subtitle">Access your past completed trips, download invoices, and rate your drive experience.</p>
+          <h1 className="cp-page-title">{t('portalPages.history.title')}</h1>
+          <p className="cp-page-subtitle">{t('portalPages.history.subtitle')}</p>
         </div>
       </div>
 
@@ -95,27 +101,27 @@ export function CustomerHistoryPage() {
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' }}>
             <CheckCircle2 size={18} color="#10B981" />
-            Completed Rentals
+            {t('portalPages.history.completed')}
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-            {history.length} Trips
+            {formatNumber(history.length)}
           </div>
         </div>
 
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' }}>
             <Gauge size={18} color="#FAB826" />
-            Total Distance Traveled
+            {t('portalPages.history.distance')}
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-            {totalKm > 0 ? `${totalKm.toLocaleString()} KM` : '850 KM'}
+            {t('portalPages.history.km', { value: formatNumber(totalKm) })}
           </div>
         </div>
 
         <div className="cp-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' }}>
             <Banknote size={18} color="var(--cp-primary)" />
-            Total Past Spend
+            {t('portalPages.history.spent')}
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
             {formatMoney(totalSpent, history[0]?.currency, 2)}
@@ -125,7 +131,7 @@ export function CustomerHistoryPage() {
 
       {/* History Items */}
       <div className="cp-card">
-        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Past Completed Bookings</h2>
+        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.history.listTitle')}</h2>
 
         {history.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -152,10 +158,7 @@ export function CustomerHistoryPage() {
                     }}
                   >
                     <img
-                      src={
-                        item.vehicle?.image ||
-                        'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=400&q=80'
-                      }
+                      src={item.vehicle?.image || getCarImage({ model: item.vehicle?.name })}
                       alt={item.vehicle?.name}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
@@ -170,22 +173,29 @@ export function CustomerHistoryPage() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       <span style={{ fontWeight: 800, color: 'var(--cp-primary)', fontSize: '1.1rem' }}>
-                        {item.vehicle?.name || 'Luxury Rental'}
+                        {item.vehicle?.name || t('portalPages.bookings.vehicle')}
                       </span>
-                      <span className="cp-badge cp-badge-success">Completed</span>
+                      <span className="cp-badge cp-badge-success">{t('portalPages.bookings.status.COMPLETED')}</span>
                     </div>
 
                     <div style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)' }}>
-                      Booking #{item.bookingNumber} • {new Date(item.pickupDate).toLocaleDateString()} to{' '}
-                      {new Date(item.returnDate).toLocaleDateString()}
+                      {t('portalPages.history.bookingLine', {
+                        number: item.bookingNumber,
+                        from: formatDate(item.pickupDate),
+                        to: formatDate(item.returnDate),
+                      })}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px', fontSize: '0.82rem', color: 'var(--cp-text-main)', flexWrap: 'wrap' }}>
+                      {item.odometerStart != null && item.odometerEnd != null && (
+                        <span>
+                          {t('portalPages.history.odometer')}{' '}
+                          <strong>{formatNumber(item.odometerStart)}</strong> →{' '}
+                          <strong>{t('portalPages.history.km', { value: formatNumber(item.odometerEnd) })}</strong>
+                        </span>
+                      )}
                       <span>
-                        Odometer: <strong>{item.odometerStart}</strong> → <strong>{item.odometerEnd} KM</strong>
-                      </span>
-                      <span>
-                        Total Paid: <strong>{formatMoney(item.totalAmount || 0, item.currency, 2)}</strong>
+                        {t('portalPages.history.totalPaid')} <strong>{formatMoney(item.totalAmount || 0, item.currency, 2)}</strong>
                       </span>
                     </div>
 
@@ -213,7 +223,7 @@ export function CustomerHistoryPage() {
                             />
                           ))}
                         </div>
-                        <span style={{ color: 'var(--cp-text-muted)' }}>"{item.review.comment || 'Great experience!'}"</span>
+                        {item.review.comment && <span style={{ color: 'var(--cp-text-muted)' }}>"{item.review.comment}"</span>}
                       </div>
                     )}
                   </div>
@@ -226,25 +236,28 @@ export function CustomerHistoryPage() {
                     className="cp-btn-outline"
                     style={{ padding: '8px 14px', fontSize: '0.82rem' }}
                   >
-                    View Details
+                    {t('portalPages.history.viewDetails')}
                   </Link>
 
                   {!item.review ? (
                     <button
                       className="cp-btn-primary"
                       style={{ padding: '8px 14px', fontSize: '0.82rem' }}
-                      onClick={() => setReviewBooking(item)}
+                      onClick={() => {
+                        setReviewError(null);
+                        setReviewBooking(item);
+                      }}
                     >
                       <Star size={14} />
-                      Leave a Review
+                      {t('portalPages.history.leaveReview')}
                     </button>
                   ) : (
                     <Link
-                      to={`/customer/bookings/new?vehicleId=${item.vehicle.id}`}
+                      to={`/customer/cars/${item.vehicle.id}`}
                       className="cp-btn-primary"
                       style={{ padding: '8px 14px', fontSize: '0.82rem' }}
                     >
-                      Rent Again
+                      {t('portalPages.history.rentAgain')}
                     </Link>
                   )}
                 </div>
@@ -256,10 +269,10 @@ export function CustomerHistoryPage() {
             <div className="cp-empty-icon">
               <History size={32} />
             </div>
-            <h3 className="cp-empty-title">No Past Rentals</h3>
-            <p className="cp-empty-desc">When you finish your first trip, full trip logs, odometer reports, and reviews will appear here.</p>
+            <h3 className="cp-empty-title">{t('portalPages.history.emptyTitle')}</h3>
+            <p className="cp-empty-desc">{t('portalPages.history.emptyDesc')}</p>
             <Link to="/customer/cars" className="cp-btn-primary">
-              Book Your First Trip
+              {t('portalPages.history.bookFirst')}
             </Link>
           </div>
         )}
@@ -270,9 +283,10 @@ export function CustomerHistoryPage() {
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 className="cp-card-title">Rate Your Rental Experience</h2>
+              <h2 className="cp-card-title">{t('portalPages.history.reviewTitle')}</h2>
               <button
                 onClick={() => setReviewBooking(null)}
+                aria-label={t('portalPages.history.close')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cp-text-muted)' }}
               >
                 <X size={20} />
@@ -280,7 +294,7 @@ export function CustomerHistoryPage() {
             </div>
 
             <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
-              How was your trip with the <strong>{reviewBooking.vehicle.name}</strong>? Your feedback helps us maintain the highest fleet standards.
+              {t('portalPages.history.reviewQuestion', { vehicle: reviewBooking.vehicle.name })}
             </p>
 
             <form onSubmit={handleSubmitReview}>
@@ -295,6 +309,7 @@ export function CustomerHistoryPage() {
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
                       onClick={() => setRating(star)}
+                      aria-label={t('portalPages.history.stars', { count: star })}
                     >
                       <Star
                         size={32}
@@ -305,20 +320,26 @@ export function CustomerHistoryPage() {
                   ))}
                 </div>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--cp-primary)' }}>
-                  {rating === 5 ? 'Exceptional (5/5)' : rating === 4 ? 'Very Good (4/5)' : `${rating} Stars`}
+                  {t(`portalPages.history.ratingLabels.r${rating}`)}
                 </span>
               </div>
 
               <div className="cp-form-group">
-                <label className="cp-label">Customer Review (optional)</label>
+                <label className="cp-label">{t('portalPages.history.comment')}</label>
                 <textarea
                   className="cp-textarea"
                   rows={4}
-                  placeholder="Tell us about the vehicle cleanliness, handover speed, and driving comfort..."
+                  placeholder={t('portalPages.history.commentPlaceholder')}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                 />
               </div>
+
+              {reviewError && (
+                <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginTop: '12px' }}>
+                  {reviewError}
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
                 <button
@@ -326,10 +347,10 @@ export function CustomerHistoryPage() {
                   className="cp-btn-outline"
                   onClick={() => setReviewBooking(null)}
                 >
-                  Cancel
+                  {t('portalPages.history.cancel')}
                 </button>
                 <button type="submit" className="cp-btn-primary" disabled={isSubmittingReview}>
-                  {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                  {isSubmittingReview ? t('portalPages.history.submitting') : t('portalPages.history.submit')}
                 </button>
               </div>
             </form>

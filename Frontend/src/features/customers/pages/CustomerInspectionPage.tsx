@@ -9,12 +9,14 @@ import {
 import { InspectionReportView } from '../../inspections/components/InspectionReportView';
 import { DamageComparisonView } from '../../inspections/components/DamageComparisonView';
 import './CustomerPortal.css';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Customer view of the AI condition reports of a booking: the pickup report, and after return the
  * pickup-vs-return comparison with any damage fine. Read-only: inspections are performed by Finovo staff.
  */
 export function CustomerInspectionPage() {
+  const { t } = useTranslation();
   const { bookingId } = useParams<{ bookingId: string }>();
   const [bookingNumber, setBookingNumber] = useState('');
   const [inspections, setInspections] = useState<InspectionReport[]>([]);
@@ -34,7 +36,7 @@ export function CustomerInspectionPage() {
         setInspections(res.inspections);
         setComparison(res.comparison);
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load the inspection reports');
+        if (active) setError(err instanceof Error ? err.message : t('portalPages.inspection.errLoad'));
       } finally {
         if (active) setIsLoading(false);
       }
@@ -58,14 +60,15 @@ export function CustomerInspectionPage() {
     <div className="cp-page-container">
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Vehicle condition reports</h1>
+          <h1 className="cp-page-title">{t('portalPages.inspection.title')}</h1>
           <p className="cp-page-subtitle">
-            {bookingNumber ? `Booking #${bookingNumber}. ` : ''}AI inspection at pickup and comparison at return.
+            {bookingNumber ? `${t('portalPages.inspection.bookingNumber', { number: bookingNumber })} ` : ''}
+            {t('portalPages.inspection.subtitle')}
           </p>
         </div>
         <div className="cp-header-actions">
           <Link to={`/customer/bookings/${bookingId}`} className="cp-btn-outline">
-            <ChevronLeft size={16} /> Back to booking
+            <ChevronLeft size={16} /> {t('portalPages.inspection.back')}
           </Link>
         </div>
       </div>
@@ -82,9 +85,9 @@ export function CustomerInspectionPage() {
       ) : (
         <div className="cp-card cp-empty-state">
           <ScanLine size={40} color="var(--cp-text-muted)" />
-          <h2 className="cp-empty-title">No inspection yet</h2>
+          <h2 className="cp-empty-title">{t('portalPages.inspection.emptyTitle')}</h2>
           <p className="cp-empty-desc">
-            Our staff will inspect the car with you at pickup. The condition report will appear here afterwards.
+            {t('portalPages.inspection.emptyDesc')}
           </p>
         </div>
       )}

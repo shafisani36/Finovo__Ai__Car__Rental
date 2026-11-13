@@ -7,8 +7,8 @@ import type {
 import { CLASSIFICATION_LABEL, VIEW_LABELS } from './inspectionHelpers';
 import { formatMoney, APP_CURRENCY } from '../../../utils/carImageHelper';
 import './inspection.css';
+import { useTranslation } from 'react-i18next';
 
-const SEVERITY_LABEL = { LOW: 'Minor', MEDIUM: 'Moderate', HIGH: 'Severe' } as const;
 
 /** Photo with numbered damage boxes drawn on top (box coordinates are 0..1 of the photo). */
 export function AnnotatedPhoto({
@@ -20,10 +20,12 @@ export function AnnotatedPhoto({
   findings: InspectionFinding[];
   numberOf: (finding: InspectionFinding) => number;
 }) {
+  const { t } = useTranslation();
+  const viewLabel = t(`inspectionReport.views.${photo.view}`, { defaultValue: VIEW_LABELS[photo.view] });
   return (
     <figure className="insp-photo">
       <div className="insp-photo-frame">
-        <img src={photo.imageUrl} alt={`${VIEW_LABELS[photo.view]} inspection photo`} loading="lazy" />
+        <img src={photo.imageUrl} alt={t('inspectionReport.photoAlt', { view: viewLabel })} loading="lazy" />
         {findings.map((f) => (
           <div
             key={f.id}
@@ -41,8 +43,9 @@ export function AnnotatedPhoto({
         ))}
       </div>
       <figcaption>
-        {VIEW_LABELS[photo.view]}
-        {findings.length === 0 ? ' - no damage' : ` - ${findings.length} item(s)`}
+        {viewLabel}
+        {' - '}
+        {findings.length === 0 ? t('inspectionReport.noDamage') : t('inspectionReport.items', { count: findings.length })}
       </figcaption>
     </figure>
   );
@@ -57,16 +60,17 @@ interface InspectionReportViewProps {
 
 /** Full inspection report: condition %, annotated photos and the damage table. Prints as a monochrome PDF. */
 export function InspectionReportView({ report, currency, hidePrint }: InspectionReportViewProps) {
+  const { t, i18n } = useTranslation();
   const numberOf = (finding: InspectionFinding) => report.findings.findIndex((f) => f.id === finding.id) + 1;
   const reportCurrency = currency || report.rental?.booking?.currency || APP_CURRENCY;
-  const title =
-    report.type === 'PICKUP' ? 'Pickup Inspection Report' : report.type === 'RETURN' ? 'Return Inspection Report' : 'Inspection Report';
+  const title = t(`inspectionReport.titles.${report.type}`, { defaultValue: t('inspectionReport.titles.ROUTINE') });
+  const dateTime = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
     <article className="insp-report printable-document">
       <header className="insp-report-header">
         <div>
-          <p className="insp-eyebrow">Finovo AI vehicle inspection</p>
+          <p className="insp-eyebrow">{t('inspectionReport.eyebrow')}</p>
           <h2>{title}</h2>
           {report.vehicle && (
             <p className="insp-muted">
@@ -75,14 +79,17 @@ export function InspectionReportView({ report, currency, hidePrint }: Inspection
             </p>
           )}
           <p className="insp-muted">
-            {new Date(report.createdAt).toLocaleString()}
-            {report.performedBy ? ` · Inspector: ${report.performedBy.fullName}` : ''}
-            {report.rental?.booking ? ` · Booking #${report.rental.booking.bookingNumber}` : ''}
+            {dateTime.format(new Date(report.createdAt))}
+            {report.performedBy ? ` · ${t('inspectionReport.inspector', { name: report.performedBy.fullName })}` : ''}
+            {report.rental?.booking ? ` · ${t('inspectionReport.booking', { number: report.rental.booking.bookingNumber })}` : ''}
           </p>
         </div>
-        <div className="insp-score" aria-label={`Condition ${report.overallScore} percent`}>
+        <div className="insp-score" aria-label={t('inspectionReport.conditionAria', { score: report.overallScore })}>
           <strong>{report.overallScore}%</strong>
-          <span>Condition · {report.conditionGrade.toLowerCase()}</span>
+          <span>
+            {t('inspectionReport.condition')} ·{' '}
+            {t(`inspectionReport.grades.${report.conditionGrade}`, { defaultValue: report.conditionGrade.toLowerCase() })}
+          </span>
         </div>
       </header>
 
@@ -91,19 +98,19 @@ export function InspectionReportView({ report, currency, hidePrint }: Inspection
       <section className="insp-stats">
         <div>
           <strong>{report.totals.findings}</strong>
-          <span>Damage items</span>
+          <span>{t('inspectionReport.damageItems')}</span>
         </div>
         <div>
           <strong>{report.totals.scratches}</strong>
-          <span>Scratches</span>
+          <span>{t('inspectionReport.scratches')}</span>
         </div>
         <div>
           <strong>{report.totals.dents}</strong>
-          <span>Dents</span>
+          <span>{t('inspectionReport.dents')}</span>
         </div>
         <div>
           <strong>{report.coverageScore ?? 0}%</strong>
-          <span>Angle coverage</span>
+          <span>{t('inspectionReport.coverage')}</span>
         </div>
       </section>
 
@@ -119,37 +126,41 @@ export function InspectionReportView({ report, currency, hidePrint }: Inspection
       </section>
 
       <section>
-        <h3 className="insp-section-title">Damage details</h3>
+        <h3 className="insp-section-title">{t('inspectionReport.details')}</h3>
         {report.findings.length === 0 ? (
-          <p className="insp-muted">No visible damage was detected on any photographed angle.</p>
+          <p className="insp-muted">{t('inspectionReport.noDamageFound')}</p>
         ) : (
           <div className="insp-table-wrap">
             <table className="insp-table">
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Angle</th>
-                  <th>Part</th>
-                  <th>Damage</th>
-                  <th>Severity</th>
-                  {report.type === 'RETURN' && <th>Status</th>}
-                  <th>AI confidence</th>
-                  <th>Est. repair</th>
+                  <th>{t('inspectionReport.angle')}</th>
+                  <th>{t('inspectionReport.part')}</th>
+                  <th>{t('inspectionReport.damage')}</th>
+                  <th>{t('inspectionReport.severity')}</th>
+                  {report.type === 'RETURN' && <th>{t('inspectionReport.status')}</th>}
+                  <th>{t('inspectionReport.confidence')}</th>
+                  <th>{t('inspectionReport.repair')}</th>
                 </tr>
               </thead>
               <tbody>
                 {report.findings.map((f, i) => (
                   <tr key={f.id}>
                     <td>{i + 1}</td>
-                    <td>{VIEW_LABELS[f.view]}</td>
+                    <td>{t(`inspectionReport.views.${f.view}`, { defaultValue: VIEW_LABELS[f.view] })}</td>
                     <td>
                       {f.part}
                       {f.description && <div className="insp-muted insp-small">{f.description}</div>}
                     </td>
                     <td>{f.damageType}</td>
-                    <td>{SEVERITY_LABEL[f.severity]}</td>
+                    <td>{t(`inspectionReport.severities.${f.severity}`)}</td>
                     {report.type === 'RETURN' && (
-                      <td>{f.classification ? CLASSIFICATION_LABEL[f.classification] : '—'}</td>
+                      <td>
+                        {f.classification
+                          ? t(`inspectionReport.classifications.${f.classification}`, { defaultValue: CLASSIFICATION_LABEL[f.classification] })
+                          : '—'}
+                      </td>
                     )}
                     <td>{f.confidence}%</td>
                     <td>{formatMoney(f.estimatedRepairCost, reportCurrency)}</td>
@@ -162,17 +173,16 @@ export function InspectionReportView({ report, currency, hidePrint }: Inspection
       </section>
 
       <footer className="insp-report-footer">
-        <span>Report ID: {report.id}</span>
+        <span>{t('inspectionReport.reportId', { id: report.id })}</span>
         <span>
-          Damage detected by an AI vision model and reviewed by Finovo staff. Repair estimates follow the Finovo
-          repair cost table.
+          {t('inspectionReport.footer')}
         </span>
       </footer>
 
       {!hidePrint && (
         <div className="no-print insp-report-actions">
           <button type="button" className="insp-btn-secondary" onClick={() => window.print()}>
-            <Printer size={16} /> Print / Save as PDF
+            <Printer size={16} /> {t('inspectionReport.print')}
           </button>
         </div>
       )}

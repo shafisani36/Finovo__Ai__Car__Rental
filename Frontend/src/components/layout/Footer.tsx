@@ -72,16 +72,26 @@ export function Footer() {
       ref={footerRef}
       style={{
         backgroundColor: 'var(--color-primary-950)',
-        borderTopLeftRadius: 'clamp(28px, 5vw, 48px)',
-        borderTopRightRadius: 'clamp(28px, 5vw, 48px)',
         paddingTop: 'clamp(48px, 7vw, 80px)',
         paddingBottom: '36px',
         color: 'var(--text-white)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         position: 'relative',
         zIndex: 10,
       }}
     >
+      {/* Flat top edge with a thin brand accent line instead of rounded corners that showed the page background */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '1px',
+          background:
+            'linear-gradient(90deg, rgba(250, 184, 38, 0) 0%, rgba(250, 184, 38, 0.55) 50%, rgba(250, 184, 38, 0) 100%)',
+        }}
+      />
       <div className="container">
         {/* Main Footer Grid */}
         <div

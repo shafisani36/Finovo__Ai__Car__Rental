@@ -34,14 +34,14 @@ import {
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { formatMoney, getCarImage, isFullBleedCarPhoto, resolveVehiclePricing } from '../../../utils/carImageHelper';
-import redCar from '../../../assets/cars/finovo-red-car.png';
+import redCar from '../../../assets/cars/finovo-red-car.webp';
 import grayCar from '../../../assets/cars/finovo-gray-car.png';
-import blueCar from '../../../assets/cars/finovo-blue-car.png';
-import whiteCar from '../../../assets/cars/finovo-white-car.png';
-import yellowCar from '../../../assets/cars/finovo-yellow-car.png';
-import greenCar from '../../../assets/cars/finovo-green-car.png';
-import bmwLogo from '../../../assets/cars/finovo-bmw-logo.png';
-import lamboLogo from '../../../assets/cars/finovo-lamborghini-logo.png';
+import blueCar from '../../../assets/cars/finovo-blue-car.webp';
+import whiteCar from '../../../assets/cars/finovo-white-car.webp';
+import yellowCar from '../../../assets/cars/finovo-yellow-car.webp';
+import greenCar from '../../../assets/cars/finovo-green-car.webp';
+import bmwLogo from '../../../assets/cars/finovo-bmw-logo.webp';
+import lamboLogo from '../../../assets/cars/finovo-lamborghini-logo.webp';
 
 function getFleetCarAssets(v: Vehicle) {
   const resolved = getCarImage(v);

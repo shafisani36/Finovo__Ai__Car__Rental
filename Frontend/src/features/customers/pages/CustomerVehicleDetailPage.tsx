@@ -12,11 +12,15 @@ import {
   ChevronRight,
   Car,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
 import { getCarImage, getCarGallery, getCarGalleryEntries, isFullBleedCarPhoto, resolveVehiclePricing, formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
 export function CustomerVehicleDetailPage() {
+  const { t } = useTranslation();
+  const specLabel = (value: string) =>
+    value ? t(`cars.specs.${value.toLowerCase()}`, { defaultValue: value.charAt(0) + value.slice(1).toLowerCase() }) : '—';
   const { vehicleId } = useParams<{ vehicleId: string }>();
   const navigate = useNavigate();
 
@@ -55,56 +59,23 @@ export function CustomerVehicleDetailPage() {
           }
           setVehicle({
             id: v.id,
-            brand: v.brand?.name || v.brand || 'Luxury',
-            model: v.model?.name || v.model || 'Performance',
-            year: v.year || 2026,
-            categoryName: v.category?.name || v.category || 'Executive Sedan',
+            brand: v.brand?.name || v.brand || '',
+            model: v.model?.name || v.model || '',
+            year: v.year || null,
+            categoryName: v.category?.name || v.category || '',
             dailyRate: pricing.dailyRate,
             depositAmount: pricing.securityDeposit,
-            seats: v.seats || 5,
-            transmission: v.transmission || 'AUTOMATIC',
-            fuelType: v.fuelType || 'PETROL',
-            engineCapacity: v.engineSize || v.engineCapacity || '2.0L TwinPower Turbo',
-            horsepower: v.horsepower || v.horsePower || 320,
+            seats: v.seats || null,
+            transmission: v.transmission || '',
+            fuelType: v.fuelType || '',
+            horsepower: v.horsepower || v.horsePower || null,
             primaryImageUrl: getCarImage(v),
             images: gallery,
-            features:
-              parsedFeatures.length > 0
-                ? parsedFeatures
-                : [
-                    'AI Pre-Trip & Post-Trip Inspection Protection',
-                    'Apple CarPlay & Android Auto Wireless',
-                    'Adaptive Cruise Control & Lane Assist',
-                    'Full Leather Interior & Ambient Lighting',
-                    'Unlimited Fast-Pass Toll Coverage Included',
-                    '24/7 Roadside VIP Concierge Support',
-                  ],
+            // Only the equipment recorded for this car; nothing is invented when the list is empty
+            features: parsedFeatures,
           });
         } else if (isMounted) {
-          setVehicle({
-            id: vehicleId,
-            brand: 'BMW',
-            model: 'M4 Competition Coupe',
-            year: 2026,
-            categoryName: 'Coupe / Sports',
-            dailyRate: 480,
-            depositAmount: 800,
-            seats: 4,
-            transmission: 'AUTOMATIC',
-            fuelType: 'PETROL',
-            engineCapacity: '3.0L M TwinPower Turbo',
-            horsepower: 503,
-            primaryImageUrl: '/cars/studio-bmw-m4.jpg',
-            images: getCarGallery({ brand: 'BMW', model: 'M4 Competition Coupe', primaryImageUrl: '/cars/studio-bmw-m4.jpg' }),
-            features: [
-              'AI Pre-Trip & Post-Trip Inspection Protection',
-              'Apple CarPlay & Android Auto Wireless',
-              'Adaptive Cruise Control & Lane Assist',
-              'Full Leather Interior & Ambient Lighting',
-              'Unlimited Fast-Pass Toll Coverage Included',
-              '24/7 Roadside VIP Concierge Support',
-            ],
-          });
+          setVehicle(null);
         }
       } catch (err) {
         console.error('Error fetching vehicle details:', err);
@@ -139,10 +110,10 @@ export function CustomerVehicleDetailPage() {
       <div className="cp-page-container">
         <div className="cp-card cp-empty-state">
           <Car size={36} color="var(--cp-primary)" />
-          <h2 className="cp-empty-title">Vehicle Not Found</h2>
-          <p className="cp-empty-desc">The requested vehicle is either unavailable or does not exist.</p>
+          <h2 className="cp-empty-title">{t('portalPages.vehicle.notFound')}</h2>
+          <p className="cp-empty-desc">{t('portalPages.vehicle.notFoundDesc')}</p>
           <Link to="/customer/cars" className="cp-btn-primary">
-            Return to Fleet
+            {t('portalPages.vehicle.backToFleet')}
           </Link>
         </div>
       </div>
@@ -167,7 +138,7 @@ export function CustomerVehicleDetailPage() {
           }}
         >
           <ArrowLeft size={16} />
-          Back to Available Fleet
+          {t('portalPages.vehicle.backToFleet')}
         </Link>
       </div>
 
@@ -209,8 +180,8 @@ export function CustomerVehicleDetailPage() {
                     }}
                   />
                   <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', gap: '8px', zIndex: 3 }}>
-                    <span className="cp-badge cp-badge-primary">{vehicle.categoryName}</span>
-                    <span className="cp-badge cp-badge-accent">Finovo Certified</span>
+                    {vehicle.categoryName && <span className="cp-badge cp-badge-primary">{vehicle.categoryName}</span>}
+                    <span className="cp-badge cp-badge-accent">{t('portalPages.vehicle.aiInspected')}</span>
                   </div>
                   {galleryEntries.length > 1 && (
                     <div
@@ -289,45 +260,45 @@ export function CustomerVehicleDetailPage() {
 
           {/* Vehicle Specifications Grid */}
           <div className="cp-card">
-            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Vehicle Technical Highlights</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.vehicle.specsTitle')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
                   <Users size={16} color="var(--cp-primary)" />
-                  Passenger Capacity
+                  {t('cars.specs.seats')}
                 </div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-                  {vehicle.seats} Adults
+                  {vehicle.seats ?? '—'}
                 </div>
               </div>
 
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
                   <Gauge size={16} color="var(--cp-primary)" />
-                  Transmission
+                  {t('cars.specs.transmission')}
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--cp-primary)', textTransform: 'capitalize' }}>
-                  {vehicle.transmission?.toLowerCase()}
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
+                  {specLabel(vehicle.transmission)}
                 </div>
               </div>
 
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
                   <Fuel size={16} color="var(--cp-primary)" />
-                  Fuel Type
+                  {t('cars.specs.fuel')}
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--cp-primary)', textTransform: 'capitalize' }}>
-                  {vehicle.fuelType?.toLowerCase()}
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
+                  {specLabel(vehicle.fuelType)}
                 </div>
               </div>
 
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
                   <Sparkles size={16} color="var(--cp-accent)" />
-                  Engine Power
+                  {t('portalPages.vehicle.power')}
                 </div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-                  {vehicle.horsepower} HP
+                  {vehicle.horsepower ? t('portalPages.vehicle.horsepower', { value: vehicle.horsepower }) : '—'}
                 </div>
               </div>
             </div>
@@ -335,9 +306,9 @@ export function CustomerVehicleDetailPage() {
 
           {/* Features and Benefits */}
           <div className="cp-card">
-            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Included Amenities & Guarantees</h2>
+            <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.vehicle.includedTitle')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-              {vehicle.features.map((feat: string, index: number) => (
+              {[t('portalPages.vehicle.inspectionIncluded'), ...vehicle.features].map((feat: string, index: number) => (
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--cp-text-main)' }}>
                   <CheckCircle2 size={18} color="#10B981" />
                   <span>{feat}</span>
@@ -351,22 +322,22 @@ export function CustomerVehicleDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="cp-card" style={{ position: 'sticky', top: '24px' }}>
             <div style={{ borderBottom: '1px solid var(--cp-border)', paddingBottom: '16px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', fontWeight: 600 }}>{vehicle.brand} • {vehicle.year}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', fontWeight: 600 }}>{[vehicle.brand, vehicle.year].filter(Boolean).join(' • ')}</div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--cp-primary)', margin: '4px 0 12px 0' }}>
                 {vehicle.model}
               </h1>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                 <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-                  ${vehicle.dailyRate}
+                  {formatMoney(vehicle.dailyRate)}
                 </span>
-                <span style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem' }}>/ day</span>
+                <span style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem' }}>{t('portalPages.vehicle.perDay')}</span>
               </div>
             </div>
 
             {/* Trip dates selector */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
               <div>
-                <label className="cp-label">Pickup Date</label>
+                <label className="cp-label">{t('portalPages.vehicle.pickupDate')}</label>
                 <div style={{ position: 'relative' }}>
                   <Calendar size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--cp-text-muted)' }} />
                   <input
@@ -381,7 +352,7 @@ export function CustomerVehicleDetailPage() {
               </div>
 
               <div>
-                <label className="cp-label">Return Date</label>
+                <label className="cp-label">{t('portalPages.vehicle.returnDate')}</label>
                 <div style={{ position: 'relative' }}>
                   <Calendar size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--cp-text-muted)' }} />
                   <input
@@ -410,20 +381,20 @@ export function CustomerVehicleDetailPage() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Rental Period:</span>
-                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{daysCount} {daysCount === 1 ? 'day' : 'days'}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.vehicle.period')}</span>
+                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{t('portalPages.vehicle.days', { count: daysCount })}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Daily Rate ({formatMoney(vehicle.dailyRate, vehicle.currency)} × {daysCount}):</span>
-                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(subtotal, vehicle.currency, 2)}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.vehicle.dailyRateTimes', { rate: formatMoney(vehicle.dailyRate), count: daysCount })}</span>
+                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(subtotal, undefined, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Estimated Tax (8%):</span>
-                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(estimatedTax, vehicle.currency, 2)}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.vehicle.tax')}</span>
+                <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(estimatedTax, undefined, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>Refundable Security Deposit:</span>
-                <span style={{ fontWeight: 700, color: '#10B981' }}>{formatMoney(vehicle.depositAmount, vehicle.currency, 2)}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.vehicle.deposit')}</span>
+                <span style={{ fontWeight: 700, color: '#10B981' }}>{formatMoney(vehicle.depositAmount, undefined, 2)}</span>
               </div>
               <div
                 style={{
@@ -434,9 +405,9 @@ export function CustomerVehicleDetailPage() {
                   alignItems: 'baseline',
                 }}
               >
-                <span style={{ fontWeight: 800, color: 'var(--cp-primary)' }}>Estimated Total:</span>
+                <span style={{ fontWeight: 800, color: 'var(--cp-primary)' }}>{t('portalPages.vehicle.total')}</span>
                 <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--cp-primary)' }}>
-                  {formatMoney(estimatedTotal, vehicle.currency, 2)}
+                  {formatMoney(estimatedTotal, undefined, 2)}
                 </span>
               </div>
             </div>
@@ -451,13 +422,13 @@ export function CustomerVehicleDetailPage() {
               className="cp-btn-primary"
               style={{ width: '100%', padding: '14px', fontSize: '1rem' }}
             >
-              Proceed to Reserve Vehicle
+              {t('portalPages.vehicle.reserve')}
               <ChevronRight size={18} />
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginTop: '14px', fontSize: '0.8rem', color: 'var(--cp-text-muted)' }}>
               <ShieldCheck size={16} color="#10B981" />
-              <span>Instant AI Confirmation • No Hidden Surprises</span>
+              <span>{t('portalPages.vehicle.priceNote')}</span>
             </div>
           </div>
         </div>

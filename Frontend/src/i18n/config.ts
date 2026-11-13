@@ -1,11 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { en } from './locales/en';
-import { ur } from './locales/ur';
-import { ar } from './locales/ar';
-import { fr } from './locales/fr';
-import { es } from './locales/es';
-import { de } from './locales/de';
 
 export type LanguageCode = 'en' | 'ur' | 'ar' | 'fr' | 'es' | 'de';
 export type Direction = 'ltr' | 'rtl';
@@ -174,22 +169,49 @@ export function applyDocumentLanguage(lang: LanguageCode): void {
   }
 }
 
+// English is bundled as the fallback; every other language is downloaded only when it is used
+const LOCALE_LOADERS: Record<Exclude<LanguageCode, 'en'>, () => Promise<Record<string, unknown>>> = {
+  ur: () => import('./locales/ur').then((module) => module.ur),
+  ar: () => import('./locales/ar').then((module) => module.ar),
+  fr: () => import('./locales/fr').then((module) => module.fr),
+  es: () => import('./locales/es').then((module) => module.es),
+  de: () => import('./locales/de').then((module) => module.de),
+};
+
+/**
+ * Makes sure the translations of a language are available before it is shown.
+ * Falls back to English (the bundled fallback) if the download fails.
+ */
+export async function ensureLanguageLoaded(lang: string): Promise<void> {
+  const code = normalizeLanguageCode(lang);
+  if (!code || code === 'en' || i18n.hasResourceBundle(code, 'translation')) return;
+  try {
+    const resources = await LOCALE_LOADERS[code]();
+    i18n.addResourceBundle(code, 'translation', resources, true, true);
+  } catch (err) {
+    console.error(`Failed to load the ${code} translations:`, err);
+  }
+}
+
+// Every caller of i18n.changeLanguage gets the language files loaded first, so no screen shows raw keys
+const changeLanguageWithoutLoading = i18n.changeLanguage.bind(i18n);
+i18n.changeLanguage = (async (lng?: string, callback?: Parameters<typeof i18n.changeLanguage>[1]) => {
+  if (lng) await ensureLanguageLoaded(lng);
+  return changeLanguageWithoutLoading(lng, callback);
+}) as typeof i18n.changeLanguage;
+
 // Initial resolution
 const initialLang = resolveInitialLanguage();
 
-// Initialize i18next singleton
+// Initialize i18next singleton (starts in English until the saved language is loaded)
 i18n
   .use(initReactI18next)
   .init({
     resources: {
       en: { translation: en },
-      ur: { translation: ur },
-      ar: { translation: ar },
-      fr: { translation: fr },
-      es: { translation: es },
-      de: { translation: de },
     },
-    lng: initialLang,
+    partialBundledLanguages: true,
+    lng: DEFAULT_LANGUAGE,
     fallbackLng: DEFAULT_LANGUAGE,
     interpolation: {
       escapeValue: false, // React already escapes values safely
@@ -199,6 +221,12 @@ i18n
     },
     returnNull: false,
   });
+
+/** Resolves once the visitor's saved language is ready; the app renders after this. */
+export const i18nReady: Promise<void> =
+  initialLang === DEFAULT_LANGUAGE
+    ? Promise.resolve()
+    : i18n.changeLanguage(initialLang).then(() => undefined);
 
 // Apply document direction immediately
 if (typeof document !== 'undefined') {

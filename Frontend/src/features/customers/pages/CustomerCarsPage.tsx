@@ -14,9 +14,13 @@ import { vehiclesApi } from '../../../api/services/vehicles.api';
 import { getCarImage, isFullBleedCarPhoto, resolveVehiclePricing, formatMoney } from '../../../utils/carImageHelper';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
+import { useTranslation } from 'react-i18next';
 
 
 export function CustomerCarsPage() {
+  const { t } = useTranslation();
+  const specLabel = (value?: string) =>
+    value ? t(`cars.specs.${value.toLowerCase()}`, { defaultValue: value.charAt(0) + value.slice(1).toLowerCase() }) : '—';
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,9 +85,9 @@ export function CustomerCarsPage() {
     () =>
       categories.map((cat) => ({
         value: cat,
-        label: cat === 'ALL' ? 'All Categories' : cat,
+        label: cat === 'ALL' ? t('portalPages.cars.allCategories') : cat,
       })),
-    [categories]
+    [categories, t]
   );
 
   const filteredVehicles = useMemo(() => {
@@ -104,15 +108,15 @@ export function CustomerCarsPage() {
       {/* Page Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Explore Verified Rental Fleet</h1>
+          <h1 className="cp-page-title">{t('portalPages.cars.title')}</h1>
           <p className="cp-page-subtitle">
-            Premium, AI-inspected vehicles ready for instant digital checkout & smart handover.
+            {t('portalPages.cars.subtitle')}
           </p>
         </div>
         <div className="cp-header-actions">
           <Link to="/customer/assistant" className="cp-btn-outline" style={{ background: '#FFFFFF' }}>
             <Sparkles size={16} color="#FAB826" />
-            Ask AI Concierge
+            {t('portalPages.cars.askAssistant')}
           </Link>
         </div>
       </div>
@@ -121,12 +125,12 @@ export function CustomerCarsPage() {
       <div className="cp-card" style={{ padding: '20px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'flex-end' }}>
           <div>
-            <label className="cp-label">Search Vehicle or Brand</label>
+            <label className="cp-label">{t('portalPages.cars.search')}</label>
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--cp-text-subtle)' }} />
               <input
                 type="text"
-                placeholder="e.g. BMW, SUV, Porsche..."
+                placeholder={t('portalPages.cars.searchPlaceholder')}
                 className="cp-input"
                 style={{ paddingLeft: '38px' }}
                 value={searchQuery}
@@ -136,7 +140,7 @@ export function CustomerCarsPage() {
           </div>
 
           <div>
-            <label className="cp-label">Category</label>
+            <label className="cp-label">{t('portalPages.cars.category')}</label>
             <CustomSelect
               value={selectedCategory}
               onChange={(val) => setSelectedCategory(String(val))}
@@ -146,30 +150,30 @@ export function CustomerCarsPage() {
           </div>
 
           <div>
-            <label className="cp-label">Fuel Engine</label>
+            <label className="cp-label">{t('cars.specs.fuel')}</label>
             <CustomSelect
               value={selectedFuel}
               onChange={(val) => setSelectedFuel(String(val))}
               options={[
-                { value: 'ALL', label: 'All Fuel Types' },
-                { value: 'PETROL', label: 'Petrol' },
-                { value: 'ELECTRIC', label: 'Electric (EV)', badge: 'EV' },
-                { value: 'HYBRID', label: 'Hybrid' },
-                { value: 'DIESEL', label: 'Diesel' },
+                { value: 'ALL', label: t('portalPages.cars.allFuel') },
+                { value: 'PETROL', label: t('cars.specs.petrol') },
+                { value: 'ELECTRIC', label: t('cars.specs.electric'), badge: 'EV' },
+                { value: 'HYBRID', label: t('cars.specs.hybrid') },
+                { value: 'DIESEL', label: t('cars.specs.diesel') },
               ]}
               size="md"
             />
           </div>
 
           <div>
-            <label className="cp-label">Transmission</label>
+            <label className="cp-label">{t('cars.specs.transmission')}</label>
             <CustomSelect
               value={selectedTransmission}
               onChange={(val) => setSelectedTransmission(String(val))}
               options={[
-                { value: 'ALL', label: 'All Transmissions' },
-                { value: 'AUTOMATIC', label: 'Automatic' },
-                { value: 'MANUAL', label: 'Manual' },
+                { value: 'ALL', label: t('portalPages.cars.allTransmissions') },
+                { value: 'AUTOMATIC', label: t('cars.specs.automatic') },
+                { value: 'MANUAL', label: t('cars.specs.manual') },
               ]}
               size="md"
             />
@@ -177,7 +181,7 @@ export function CustomerCarsPage() {
 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <label className="cp-label">Max Price / Day</label>
+              <label className="cp-label">{t('portalPages.cars.maxPrice')}</label>
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(maxPrice)}</span>
             </div>
             <input
@@ -187,6 +191,7 @@ export function CustomerCarsPage() {
               step={25}
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
+              aria-label={t('portalPages.cars.maxPrice')}
               style={{ width: '100%', accentColor: 'var(--cp-accent)' }}
             />
           </div>
@@ -205,9 +210,9 @@ export function CustomerCarsPage() {
           <div className="cp-empty-icon">
             <Car size={32} />
           </div>
-          <h3 className="cp-empty-title">No matching vehicles found</h3>
+          <h3 className="cp-empty-title">{t('portalPages.cars.emptyTitle')}</h3>
           <p className="cp-empty-desc">
-            Try adjusting your search criteria, fuel preference, or price slider to see more available cars.
+            {t('portalPages.cars.emptyDesc')}
           </p>
           <button
             className="cp-btn-secondary"
@@ -219,7 +224,7 @@ export function CustomerCarsPage() {
               setMaxPrice(sliderMax);
             }}
           >
-            Reset All Filters
+            {t('portalPages.cars.reset')}
           </button>
         </div>
       ) : (
@@ -246,7 +251,7 @@ export function CustomerCarsPage() {
                 />
                 <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '6px', zIndex: 3 }}>
                   <span className="cp-badge cp-badge-accent">{car.categoryName}</span>
-                  {car.zeroDeposit && <span className="cp-badge cp-badge-success">Zero Deposit</span>}
+                  {car.zeroDeposit && <span className="cp-badge cp-badge-success">{t('portalPages.cars.noDeposit')}</span>}
                 </div>
                 <div
                   style={{
@@ -267,7 +272,7 @@ export function CustomerCarsPage() {
                   <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--cp-accent)' }}>
                     {formatMoney(car.dailyRate)}
                   </span>
-                  <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>/ day</span>
+                  <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>{t('portalPages.vehicle.perDay')}</span>
                 </div>
               </div>
 
@@ -275,7 +280,7 @@ export function CustomerCarsPage() {
               <div className="cp-auto-card-body">
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', fontWeight: 600 }}>
-                    {car.brand} • {car.year}
+                    {[car.brand, car.year].filter(Boolean).join(' • ')}
                   </div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--cp-primary)', margin: '4px 0 0 0' }}>
                     {car.model}
@@ -297,15 +302,15 @@ export function CustomerCarsPage() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Users size={14} color="var(--cp-primary)" />
-                    <span>{car.seats} Seats</span>
+                    <span>{t('portalPages.cars.seats', { count: car.seats })}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Gauge size={14} color="var(--cp-primary)" />
-                    <span style={{ textTransform: 'capitalize' }}>{car.transmission?.toLowerCase()}</span>
+                    <span>{specLabel(car.transmission)}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Fuel size={14} color="var(--cp-primary)" />
-                    <span style={{ textTransform: 'capitalize' }}>{car.fuelType?.toLowerCase()}</span>
+                    <span>{specLabel(car.fuelType)}</span>
                   </div>
                 </div>
 
@@ -313,11 +318,11 @@ export function CustomerCarsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem', color: 'var(--cp-text-muted)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <CheckCircle2 size={14} color="#10B981" />
-                    <span>Instant Digital Handover & AI Inspection</span>
+                    <span>{t('portalPages.vehicle.inspectionIncluded')}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <CheckCircle2 size={14} color="#10B981" />
-                    <span>Free cancellation up to 24h before pickup</span>
+                    <span>{t('portalPages.cars.cancelBeforePickup')}</span>
                   </div>
                 </div>
 
@@ -328,14 +333,14 @@ export function CustomerCarsPage() {
                     className="cp-btn-outline"
                     style={{ textAlign: 'center', fontSize: '0.85rem', padding: '8px' }}
                   >
-                    View Specs
+                    {t('portalPages.cars.viewDetails')}
                   </Link>
                   <button
                     onClick={() => navigate(`/customer/bookings/new?vehicleId=${car.id}`)}
                     className="cp-btn-primary"
                     style={{ fontSize: '0.85rem', padding: '8px' }}
                   >
-                    Book Now
+                    {t('portalPages.cars.bookNow')}
                     <ArrowRight size={14} />
                   </button>
                 </div>

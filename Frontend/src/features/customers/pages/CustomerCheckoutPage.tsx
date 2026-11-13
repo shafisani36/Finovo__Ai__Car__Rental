@@ -653,7 +653,7 @@ export function CustomerCheckoutPage() {
                     type="text"
                     className="cp-input"
                     value={licenseNumber}
-                    placeholder="e.g. DL-9821441"
+                    placeholder={t('portalPages.documents.numberPlaceholder')}
                     onChange={(e) => setLicenseNumber(e.target.value)}
                   />
                 </div>

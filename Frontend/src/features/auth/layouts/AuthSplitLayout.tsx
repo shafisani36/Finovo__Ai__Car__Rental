@@ -24,7 +24,7 @@ export function AuthSplitLayout({
   const isRtl = i18n.dir() === 'rtl';
   const isRegister = variant === 'register';
 
-  const bgImage = '/auth/auth-porsche-sunset.png';
+  const bgImage = '/auth/auth-porsche-sunset.webp';
 
   const scriptText = isRegister ? t('auth.split.registerScript') : t('auth.split.loginScript');
 

@@ -15,8 +15,10 @@ import {
   type CustomerNotificationItem,
 } from '../api/customerPortalApi';
 import './CustomerPortal.css';
+import { useTranslation } from 'react-i18next';
 
 export function CustomerNotificationsPage() {
+  const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = useState<CustomerNotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
@@ -105,19 +107,19 @@ export function CustomerNotificationsPage() {
       <div className="cp-page-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h1 className="cp-page-title" style={{ margin: 0 }}>Notification Center</h1>
+            <h1 className="cp-page-title" style={{ margin: 0 }}>{t('portalPages.notifications.title')}</h1>
             {unreadCount > 0 && (
-              <span className="cp-badge cp-badge-warning">{unreadCount} New</span>
+              <span className="cp-badge cp-badge-warning">{t('portalPages.notifications.newCount', { count: unreadCount })}</span>
             )}
           </div>
-          <p className="cp-page-subtitle">Real-time alerts, rental updates, and trip confirmations.</p>
+          <p className="cp-page-subtitle">{t('portalPages.notifications.subtitle')}</p>
         </div>
 
         {unreadCount > 0 && (
           <div className="cp-header-actions">
             <button className="cp-btn-outline" onClick={handleMarkAllRead} disabled={isMarkingAll}>
               <CheckCheck size={16} />
-              {isMarkingAll ? 'Marking...' : 'Mark All as Read'}
+              {isMarkingAll ? t('portalPages.notifications.marking') : t('portalPages.notifications.markAll')}
             </button>
           </div>
         )}
@@ -132,7 +134,7 @@ export function CustomerNotificationsPage() {
               className={`cp-tab-btn ${activeCategory === cat ? 'active' : ''}`}
               onClick={() => setActiveCategory(cat)}
             >
-              {cat === 'ALL' ? 'All Alerts' : cat.charAt(0) + cat.slice(1).toLowerCase()}
+              {t(`portalPages.notifications.categories.${cat}`)}
             </button>
           ))}
         </div>
@@ -185,7 +187,7 @@ export function CustomerNotificationsPage() {
                       {n.message}
                     </p>
                     <div style={{ fontSize: '0.78rem', color: 'var(--cp-text-subtle)', marginTop: '4px' }}>
-                      {new Date(n.createdAt).toLocaleString()}
+                      {new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(n.createdAt))}
                     </div>
                   </div>
                 </div>
@@ -193,7 +195,7 @@ export function CustomerNotificationsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                   {n.actionUrl && (
                     <Link to={n.actionUrl} className="cp-btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                      View
+                      {t('portalPages.notifications.view')}
                       <ChevronRight size={14} />
                     </Link>
                   )}
@@ -202,7 +204,8 @@ export function CustomerNotificationsPage() {
                       onClick={() => handleMarkAsRead(n.id)}
                       className="cp-btn-outline"
                       style={{ padding: '6px 12px', fontSize: '0.8rem', borderColor: 'transparent' }}
-                      title="Mark as Read"
+                      title={t('portalPages.notifications.markRead')}
+                      aria-label={t('portalPages.notifications.markRead')}
                     >
                       <CheckCheck size={14} />
                     </button>
@@ -216,8 +219,8 @@ export function CustomerNotificationsPage() {
             <div className="cp-empty-icon">
               <Bell size={28} />
             </div>
-            <h3 className="cp-empty-title">All Caught Up!</h3>
-            <p className="cp-empty-desc">You don't have any unread notifications in this category.</p>
+            <h3 className="cp-empty-title">{t('portalPages.notifications.emptyTitle')}</h3>
+            <p className="cp-empty-desc">{t('portalPages.notifications.emptyDesc')}</p>
           </div>
         )}
       </div>

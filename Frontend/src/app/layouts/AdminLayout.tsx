@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { LoadingState } from '../../components/common/LoadingState';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelector } from '../../components/common/LanguageSelector';
@@ -120,7 +121,7 @@ export function AdminLayout() {
             <button
               className="admin-sidebar-close-btn"
               onClick={() => setMobileSidebarOpen(false)}
-              aria-label="Close navigation"
+              aria-label={t('adminPages.layout.closeNav')}
               style={{
                 display: 'none',
                 background: 'none',
@@ -234,14 +235,14 @@ export function AdminLayout() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Sun size={17} />
-              <span>Light mode</span>
+              <span>{t('adminPages.layout.lightMode')}</span>
             </div>
 
             {/* Pill Toggle Switch */}
             <button
               type="button"
               onClick={() => setIsDarkMode(!isDarkMode)}
-              aria-label="Toggle theme mode"
+              aria-label={t('adminPages.layout.toggleTheme')}
               style={{
                 width: '42px',
                 height: '22px',
@@ -328,7 +329,7 @@ export function AdminLayout() {
             <button
               className="admin-hamburger-btn"
               onClick={() => setMobileSidebarOpen(true)}
-              aria-label="Open sidebar menu"
+              aria-label={t('adminPages.layout.openNav')}
             >
               <Menu size={22} />
             </button>
@@ -379,7 +380,7 @@ export function AdminLayout() {
             <button
               type="button"
               className="admin-header-icon-btn"
-              aria-label="Notifications"
+              aria-label={t('adminPages.layout.notifications')}
             >
               <Bell size={19} />
               <span className="admin-header-badge-dot" />
@@ -389,7 +390,7 @@ export function AdminLayout() {
             <button
               type="button"
               className="admin-header-icon-btn admin-header-help-btn"
-              aria-label="Help and Support"
+              aria-label={t('adminPages.layout.help')}
             >
               <HelpCircle size={19} />
             </button>
@@ -397,7 +398,7 @@ export function AdminLayout() {
             {/* User Avatar Circle */}
             <div
               className="admin-header-avatar"
-              title={user?.fullName || 'Administrator'}
+              title={user?.fullName || t('adminPages.layout.administrator')}
             >
               {userInitials}
             </div>
@@ -406,7 +407,9 @@ export function AdminLayout() {
 
         {/* Main Routed Outlet View */}
         <main className="admin-main-content">
+          <Suspense fallback={<LoadingState />}>
           <Outlet />
+        </Suspense>
         </main>
       </div>
 
@@ -415,7 +418,7 @@ export function AdminLayout() {
         <div
           className="admin-mobile-backdrop"
           onClick={() => setMobileSidebarOpen(false)}
-          aria-label="Close menu backdrop"
+          aria-label={t('adminPages.layout.closeNav')}
         />
       )}
 

@@ -18,7 +18,8 @@ import { SUPPORTED_LANGUAGES, normalizeLanguageCode } from '../../../i18n/config
 import './CustomerPortal.css';
 
 export function CustomerProfilePage() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const { updatePreferredLanguage } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'sessions'>('profile');
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
@@ -91,7 +92,7 @@ export function CustomerProfilePage() {
       });
 
       if (res.success) {
-        setSaveSuccess('Your profile was updated successfully.');
+        setSaveSuccess(t('portalPages.profile.saved'));
         setCustomer(res.customer);
         const normalizedLang = normalizeLanguageCode(res.customer?.preferredLanguage || preferredLanguage);
         if (normalizedLang) {
@@ -103,7 +104,7 @@ export function CustomerProfilePage() {
         setTimeout(() => setSaveSuccess(null), 3000);
       }
     } catch (err: any) {
-      setSaveError(err.message || 'Failed to update profile.');
+      setSaveError(err?.message || t('portalPages.profile.errSave'));
     } finally {
       setIsSaving(false);
     }
@@ -112,11 +113,11 @@ export function CustomerProfilePage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setPassMessage({ text: 'New passwords do not match.', type: 'error' });
+      setPassMessage({ text: t('portalPages.profile.passwordMismatch'), type: 'error' });
       return;
     }
     if (newPassword.length < 8) {
-      setPassMessage({ text: 'Password must be at least 8 characters long.', type: 'error' });
+      setPassMessage({ text: t('portalPages.profile.passwordShort'), type: 'error' });
       return;
     }
 
@@ -127,12 +128,12 @@ export function CustomerProfilePage() {
         method: 'POST',
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      setPassMessage({ text: 'Password changed successfully.', type: 'success' });
+      setPassMessage({ text: t('portalPages.profile.passwordChanged'), type: 'success' });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setPassMessage({ text: err.message || 'Failed to update password.', type: 'error' });
+      setPassMessage({ text: err?.message || t('portalPages.profile.errPassword'), type: 'error' });
     } finally {
       setIsChangingPass(false);
     }
@@ -140,10 +141,11 @@ export function CustomerProfilePage() {
 
   const handleRevokeSession = async (sessionId: string) => {
     try {
+      setSessionError(null);
       await authClient.request(`/sessions/${sessionId}`, { method: 'DELETE' });
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err: any) {
-      alert(err.message || 'Failed to revoke session');
+      setSessionError(err?.message || t('portalPages.profile.errRevoke'));
     }
   };
 
@@ -160,8 +162,8 @@ export function CustomerProfilePage() {
       {/* Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Profile & Account Settings</h1>
-          <p className="cp-page-subtitle">Manage personal driver info, security credentials, and login sessions.</p>
+          <h1 className="cp-page-title">{t('portalPages.profile.title')}</h1>
+          <p className="cp-page-subtitle">{t('portalPages.profile.subtitle')}</p>
         </div>
       </div>
 
@@ -173,21 +175,21 @@ export function CustomerProfilePage() {
             onClick={() => setActiveTab('profile')}
           >
             <User size={16} />
-            Personal & License
+            {t('portalPages.profile.tabProfile')}
           </button>
           <button
             className={`cp-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
             onClick={() => setActiveTab('security')}
           >
             <KeyRound size={16} />
-            Password & Security
+            {t('portalPages.profile.tabSecurity')}
           </button>
           <button
             className={`cp-tab-btn ${activeTab === 'sessions' ? 'active' : ''}`}
             onClick={() => setActiveTab('sessions')}
           >
             <Smartphone size={16} />
-            Active Sessions ({sessions.length})
+            {t('portalPages.profile.tabSessions', { count: sessions.length })}
           </button>
         </div>
       </div>
@@ -195,7 +197,7 @@ export function CustomerProfilePage() {
       {/* Tab 1: Profile Information */}
       {activeTab === 'profile' && (
         <form onSubmit={handleSaveProfile} className="cp-card" style={{ maxWidth: '800px' }}>
-          <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>Driver Profile Information</h2>
+          <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>{t('portalPages.profile.profileTitle')}</h2>
 
           {saveSuccess && (
             <div
@@ -237,7 +239,7 @@ export function CustomerProfilePage() {
 
           <div className="cp-subgrid-2col" style={{ marginBottom: '16px' }}>
             <div className="cp-form-group">
-              <label className="cp-label">Full Name</label>
+              <label className="cp-label">{t('portalPages.profile.fullName')}</label>
               <input
                 type="text"
                 className="cp-input"
@@ -247,7 +249,7 @@ export function CustomerProfilePage() {
               />
             </div>
             <div className="cp-form-group">
-              <label className="cp-label">Email Address (Registered)</label>
+              <label className="cp-label">{t('portalPages.profile.email')}</label>
               <input
                 type="email"
                 className="cp-input"
@@ -260,17 +262,17 @@ export function CustomerProfilePage() {
 
           <div className="cp-subgrid-2col" style={{ marginBottom: '16px' }}>
             <div className="cp-form-group">
-              <label className="cp-label">Contact Phone</label>
+              <label className="cp-label">{t('portalPages.profile.phone')}</label>
               <input
                 type="tel"
                 className="cp-input"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+966 50 123 4567"
+                placeholder={t('portalPages.profile.phonePlaceholder')}
               />
             </div>
             <div className="cp-form-group">
-              <label className="cp-label">Preferred Portal Language</label>
+              <label className="cp-label">{t('portalPages.profile.language')}</label>
               <CustomSelect
                 value={preferredLanguage}
                 onChange={(val) => setPreferredLanguage(String(val))}
@@ -288,28 +290,28 @@ export function CustomerProfilePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
               <FileCheck size={18} color="var(--cp-accent)" />
               <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--cp-primary)', margin: 0 }}>
-                Driving License Information
+                {t('portalPages.profile.licenseTitle')}
               </h3>
               {customer?.isLicenseVerified ? (
-                <span className="cp-badge cp-badge-success">Verified</span>
+                <span className="cp-badge cp-badge-success">{t('portalPages.documents.status.VERIFIED')}</span>
               ) : (
-                <span className="cp-badge cp-badge-warning">Verification Pending</span>
+                <span className="cp-badge cp-badge-warning">{t('portalPages.profile.verificationPending')}</span>
               )}
             </div>
 
             <div className="cp-subgrid-2col">
               <div className="cp-form-group">
-                <label className="cp-label">Driver's License Number</label>
+                <label className="cp-label">{t('portalPages.profile.licenseNumber')}</label>
                 <input
                   type="text"
                   className="cp-input"
                   value={driverLicenseNumber}
                   onChange={(e) => setDriverLicenseNumber(e.target.value)}
-                  placeholder="e.g. DL-981248"
+                  placeholder={t('portalPages.documents.numberPlaceholder')}
                 />
               </div>
               <div className="cp-form-group">
-                <label className="cp-label">License Expiry Date</label>
+                <label className="cp-label">{t('portalPages.profile.licenseExpiry')}</label>
                 <input
                   type="date"
                   className="cp-input"
@@ -323,7 +325,7 @@ export function CustomerProfilePage() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
             <button type="submit" className="cp-btn-primary" disabled={isSaving}>
               <Save size={16} />
-              {isSaving ? 'Saving Changes...' : 'Save Profile Changes'}
+              {isSaving ? t('portalPages.profile.saving') : t('portalPages.profile.save')}
             </button>
           </div>
         </form>
@@ -332,7 +334,7 @@ export function CustomerProfilePage() {
       {/* Tab 2: Security & Password */}
       {activeTab === 'security' && (
         <form onSubmit={handleChangePassword} className="cp-card" style={{ maxWidth: '600px' }}>
-          <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>Change Account Password</h2>
+          <h2 className="cp-card-title" style={{ marginBottom: '20px' }}>{t('portalPages.profile.passwordTitle')}</h2>
 
           {passMessage && (
             <div
@@ -350,7 +352,7 @@ export function CustomerProfilePage() {
           )}
 
           <div className="cp-form-group">
-            <label className="cp-label">Current Password</label>
+            <label className="cp-label">{t('portalPages.profile.currentPassword')}</label>
             <input
               type="password"
               className="cp-input"
@@ -361,7 +363,7 @@ export function CustomerProfilePage() {
           </div>
 
           <div className="cp-form-group">
-            <label className="cp-label">New Password</label>
+            <label className="cp-label">{t('portalPages.profile.newPassword')}</label>
             <input
               type="password"
               className="cp-input"
@@ -372,7 +374,7 @@ export function CustomerProfilePage() {
           </div>
 
           <div className="cp-form-group">
-            <label className="cp-label">Confirm New Password</label>
+            <label className="cp-label">{t('portalPages.profile.confirmPassword')}</label>
             <input
               type="password"
               className="cp-input"
@@ -385,7 +387,7 @@ export function CustomerProfilePage() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
             <button type="submit" className="cp-btn-secondary" disabled={isChangingPass}>
               <KeyRound size={16} />
-              {isChangingPass ? 'Updating...' : 'Update Password'}
+              {isChangingPass ? t('portalPages.profile.updating') : t('portalPages.profile.updatePassword')}
             </button>
           </div>
         </form>
@@ -394,10 +396,16 @@ export function CustomerProfilePage() {
       {/* Tab 3: Active Sessions */}
       {activeTab === 'sessions' && (
         <div className="cp-card" style={{ maxWidth: '800px' }}>
-          <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Active Device Sessions</h2>
+          <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.profile.sessionsTitle')}</h2>
           <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
-            These are devices that currently hold active authentication tokens for your account. You can revoke any unrecognized session.
+            {t('portalPages.profile.sessionsDesc')}
           </p>
+
+          {sessionError && (
+            <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '12px' }}>
+              {sessionError}
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {sessions.map((s) => (
@@ -415,11 +423,14 @@ export function CustomerProfilePage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Smartphone size={16} color="var(--cp-primary)" />
-                    <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{s.userAgent || 'Web Browser'}</span>
-                    {s.isCurrent && <span className="cp-badge cp-badge-success">Current Session</span>}
+                    <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{s.userAgent || t('portalPages.profile.browser')}</span>
+                    {s.isCurrent && <span className="cp-badge cp-badge-success">{t('portalPages.profile.currentSession')}</span>}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
-                    IP: {s.ipAddress || 'Unknown IP'} • Last Active: {new Date(s.lastActiveAt).toLocaleString()}
+                    {t('portalPages.profile.sessionLine', {
+                      ip: s.ipAddress || t('portalPages.profile.unknownIp'),
+                      date: new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(s.lastActiveAt)),
+                    })}
                   </div>
                 </div>
 
@@ -429,7 +440,7 @@ export function CustomerProfilePage() {
                     className="cp-btn-danger"
                     style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                   >
-                    Revoke
+                    {t('portalPages.profile.revoke')}
                   </button>
                 )}
               </div>

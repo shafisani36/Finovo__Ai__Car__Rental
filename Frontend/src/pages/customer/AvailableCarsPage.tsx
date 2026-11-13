@@ -33,7 +33,7 @@ import { useRecentlyViewed, useSavedCars } from '../../hooks/useCarShortlists';
 import { CustomSelect } from '../../components/common/CustomSelect';
 
 // Master Visual Assets matching Figma Design Specification
-import heroCarImg from '../../assets/cars/finovo-available-hero-car.png';
+import heroCarImg from '../../assets/cars/finovo-available-hero-car.webp';
 
 export interface CatalogCar {
   id: string;

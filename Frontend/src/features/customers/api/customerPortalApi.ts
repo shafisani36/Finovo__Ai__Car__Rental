@@ -472,9 +472,12 @@ export const customerPortalApi = {
   },
 
   // 8. AI Assistant
-  async askAiAssistant(prompt: string): Promise<{
+  async askAiAssistant(prompt: string, topic?: string): Promise<{
     success: boolean;
     reply: string;
+    /** Reply code and values, so the reply can be shown in the customer's language */
+    replyKey?: string;
+    replyParams?: Record<string, string | number>;
     suggestedVehicles: Array<{
       id: string;
       name: string;
@@ -485,7 +488,7 @@ export const customerPortalApi = {
   }> {
     return authClient.request('/customers/portal/ai-assistant', {
       method: 'POST',
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, topic }),
     });
   },
 

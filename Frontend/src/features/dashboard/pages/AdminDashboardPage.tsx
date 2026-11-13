@@ -48,7 +48,7 @@ export function AdminDashboardPage() {
       const res = await dashboardApi.getOverview();
       setData(res);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load executive dashboard data';
+      const msg = err instanceof Error ? err.message : t('adminPages.dashboard.errLoad');
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -151,7 +151,7 @@ export function AdminDashboardPage() {
             <button
               onClick={() => loadDashboard(true)}
               disabled={isRefreshing}
-              title="Refresh live data"
+              title={t('adminPages.dashboard.refresh')}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -168,7 +168,7 @@ export function AdminDashboardPage() {
               }}
             >
               <RefreshCw size={15} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
-              <span>{isRefreshing ? 'Updating...' : 'Sync Data'}</span>
+              <span>{isRefreshing ? t('adminPages.dashboard.refreshing') : t('adminPages.dashboard.sync')}</span>
             </button>
 
             <Link
@@ -189,7 +189,7 @@ export function AdminDashboardPage() {
               }}
             >
               <Car size={16} />
-              <span>Fleet View</span>
+              <span>{t('adminPages.dashboard.fleetView')}</span>
             </Link>
 
             <Link
@@ -225,42 +225,42 @@ export function AdminDashboardPage() {
           value={fleet.total}
           icon={Car}
           variant="purple"
-          subtext="Total vehicles registered"
+          subtext={t('adminPages.dashboard.totalFleetSub')}
         />
         <StatCard
           label={t('common.status.available')}
           value={fleet.available}
           icon={CheckCircle2}
           variant="green"
-          subtext="Ready for instant booking"
+          subtext={t('adminPages.dashboard.availableSub')}
         />
         <StatCard
           label={t('admin.activeRentals')}
           value={fleet.rented}
           icon={Clock}
           variant="blue"
-          subtext="Active on trips"
+          subtext={t('adminPages.dashboard.activeSub')}
         />
         <StatCard
           label={t('common.status.maintenance')}
           value={fleet.maintenance}
           icon={Wrench}
           variant="amber"
-          subtext="Scheduled inspection/repairs"
+          subtext={t('adminPages.dashboard.maintenanceSub')}
         />
         <StatCard
-          label="Utilization Rate"
+          label={t('adminPages.dashboard.utilization')}
           value={`${fleet.utilizationRate}%`}
           icon={TrendingUp}
           variant="purple"
-          subtext="Fleet operational efficiency"
+          subtext={t('adminPages.dashboard.utilizationSub')}
         />
         <StatCard
           label={t('admin.totalRevenue')}
           value={formatMoney(financials.monthlyRevenue, financials.currency)}
           icon={Banknote}
           variant="gold"
-          subtext="Gross bookings this month"
+          subtext={t('adminPages.dashboard.revenueSub')}
         />
         {data?.customers && (
           <StatCard
@@ -297,7 +297,7 @@ export function AdminDashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Calendar size={18} color="#6C1E84" />
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#1A0322' }}>
-                Today's Dispatch & Turnaround
+                {t('adminPages.dashboard.todayTitle')}
               </h3>
             </div>
             <span
@@ -310,19 +310,19 @@ export function AdminDashboardPage() {
                 borderRadius: '6px',
               }}
             >
-              {operations.upcomingBookings} Bookings Pending
+              {t('adminPages.dashboard.pendingCount', { count: operations.upcomingBookings })}
             </span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '12px', marginBottom: '18px' }}>
             <div style={{ backgroundColor: '#F9FAFB', padding: '12px 14px', borderRadius: '10px', border: '1px solid #F3F4F6' }}>
-              <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 600 }}>Scheduled Pickups Today</div>
+              <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 600 }}>{t('adminPages.dashboard.pickupsToday')}</div>
               <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#111827', marginTop: '2px' }}>
                 {operations.todaysPickups}
               </div>
             </div>
             <div style={{ backgroundColor: '#F9FAFB', padding: '12px 14px', borderRadius: '10px', border: '1px solid #F3F4F6' }}>
-              <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 600 }}>Expected Returns Today</div>
+              <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 600 }}>{t('adminPages.dashboard.returnsToday')}</div>
               <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#111827', marginTop: '2px' }}>
                 {operations.todaysReturns}
               </div>
@@ -332,7 +332,7 @@ export function AdminDashboardPage() {
           {/* Quick Fleet Category Progress */}
           <div style={{ marginTop: '16px' }}>
             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#374151', marginBottom: '10px' }}>
-              Fleet Availability by Category
+              {t('adminPages.dashboard.byCategory')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {categories.map((cat) => {
@@ -342,7 +342,11 @@ export function AdminDashboardPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '3px' }}>
                       <span style={{ fontWeight: 600, color: '#1F2937' }}>{cat.name}</span>
                       <span style={{ color: '#6B7280' }}>
-                        {cat.available} / {cat.totalVehicles} available ({formatMoney(Number(cat.baseRate || 0))}/day)
+                        {t('adminPages.dashboard.categoryLine', {
+                          available: cat.available,
+                          total: cat.totalVehicles,
+                          rate: formatMoney(Number(cat.baseRate || 0)),
+                        })}
                       </span>
                     </div>
                     <div style={{ height: '7px', backgroundColor: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
@@ -380,7 +384,7 @@ export function AdminDashboardPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ShieldAlert size={18} color="#D97706" />
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#1A0322' }}>
-                  AI Inspection & Damage Review
+                  {t('adminPages.dashboard.aiTitle')}
                 </h3>
               </div>
               <span
@@ -393,12 +397,12 @@ export function AdminDashboardPage() {
                   borderRadius: '6px',
                 }}
               >
-                {inspections.damaged} Flagged Finding
+                {t('adminPages.dashboard.flagged', { count: inspections.damaged })}
               </span>
             </div>
 
             <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '0 0 16px 0' }}>
-              Human-in-the-loop verification pipeline for AI computer vision damage predictions
+              {t('adminPages.dashboard.aiDesc')}
             </p>
 
             {inspections.pendingReviewFindings.length > 0 ? (
@@ -430,7 +434,7 @@ export function AdminDashboardPage() {
                         {finding.damageType} — {finding.location}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#78716C', marginTop: '2px' }}>
-                        AI Confidence: <strong>{finding.confidence}%</strong> • Status: {finding.humanDecision}
+                        {t('adminPages.dashboard.findingLine', { confidence: finding.confidence, status: finding.humanDecision })}
                       </div>
                     </div>
 
@@ -448,7 +452,7 @@ export function AdminDashboardPage() {
                         boxShadow: '0 2px 6px rgba(250, 184, 38, 0.25)',
                       }}
                     >
-                      Review
+                      {t('adminPages.dashboard.review')}
                     </Link>
                   </div>
                 ))}
@@ -456,7 +460,7 @@ export function AdminDashboardPage() {
             ) : (
               <div style={{ textAlign: 'center', padding: '28px 20px', color: '#6B7280', fontSize: '0.875rem' }}>
                 <CheckCircle2 size={32} color="#059669" style={{ margin: '0 auto 8px' }} />
-                <div>All AI inspection scans verified. No outstanding damage claims!</div>
+                <div>{t('adminPages.dashboard.aiClear')}</div>
               </div>
             )}
           </div>
@@ -465,12 +469,12 @@ export function AdminDashboardPage() {
           <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '16px', marginTop: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
               <Building2 size={15} />
-              <span>Rental Branches</span>
+              <span>{t('adminPages.dashboard.branches')}</span>
             </div>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {branches.map((b) => (
                 <div key={b.id} style={{ fontSize: '0.78rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '4px 10px' }}>
-                  <strong style={{ color: '#111827' }}>{b.name}</strong> ({b.totalVehicles} cars)
+                  <strong style={{ color: '#111827' }}>{b.name}</strong> ({t('adminPages.dashboard.carsCount', { count: b.totalVehicles })})
                 </div>
               ))}
             </div>
@@ -495,7 +499,7 @@ export function AdminDashboardPage() {
               {t('admin.recentBookings')}
             </h3>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#66566A' }}>
-              Live customer reservations, vehicle assignments, and payment statuses
+              {t('adminPages.dashboard.bookingsDesc')}
             </p>
           </div>
 
@@ -521,13 +525,13 @@ export function AdminDashboardPage() {
           <table className="finovo-table">
             <thead>
               <tr>
-                <th>Booking</th>
-                <th>Vehicle</th>
-                <th>Customer</th>
-                <th>Pickup Date</th>
-                <th>Total Amount</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'end' }}>Actions</th>
+                <th>{t('adminPages.dashboard.colBooking')}</th>
+                <th>{t('adminPages.dashboard.colVehicle')}</th>
+                <th>{t('adminPages.dashboard.colCustomer')}</th>
+                <th>{t('adminPages.dashboard.colPickup')}</th>
+                <th>{t('adminPages.dashboard.colTotal')}</th>
+                <th>{t('adminPages.dashboard.colStatus')}</th>
+                <th style={{ textAlign: 'end' }}>{t('adminPages.dashboard.colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -578,7 +582,7 @@ export function AdminDashboardPage() {
                         gap: '4px',
                       }}
                     >
-                      <span>Manage</span>
+                      <span>{t('adminPages.dashboard.manage')}</span>
                       <ExternalLink size={14} />
                     </Link>
                   </td>
@@ -602,7 +606,7 @@ export function AdminDashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
           <TrendingUp size={18} color="#6C1E84" />
           <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#1A0322' }}>
-            Live System Activity Feed & Audit Trail
+            {t('adminPages.dashboard.activityTitle')}
           </h3>
         </div>
 
@@ -634,7 +638,7 @@ export function AdminDashboardPage() {
                 />
                 <div>
                   <strong style={{ color: '#111827' }}>{act.event.replace(/_/g, ' ')}</strong>
-                  <span style={{ color: '#6B7280', marginInlineStart: '6px' }}>by {act.user}</span>
+                  <span style={{ color: '#6B7280', marginInlineStart: '6px' }}>{t('adminPages.dashboard.byUser', { user: act.user })}</span>
                   {act.metadata && (
                     <span style={{ color: '#4B5563', marginInlineStart: '6px', fontSize: '0.8rem' }}>
                       ({Object.entries(act.metadata).map(([k, v]) => `${k}: ${v}`).join(', ')})

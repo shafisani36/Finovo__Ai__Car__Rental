@@ -13,8 +13,11 @@ import {
 } from '../api/customerPortalApi';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import './CustomerPortal.css';
+import { useTranslation } from 'react-i18next';
 
 export function CustomerDocumentsPage() {
+  const { t, i18n } = useTranslation();
+  const formatDate = (value: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(value));
   const [documents, setDocuments] = useState<CustomerDocumentItem[]>([]);
   const [checklist, setChecklist] = useState<DocumentChecklistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +77,7 @@ export function CustomerDocumentsPage() {
 
       await customerPortalApi.uploadDocument({
         documentType: docType,
-        title: title || `${docType.replace(/_/g, ' ')} Upload`,
+        title: title || t(`portalPages.documents.types.${docType}`),
         documentNumber: docNumber || undefined,
         expiresAt: expiryDate ? new Date(expiryDate).toISOString() : undefined,
         fileName: selectedFile?.name || 'document.png',
@@ -90,7 +93,7 @@ export function CustomerDocumentsPage() {
       setExpiryDate('');
       fetchDocuments();
     } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload document');
+      setUploadError(err?.message || t('portalPages.documents.errUpload'));
     } finally {
       setIsUploading(false);
     }
@@ -99,13 +102,13 @@ export function CustomerDocumentsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'VERIFIED':
-        return <span className="cp-badge cp-badge-success">Verified</span>;
+        return <span className="cp-badge cp-badge-success">{t('portalPages.documents.status.VERIFIED')}</span>;
       case 'PENDING_VERIFICATION':
-        return <span className="cp-badge cp-badge-warning">Pending Review</span>;
+        return <span className="cp-badge cp-badge-warning">{t('portalPages.documents.status.PENDING_VERIFICATION')}</span>;
       case 'REJECTED':
-        return <span className="cp-badge cp-badge-danger">Rejected</span>;
+        return <span className="cp-badge cp-badge-danger">{t('portalPages.documents.status.REJECTED')}</span>;
       default:
-        return <span className="cp-badge cp-badge-primary">Missing</span>;
+        return <span className="cp-badge cp-badge-primary">{t('portalPages.documents.status.MISSING')}</span>;
     }
   };
 
@@ -122,20 +125,20 @@ export function CustomerDocumentsPage() {
       {/* Header */}
       <div className="cp-page-header">
         <div>
-          <h1 className="cp-page-title">Driver Documents & Verification</h1>
-          <p className="cp-page-subtitle">Upload required identity and license documents for fast-lane contactless pickup.</p>
+          <h1 className="cp-page-title">{t('portalPages.documents.title')}</h1>
+          <p className="cp-page-subtitle">{t('portalPages.documents.subtitle')}</p>
         </div>
         <div className="cp-header-actions">
           <button className="cp-btn-primary" onClick={() => setIsUploadOpen(true)}>
             <Upload size={16} />
-            Upload Document
+            {t('portalPages.documents.upload')}
           </button>
         </div>
       </div>
 
       {/* Verification Checklist Banner */}
       <div className="cp-card">
-        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Mandatory Verification Checklist</h2>
+        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.documents.checklistTitle')}</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
           {checklist.map((item, idx) => (
             <div
@@ -151,13 +154,13 @@ export function CustomerDocumentsPage() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, color: 'var(--cp-primary)', fontSize: '0.95rem' }}>{item.label}</span>
+                <span style={{ fontWeight: 700, color: 'var(--cp-primary)', fontSize: '0.95rem' }}>{t(`portalPages.documents.checklist.${item.type}`, { defaultValue: item.label })}</span>
                 {getStatusBadge(item.status)}
               </div>
               <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: 0 }}>
                 {item.isUploaded
-                  ? `Uploaded • ${item.document?.fileName || 'Attached'}`
-                  : 'Required prior to vehicle key handover'}
+                  ? t('portalPages.documents.uploadedFile', { file: item.document?.fileName || t('portalPages.documents.attached') })
+                  : t('portalPages.documents.requiredBeforePickup')}
               </p>
               {!item.isUploaded && (
                 <button
@@ -165,12 +168,12 @@ export function CustomerDocumentsPage() {
                   style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: '0.78rem', marginTop: '4px' }}
                   onClick={() => {
                     setDocType(item.type);
-                    setTitle(item.label);
+                    setTitle(t(`portalPages.documents.checklist.${item.type}`, { defaultValue: item.label }));
                     setIsUploadOpen(true);
                   }}
                 >
                   <Plus size={12} />
-                  Upload Now
+                  {t('portalPages.documents.uploadNow')}
                 </button>
               )}
             </div>
@@ -180,7 +183,7 @@ export function CustomerDocumentsPage() {
 
       {/* Uploaded Documents Archive */}
       <div className="cp-card">
-        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>Uploaded Driver Documents</h2>
+        <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.documents.uploadedTitle')}</h2>
         {documents.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {documents.map((doc) => (
@@ -217,12 +220,14 @@ export function CustomerDocumentsPage() {
                       {getStatusBadge(doc.verificationStatus)}
                     </div>
                     <div style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', marginTop: '2px' }}>
-                      Type: {doc.documentType.replace(/_/g, ' ')} • Uploaded: {new Date(doc.createdAt).toLocaleDateString()}
-                      {doc.expiresAt && ` • Expiry: ${new Date(doc.expiresAt).toLocaleDateString()}`}
+                      {t(`portalPages.documents.types.${doc.documentType}`, { defaultValue: doc.documentType.replace(/_/g, ' ') })}
+                      {' • '}
+                      {t('portalPages.documents.uploadedOn', { date: formatDate(doc.createdAt) })}
+                      {doc.expiresAt && ` • ${t('portalPages.documents.expiresOn', { date: formatDate(doc.expiresAt) })}`}
                     </div>
                     {doc.rejectionReason && (
                       <div style={{ color: 'var(--cp-danger)', fontSize: '0.8rem', marginTop: '4px' }}>
-                        Reason for rejection: {doc.rejectionReason}
+                        {t('portalPages.documents.rejectionReason', { reason: doc.rejectionReason })}
                       </div>
                     )}
                   </div>
@@ -238,7 +243,7 @@ export function CustomerDocumentsPage() {
                       style={{ padding: '6px 14px', fontSize: '0.82rem' }}
                     >
                       <Eye size={14} />
-                      View File
+                      {t('portalPages.documents.viewFile')}
                     </a>
                   )}
                 </div>
@@ -246,7 +251,7 @@ export function CustomerDocumentsPage() {
             ))}
           </div>
         ) : (
-          <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', margin: 0 }}>No documents uploaded yet.</p>
+          <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', margin: 0 }}>{t('portalPages.documents.empty')}</p>
         )}
       </div>
 
@@ -255,9 +260,10 @@ export function CustomerDocumentsPage() {
         <div className="cp-modal-backdrop">
           <div className="cp-modal-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 className="cp-card-title">Upload Verification Document</h2>
+              <h2 className="cp-card-title">{t('portalPages.documents.modalTitle')}</h2>
               <button
                 onClick={() => setIsUploadOpen(false)}
+                aria-label={t('portalPages.documents.close')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cp-text-muted)' }}
               >
                 <X size={20} />
@@ -281,26 +287,26 @@ export function CustomerDocumentsPage() {
 
             <form onSubmit={handleUploadSubmit}>
               <div className="cp-form-group">
-                <label className="cp-label">Document Category</label>
+                <label className="cp-label">{t('portalPages.documents.category')}</label>
                 <CustomSelect
                   value={docType}
                   onChange={(val) => setDocType(String(val))}
                   options={[
-                    { value: 'DRIVER_LICENSE_FRONT', label: "Driver's License (Front Side)" },
-                    { value: 'DRIVER_LICENSE_BACK', label: "Driver's License (Back Side)" },
-                    { value: 'PASSPORT', label: 'Passport / National ID' },
-                    { value: 'PROOF_OF_ADDRESS', label: 'Proof of Address (Utility Bill)' },
+                    // Must match the document types the server accepts
+                    ...(['DRIVER_LICENSE_FRONT', 'DRIVER_LICENSE_BACK', 'NATIONAL_ID', 'PASSPORT', 'UTILITY_BILL'] as const).map(
+                      (type) => ({ value: type, label: t(`portalPages.documents.types.${type}`) })
+                    ),
                   ]}
                   size="md"
                 />
               </div>
 
               <div className="cp-form-group">
-                <label className="cp-label">Document Label / Title</label>
+                <label className="cp-label">{t('portalPages.documents.label')}</label>
                 <input
                   type="text"
                   className="cp-input"
-                  placeholder="e.g. My Driving License (Front)"
+                  placeholder={t('portalPages.documents.labelPlaceholder')}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -308,17 +314,17 @@ export function CustomerDocumentsPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div className="cp-form-group">
-                  <label className="cp-label">Document / License #</label>
+                  <label className="cp-label">{t('portalPages.documents.number')}</label>
                   <input
                     type="text"
                     className="cp-input"
-                    placeholder="e.g. DL-29481"
+                    placeholder={t('portalPages.documents.numberPlaceholder')}
                     value={docNumber}
                     onChange={(e) => setDocNumber(e.target.value)}
                   />
                 </div>
                 <div className="cp-form-group">
-                  <label className="cp-label">Expiration Date</label>
+                  <label className="cp-label">{t('portalPages.documents.expiry')}</label>
                   <input
                     type="date"
                     className="cp-input"
@@ -329,7 +335,7 @@ export function CustomerDocumentsPage() {
               </div>
 
               <div className="cp-form-group" style={{ marginTop: '12px' }}>
-                <label className="cp-label">Select File (JPG, PNG, PDF)</label>
+                <label className="cp-label">{t('portalPages.documents.file')}</label>
                 <input type="file" accept="image/*,.pdf" onChange={handleFileChange} required />
               </div>
 
@@ -339,10 +345,10 @@ export function CustomerDocumentsPage() {
                   className="cp-btn-outline"
                   onClick={() => setIsUploadOpen(false)}
                 >
-                  Cancel
+                  {t('portalPages.documents.cancel')}
                 </button>
                 <button type="submit" className="cp-btn-primary" disabled={isUploading}>
-                  {isUploading ? 'Uploading...' : 'Submit Document'}
+                  {isUploading ? t('portalPages.documents.uploading') : t('portalPages.documents.submit')}
                 </button>
               </div>
             </form>

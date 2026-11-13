@@ -11,12 +11,17 @@ import {
 import { customerPortalApi } from '../api/customerPortalApi';
 import './CustomerPortal.css';
 import { formatMoney } from '../../../utils/carImageHelper';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   id: string;
   sender: 'ai' | 'user';
+  /** Customer's own text, or the server's English reply when no reply code is given */
   text: string;
-  time: string;
+  /** Translation key under portalPages.assistant.replies, with its values */
+  replyKey?: string;
+  replyParams?: Record<string, string | number>;
+  sentAt: Date | null;
   suggestedVehicles?: Array<{
     id: string;
     name: string;
@@ -26,20 +31,31 @@ interface Message {
   }>;
 }
 
-const INITIAL_SUGGESTIONS = [
-  'Recommend a luxury SUV for a family trip',
-  'What is the security deposit and refund policy?',
-  'How does AI vehicle inspection protect me from false damage charges?',
-  'Find an Electric Vehicle (EV) available this weekend',
-];
+/** Suggestion buttons send a topic code, so they work whatever language the page is in */
+const SUGGESTION_TOPICS = ['suv', 'deposit', 'inspection', 'electric'] as const;
 
 export function CustomerAssistantPage() {
+  const { t, i18n } = useTranslation();
+  const timeFormat = new Intl.DateTimeFormat(i18n.language, { hour: '2-digit', minute: '2-digit' });
+  // Server replies arrive as a code plus values; the text is built here in the customer's language
+  const messageText = (msg: Message) => {
+    if (msg.sender === 'user' || !msg.replyKey) return msg.text;
+    const params: Record<string, string | number> = { ...(msg.replyParams || {}) };
+    if (typeof params.pickup === 'string') {
+      params.pickup = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(params.pickup));
+    }
+    if (typeof params.status === 'string') {
+      params.status = t(`portalPages.bookings.status.${params.status}`, { defaultValue: params.status });
+    }
+    return t(`portalPages.assistant.replies.${msg.replyKey}`, { ...params, defaultValue: msg.text });
+  };
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'm1',
       sender: 'ai',
-      text: "Hello! I'm your Finovo AI Concierge. I can help you choose the ideal vehicle from our live fleet, clarify our zero-deposit or insurance policies, or guide you through your rental schedule. How can I assist you today?",
-      time: 'Just now',
+      text: '',
+      replyKey: 'welcome',
+      sentAt: null,
     },
   ]);
   const [inputPrompt, setInputPrompt] = useState('');
@@ -54,7 +70,7 @@ export function CustomerAssistantPage() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSendMessage = async (promptText?: string) => {
+  const handleSendMessage = async (promptText?: string, topic?: string) => {
     const textToSend = promptText || inputPrompt;
     if (!textToSend.trim() || isTyping) return;
 
@@ -62,7 +78,7 @@ export function CustomerAssistantPage() {
       id: `u-${Date.now()}`,
       sender: 'user',
       text: textToSend.trim(),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sentAt: new Date(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -70,13 +86,15 @@ export function CustomerAssistantPage() {
     setIsTyping(true);
 
     try {
-      const res = await customerPortalApi.askAiAssistant(textToSend);
+      const res = await customerPortalApi.askAiAssistant(textToSend, topic);
       if (res.success) {
         const aiMsg: Message = {
           id: `ai-${Date.now()}`,
           sender: 'ai',
           text: res.reply,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          replyKey: res.replyKey,
+          replyParams: res.replyParams,
+          sentAt: new Date(),
           suggestedVehicles: res.suggestedVehicles,
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -86,8 +104,9 @@ export function CustomerAssistantPage() {
       const errorMsg: Message = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: "I'm having a brief issue accessing our vehicle database. However, you can browse all verified available cars directly in our Fleet directory.",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: '',
+        replyKey: 'error',
+        sentAt: new Date(),
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
@@ -102,20 +121,20 @@ export function CustomerAssistantPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span className="cp-badge cp-badge-accent">
-              <Sparkles size={14} /> AI Concierge 2.0
+              <Sparkles size={14} /> {t('portalPages.assistant.badge')}
             </span>
-            <span className="cp-badge cp-badge-success">Live Fleet Connected</span>
+            <span className="cp-badge cp-badge-success">{t('portalPages.assistant.liveFleet')}</span>
           </div>
-          <h1 className="cp-page-title">Personal AI Rental Assistant</h1>
+          <h1 className="cp-page-title">{t('portalPages.assistant.title')}</h1>
           <p className="cp-page-subtitle">
-            Get instant recommendations, check trip policies, and book vehicles in natural language.
+            {t('portalPages.assistant.subtitle')}
           </p>
         </div>
       </div>
 
       {/* Suggestion Chips */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {INITIAL_SUGGESTIONS.map((suggestion, idx) => (
+        {SUGGESTION_TOPICS.map((topic, idx) => (
           <button
             key={idx}
             className="cp-btn-outline"
@@ -125,10 +144,10 @@ export function CustomerAssistantPage() {
               borderRadius: '999px',
               background: '#FFFFFF',
             }}
-            onClick={() => handleSendMessage(suggestion)}
+            onClick={() => handleSendMessage(t(`portalPages.assistant.suggestions.${topic}`), topic)}
           >
             <Zap size={13} color="#FAB826" />
-            {suggestion}
+            {t(`portalPages.assistant.suggestions.${topic}`)}
           </button>
         ))}
       </div>
@@ -189,7 +208,7 @@ export function CustomerAssistantPage() {
                       boxShadow: 'var(--cp-shadow-sm)',
                     }}
                   >
-                    {msg.text}
+                    {messageText(msg)}
                   </div>
 
                   {/* Vehicle Recommendations Cards */}
@@ -216,13 +235,13 @@ export function CustomerAssistantPage() {
                           <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <div style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>{car.category}</div>
                             <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cp-primary)' }}>{car.name}</div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--cp-primary)' }}>{formatMoney(Number(car.price))} / day</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--cp-primary)' }}>{formatMoney(Number(car.price))} {t('portalPages.vehicle.perDay')}</div>
                             <Link
                               to={`/customer/bookings/new?vehicleId=${car.id}`}
                               className="cp-btn-primary"
                               style={{ padding: '6px 10px', fontSize: '0.78rem', marginTop: '6px', textAlign: 'center' }}
                             >
-                              Reserve Now
+                              {t('portalPages.assistant.reserve')}
                               <ArrowRight size={12} />
                             </Link>
                           </div>
@@ -232,7 +251,7 @@ export function CustomerAssistantPage() {
                   )}
 
                   <span style={{ fontSize: '0.72rem', color: 'var(--cp-text-subtle)', alignSelf: isAi ? 'flex-start' : 'flex-end' }}>
-                    {msg.time}
+                    {msg.sentAt ? timeFormat.format(msg.sentAt) : t('portalPages.assistant.justNow')}
                   </span>
                 </div>
               </div>
@@ -267,7 +286,7 @@ export function CustomerAssistantPage() {
                   gap: '6px',
                 }}
               >
-                <span className="cp-badge cp-badge-accent">Finovo AI is analyzing fleet...</span>
+                <span className="cp-badge cp-badge-accent">{t('portalPages.assistant.thinking')}</span>
               </div>
             </div>
           )}
@@ -279,7 +298,7 @@ export function CustomerAssistantPage() {
           <input
             type="text"
             className="cp-input"
-            placeholder="Ask about cars, rental prices, airport pickup, or insurance..."
+            placeholder={t('portalPages.assistant.placeholder')}
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => {
@@ -292,7 +311,7 @@ export function CustomerAssistantPage() {
             onClick={() => handleSendMessage()}
           >
             <Send size={16} />
-            Ask AI
+            {t('portalPages.assistant.send')}
           </button>
         </div>
       </div>

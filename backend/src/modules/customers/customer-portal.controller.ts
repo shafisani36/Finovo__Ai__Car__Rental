@@ -155,7 +155,8 @@ export class CustomerPortalController {
     try {
       const data = await CustomerPortalService.handleAiAssistant(
         req.user!.userId,
-        String(req.body?.prompt ?? '').slice(0, 1000)
+        String(req.body?.prompt ?? '').slice(0, 1000),
+        typeof req.body?.topic === 'string' ? req.body.topic.slice(0, 32) : undefined
       );
       res.status(200).json({ success: true, ...data });
     } catch (err) {
