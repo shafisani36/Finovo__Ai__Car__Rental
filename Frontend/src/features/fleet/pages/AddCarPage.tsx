@@ -41,6 +41,7 @@ import { useConfirm } from '../../../components/common/ConfirmModal';
 import { parseVehicleNotes, stringifyVehicleNotes } from '../../../utils/vehicleNotesHelper';
 import './AddCarPage.css';
 import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
+import { useTranslation } from 'react-i18next';
 
 const POPULAR_COLORS = [
   { name: 'White', hex: '#FFFFFF', border: '#D1D5DB' },
@@ -64,6 +65,7 @@ const POPULAR_COLORS = [
 
 
 export function AddCarPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -167,10 +169,78 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   const [selectedPretrainedPreset, setSelectedPretrainedPreset] = useState<string>('');
   const [pretrainedSuccessMsg, setPretrainedSuccessMsg] = useState<string | null>(null);
 
+  // Cars already in the fleet, newest first, one per brand and model: their specs can be copied into a new car
+  const [fleetTemplates, setFleetTemplates] = useState<Vehicle[]>([]);
+  useEffect(() => {
+    if (isEdit) return;
+    let active = true;
+    fleetApi
+      .getVehicles({ limit: 100, sortBy: 'createdAt', sortOrder: 'desc' })
+      .then((res) => {
+        if (!active) return;
+        const seen = new Set<string>();
+        const unique = (res.vehicles || []).filter((v) => {
+          const key = `${v.brand} ${v.model}`.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setFleetTemplates(unique);
+      })
+      .catch(() => {
+        // The built-in templates still work without the fleet list
+      });
+    return () => {
+      active = false;
+    };
+  }, [isEdit]);
+
+  const showAppliedMessage = (name: string) => {
+    setPretrainedSuccessMsg('⚡ ' + t('adminPages.addCar._pretrainedApplied', { name }));
+    setTimeout(() => setPretrainedSuccessMsg(null), 5000);
+  };
+
+  /** Copies the specs and prices of a car that is already in the fleet (never its photos, plate or VIN). */
+  const applyFleetVehicle = (vehicle: Vehicle) => {
+    setBrand(vehicle.brand);
+    setModel(vehicle.model);
+    setYear(vehicle.year);
+    setTrim(vehicle.trim || '');
+    if (vehicle.engineSize) setEngineSize(vehicle.engineSize);
+    if (vehicle.horsePower) setHorsePower(String(vehicle.horsePower));
+    setTransmission(vehicle.transmission);
+    setFuelType(vehicle.fuelType);
+    if (vehicle.drivetrain) setDrivetrain(vehicle.drivetrain);
+    if (vehicle.fuelTankCapacity) setFuelTankCapacity(vehicle.fuelTankCapacity);
+    setSeats(vehicle.seats);
+    setDoors(vehicle.doors);
+    if (vehicle.color) setColor(vehicle.color);
+    if (vehicle.colorHex) setColorHex(vehicle.colorHex);
+    if (vehicle.categoryId && categories.some((c) => c.id === vehicle.categoryId)) setCategoryId(vehicle.categoryId);
+    const asText = (value: number | string | null | undefined) =>
+      value === null || value === undefined || value === '' ? '' : String(Number(value));
+    setPricingState((prev) => ({
+      ...prev,
+      dailyRate: asText(vehicle.dailyRate) || prev.dailyRate,
+      weeklyRate: asText(vehicle.weeklyRate) || prev.weeklyRate,
+      monthlyRate: asText(vehicle.monthlyRate) || prev.monthlyRate,
+      securityDeposit: asText(vehicle.securityDeposit) || prev.securityDeposit,
+      mileageLimitPerDay: asText(vehicle.mileageLimitPerDay) || prev.mileageLimitPerDay,
+      excessMileageFee: asText(vehicle.excessMileageFee) || prev.excessMileageFee,
+    }));
+    showAppliedMessage(`${vehicle.brand} ${vehicle.model}`);
+  };
+
   const handleApplyPretrainedPreset = (presetName: string) => {
     setSelectedPretrainedPreset(presetName);
+    if (presetName.startsWith('fleet:')) {
+      const vehicle = fleetTemplates.find((v) => v.id === presetName.slice('fleet:'.length));
+      if (vehicle) applyFleetVehicle(vehicle);
+      return;
+    }
+    const templateName = presetName.startsWith('template:') ? presetName.slice('template:'.length) : presetName;
     const spec = PRETRAINED_VEHICLE_DATABASE.find(
-      (v) => (v.brand + ' ' + v.model).toLowerCase() === presetName.toLowerCase()
+      (v) => (v.brand + ' ' + v.model).toLowerCase() === templateName.toLowerCase()
     );
     if (!spec) return;
 
@@ -218,28 +288,25 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
       excessMileageFee: String(spec.excessMileageFee),
     }));
 
-    if (photos.length < 4) {
-      setPhotos([
-        { url: spec.imageUrl, caption: 'Front 3/4 Exterior', isPrimary: true, order: 1 },
-        { url: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=800&q=80', caption: 'Driver Side Profile', isPrimary: false, order: 2 },
-        { url: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80', caption: 'Passenger Side Profile', isPrimary: false, order: 3 },
-        { url: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=800&q=80', caption: 'Rear Profile', isPrimary: false, order: 4 },
-      ]);
-    }
-
-    setPretrainedSuccessMsg('⚡ Pre-Trained OEM Specifications Applied for ' + spec.brand + ' ' + spec.model + '! 30+ verified manufacturer specs loaded.');
-    setTimeout(() => setPretrainedSuccessMsg(null), 5000);
+    // Photos are never filled in: a rental car must show photos of the real car
+    showAppliedMessage(`${spec.brand} ${spec.model}`);
   };
 
   const pretrainedOptions = useMemo(() => {
-    return PRETRAINED_VEHICLE_DATABASE.map((v) => ({
-      value: `${v.brand} ${v.model}`,
+    const fromFleet = fleetTemplates.map((v) => ({
+      value: `fleet:${v.id}`,
+      label: `${v.brand} ${v.model} (${v.year})`,
+      sublabel: t('adminPages.addCar.fromFleet', { plate: v.registrationNumber }),
+      badge: t('adminPages.addCar.badgeFleet'),
+    }));
+    const templates = PRETRAINED_VEHICLE_DATABASE.map((v) => ({
+      value: `template:${v.brand} ${v.model}`,
       label: `${v.brand} ${v.model} (${v.year})`,
       sublabel: `${v.trim} • ${v.horsePower} HP • 0-100: ${v.acceleration0to100}s`,
-      badge: v.categoryName,
+      badge: t('adminPages.addCar.badgeTemplate'),
     }));
-  }, []);
-
+    return [...fromFleet, ...templates];
+  }, [fleetTemplates, t]);
 
   const handlePricingChange = (field: keyof VehiclePricingState, value: string) => {
     setPricingState((prev) => ({ ...prev, [field]: value }));
@@ -475,7 +542,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
       })
       .catch((err) => {
         console.error('Failed to load fleet data:', err);
-        if (isMounted) setError(err instanceof Error ? err.message : 'Failed to load vehicle details.');
+        if (isMounted) setError(err instanceof Error ? err.message : t('adminPages.addCar.errLoad'));
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -484,6 +551,8 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
     return () => {
       isMounted = false;
     };
+    // Loads once per record; the language is only used for error text, so a language change must not reload the form
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEdit]);
 
   // Brand and model synchronization
@@ -545,7 +614,7 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
   // NHTSA VIN Decoding
   const handleDecodeVin = async () => {
     if (!vin || vin.trim().length < 11) {
-      setError('Please enter a valid 11-17 character VIN before decoding.');
+      setError(t('adminPages.addCar.errVin'));
       return;
     }
     setIsDecodingVin(true);
@@ -599,11 +668,11 @@ const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
           if (matchCat) setCategoryId(matchCat.id);
         }
 
-        setVinDecodeSuccess(`Verified & Autofilled: ${s.year} ${s.brand} ${s.model} (${s.engineSize || ''} ${s.fuelType || ''}) via NHTSA vPIC.`);
+        setVinDecodeSuccess(t('adminPages.addCar._vinDecoded', { year: s.year, brand: s.brand, model: s.model, engine: `${s.engineSize || ''} ${s.fuelType || ''}`.trim() }));
       }
     } catch (err) {
       console.error('VIN decode error:', err);
-      setError('Could not decode VIN with NHTSA service. Please verify the VIN number or fill specs manually.');
+      setError(t('adminPages.addCar.errVinDecode'));
     } finally {
       setIsDecodingVin(false);
     }
@@ -658,14 +727,14 @@ const clearAllFeatures = () => {
     ) {
       return {
         type: 'VAN',
-        label: 'Van / Minibus',
+        label: t('adminPages.addCar.vtVan'),
         minSeats: 1,
         maxSeats: 20,
         defaultSeats: 15,
         defaultDoors: 4,
         minDoors: 2,
         maxDoors: 5,
-        hint: '1 to 20 Passengers',
+        hint: t('adminPages.addCar.vtVanHint'),
       };
     }
 
@@ -683,14 +752,14 @@ const clearAllFeatures = () => {
     ) {
       return {
         type: 'SUV',
-        label: 'SUV / Crossover',
+        label: t('adminPages.addCar.vtSuv'),
         minSeats: 1,
         maxSeats: 8,
         defaultSeats: 7,
         defaultDoors: 4,
         minDoors: 4,
         maxDoors: 5,
-        hint: '1 to 8 Passengers',
+        hint: t('adminPages.addCar.vtSuvHint'),
       };
     }
 
@@ -705,14 +774,14 @@ const clearAllFeatures = () => {
     ) {
       return {
         type: 'PICKUP',
-        label: 'Pickup Truck',
+        label: t('adminPages.addCar.vtPickup'),
         minSeats: 1,
         maxSeats: 6,
         defaultSeats: 5,
         defaultDoors: 4,
         minDoors: 2,
         maxDoors: 4,
-        hint: '1 to 6 Passengers',
+        hint: t('adminPages.addCar.vtPickupHint'),
       };
     }
 
@@ -728,14 +797,14 @@ const clearAllFeatures = () => {
     ) {
       return {
         type: 'SPORTS',
-        label: 'Coupe / Sports',
+        label: t('adminPages.addCar.vtCoupe'),
         minSeats: 1,
         maxSeats: 4,
         defaultSeats: 2,
          defaultDoors: 2,
         minDoors: 2,
         maxDoors: 3,
-        hint: '1 to 4 Passengers',
+        hint: t('adminPages.addCar.vtCoupeHint'),
       };
     }
 
@@ -751,27 +820,27 @@ const clearAllFeatures = () => {
     ) {
       return {
         type: 'HATCHBACK',
-        label: 'Hatchback',
+        label: t('adminPages.addCar.vtHatch'),
         minSeats: 1,
         maxSeats: 5,
         defaultSeats: 5,
         minDoors: 4,
         maxDoors: 5,
-        hint: '1 to 5 Passengers',
+        hint: t('adminPages.addCar.vt5Hint'),
       };
     }
 
     return {
       type: 'SEDAN',
-      label: selectedCategory?.name || 'Sedan',
+      label: selectedCategory?.name || t('adminPages.addCar.vtSedan'),
       minSeats: 1,
       maxSeats: 5,
       defaultSeats: 5,
       minDoors: 4,
       maxDoors: 5,
-      hint: '1 to 5 Passengers',
+      hint: t('adminPages.addCar.vt5Hint'),
     };
-  }, [selectedCategory, effectiveModel]);
+  }, [selectedCategory, effectiveModel, t]);
 
   // Clamp seats if they exceed the new category limit
   useEffect(() => {
@@ -835,27 +904,27 @@ const clearAllFeatures = () => {
     setError(null);
 
     if (!year || year < 1970 || year > maxAllowedYear) {
-  setError(`Model year must be between 1970 and ${maxAllowedYear}.`);
+  setError(t('adminPages.addCar._errYear', { max: maxAllowedYear }));
   scrollToSection('sec-identity');
   return;
 }
     if (!effectiveBrand) {
-      setError('Please select or specify a vehicle manufacturer / make.');
+      setError(t('adminPages.addCar.errBrand'));
       scrollToSection('sec-identity');
       return;
     }
     if (!effectiveModel) {
-      setError('Please select or specify a vehicle model name.');
+      setError(t('adminPages.addCar.errModel'));
       scrollToSection('sec-identity');
       return;
     }
     if (!registrationNumber.trim()) {
-      setError('License registration plate is required.');
+      setError(t('adminPages.addCar.errPlate'));
       scrollToSection('sec-identity');
       return;
     }
     if (!categoryId || !categories.some((category) => category.id === categoryId)) {
-      setError('Please assign the vehicle to a fleet category.');
+      setError(t('adminPages.addCar.errCategory'));
       scrollToSection('sec-identity');
       return;
     }
@@ -866,7 +935,7 @@ if (
   seats > vehicleTypeInfo.maxSeats
 ) {
   setError(
-    `Seating capacity must be between ${vehicleTypeInfo.minSeats} and ${vehicleTypeInfo.maxSeats} for ${vehicleTypeInfo.label}.`
+    t('adminPages.addCar._errSeats', { min: vehicleTypeInfo.minSeats, max: vehicleTypeInfo.maxSeats, type: vehicleTypeInfo.label })
   );
   scrollToSection('sec-specs');
   return;
@@ -879,14 +948,14 @@ if (
   doors > vehicleTypeInfo.maxDoors
 ) {
   setError(
-    `Number of doors must be between ${vehicleTypeInfo.minDoors} and ${vehicleTypeInfo.maxDoors} for ${vehicleTypeInfo.label}.`
+    t('adminPages.addCar._errDoors', { min: vehicleTypeInfo.minDoors, max: vehicleTypeInfo.maxDoors, type: vehicleTypeInfo.label })
   );
   scrollToSection('sec-specs');
   return;
 }
 
     if (photos.length < 4) {
-      setError(`Enterprise compliance requires at least 4 inspection photos. Currently ${photos.length} attached.`);
+      setError(t('adminPages.addCar._errPhotos', { count: photos.length }));
       scrollToSection('sec-photos');
       return;
     }
@@ -894,28 +963,28 @@ if (
     if (pricingState.pricingMethod === 'daily' || pricingState.pricingMethod === 'daily_extra_km') {
       const daily = parseFloat(pricingState.dailyRate);
       if (isNaN(daily) || daily <= 0) {
-        setError('Please enter a valid positive daily rate for daily rental.');
+        setError(t('adminPages.addCar.errDailyRate'));
         scrollToSection('sec-pricing');
         return;
       }
     } else if (pricingState.pricingMethod === 'per_km') {
       const perKm = parseFloat(pricingState.perKmRate);
       if (isNaN(perKm) || perKm <= 0) {
-        setError('Please enter a valid per-kilometer rate.');
+        setError(t('adminPages.addCar.errKmRate'));
         scrollToSection('sec-pricing');
         return;
       }
     } else if (pricingState.pricingMethod === 'hourly') {
       const hourly = parseFloat(pricingState.hourlyRate);
       if (isNaN(hourly) || hourly <= 0) {
-        setError('Please enter a valid hourly rate.');
+        setError(t('adminPages.addCar.errHourlyRate'));
         scrollToSection('sec-pricing');
         return;
       }
     } else if (pricingState.pricingMethod === 'monthly') {
       const monthly = parseFloat(pricingState.monthlyRate);
       if (isNaN(monthly) || monthly <= 0) {
-        setError('Please enter a valid monthly subscription rate.');
+        setError(t('adminPages.addCar.errMonthlyRate'));
         scrollToSection('sec-pricing');
         return;
       }
@@ -1013,7 +1082,7 @@ features: carFeatures
       }
     } catch (err: unknown) {
       console.error('Failed to save vehicle:', err);
-      const msg = err instanceof Error ? err.message : isEdit ? 'Failed to update fleet vehicle.' : 'Failed to register fleet vehicle.';
+      const msg = err instanceof Error ? err.message : isEdit ? t('adminPages.addCar.errUpdate') : t('adminPages.addCar.errCreate');
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -1024,11 +1093,11 @@ features: carFeatures
   const handleDelete = async () => {
     if (!id) return;
     const ok = await confirm({
-      title: `Remove ${effectiveBrand} ${effectiveModel} from Fleet?`,
+      title: t('adminPages.addCar._removeTitle', { name: `${effectiveBrand} ${effectiveModel}` }),
       message:
-        'Are you sure you want to remove or archive this vehicle? Historical rental contracts will be preserved, while hiding the car from active customer listings.',
-      confirmText: 'Remove Vehicle',
-      cancelText: 'Cancel',
+        t('adminPages.addCar.removeMessage'),
+      confirmText: t('adminPages.addCar.removeVehicle'),
+      cancelText: t('adminPages.addCar.cancel'),
       variant: 'danger',
     });
     if (!ok) return;
@@ -1038,7 +1107,7 @@ features: carFeatures
       await fleetApi.deleteVehicle(id);
       navigate('/admin/cars');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete vehicle.';
+      const msg = err instanceof Error ? err.message : t('adminPages.addCar.errDelete');
       setError(msg);
       setIsDeleting(false);
     }
@@ -1064,8 +1133,8 @@ features: carFeatures
       <div className="add-car-page-root">
         <div className="loading-state">
           <div className="loading-spinner" />
-          <h3 style={{ margin: '0 0 6px', color: '#1E0432', fontWeight: 800 }}>Loading Vehicle Details...</h3>
-          <p style={{ margin: 0, color: '#8A7090', fontSize: '0.88rem' }}>Fetching fleet specifications and commercial pricing rules.</p>
+          <h3 style={{ margin: '0 0 6px', color: '#1E0432', fontWeight: 800 }}>{t('adminPages.addCar.loading')}</h3>
+          <p style={{ margin: 0, color: '#8A7090', fontSize: '0.88rem' }}>{t('adminPages.addCar.loadingSub')}</p>
         </div>
       </div>
     );
@@ -1078,11 +1147,11 @@ features: carFeatures
         <div className="add-car-breadcrumb">
           <Link to="/admin/cars" className="add-car-breadcrumb-back">
             <ArrowLeft size={14} />
-            <span>Fleet Inventory</span>
+            <span>{t('adminPages.addCar.fleetInventory')}</span>
           </Link>
           <span className="breadcrumb-separator">/</span>
           <span className="active-crumb">
-            {isEdit ? `Edit ${effectiveBrand} ${effectiveModel || 'Vehicle'}` : 'Register New Vehicle'}
+            {isEdit ? t('adminPages.addCar._editCrumb', { name: `${effectiveBrand} ${effectiveModel || t('adminPages.addCar.vehicle')}` }) : t('adminPages.addCar.registerTitle')}
           </span>
         </div>
 
@@ -1090,7 +1159,7 @@ features: carFeatures
           <div className="header-text-block">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <h1 className="add-car-page-title">
-                {isEdit ? `Edit Vehicle: ${effectiveBrand} ${effectiveModel || ''}` : 'Register New Vehicle'}
+                {isEdit ? t('adminPages.addCar._editTitle', { name: `${effectiveBrand} ${effectiveModel || ''}`.trim() }) : t('adminPages.addCar.registerTitle')}
               </h1>
               <span
                 className={`status-badge ${status === 'AVAILABLE'
@@ -1112,24 +1181,24 @@ features: carFeatures
             </div>
             <p className="add-car-page-subtitle">
               {isEdit
-                ? 'Update fleet specifications, commercial rates, inspection photos, and compliance records.'
-                : 'Complete the 6-step fleet onboarding wizard to activate this vehicle for bookings.'}
+                ? t('adminPages.addCar.editSubtitle')
+                : t('adminPages.addCar.createSubtitle')}
             </p>
 
             {/* Quick Catalog Links */}
             <div className="add-car-quick-links">
-              <span className="quick-links-label">Quick Catalog:</span>
+              <span className="quick-links-label">{t('adminPages.addCar.quickCatalog')}</span>
               <Link to="/admin/brands" className="quick-link-pill">
                 <Car size={13} />
-                <span>Brands</span>
+                <span>{t('adminPages.addCar.brands')}</span>
               </Link>
               <Link to="/admin/models" className="quick-link-pill">
                 <Layers size={13} />
-                <span>Models</span>
+                <span>{t('adminPages.addCar.models')}</span>
               </Link>
               <Link to="/admin/categories" className="quick-link-pill">
                 <Tag size={13} />
-                <span>Categories</span>
+                <span>{t('adminPages.addCar.categories')}</span>
               </Link>
             </div>
           </div>
@@ -1141,8 +1210,8 @@ features: carFeatures
                 <Link to={`/admin/cars/${id}`} className="fleet-header-action-btn fleet-btn-secondary">
                   <ExternalLink size={15} />
                   <span className="fleet-btn-label">
-                    <span className="label-full">View Details</span>
-                    <span className="label-short">View</span>
+                    <span className="label-full">{t('adminPages.addCar.viewDetails')}</span>
+                    <span className="label-short">{t('adminPages.addCar.view')}</span>
                   </span>
                 </Link>
 
@@ -1154,8 +1223,8 @@ features: carFeatures
                 >
                   <Trash2 size={15} />
                   <span className="fleet-btn-label">
-                    <span className="label-full">{isDeleting ? 'Removing...' : 'Delete'}</span>
-                    <span className="label-short">Delete</span>
+                    <span className="label-full">{isDeleting ? t('adminPages.addCar.removing') : t('adminPages.addCar.delete')}</span>
+                    <span className="label-short">{t('adminPages.addCar.delete')}</span>
                   </span>
                 </button>
               </>
@@ -1164,8 +1233,8 @@ features: carFeatures
             <Link to="/admin/cars" className="fleet-header-action-btn fleet-btn-neutral">
               <ArrowLeft size={15} />
               <span className="fleet-btn-label">
-                <span className="label-full">Cancel</span>
-                <span className="label-short">Back</span>
+                <span className="label-full">{t('adminPages.addCar.cancel')}</span>
+                <span className="label-short">{t('adminPages.addCar.back')}</span>
               </span>
             </Link>
 
@@ -1180,13 +1249,13 @@ features: carFeatures
                 <span className="label-full">
                   {isSubmitting
                     ? isEdit
-                      ? 'Saving Changes...'
-                      : 'Registering...'
+                      ? t('adminPages.addCar.savingChanges')
+                      : t('adminPages.addCar.registering')
                     : isEdit
-                      ? 'Save Changes'
-                      : 'Register Vehicle'}
+                      ? t('adminPages.addCar.saveChanges')
+                      : t('adminPages.addCar.registerVehicle')}
                 </span>
-                <span className="label-short">{isSubmitting ? 'Saving...' : 'Save'}</span>
+                <span className="label-short">{isSubmitting ? t('adminPages.addCar.saving') : t('adminPages.addCar.save')}</span>
               </span>
             </button>
           </div>
@@ -1198,10 +1267,10 @@ features: carFeatures
         {/* Status Card */}
         <div className="car-kpi-card">
           <div>
-            <div className="car-kpi-label">Inventory Status</div>
+            <div className="car-kpi-label">{t('adminPages.addCar.inventoryStatus')}</div>
             <div className="car-kpi-value">{status}</div>
             <div className="car-kpi-meta" style={{ color: isPublicCatalog ? '#059669' : '#D97706' }}>
-              {isPublicCatalog ? '● Public Catalog' : '○ Internal Only'}
+              {isPublicCatalog ? t('adminPages.addCar.publicCatalog') : t('adminPages.addCar.internalOnly')}
             </div>
           </div>
           <div
@@ -1218,10 +1287,10 @@ features: carFeatures
         {/* Readiness Card */}
         <div className="car-kpi-card">
           <div>
-            <div className="car-kpi-label">Activation Readiness</div>
+            <div className="car-kpi-label">{t('adminPages.addCar.readiness')}</div>
             <div className="car-kpi-value">{complianceScore}%</div>
             <div className="car-kpi-meta" style={{ color: complianceScore === 100 ? '#059669' : '#6C1E84' }}>
-              {complianceScore === 100 ? '● Ready for rental' : 'Complete mandatory fields'}
+              {complianceScore === 100 ? t('adminPages.addCar.readyForRental') : t('adminPages.addCar.completeFields')}
             </div>
           </div>
           <div
@@ -1238,10 +1307,10 @@ features: carFeatures
         {/* Commercial Rate */}
         <div className="car-kpi-card">
           <div>
-            <div className="car-kpi-label">Commercial Rate</div>
+            <div className="car-kpi-label">{t('adminPages.addCar.commercialRate')}</div>
             <div className="car-kpi-value">{activeRateDisplay}</div>
             <div className="car-kpi-meta" style={{ color: '#8A7090' }}>
-              Deposit: {pricingState.currency} {pricingState.securityDeposit || '0'}
+              {t('adminPages.addCar._depositAmount', { amount: `${pricingState.currency} ${pricingState.securityDeposit || '0'}` })}
             </div>
           </div>
           <div className="car-kpi-icon" style={{ backgroundColor: '#FEF8E7', color: '#B45309' }}>
@@ -1252,13 +1321,13 @@ features: carFeatures
         {/* Inspection Photos */}
         <div className="car-kpi-card">
           <div>
-            <div className="car-kpi-label">Inspection Photos</div>
+            <div className="car-kpi-label">{t('adminPages.addCar.inspectionPhotos')}</div>
             <div className="car-kpi-value">{photos.length} / 6</div>
             <div
               className="car-kpi-meta"
               style={{ color: photos.length >= 4 && photos.length <= 6 ? '#059669' : '#DC2626' }}
             >
-              {photos.length >= 4 ? '✓ Standard Met' : `Need ${4 - photos.length} more`}
+              {photos.length >= 4 ? t('adminPages.addCar.standardMet') : t('adminPages.addCar._needMore', { count: 4 - photos.length })}
             </div>
           </div>
           <div
@@ -1275,22 +1344,22 @@ features: carFeatures
 
       {/* ================= STICKY INTERACTIVE SECTION NAVIGATION BAR (Strict Single-Row Grid, 0 X-Scroll) ================= */}
       <div className="car-section-navbar-wrap">
-        <div className="car-section-nav-grid" role="tablist" aria-label="Vehicle onboarding sections">
+        <div className="car-section-nav-grid" role="tablist" aria-label={t('adminPages.addCar.sectionsAria')}>
           <button
             type="button"
             role="tab"
             aria-selected={activeSection === 'sec-identity'}
             onClick={() => scrollToSection('sec-identity')}
             className={`car-section-nav-item ${activeSection === 'sec-identity' ? 'active' : ''}`}
-            title="1. Identity & Registration"
+            title={t('adminPages.addCar.tab1Title')}
           >
             <span className="car-nav-num">1</span>
             <span className="car-nav-label-box">
-              <span className="car-nav-label-full">Identity & Reg</span>
-              <span className="car-nav-label-short">Identity</span>
-              <span className="car-nav-label-micro">Info</span>
+              <span className="car-nav-label-full">{t('adminPages.addCar.tab1')}</span>
+              <span className="car-nav-label-short">{t('adminPages.addCar.tab1Short')}</span>
+              <span className="car-nav-label-micro">{t('adminPages.addCar.tab1Mini')}</span>
             </span>
-            {isSec1Complete && <span className="car-nav-check" title="Section Complete" />}
+            {isSec1Complete && <span className="car-nav-check" title={t('adminPages.addCar.sectionComplete')} />}
           </button>
 
           <button
@@ -1299,15 +1368,15 @@ features: carFeatures
             aria-selected={activeSection === 'sec-specs'}
             onClick={() => scrollToSection('sec-specs')}
             className={`car-section-nav-item ${activeSection === 'sec-specs' ? 'active' : ''}`}
-            title="2. Engineering & Specs"
+            title={t('adminPages.addCar.tab2Title')}
           >
             <span className="car-nav-num">2</span>
             <span className="car-nav-label-box">
-              <span className="car-nav-label-full">Specs & Power</span>
-              <span className="car-nav-label-short">Specs</span>
-              <span className="car-nav-label-micro">Specs</span>
+              <span className="car-nav-label-full">{t('adminPages.addCar.tab2')}</span>
+              <span className="car-nav-label-short">{t('adminPages.addCar.tab2Short')}</span>
+              <span className="car-nav-label-micro">{t('adminPages.addCar.tab2Short')}</span>
             </span>
-            {isSec2Complete && <span className="car-nav-check" title="Section Complete" />}
+            {isSec2Complete && <span className="car-nav-check" title={t('adminPages.addCar.sectionComplete')} />}
           </button>
 
           <button
@@ -1316,15 +1385,15 @@ features: carFeatures
             aria-selected={activeSection === 'sec-features'}
             onClick={() => scrollToSection('sec-features')}
             className={`car-section-nav-item ${activeSection === 'sec-features' ? 'active' : ''}`}
-            title="3. Equipment & ADAS"
+            title={t('adminPages.addCar.tab3Title')}
           >
             <span className="car-nav-num">3</span>
             <span className="car-nav-label-box">
-              <span className="car-nav-label-full">Equipment & ADAS</span>
-              <span className="car-nav-label-short">Features</span>
-              <span className="car-nav-label-micro">ADAS</span>
+              <span className="car-nav-label-full">{t('adminPages.addCar.tab3')}</span>
+              <span className="car-nav-label-short">{t('adminPages.addCar.tab3Short')}</span>
+              <span className="car-nav-label-micro">{t('adminPages.addCar.tab3Mini')}</span>
             </span>
-            {isSec3Complete && <span className="car-nav-check" title="Section Complete" />}
+            {isSec3Complete && <span className="car-nav-check" title={t('adminPages.addCar.sectionComplete')} />}
           </button>
 
           <button
@@ -1333,15 +1402,15 @@ features: carFeatures
             aria-selected={activeSection === 'sec-pricing'}
             onClick={() => scrollToSection('sec-pricing')}
             className={`car-section-nav-item ${activeSection === 'sec-pricing' ? 'active' : ''}`}
-            title="4. Rates & Policies"
+            title={t('adminPages.addCar.tab4Title')}
           >
             <span className="car-nav-num">4</span>
             <span className="car-nav-label-box">
-              <span className="car-nav-label-full">Rates & Policies</span>
-              <span className="car-nav-label-short">Pricing</span>
-              <span className="car-nav-label-micro">Rates</span>
+              <span className="car-nav-label-full">{t('adminPages.addCar.tab4')}</span>
+              <span className="car-nav-label-short">{t('adminPages.addCar.tab4Short')}</span>
+              <span className="car-nav-label-micro">{t('adminPages.addCar.tab4Mini')}</span>
             </span>
-            {isSec4Complete && <span className="car-nav-check" title="Section Complete" />}
+            {isSec4Complete && <span className="car-nav-check" title={t('adminPages.addCar.sectionComplete')} />}
           </button>
 
           <button
@@ -1350,15 +1419,15 @@ features: carFeatures
             aria-selected={activeSection === 'sec-photos'}
             onClick={() => scrollToSection('sec-photos')}
             className={`car-section-nav-item ${activeSection === 'sec-photos' ? 'active' : ''}`}
-            title="5. Inspection Photos"
+            title={t('adminPages.addCar.tab5Title')}
           >
             <span className="car-nav-num">5</span>
             <span className="car-nav-label-box">
-              <span className="car-nav-label-full">Inspection Photos</span>
-              <span className="car-nav-label-short">Photos</span>
-              <span className="car-nav-label-micro">Photos</span>
+              <span className="car-nav-label-full">{t('adminPages.addCar.inspectionPhotos')}</span>
+              <span className="car-nav-label-short">{t('adminPages.addCar.photos')}</span>
+              <span className="car-nav-label-micro">{t('adminPages.addCar.photos')}</span>
             </span>
-            {isSec5Complete && <span className="car-nav-check" title="Section Complete" />}
+            {isSec5Complete && <span className="car-nav-check" title={t('adminPages.addCar.sectionComplete')} />}
           </button>
 
           <button
@@ -1367,15 +1436,15 @@ features: carFeatures
             aria-selected={activeSection === 'sec-records'}
             onClick={() => scrollToSection('sec-records')}
             className={`car-section-nav-item ${activeSection === 'sec-records' ? 'active' : ''}`}
-            title="6. Insurance & Records"
+            title={t('adminPages.addCar.tab6Title')}
           >
             <span className="car-nav-num">6</span>
             <span className="car-nav-label-box">
-              <span className="car-nav-label-full">Insurance & Records</span>
-              <span className="car-nav-label-short">Records</span>
-              <span className="car-nav-label-micro">Admin</span>
+              <span className="car-nav-label-full">{t('adminPages.addCar.tab6')}</span>
+              <span className="car-nav-label-short">{t('adminPages.addCar.tab6Short')}</span>
+              <span className="car-nav-label-micro">{t('adminPages.addCar.tab6Mini')}</span>
             </span>
-            {isSec6Complete && <span className="car-nav-check" title="Section Complete" />}
+            {isSec6Complete && <span className="car-nav-check" title={t('adminPages.addCar.sectionComplete')} />}
           </button>
         </div>
       </div>
@@ -1386,12 +1455,12 @@ features: carFeatures
           <div className="add-car-alert-inner">
             <Sparkles size={18} color="#10B981" />
             <div>
-              <strong style={{ display: 'block', fontSize: '0.92rem' }}>NHTSA vPIC Autofill Complete</strong>
+              <strong style={{ display: 'block', fontSize: '0.92rem' }}>{t('adminPages.addCar.vinDone')}</strong>
               <span>{vinDecodeSuccess}</span>
             </div>
           </div>
           <button type="button" onClick={() => setVinDecodeSuccess(null)} className="add-car-alert-dismiss">
-            Dismiss
+            {t('adminPages.addCar.dismiss')}
           </button>
         </div>
       )}
@@ -1403,7 +1472,7 @@ features: carFeatures
             <span>{error}</span>
           </div>
           <button type="button" onClick={() => setError(null)} className="add-car-alert-dismiss">
-            Dismiss
+            {t('adminPages.addCar.dismiss')}
           </button>
         </div>
       )}
@@ -1415,7 +1484,7 @@ features: carFeatures
           onClick={() => setMobileTab('form')}
           className={`car-mobile-seg-btn ${mobileTab === 'form' ? 'active' : ''}`}
         >
-          <span>Vehicle Details Form</span>
+          <span>{t('adminPages.addCar.formTab')}</span>
         </button>
         <button
           type="button"
@@ -1423,7 +1492,7 @@ features: carFeatures
           className={`car-mobile-seg-btn ${mobileTab === 'preview' ? 'active' : ''}`}
         >
           <Eye size={15} />
-          <span>Live Card Preview ({complianceScore}%)</span>
+          <span>{t('adminPages.addCar._previewTab', { percent: complianceScore })}</span>
         </button>
       </div>
 
@@ -1464,10 +1533,10 @@ features: carFeatures
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 800, color: '#1E0432' }}>
-                    Pre-Trained OEM Specifications Engine
+                    {t('adminPages.addCar.oemTitle')}
                   </h3>
                   <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#8A7090' }}>
-                    Auto-populate 30+ precision OEM technical specs, torque, acceleration, and rental rules.
+                    {t('adminPages.addCar.oemSubtitle')}
                   </p>
                 </div>
               </div>
@@ -1483,7 +1552,7 @@ features: carFeatures
                   border: '1px solid #A7F3D0',
                 }}
               >
-                ✓ 99.8% Factory Verified
+                {t('adminPages.addCar.sourceCount', { fleet: fleetTemplates.length, templates: PRETRAINED_VEHICLE_DATABASE.length })}
               </span>
             </div>
 
@@ -1493,9 +1562,9 @@ features: carFeatures
                   value={selectedPretrainedPreset}
                   onChange={(val) => handleApplyPretrainedPreset(String(val))}
                   options={pretrainedOptions}
-                  placeholder="-- Select Verified Pre-Trained Manufacturer Model --"
+                  placeholder={t('adminPages.addCar.oemPlaceholder')}
                   searchable
-                  searchPlaceholder="Filter verified OEM models (e.g. BMW, Huracán)..."
+                  searchPlaceholder={t('adminPages.addCar.oemSearch')}
                   size="md"
                 />
               </div>
@@ -1504,34 +1573,31 @@ features: carFeatures
                 type="button"
                 className="btn btn-primary"
                 onClick={() => {
-                  if (selectedPretrainedPreset) {
-                    handleApplyPretrainedPreset(selectedPretrainedPreset);
-                  } else if (PRETRAINED_VEHICLE_DATABASE.length > 0) {
-                    handleApplyPretrainedPreset(PRETRAINED_VEHICLE_DATABASE[0].brand + ' ' + PRETRAINED_VEHICLE_DATABASE[0].model);
-                  }
+                  if (selectedPretrainedPreset) handleApplyPretrainedPreset(selectedPretrainedPreset);
                 }}
-                style={{ flex: '0 0 auto' }}
+                disabled={!selectedPretrainedPreset}
+                style={{ flex: '0 0 auto', opacity: selectedPretrainedPreset ? 1 : 0.6 }}
               >
-                <Sparkles size={16} /> Auto-Fill Specs
+                <Sparkles size={16} /> {t('adminPages.addCar.autoFill')}
               </button>
             </div>
 
             {selectedPretrainedPreset && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#F5EEF8', color: '#6C1E84', border: '1px solid #EADBEE' }}>
-                  🏎️ {horsePower || '—'} HP Engine
+                  🏎️ {t('adminPages.addCar._hp', { hp: horsePower || '—' })}
                 </span>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#E8F9F0', color: '#057A55', border: '1px solid #A7F3D0' }}>
-                  ⚡ 0-100 in {acceleration0to100 || '—'}s
+                  ⚡ {t('adminPages.addCar._accel', { sec: acceleration0to100 || '—' })}
                 </span>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A' }}>
-                  🚀 {topSpeed || '—'} km/h Top Speed
+                  🚀 {t('adminPages.addCar._topSpeed', { speed: topSpeed || '—' })}
                 </span>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#FAF6FC', color: '#1E0432', border: '1px solid #E0D8E3' }}>
-                  🧳 {luggageCapacityBags} Large + {cabinBagsCapacity} Cabin
+                  🧳 {t('adminPages.addCar._bags', { large: luggageCapacityBags, cabin: cabinBagsCapacity })}
                 </span>
                 <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#F5EEF8', color: '#4A1270', border: '1px solid #E0D8E3' }}>
-                  ⛽ {fuelPolicy} Policy
+                  ⛽ {t('adminPages.addCar._fuelPolicyTag', { policy: fuelPolicy })}
                 </span>
               </div>
             )}
@@ -1565,8 +1631,8 @@ features: carFeatures
                   <Tag size={20} />
                 </div>
                 <div>
-                  <h2 className="car-card-title">1. Vehicle Identification & Legal Registration</h2>
-                  <p className="car-card-subtitle">Manufacturer details, legal plate, official VIN scanner, and category classification</p>
+                  <h2 className="car-card-title">{t('adminPages.addCar.sec1Title')}</h2>
+                  <p className="car-card-subtitle">{t('adminPages.addCar.sec1Subtitle')}</p>
                 </div>
               </div>
               <span
@@ -1579,7 +1645,7 @@ features: carFeatures
                   borderRadius: '12px',
                 }}
               >
-                {isSec1Complete ? '✓ Identified & Ready' : 'Mandatory Section'}
+                {isSec1Complete ? t('adminPages.addCar.sec1Done') : t('adminPages.addCar.mandatory')}
               </span>
             </div>
 
@@ -1588,7 +1654,7 @@ features: carFeatures
             <div>
               {/* Popular Makes - Loaded from Brand CRUD */}
               <div className="popular-brands-row">
-                <span className="popular-brands-label">Popular Makes:</span>
+                <span className="popular-brands-label">{t('adminPages.addCar.popularMakes')}</span>
 
                 {dbBrands.length > 0 ? (
                   dbBrands.map((b) => {
@@ -1607,7 +1673,7 @@ features: carFeatures
                   })
                 ) : (
                   <span className="text-sm text-gray-500">
-                    No active brands available. Add brands from Manage Brands.
+                    {t('adminPages.addCar.noBrands')}
                   </span>
                 )}
               </div>
@@ -1619,11 +1685,11 @@ features: carFeatures
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label className="fleet-form-label" style={{ margin: 0 }}>
-                    Manufacturer / Make <span style={{ color: '#EF4444' }}>*</span>
+                    {t('adminPages.addCar.make')} <span style={{ color: '#EF4444' }}>*</span>
                   </label>
                   <Link
                     to="/admin/brands"
-                    title="Manage Brands Directory"
+                    title={t('adminPages.addCar.manageBrandsTitle')}
                     style={{
                       fontSize: '0.75rem',
                       fontWeight: 700,
@@ -1635,14 +1701,14 @@ features: carFeatures
                     }}
                   >
                     <Plus size={12} />
-                    <span>Manage Brands</span>
+                    <span>{t('adminPages.addCar.manageBrands')}</span>
                   </Link>
                 </div>
                 <CustomSelect
                   value={brand}
                   onChange={(val) => handleBrandChange(val)}
                   searchable
-                  placeholder={dbBrands.length === 0 ? 'Loading registered brands...' : 'Select Make / Brand...'}
+                  placeholder={dbBrands.length === 0 ? t('adminPages.addCar.loadingBrands') : t('adminPages.addCar.selectBrand')}
                   options={[
                     ...dbBrands.map((b) => ({
                       value: b.name,
@@ -1661,11 +1727,11 @@ features: carFeatures
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label className="fleet-form-label" style={{ margin: 0 }}>
-                    Vehicle Model <span style={{ color: '#EF4444' }}>*</span>
+                    {t('adminPages.addCar.vehicleModel')} <span style={{ color: '#EF4444' }}>*</span>
                   </label>
                   <Link
                     to="/admin/models"
-                    title="Manage Models Directory"
+                    title={t('adminPages.addCar.manageModelsTitle')}
                     style={{
                       fontSize: '0.75rem',
                       fontWeight: 700,
@@ -1677,7 +1743,7 @@ features: carFeatures
                     }}
                   >
                     <Plus size={12} />
-                    <span>Manage Models</span>
+                    <span>{t('adminPages.addCar.manageModels')}</span>
                   </Link>
                 </div>
 
@@ -1686,14 +1752,14 @@ features: carFeatures
                     value={model}
                     onChange={(val) => handleModelSelectChange(val)}
                     searchable
-                    placeholder="Select Brand Model..."
+                    placeholder={t('adminPages.addCar.selectModel')}
                     options={[
                       ...currentBrandModels.map((m) => ({
                         value: m.name,
                         label: m.name,
                         sublabel: m.bodyType ? `${m.bodyType}` : undefined,
                       })),
-                      { value: '__CUSTOM__', label: '+ Type Custom Model Name' },
+                      { value: '__CUSTOM__', label: t('adminPages.addCar.customModel') },
                     ]}
                   />
                 ) : (
@@ -1705,7 +1771,7 @@ features: carFeatures
                         if (customModelMode) setCustomModelName(e.target.value);
                         else setModel(e.target.value);
                       }}
-                      placeholder="e.g. Camry, Tucson, Model 3..."
+                      placeholder={t('adminPages.addCar.modelPlaceholder')}
                       className="fleet-form-input"
                     />
                     {currentBrandModels.length > 0 && (
@@ -1717,9 +1783,9 @@ features: carFeatures
                         }}
                         className="fleet-header-action-btn fleet-btn-secondary"
                         style={{ padding: '0 12px', fontSize: '0.78rem' }}
-                        title="Pick from registered catalog"
+                        title={t('adminPages.addCar.pickCatalog')}
                       >
-                        List
+                        {t('adminPages.addCar.list')}
                       </button>
                     )}
                   </div>
@@ -1730,7 +1796,7 @@ features: carFeatures
             {/* Row 2: Year, Trim & Embossed License Plate */}
             <div className="car-row-3">
               <div className="fleet-form-group">
-                <label className="fleet-form-label fleet-form-label-required">Model Year</label>
+                <label className="fleet-form-label fleet-form-label-required">{t('adminPages.addCar.modelYear')}</label>
                 <input
                   type="number"
                   value={year || ''}
@@ -1746,19 +1812,19 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Trim / Grade Specification</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.trim')}</label>
                 <input
                   type="text"
                   value={trim}
                   onChange={(e) => setTrim(e.target.value)}
-                  placeholder="e.g. XLE, GT-Line, Long Range"
+                  placeholder={t('adminPages.addCar.trimPlaceholder')}
                   className="fleet-form-input"
                 />
               </div>
 
               {/* Embossed License Plate Input */}
               <div className="fleet-form-group">
-                <label className="fleet-form-label fleet-form-label-required">License Plate Registration</label>
+                <label className="fleet-form-label fleet-form-label-required">{t('adminPages.addCar.plate')}</label>
                 <div className="car-plate-input-container">
                   <div className="car-plate-flag">
                     <span>FIN</span>
@@ -1783,13 +1849,13 @@ features: carFeatures
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="vpic-badge">
                     <Sparkles size={12} />
-                    NHTSA vPIC Cloud AI Decoder
+                    {t('adminPages.addCar.vinTitle')}
                   </span>
                   <span style={{ fontSize: '0.78rem', color: '#6C1E84', fontWeight: 600 }}>
-                    Official Vehicle Specification Database
+                    {t('adminPages.addCar.vinSubtitle')}
                   </span>
                 </div>
-                <span className="vpic-char-count">{vin.length} / 17 chars</span>
+                <span className="vpic-char-count">{vin.length} {t('adminPages.addCar.vinChars')}</span>
               </div>
 
               <div className="vpic-input-row">
@@ -1797,7 +1863,7 @@ features: carFeatures
                   type="text"
                   value={vin}
                   onChange={(e) => setVin(e.target.value.toUpperCase())}
-                  placeholder="Enter 17-character VIN (e.g. 1HGCR2F83HA...)"
+                  placeholder={t('adminPages.addCar.vinPlaceholder')}
                   maxLength={17}
                   className="fleet-form-input vpic-vin-input"
                 />
@@ -1809,11 +1875,11 @@ features: carFeatures
                   style={{ padding: '0 18px', gap: '6px' }}
                 >
                   <Sparkles size={15} color="#6C1E84" />
-                  <span>{isDecodingVin ? 'Scanning...' : 'Decode & Autofill'}</span>
+                  <span>{isDecodingVin ? t('adminPages.addCar.scanning') : t('adminPages.addCar.decode')}</span>
                 </button>
               </div>
               <span className="fleet-form-hint" style={{ marginTop: '6px' }}>
-                Instant verification autofills manufacturer specs, engine architecture, safety rating, and drivetrain.
+                {t('adminPages.addCar.vinHelp')}
               </span>
             </div>
 
@@ -1822,11 +1888,11 @@ features: carFeatures
               <div className="fleet-form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label className="fleet-form-label" style={{ margin: 0 }}>
-                    Fleet Category Assignment <span style={{ color: '#EF4444' }}>*</span>
+                    {t('adminPages.addCar.categoryAssign')} <span style={{ color: '#EF4444' }}>*</span>
                   </label>
                   <Link
                     to="/admin/categories"
-                    title="Manage Vehicle Categories Directory"
+                    title={t('adminPages.addCar.manageCategoriesTitle')}
                     style={{
                       fontSize: '0.75rem',
                       fontWeight: 700,
@@ -1838,17 +1904,17 @@ features: carFeatures
                     }}
                   >
                     <Plus size={12} />
-                    <span>Manage Categories</span>
+                    <span>{t('adminPages.addCar.manageCategories')}</span>
                   </Link>
                 </div>
                 <CustomSelect
                   value={categoryId}
                   onChange={(val) => setCategoryId(val)}
-                  placeholder="Assign Fleet Category..."
+                  placeholder={t('adminPages.addCar.selectCategory')}
                   options={categories.map((c) => ({
                     value: c.id,
                     label: c.name,
-                    sublabel: `Standard Base: ${formatMoney(Number(c.baseRate || 0))}/day`,
+                    sublabel: t('adminPages.addCar._categoryRate', { amount: formatMoney(Number(c.baseRate || 0)) }),
                   }))}
                 />
               </div>
@@ -1856,14 +1922,14 @@ features: carFeatures
               <div className="fleet-form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label className="fleet-form-label" style={{ margin: 0 }}>
-                    Assigned Home Branch Station
+                    {t('adminPages.addCar.branch')}
                   </label>
-                  <span style={{ fontSize: '0.74rem', color: '#8A7090' }}>Physical Inventory Hub</span>
+                  <span style={{ fontSize: '0.74rem', color: '#8A7090' }}>{t('adminPages.addCar.branchHint')}</span>
                 </div>
                 <CustomSelect
                   value={branchId}
                   onChange={(val) => setBranchId(val)}
-                  placeholder="Select Operational Base Station..."
+                  placeholder={t('adminPages.addCar.selectBranch')}
                   options={branches.map((b) => ({
                     value: b.id,
                     label: b.name,
@@ -1877,7 +1943,7 @@ features: carFeatures
             <div className="fleet-form-group car-row-last" style={{ marginTop: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <label className="fleet-form-label" style={{ margin: 0 }}>
-                  Exterior Paint & Finish: <strong style={{ color: '#1E0432' }}>{color}</strong>
+                  {t('adminPages.addCar.paint')} <strong style={{ color: '#1E0432' }}>{color}</strong>
                 </label>
                 <button
                   type="button"
@@ -1895,7 +1961,7 @@ features: carFeatures
                   }}
                 >
                   <Palette size={14} />
-                  <span>{isCustomColor ? 'Use Standard Palette' : 'Custom Hex Finish'}</span>
+                  <span>{isCustomColor ? t('adminPages.addCar.standardPalette') : t('adminPages.addCar.customHex')}</span>
                 </button>
               </div>
 
@@ -1914,7 +1980,7 @@ features: carFeatures
                     type="text"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    placeholder="Color Finish Name (e.g. Midnight Pearl, Metallic Obsidian)"
+                    placeholder={t('adminPages.addCar.colorNamePlaceholder')}
                     className="fleet-form-input"
                     style={{ flex: 1 }}
                   />
@@ -1940,7 +2006,7 @@ features: carFeatures
                           setColor(c.name);
                           setColorHex(c.hex);
                         }}
-                        title={c.name}
+                        title={t(`adminPages.addCar._color_${c.name}`, { defaultValue: c.name })}
                         className={`car-color-swatch-btn ${isSelected ? 'selected' : ''}`}
                         style={{
                           backgroundColor: c.hex,
@@ -1964,8 +2030,8 @@ features: carFeatures
                   <Sliders size={20} />
                 </div>
                 <div>
-                  <h2 className="car-card-title">2. Engineering & Mechanical Specifications</h2>
-                  <p className="car-card-subtitle">Powertrain architecture, transmission, fuel delivery, cabin geometry, and telemetry</p>
+                  <h2 className="car-card-title">{t('adminPages.addCar.sec2Title')}</h2>
+                  <p className="car-card-subtitle">{t('adminPages.addCar.sec2Subtitle')}</p>
                 </div>
               </div>
               <span
@@ -1978,7 +2044,7 @@ features: carFeatures
                   borderRadius: '12px',
                 }}
               >
-                {isSec2Complete ? '✓ Configured' : 'Specs Required'}
+                {isSec2Complete ? t('adminPages.addCar.sec2Done') : t('adminPages.addCar.specsRequired')}
               </span>
             </div>
 
@@ -1986,7 +2052,7 @@ features: carFeatures
             <div className="car-row-2">
               {/* Transmission Segmented Switch */}
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Transmission System</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.transmission')}</label>
                 <div className="car-segment-switch">
                   <button
                     type="button"
@@ -1994,7 +2060,7 @@ features: carFeatures
                     className={`car-segment-option ${transmission === 'AUTOMATIC' ? 'active' : ''}`}
                   >
                     <Sliders size={14} />
-                    <span>Automatic (AT/CVT)</span>
+                    <span>{t('adminPages.addCar.automatic')}</span>
                   </button>
                   <button
                     type="button"
@@ -2002,14 +2068,14 @@ features: carFeatures
                     className={`car-segment-option ${transmission === 'MANUAL' ? 'active' : ''}`}
                   >
                     <Sliders size={14} />
-                    <span>Manual (MT)</span>
+                    <span>{t('adminPages.addCar.manual')}</span>
                   </button>
                 </div>
               </div>
 
               {/* Drivetrain Segmented Switch */}
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Drivetrain Configuration</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.drivetrain')}</label>
                 <div className="car-drivetrain-grid">
                   {(['AWD', 'FWD', 'RWD', '4WD'] as const).map((dt) => (
                     <button
@@ -2027,14 +2093,14 @@ features: carFeatures
 
             {/* Fuel Type 4-Way Visual Cards */}
             <div className="fleet-form-group" style={{ marginBottom: '18px' }}>
-              <label className="fleet-form-label">Fuel & Propulsion Technology</label>
+              <label className="fleet-form-label">{t('adminPages.addCar.fuel')}</label>
               <div className="car-fuel-grid">
                 <div
                   onClick={() => setFuelType('PETROL')}
                   className={`car-fuel-card ${fuelType === 'PETROL' ? 'active' : ''}`}
                 >
                   <Flame size={16} color={fuelType === 'PETROL' ? '#DC2626' : '#8A7090'} />
-                  <span className="car-fuel-name">Petrol</span>
+                  <span className="car-fuel-name">{t('adminPages.addCar.petrol')}</span>
                 </div>
 
                 <div
@@ -2042,7 +2108,7 @@ features: carFeatures
                   className={`car-fuel-card ${fuelType === 'DIESEL' ? 'active' : ''}`}
                 >
                   <Fuel size={16} color={fuelType === 'DIESEL' ? '#D97706' : '#8A7090'} />
-                  <span className="car-fuel-name">Diesel Turbo</span>
+                  <span className="car-fuel-name">{t('adminPages.addCar.diesel')}</span>
                 </div>
 
                 <div
@@ -2050,7 +2116,7 @@ features: carFeatures
                   className={`car-fuel-card ${fuelType === 'HYBRID' ? 'active' : ''}`}
                 >
                   <BatteryCharging size={16} color={fuelType === 'HYBRID' ? '#059669' : '#8A7090'} />
-                  <span className="car-fuel-name">Hybrid (HEV)</span>
+                  <span className="car-fuel-name">{t('adminPages.addCar.hybrid')}</span>
                 </div>
 
                 <div
@@ -2058,7 +2124,7 @@ features: carFeatures
                   className={`car-fuel-card ${fuelType === 'ELECTRIC' ? 'active' : ''}`}
                 >
                   <Zap size={16} color={fuelType === 'ELECTRIC' ? '#2563EB' : '#8A7090'} />
-                  <span className="car-fuel-name">Electric (BEV)</span>
+                  <span className="car-fuel-name">{t('adminPages.addCar.electric')}</span>
                 </div>
               </div>
             </div>
@@ -2066,18 +2132,18 @@ features: carFeatures
             {/* Row 2: Performance Specs & Tank Capacity */}
             <div className="car-row-3">
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Engine / Motor Displacement</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.engine')}</label>
                 <input
                   type="text"
                   value={engineSize}
                   onChange={(e) => setEngineSize(e.target.value)}
-                  placeholder="e.g. 2.0L Turbo, 65 kWh"
+                  placeholder={t('adminPages.addCar.enginePlaceholder')}
                   className="fleet-form-input"
                 />
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Horsepower Output (HP)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.hpLabel')}</label>
                 <input
                   type="number"
                   value={horsePower}
@@ -2088,12 +2154,12 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Fuel Tank / Battery Capacity</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.tank')}</label>
                 <input
                   type="text"
                   value={fuelTankCapacity}
                   onChange={(e) => setFuelTankCapacity(e.target.value)}
-                  placeholder="e.g. 55 Liters, 77.4 kWh"
+                  placeholder={t('adminPages.addCar.tankPlaceholder')}
                   className="fleet-form-input"
                 />
               </div>
@@ -2103,7 +2169,7 @@ features: carFeatures
             {/* Dynamic Performance Metrics & Cargo Capacity */}
             <div className="car-row-3" style={{ marginTop: '16px' }}>
               <div className="fleet-form-group">
-                <label className="fleet-form-label">0-100 km/h Acceleration (sec)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.acceleration')}</label>
                 <input
                   type="text"
                   value={acceleration0to100}
@@ -2114,7 +2180,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Top Speed (km/h)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.topSpeed')}</label>
                 <input
                   type="text"
                   value={topSpeed}
@@ -2125,7 +2191,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Torque Rating (Nm)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.torque')}</label>
                 <input
                   type="text"
                   value={torqueNm}
@@ -2138,7 +2204,7 @@ features: carFeatures
 
             <div className="car-row-3" style={{ marginTop: '16px' }}>
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Fuel Economy (L/100km)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.economy')}</label>
                 <input
                   type="text"
                   value={fuelEconomy}
@@ -2149,7 +2215,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Luggage / Large Bags Capacity</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.largeBags')}</label>
                 <input
                   type="number"
                   min={0}
@@ -2161,7 +2227,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Cabin / Small Bags Capacity</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.smallBags')}</label>
                 <input
                   type="number"
                   min={0}
@@ -2177,8 +2243,8 @@ features: carFeatures
             <div className="car-row-2">
               <div className="fleet-form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label className="fleet-form-label" style={{ margin: 0 }}>Seating Capacity <span style={{ color: '#EF4444' }}>*</span></label>
-                  <span className="car-stepper-type-tag">Max {vehicleTypeInfo.maxSeats} ({vehicleTypeInfo.label})</span>
+                  <label className="fleet-form-label" style={{ margin: 0 }}>{t('adminPages.addCar.seating')} <span style={{ color: '#EF4444' }}>*</span></label>
+                  <span className="car-stepper-type-tag">{t('adminPages.addCar._maxSeats', { count: vehicleTypeInfo.maxSeats, type: vehicleTypeInfo.label })}</span>
                 </div>
                 <div className="car-stepper">
                   <button
@@ -2186,7 +2252,7 @@ features: carFeatures
                     onClick={() => setSeats((prev) => Math.max(vehicleTypeInfo.minSeats, (Number(prev) || 1) - 1))}
                     disabled={Number(seats) <= vehicleTypeInfo.minSeats}
                     className="car-stepper-btn"
-                    aria-label="Decrease seating capacity"
+                    aria-label={t('adminPages.addCar.seatsDown')}
                   >
                     <Minus size={15} />
                   </button>
@@ -2218,7 +2284,7 @@ features: carFeatures
                       style={{ width: `${Math.max(20, String(seats || 1).length * 11 + 4)}px` }}
                     />
                     <span className="car-stepper-unit">
-                      {Number(seats) === 1 ? 'Seat' : 'Seats'}
+                      {t('adminPages.addCar._seatUnit', { count: Number(seats) })}
                     </span>
                   </div>
                   <button
@@ -2226,7 +2292,7 @@ features: carFeatures
                     onClick={() => setSeats((prev) => Math.min(vehicleTypeInfo.maxSeats, (Number(prev) || 1) + 1))}
                     disabled={Number(seats) >= vehicleTypeInfo.maxSeats}
                     className="car-stepper-btn"
-                    aria-label="Increase seating capacity"
+                    aria-label={t('adminPages.addCar.seatsUp')}
                   >
                     <Plus size={15} />
                   </button>
@@ -2235,8 +2301,8 @@ features: carFeatures
 
               <div className="fleet-form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label className="fleet-form-label" style={{ margin: 0 }}>Number of Doors <span style={{ color: '#EF4444' }}>*</span></label>
-                  <span className="car-stepper-type-tag">Max {vehicleTypeInfo.maxDoors} Doors</span>
+                  <label className="fleet-form-label" style={{ margin: 0 }}>{t('adminPages.addCar.doorsLabel')} <span style={{ color: '#EF4444' }}>*</span></label>
+                  <span className="car-stepper-type-tag">{t('adminPages.addCar._maxDoors', { count: vehicleTypeInfo.maxDoors })}</span>
                 </div>
                 <div className="car-stepper">
                   <button
@@ -2244,7 +2310,7 @@ features: carFeatures
                     onClick={() => setDoors((prev) => Math.max(vehicleTypeInfo.minDoors, (Number(prev) || 2) - 1))}
                     disabled={Number(doors) <= vehicleTypeInfo.minDoors}
                     className="car-stepper-btn"
-                    aria-label="Decrease number of doors"
+                    aria-label={t('adminPages.addCar.doorsDown')}
                   >
                     <Minus size={15} />
                   </button>
@@ -2276,7 +2342,7 @@ features: carFeatures
                       style={{ width: `${Math.max(20, String(doors || 2).length * 11 + 4)}px` }}
                     />
                     <span className="car-stepper-unit">
-                      {Number(doors) === 1 ? 'Door' : 'Doors'}
+                      {t('adminPages.addCar._doorUnit', { count: Number(doors) })}
                     </span>
                   </div>
                   <button
@@ -2284,7 +2350,7 @@ features: carFeatures
                     onClick={() => setDoors((prev) => Math.min(vehicleTypeInfo.maxDoors, (Number(prev) || 2) + 1))}
                     disabled={Number(doors) >= vehicleTypeInfo.maxDoors}
                     className="car-stepper-btn"
-                    aria-label="Increase number of doors"
+                    aria-label={t('adminPages.addCar.doorsUp')}
                   >
                     <Plus size={15} />
                   </button>
@@ -2295,7 +2361,7 @@ features: carFeatures
             {/* Row 4: Telematics, Mileage & Bay Tracking */}
             <div className="car-row-4 car-row-last">
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Current Odometer (km)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.odometer')}</label>
                 <input
                   type="number"
                   value={mileage}
@@ -2306,7 +2372,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Next Service Target (km)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.nextService')}</label>
                 <input
                   type="number"
                   value={nextServiceMileage}
@@ -2317,18 +2383,18 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Parking Spot / Bay</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.parking')}</label>
                 <input
                   type="text"
                   value={parkingSpot}
                   onChange={(e) => setParkingSpot(e.target.value)}
-                  placeholder="e.g. Bay A-12, Level 2"
+                  placeholder={t('adminPages.addCar.parkingPlaceholder')}
                   className="fleet-form-input"
                 />
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">IoT Telematics Tracker ID</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.tracker')}</label>
                 <input
                   type="text"
                   value={telematicsDeviceId}
@@ -2349,14 +2415,14 @@ features: carFeatures
                   <Shield size={20} />
                 </div>
                 <div>
-                  <h2 className="car-card-title">3. Equipment, ADAS & Smart Features</h2>
+                  <h2 className="car-card-title">{t('adminPages.addCar.sec3Title')}</h2>
                   <p className="car-card-subtitle">
-                    Autonomous safety systems, premium comfort packages, and infotainment equipment
+                    {t('adminPages.addCar.sec3Subtitle')}
                   </p>
                 </div>
               </div>
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#6C1E84', backgroundColor: '#F5EEF8', padding: '4px 12px', borderRadius: '12px' }}>
-                {selectedFeatures.length} of {carFeatures.filter((feature) => feature.isActive).length} Selected
+                {t('adminPages.addCar._selected', { selected: selectedFeatures.length, total: carFeatures.filter((feature) => feature.isActive).length })}
               </span>
             </div>
 
@@ -2370,7 +2436,7 @@ features: carFeatures
                     onClick={() => setActiveFeatureTab(cat.id)}
                     className={`feature-tab-btn ${activeFeatureTab === cat.id ? 'active' : ''}`}
                   >
-                    {cat.label}
+                    {t(`adminPages.addCar._fc_${cat.id}`, { defaultValue: cat.label })}
                   </button>
                 ))}
               </div>
@@ -2381,7 +2447,7 @@ features: carFeatures
                   onClick={selectAllFeatures}
                   className="feature-action-text-btn"
                 >
-                  Select All
+                  {t('adminPages.addCar.selectAll')}
                 </button>
                 <span style={{ color: '#D4C9D9' }}>|</span>
                 <button
@@ -2390,7 +2456,7 @@ features: carFeatures
                   className="feature-action-text-btn"
                   style={{ color: '#8A7090' }}
                 >
-                  Clear
+                  {t('adminPages.addCar.clear')}
                 </button>
               </div>
             </div>
@@ -2398,9 +2464,9 @@ features: carFeatures
             {/* Features Chips Grid */}
             <div className="car-features-grid">
               {isLoadingFeatures ? (
-  <p>Loading car features...</p>
+  <p>{t('adminPages.addCar.loadingFeatures')}</p>
 ) : filteredFeatures.length === 0 ? (
-  <p>No features available in this category.</p>
+  <p>{t('adminPages.addCar.noFeatures')}</p>
 ) : (
   filteredFeatures.map((feat) => {
     const isSelected = selectedFeatures.includes(feat.id);
@@ -2452,8 +2518,8 @@ features: carFeatures
                   <Cpu size={20} />
                 </div>
                 <div>
-                  <h2 className="car-card-title">6. Insurance & Administrative Records</h2>
-                  <p className="car-card-subtitle">Policy binding numbers, expiration reminders, and internal notes</p>
+                  <h2 className="car-card-title">{t('adminPages.addCar.sec6Title')}</h2>
+                  <p className="car-card-subtitle">{t('adminPages.addCar.sec6Subtitle')}</p>
                 </div>
               </div>
               <span
@@ -2466,13 +2532,13 @@ features: carFeatures
                   borderRadius: '12px',
                 }}
               >
-                {isSec6Complete ? '✓ Policy Bound' : 'Optional Records'}
+                {isSec6Complete ? t('adminPages.addCar.sec6Done') : t('adminPages.addCar.optionalRecords')}
               </span>
             </div>
 
             <div className="car-row-3">
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Insurance Policy Number</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.policyNumber')}</label>
                 <input
                   type="text"
                   value={insurancePolicyNumber}
@@ -2483,7 +2549,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Insurance Expiry Date</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.insuranceExpiry')}</label>
                 <input
                   type="date"
                   value={insuranceExpiry}
@@ -2493,7 +2559,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Registration Expiry Date</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.registrationExpiry')}</label>
                 <input
                   type="date"
                   value={registrationExpiry}
@@ -2505,7 +2571,7 @@ features: carFeatures
 
             <div className="car-row-2">
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Last Maintenance Service Date</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.lastService')}</label>
                 <input
                   type="date"
                   value={lastServiceDate}
@@ -2515,7 +2581,7 @@ features: carFeatures
               </div>
 
               <div className="fleet-form-group">
-                <label className="fleet-form-label">Last Service Odometer (km)</label>
+                <label className="fleet-form-label">{t('adminPages.addCar.lastServiceKm')}</label>
                 <input
                   type="number"
                   value={lastServiceMileage}
@@ -2527,11 +2593,11 @@ features: carFeatures
             </div>
 
             <div className="fleet-form-group car-row-last" style={{ marginTop: '6px' }}>
-              <label className="fleet-form-label">Internal Fleet Operations & Handover Notes</label>
+              <label className="fleet-form-label">{t('adminPages.addCar.internalNotes')}</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add special handover procedures, minor exterior cosmetic condition reports, VIP rental guidelines..."
+                placeholder={t('adminPages.addCar.notesPlaceholder')}
                 className="fleet-form-textarea"
                 rows={3}
               />
@@ -2540,11 +2606,11 @@ features: carFeatures
             {/* Rental Rules & Policies */}
             <div style={{ marginTop: '16px', padding: '16px', borderRadius: '12px', background: '#F8F5FA', border: '1px solid #EBDDF0' }}>
               <h4 style={{ margin: '0 0 12px', fontSize: '0.9rem', fontWeight: 800, color: '#1E0426' }}>
-                Rental Governance & Customer Policies
+                {t('adminPages.addCar.policies')}
               </h4>
               <div className="car-row-4">
                 <div className="fleet-form-group">
-                  <label className="fleet-form-label">Minimum Driver Age (Yrs)</label>
+                  <label className="fleet-form-label">{t('adminPages.addCar.minAge')}</label>
                   <input
                     type="number"
                     value={minAge}
@@ -2553,7 +2619,7 @@ features: carFeatures
                   />
                 </div>
                 <div className="fleet-form-group">
-                  <label className="fleet-form-label">Min License Exp (Yrs)</label>
+                  <label className="fleet-form-label">{t('adminPages.addCar.minLicense')}</label>
                   <input
                     type="number"
                     value={minLicenseYears}
@@ -2562,20 +2628,20 @@ features: carFeatures
                   />
                 </div>
                 <div className="fleet-form-group">
-                  <label className="fleet-form-label">Fuel Return Policy</label>
+                  <label className="fleet-form-label">{t('adminPages.addCar.fuelPolicy')}</label>
                   <CustomSelect
                     value={fuelPolicy}
                     onChange={(val) => setFuelPolicy(String(val))}
                     options={[
-                      { value: 'Full-to-Full', label: 'Full-to-Full', sublabel: 'Return tank 100% full' },
-                      { value: 'Same-to-Same', label: 'Same-to-Same', sublabel: 'Match handover level' },
-                      { value: 'Prepaid Full Tank', label: 'Prepaid Full Tank', sublabel: 'Pre-purchased tank' },
+                      { value: 'Full-to-Full', label: 'Full-to-Full', sublabel: t('adminPages.addCar.fuelFull') },
+                      { value: 'Same-to-Same', label: 'Same-to-Same', sublabel: t('adminPages.addCar.fuelSame') },
+                      { value: 'Prepaid Full Tank', label: 'Prepaid Full Tank', sublabel: t('adminPages.addCar.fuelPrepaid') },
                     ]}
                     size="md"
                   />
                 </div>
                 <div className="fleet-form-group">
-                  <label className="fleet-form-label">Deposit Release (Hours)</label>
+                  <label className="fleet-form-label">{t('adminPages.addCar.depositRelease')}</label>
                   <input
                     type="number"
                     value={depositRefundHours}
@@ -2592,7 +2658,7 @@ features: carFeatures
                     checked={smokingAllowed}
                     onChange={(e) => setSmokingAllowed(e.target.checked)}
                   />
-                  Smoking Permitted
+                  {t('adminPages.addCar.smoking')}
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
                   <input
@@ -2600,7 +2666,7 @@ features: carFeatures
                     checked={petFriendly}
                     onChange={(e) => setPetFriendly(e.target.checked)}
                   />
-                  Pet-Friendly Vehicle
+                  {t('adminPages.addCar.pets')}
                 </label>
               </div>
             </div>
@@ -2615,7 +2681,7 @@ features: carFeatures
             <div className="catalog-preview-header">
               <div className="catalog-preview-header-title">
                 <Eye size={18} color="#6C1E84" />
-                <span>Live Customer Preview</span>
+                <span>{t('adminPages.addCar.livePreview')}</span>
               </div>
               <span
                 className={`status-badge ${status === 'AVAILABLE'
@@ -2637,13 +2703,13 @@ features: carFeatures
                 <>
                   <img
                     src={activePreviewPhoto.url || activePreviewPhoto.data}
-                    alt="Live Preview"
+                    alt={t('adminPages.addCar.livePreviewAlt')}
                     className="preview-hero-img"
                   />
 
                   {/* Caption Overlay */}
                   <div className="preview-hero-caption">
-                    {activePreviewPhoto.caption || 'Vehicle Angle Photo'}
+                    {activePreviewPhoto.caption || t('adminPages.addCar.anglePhoto')}
                   </div>
 
                   {/* Navigation Arrows on Hero */}
@@ -2653,7 +2719,7 @@ features: carFeatures
                         type="button"
                         onClick={() => setPreviewPhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1))}
                         className="preview-arrow-btn arrow-left"
-                        aria-label="Previous photo"
+                        aria-label={t('adminPages.addCar.prevPhoto')}
                       >
                         <ChevronLeft size={16} />
                       </button>
@@ -2661,7 +2727,7 @@ features: carFeatures
                         type="button"
                         onClick={() => setPreviewPhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0))}
                         className="preview-arrow-btn arrow-right"
-                        aria-label="Next photo"
+                        aria-label={t('adminPages.addCar.nextPhoto')}
                       >
                         <ChevronRight size={16} />
                       </button>
@@ -2713,9 +2779,9 @@ features: carFeatures
                   >
                     <Camera size={26} color="#FAB826" />
                   </div>
-                  <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>No Photos Uploaded Yet</span>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>{t('adminPages.addCar.noPhotos')}</span>
                   <span style={{ fontSize: '0.76rem', color: '#BCA8C4', marginTop: '4px', maxWidth: '240px', lineHeight: 1.4 }}>
-                    Upload 4–6 photos in Section 5 to preview your live vehicle card here.
+                    {t('adminPages.addCar.noPhotosHint')}
                   </span>
                 </div>
               )}
@@ -2742,7 +2808,7 @@ features: carFeatures
             <div className="catalog-preview-body">
               <div className="preview-meta-row">
                 <span className="preview-badge-category">
-                  {activeCategory?.name || 'Category'}
+                  {activeCategory?.name || t('adminPages.addCar.categoryFallback')}
                 </span>
                 <span className="preview-plate">
                   {registrationNumber ? registrationNumber.toUpperCase() : 'NO-PLATE'}
@@ -2750,21 +2816,21 @@ features: carFeatures
               </div>
 
               <h3 className="preview-car-name">
-                {effectiveBrand || 'Make'} {effectiveModel || 'Model'}
+                {effectiveBrand || t('adminPages.addCar.makeFallback')} {effectiveModel || t('adminPages.addCar.modelFallback')}
               </h3>
               <p className="preview-car-trim">
-                {year} • {trim || 'Standard Grade'} • {color}
+                {year} • {trim || t('adminPages.addCar.standardGrade')} • {color}
               </p>
 
               {/* Core Specs Pills */}
               <div className="preview-spec-grid">
                 <div className="preview-spec-item">
                   <Sliders size={14} color="#6C1E84" />
-                  <span>{transmission === 'AUTOMATIC' ? 'Auto' : 'Manual'}</span>
+                  <span>{transmission === 'AUTOMATIC' ? t('adminPages.addCar.auto') : t('adminPages.addCar.manualShort')}</span>
                 </div>
                 <div className="preview-spec-item">
                   <Users size={14} color="#6C1E84" />
-                  <span>{seats ? `${seats} ${seats === 1 ? 'Seat' : 'Seats'}` : '5 Seats'}</span>
+                  <span>{t('adminPages.addCar._seatsCount', { count: Number(seats) || 5 })}</span>
                 </div>
                 <div className="preview-spec-item">
                   <Fuel size={14} color="#6C1E84" />
@@ -2772,15 +2838,15 @@ features: carFeatures
                 </div>
                 <div className="preview-spec-item">
                   <DoorOpen size={14} color="#6C1E84" />
-                  <span>{doors ? `${doors} ${doors === 1 ? 'Door' : 'Doors'}` : '4 Doors'}</span>
+                  <span>{t('adminPages.addCar._doorsCount', { count: Number(doors) || 4 })}</span>
                 </div>
                 <div className="preview-spec-item">
                   <MapPin size={14} color="#6C1E84" />
-                  <span>{activeBranch?.city || 'Central Hub'}</span>
+                  <span>{activeBranch?.city || t('adminPages.addCar.centralHub')}</span>
                 </div>
                 <div className="preview-spec-item">
                   <Shield size={14} color="#059669" />
-                  <span>{photos.length} Photos</span>
+                  <span>{t('adminPages.addCar._photoCount', { count: photos.length })}</span>
                 </div>
               </div>
 
@@ -2828,16 +2894,16 @@ features: carFeatures
 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.76rem', color: '#8A7090', fontWeight: 600 }}>
-                    Deposit: {pricingState.currency} {pricingState.securityDeposit || '0'}
+                    {t('adminPages.addCar._depositAmount', { amount: `${pricingState.currency} ${pricingState.securityDeposit || '0'}` })}
                   </div>
                   {pricingState.pricingMethod === 'daily_extra_km' && (
                     <div style={{ fontSize: '0.72rem', color: '#8A7090', marginTop: '2px' }}>
-                      Limit: {pricingState.mileageLimitPerDay} km/day
+                      {t('adminPages.addCar._limit', { km: pricingState.mileageLimitPerDay })}
                     </div>
                   )}
                   {pricingState.pricingMethod === 'per_km' && (
                     <div style={{ fontSize: '0.72rem', color: '#8A7090', marginTop: '2px' }}>
-                      Min Trip: {pricingState.currency} {pricingState.minimumTripCharge}
+                      {t('adminPages.addCar._minTrip', { amount: `${pricingState.currency} ${pricingState.minimumTripCharge}` })}
                     </div>
                   )}
                 </div>
@@ -2848,14 +2914,14 @@ features: carFeatures
           {/* Compliance & Readiness Progress Card */}
           <div className="compliance-card">
             <div className="compliance-header">
-              <h4 className="compliance-title">Fleet Activation Readiness</h4>
+              <h4 className="compliance-title">{t('adminPages.addCar.activation')}</h4>
               <span
                 className="compliance-pct"
                 style={{
                   color: complianceScore === 100 ? '#059669' : '#6C1E84',
                 }}
               >
-                {complianceScore}% Complete
+                {t('adminPages.addCar._percentComplete', { percent: complianceScore })}
               </span>
             </div>
 
@@ -2875,20 +2941,20 @@ features: carFeatures
               <div className="compliance-item">
                 <CheckCircle2 size={16} color={effectiveBrand && effectiveModel ? '#059669' : '#D1D5DB'} />
                 <span style={{ color: effectiveBrand && effectiveModel ? '#1E0432' : '#8A7090' }}>
-                  Make & Model Selected ({effectiveBrand || 'Make'} {effectiveModel || 'Model'})
+                  {t('adminPages.addCar._checkMake', { name: `${effectiveBrand || t('adminPages.addCar.makeFallback')} ${effectiveModel || t('adminPages.addCar.modelFallback')}` })}
                 </span>
               </div>
 
               <div className="compliance-item">
                 <CheckCircle2 size={16} color={registrationNumber.trim() ? '#059669' : '#D1D5DB'} />
                 <span style={{ color: registrationNumber.trim() ? '#1E0432' : '#8A7090' }}>
-                  License Plate Assigned {registrationNumber ? `(${registrationNumber})` : ''}
+                  {t('adminPages.addCar.checkPlate')} {registrationNumber ? `(${registrationNumber})` : ''}
                 </span>
               </div>
 
               <div className="compliance-item">
                 <CheckCircle2 size={16} color={categoryId ? '#059669' : '#D1D5DB'} />
-                <span style={{ color: categoryId ? '#1E0432' : '#8A7090' }}>Category & Branch Assigned</span>
+                <span style={{ color: categoryId ? '#1E0432' : '#8A7090' }}>{t('adminPages.addCar.checkCategory')}</span>
               </div>
 
               <div className="compliance-item">
@@ -2899,7 +2965,7 @@ features: carFeatures
                     fontWeight: photos.length >= 4 ? 600 : 700,
                   }}
                 >
-                  Mandatory 4–6 Photos ({photos.length}/4 minimum)
+                  {t('adminPages.addCar._checkPhotos', { count: photos.length })}
                 </span>
               </div>
 
@@ -2926,7 +2992,7 @@ features: carFeatures
                         : '#8A7090',
                   }}
                 >
-                  Commercial Pricing & Deposit Configured
+                  {t('adminPages.addCar.checkPricing')}
                 </span>
               </div>
             </div>
@@ -2944,11 +3010,11 @@ features: carFeatures
                 <span>
                   {isSubmitting
                     ? isEdit
-                      ? 'Saving Changes...'
-                      : 'Registering...'
+                      ? t('adminPages.addCar.savingChanges')
+                      : t('adminPages.addCar.registering')
                     : isEdit
-                      ? 'Save Vehicle Changes'
-                      : 'Register Vehicle Now'}
+                      ? t('adminPages.addCar.saveVehicleChanges')
+                      : t('adminPages.addCar.registerNow')}
                 </span>
               </button>
             </div>
@@ -2968,7 +3034,7 @@ features: carFeatures
                 backgroundColor: complianceScore === 100 ? '#10B981' : '#FAB826',
               }}
             />
-            <span>{complianceScore}% Ready</span>
+            <span>{t('adminPages.addCar._percentReady', { percent: complianceScore })}</span>
           </div>
           <div className="floating-bar-rate">{activeRateDisplay}</div>
         </div>
@@ -2980,7 +3046,7 @@ features: carFeatures
             className="floating-preview-btn"
           >
             <Eye size={15} />
-            <span>{mobileTab === 'form' ? 'Preview' : 'Form'}</span>
+            <span>{mobileTab === 'form' ? t('adminPages.addCar.preview') : t('adminPages.addCar.form')}</span>
           </button>
 
           <button
@@ -2990,7 +3056,7 @@ features: carFeatures
             className="floating-submit-btn"
           >
             <Check size={16} strokeWidth={2.5} />
-            <span>{isSubmitting ? 'Saving...' : isEdit ? 'Save' : 'Register'}</span>
+            <span>{isSubmitting ? t('adminPages.addCar.saving') : isEdit ? t('adminPages.addCar.save') : t('adminPages.addCar.register')}</span>
           </button>
         </div>
       </div>

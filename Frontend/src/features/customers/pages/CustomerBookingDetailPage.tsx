@@ -9,9 +9,18 @@ import {
   AlertCircle,
   CheckCircle2,
   Mail,
+  FileText,
+  Truck,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { customerPortalApi, type CustomerBookingDetail } from '../api/customerPortalApi';
+import {
+  customerPortalApi,
+  type CustomerBookingDetail,
+  type CancellationPreview,
+  type RefundOutcome,
+} from '../api/customerPortalApi';
+import { CancelBookingModal } from '../components/CancelBookingModal';
+import { downloadProtectedFile } from '../../../utils/downloadFile';
 import { formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
@@ -38,8 +47,8 @@ export function CustomerBookingDetailPage() {
 
   // Cancel trip state
   const [isCancelOpen, setIsCancelOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelResult, setCancelResult] = useState<string | null>(null);
+  const [isDownloadingAgreement, setIsDownloadingAgreement] = useState(false);
 
   const loadBooking = async () => {
     if (!bookingId) return;
@@ -77,18 +86,29 @@ export function CustomerBookingDetailPage() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!booking) return;
+  // Tells the customer what happens to their money after a cancellation
+  const describeCancellation = (result: { terms?: CancellationPreview; refund?: RefundOutcome | null }, currency: string) => {
+    const refund = result.terms?.refund ?? 0;
+    if (refund <= 0) return t('portalPages.cancelModal.doneNoRefund');
+    if (result.refund && result.refund.pendingManual > 0 && result.refund.refundedOnline === 0) {
+      return t('portalPages.cancelModal.doneManual', { amount: formatMoney(refund, currency, 2) });
+    }
+    return t('portalPages.cancelModal.doneRefund', { amount: formatMoney(refund, currency, 2) });
+  };
+
+  const downloadAgreement = async () => {
+    if (!booking?.agreement) return;
     try {
-      setIsCancelling(true);
+      setIsDownloadingAgreement(true);
       setActionError(null);
-      await customerPortalApi.cancelBooking(booking.id, cancelReason);
-      setIsCancelOpen(false);
-      await loadBooking();
+      await downloadProtectedFile(
+        customerPortalApi.agreementPdfEndpoint(booking.id),
+        `${booking.agreement.agreementNumber}.pdf`
+      );
     } catch (err: any) {
-      setActionError(err?.message || t('portalPages.bookings.errCancel'));
+      setActionError(err?.message || t('portalPages.bookingDetail.errAgreement'));
     } finally {
-      setIsCancelling(false);
+      setIsDownloadingAgreement(false);
     }
   };
 
@@ -181,7 +201,18 @@ export function CustomerBookingDetailPage() {
             </h1>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {booking.agreement && (
+              <button
+                onClick={downloadAgreement}
+                disabled={isDownloadingAgreement}
+                className="cp-btn-outline"
+                style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', borderColor: 'rgba(255, 255, 255, 0.2)' }}
+              >
+                <FileText size={16} />
+                {isDownloadingAgreement ? t('portalPages.bookingDetail.downloading') : t('portalPages.bookingDetail.agreement')}
+              </button>
+            )}
             <button
               onClick={() => window.print()}
               className="cp-btn-outline"
@@ -197,6 +228,28 @@ export function CustomerBookingDetailPage() {
           </div>
         </div>
       </div>
+
+      {cancelResult && (
+        <div
+          role="status"
+          style={{
+            background: 'rgba(16, 185, 129, 0.1)',
+            color: '#047857',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+          }}
+        >
+          {cancelResult}
+        </div>
+      )}
+      {actionError && !isExtendOpen && (
+        <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.9rem' }}>
+          {actionError}
+        </div>
+      )}
 
       {/* Main Grid */}
       <div className="cp-responsive-grid-2col">
@@ -295,6 +348,48 @@ export function CustomerBookingDetailPage() {
             </div>
           </div>
 
+          {/* Delivery to and collection from the customer's address */}
+          {(booking.deliveryAddress || booking.collectionAddress) && (
+            <div className="cp-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.85rem', marginBottom: '10px' }}>
+                <Truck size={16} color="var(--cp-accent)" />
+                {t('portalPages.checkout.deliveryTitle')}
+              </div>
+              {booking.deliveryAddress && (
+                <p style={{ margin: '0 0 8px', fontSize: '0.9rem', color: 'var(--cp-primary)' }}>
+                  <strong>{t('portalPages.checkout.deliveryAddress')}:</strong> {booking.deliveryAddress}
+                </p>
+              )}
+              {booking.collectionAddress && (
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--cp-primary)' }}>
+                  <strong>{t('portalPages.checkout.collectionAddress')}:</strong> {booking.collectionAddress}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Signed rental agreement */}
+          {booking.agreement && (
+            <div className="cp-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: 'var(--cp-primary)' }}>
+                  <FileText size={16} color="var(--cp-accent)" />
+                  {t('portalPages.bookingDetail.agreement')}
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
+                  {t('portalPages.bookingDetail.agreementSigned', {
+                    number: booking.agreement.agreementNumber,
+                    name: booking.agreement.signerName,
+                    date: formatDate(booking.agreement.signedAt),
+                  })}
+                </div>
+              </div>
+              <button className="cp-btn-outline" onClick={downloadAgreement} disabled={isDownloadingAgreement}>
+                {isDownloadingAgreement ? t('portalPages.bookingDetail.downloading') : t('portalPages.bookingDetail.downloadPdf')}
+              </button>
+            </div>
+          )}
+
           {/* Manage Trip Actions */}
           <div className="cp-card">
             <h2 className="cp-card-title" style={{ marginBottom: '14px' }}>{t('portalPages.bookingDetail.manageTrip')}</h2>
@@ -309,6 +404,7 @@ export function CustomerBookingDetailPage() {
                   className="cp-btn-danger"
                   onClick={() => {
                     setActionError(null);
+                    setCancelResult(null);
                     setIsCancelOpen(true);
                   }}
                 >
@@ -382,6 +478,20 @@ export function CustomerBookingDetailPage() {
                 <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.bookingDetail.deposit')}</span>
                 <span style={{ fontWeight: 700, color: '#10B981' }}>{money(booking.depositAmount)}</span>
               </div>
+
+              {booking.status === 'CANCELLED' && booking.cancellationFee !== null && booking.cancellationFee !== undefined && (
+                <div style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.85rem' }}>
+                  <strong style={{ color: 'var(--cp-primary)' }}>{t('portalPages.bookingDetail.cancellation')}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.cancelModal.fee')}</span>
+                    <span style={{ fontWeight: 600 }}>{money(booking.cancellationFee)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.cancelModal.refund')}</span>
+                    <span style={{ fontWeight: 700, color: '#10B981' }}>{money(booking.refundAmount ?? 0)}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payments history */}
@@ -408,7 +518,16 @@ export function CustomerBookingDetailPage() {
                         <div style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.bookingDetail.providerPayment', { provider: p.provider })}</div>
                         <div style={{ color: 'var(--cp-text-subtle)' }}>{formatDate(p.createdAt)}</div>
                       </div>
-                      <div style={{ fontWeight: 800, color: '#10B981' }}>+{formatMoney(Number(p.amount), p.currency || booking.currency, 2)}</div>
+                      <div style={{ textAlign: 'end' }}>
+                        <div style={{ fontWeight: 800, color: '#10B981' }}>+{formatMoney(Number(p.amount), p.currency || booking.currency, 2)}</div>
+                        {(p.refunds || []).map((r) => (
+                          <div key={r.id} style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)' }}>
+                            {t(r.status === 'SUCCEEDED' ? 'portalPages.bookingDetail.refunded' : 'portalPages.bookingDetail.refundPending', {
+                              amount: formatMoney(r.amount, p.currency || booking.currency, 2),
+                            })}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -455,37 +574,17 @@ export function CustomerBookingDetailPage() {
 
       {/* Cancellation Modal */}
       {isCancelOpen && (
-        <div className="cp-modal-backdrop">
-          <div className="cp-modal-box">
-            <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>{t('portalPages.bookingDetail.cancelTitle')}</h2>
-            <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              {t('portalPages.bookingDetail.cancelQuestion', { number: booking.bookingNumber })}
-            </p>
-            {actionError && (
-              <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '12px' }}>
-                {actionError}
-              </div>
-            )}
-            <div className="cp-form-group">
-              <label className="cp-label">{t('portalPages.bookingDetail.reason')}</label>
-              <textarea
-                className="cp-textarea"
-                rows={3}
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder={t('portalPages.bookingDetail.reasonPlaceholder')}
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button className="cp-btn-outline" onClick={() => setIsCancelOpen(false)}>
-                {t('portalPages.bookingDetail.keepBooking')}
-              </button>
-              <button className="cp-btn-danger" disabled={isCancelling} onClick={handleCancel}>
-                {isCancelling ? t('portalPages.bookings.processing') : t('portalPages.bookings.confirmCancel')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CancelBookingModal
+          bookingId={booking.id}
+          title={t('portalPages.bookingDetail.cancelTitle')}
+          question={t('portalPages.cancelModal.questionNumber', { number: booking.bookingNumber })}
+          onClose={() => setIsCancelOpen(false)}
+          onCancelled={async (result) => {
+            setCancelResult(describeCancellation(result, booking.currency));
+            setIsCancelOpen(false);
+            await loadBooking();
+          }}
+        />
       )}
     </div>
   );

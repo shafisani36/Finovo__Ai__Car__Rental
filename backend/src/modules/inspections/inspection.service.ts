@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { DamageDisputeService, DISPUTE_WINDOW_DAYS } from './damage-dispute.service';
 import { AppError } from '../../shared/errors/app-error';
 import {
   INSPECTION_VIEWS,
@@ -235,7 +236,12 @@ export class InspectionService {
         approvedAmount: Number(c.approvedAmount),
         currency: c.currency,
         status: c.status,
-        notes: c.disputeNotes,
+        notes: c.disputeResponse,
+        disputeReason: c.disputeOpenedAt ? DamageDisputeService.reasonOf(c.disputeNotes) : null,
+        disputeOpenedAt: c.disputeOpenedAt,
+        disputeResolvedAt: c.disputeResolvedAt,
+        disputeResponse: c.disputeResponse,
+        disputeWindowEndsAt: new Date(c.createdAt.getTime() + DISPUTE_WINDOW_DAYS * 86_400_000),
       })),
     };
   }
@@ -614,6 +620,7 @@ export class InspectionService {
     const charge = await prisma.damage_charges.findUnique({ where: { id: chargeId } });
     if (!charge) throw AppError.notFound('Damage charge not found');
     if (charge.status === 'SETTLED') throw AppError.badRequest('This charge has already been settled');
+    if (charge.status === 'DISPUTED') throw AppError.badRequest('The customer disputed this charge. Answer the dispute instead.');
 
     await prisma.damage_charges.update({
       where: { id: chargeId },
@@ -622,7 +629,7 @@ export class InspectionService {
         approvedAmount: dto.decision === 'APPROVED' ? charge.proposedAmount : 0,
         approvedById: staffUserId || null,
         approvedAt: new Date(),
-        disputeNotes: dto.notes ? String(dto.notes).slice(0, 1000) : charge.disputeNotes,
+        disputeResponse: dto.notes ? String(dto.notes).slice(0, 1000) : charge.disputeResponse,
         updatedAt: new Date(),
       },
     });

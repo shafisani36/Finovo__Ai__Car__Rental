@@ -34,6 +34,17 @@ export interface QuoteCalculationRequest {
   discountPercent?: number;
   taxRatePercent?: number;
   addons?: QuoteAddonInput[];
+  /** Flat fee for delivering the car to, and collecting it from, the customer's address (taxable) */
+  deliveryFee?: number;
+  /** Price line label for the delivery fee, for example "Car delivery to your address" */
+  deliveryDescription?: string;
+  /** Fixed-amount discounts already worked out by the caller (promo codes, reward points), applied before tax */
+  fixedDiscounts?: QuoteFixedDiscount[];
+}
+
+export interface QuoteFixedDiscount {
+  description: string;
+  amount: number;
 }
 
 export interface QuoteAddonInput {
@@ -123,6 +134,7 @@ export interface CalculationQuoteResult {
   extraDistanceCharge: number;
   driverFee: number;
   addonsTotal: number;
+  deliveryFee: number;
   discountAmount: number;
   taxableAmount: number;
   taxAmount: number;
@@ -319,7 +331,7 @@ export class RentalPricingService {
 
     const currency = env.CURRENCY;
     const method = pricingConfig.pricingMethod || 'daily';
-    const taxRatePercent = Number(req.taxRatePercent ?? 8); // Default 8% tax
+    const taxRatePercent = Number(req.taxRatePercent ?? env.TAX_RATE_PERCENT);
     const discountPercent = Math.max(0, Math.min(100, Number(req.discountPercent || 0)));
     const lineItems: PricingBreakdownLineItem[] = [];
 
@@ -602,8 +614,24 @@ export class RentalPricingService {
       });
     }
 
+    // Delivery to / collection from the customer's address
+    const deliveryFee = this.roundMoney(Math.max(0, Number(req.deliveryFee) || 0));
+    if (deliveryFee > 0) {
+      lineItems.push({
+        lineType: 'delivery_fee',
+        description: req.deliveryDescription || 'Car delivery and collection',
+        quantity: 1,
+        unit: 'BOOKING',
+        unitPrice: deliveryFee,
+        amount: deliveryFee,
+        currency,
+        isTaxable: true,
+        taxAmount: 0,
+      });
+    }
+
     // Subtotal before discounts
-    const subtotal = this.roundMoney(baseRental + extraDistanceCharge + driverFee + addonsTotal);
+    const subtotal = this.roundMoney(baseRental + extraDistanceCharge + driverFee + addonsTotal + deliveryFee);
 
     // Discounts
     let discountAmount = 0;
@@ -622,13 +650,31 @@ export class RentalPricingService {
       });
     }
 
+    // Fixed discounts never take the rental below zero
+    for (const discount of req.fixedDiscounts || []) {
+      const amount = this.roundMoney(Math.min(Math.max(0, Number(discount.amount) || 0), subtotal - discountAmount));
+      if (amount <= 0) continue;
+      discountAmount = this.roundMoney(discountAmount + amount);
+      lineItems.push({
+        lineType: 'discount',
+        description: discount.description,
+        quantity: 1,
+        unit: 'BOOKING',
+        unitPrice: amount,
+        amount: -amount,
+        currency,
+        isTaxable: false,
+        taxAmount: 0,
+      });
+    }
+
     const taxableAmount = Math.max(0, this.roundMoney(subtotal - discountAmount));
     const taxAmount = this.roundMoney((taxableAmount * taxRatePercent) / 100);
 
     if (taxAmount > 0) {
       lineItems.push({
         lineType: 'tax',
-        description: `Sales Tax / GST (${taxRatePercent}%)`,
+        description: `${env.TAX_LABEL} (${taxRatePercent}%)`,
         quantity: 1,
         unit: 'PERCENT',
         unitPrice: taxAmount,
@@ -683,6 +729,7 @@ export class RentalPricingService {
       extraDistanceCharge,
       driverFee,
       addonsTotal,
+      deliveryFee,
       discountAmount,
       taxableAmount,
       taxAmount,
@@ -948,14 +995,14 @@ export class RentalPricingService {
     }
 
     // Taxes
-    const taxRatePercent = Number(snapshot.taxRatePercent ?? 8);
+    const taxRatePercent = Number(snapshot.taxRatePercent ?? env.TAX_RATE_PERCENT);
     const taxableSubtotal = this.roundMoney(baseRental + extraKmCharge + lateFee);
     const taxAmount = this.roundMoney((taxableSubtotal * taxRatePercent) / 100);
 
     if (taxAmount > 0) {
       lineItems.push({
         lineType: 'tax',
-        description: `Sales Tax / GST (${taxRatePercent}%)`,
+        description: `${env.TAX_LABEL} (${taxRatePercent}%)`,
         quantity: 1,
         unit: 'PERCENT',
         unitPrice: taxAmount,

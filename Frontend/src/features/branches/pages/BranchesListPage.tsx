@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { branchApi } from '../api/branchApi';
 import type { Branch, CreateBranchPayload } from '../api/branchApi';
 import {
@@ -16,9 +17,11 @@ import {
   PageContainer,
   PageHeader,
   Modal,
+  alertDialog,
 } from '../../../components/common';
 
 export function BranchesListPage() {
+  const { t } = useTranslation();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -70,7 +73,7 @@ export function BranchesListPage() {
         loadBranches();
       }
     } catch (err) {
-      alert('Failed to register new branch');
+      void alertDialog({ title: t('common.errorTitle'), message: t('adminPages.branches.errCreate'), variant: 'danger', confirmText: t('common.actions.close') });
     } finally {
       setSubmitting(false);
     }
@@ -80,11 +83,11 @@ export function BranchesListPage() {
     <PageContainer>
       {/* Header */}
       <PageHeader
-        title="Operational Branches & Hubs"
-        subtitle="Manage physical pick-up and drop-off stations, terminal logistics, and localized fleet allocations."
+        title={t('adminPages.branches.title')}
+        subtitle={t('adminPages.branches.subtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Branches' },
+          { label: t('adminPages.branches.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.branches.crumb') },
         ]}
         actions={
           <button
@@ -105,7 +108,7 @@ export function BranchesListPage() {
             }}
           >
             <Plus size={18} />
-            <span>Add New Branch</span>
+            <span>{t('adminPages.branches.add')}</span>
           </button>
         }
       />
@@ -114,7 +117,7 @@ export function BranchesListPage() {
       {loading ? (
         <div style={{ padding: '80px', textAlign: 'center', color: '#685D73' }}>
           <RotateCcw size={28} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-          <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading branch facilities...</div>
+          <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.branches.loading')}</div>
         </div>
       ) : (
         <div
@@ -171,7 +174,7 @@ export function BranchesListPage() {
                           borderRadius: '4px',
                         }}
                       >
-                        CODE: {b.code}
+                        {t('adminPages.branches.codeLabel')} {b.code}
                       </span>
                     </div>
                   </div>
@@ -190,14 +193,14 @@ export function BranchesListPage() {
                     }}
                   >
                     <CheckCircle2 size={12} />
-                    Active Hub
+                    {t('adminPages.branches.active')}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', color: '#685D73', marginTop: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <MapPin size={16} color="#1E0426" />
-                    <span>{b.address || 'Address on file'}, {b.city}</span>
+                    <span>{b.address || t('adminPages.branches.addressOnFile')}, {b.city}</span>
                   </div>
                   {b.phone && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -229,7 +232,7 @@ export function BranchesListPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 700, color: '#1E0426' }}>
                   <Car size={16} color="#FAB826" />
-                  <span>{b._count?.vehicles || 0} Vehicles Stationed</span>
+                  <span>{t('adminPages.branches._vehicles', { count: b._count?.vehicles || 0 })}</span>
                 </div>
               </div>
             </div>
@@ -242,20 +245,20 @@ export function BranchesListPage() {
         <Modal
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
-          title="Add New Operational Branch"
-          subtitle="Register a new physical pick-up and drop-off facility."
+          title={t('adminPages.branches.addTitle')}
+          subtitle={t('adminPages.branches.addSubtitle')}
           maxWidth="560px"
         >
           <form onSubmit={handleCreateBranch} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
-                  Branch Name *
+                  {t('adminPages.branches.fieldName')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. West Coast Hub"
+                  placeholder={t('adminPages.branches.placeholderName')}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   style={{
@@ -271,12 +274,12 @@ export function BranchesListPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
-                  Code *
+                  {t('adminPages.branches.fieldCode')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. WCH-01"
+                  placeholder={t('adminPages.branches.placeholderCode')}
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   style={{
@@ -294,12 +297,12 @@ export function BranchesListPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
-                  City *
+                  {t('adminPages.branches.fieldCity')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. San Francisco"
+                  placeholder={t('adminPages.branches.placeholderCity')}
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   style={{
@@ -315,7 +318,7 @@ export function BranchesListPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
-                  Phone Number
+                  {t('adminPages.branches.fieldPhone')}
                 </label>
                 <input
                   type="text"
@@ -336,11 +339,11 @@ export function BranchesListPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
-                Street Address
+                {t('adminPages.branches.fieldAddress')}
               </label>
               <input
                 type="text"
-                placeholder="e.g. 450 Airport Concourse Way, Bay 3"
+                placeholder={t('adminPages.branches.placeholderAddress')}
                 value={formData.address || ''}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 style={{
@@ -356,7 +359,7 @@ export function BranchesListPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
-                Operating Schedule
+                {t('adminPages.branches.fieldHours')}
               </label>
               <input
                 type="text"
@@ -386,7 +389,7 @@ export function BranchesListPage() {
                   fontWeight: 600,
                 }}
               >
-                Cancel
+                {t('adminPages.branches.cancel')}
               </button>
               <button
                 type="submit"
@@ -401,7 +404,7 @@ export function BranchesListPage() {
                   cursor: submitting ? 'not-allowed' : 'pointer',
                 }}
               >
-                {submitting ? 'Creating...' : 'Register Hub'}
+                {submitting ? t('adminPages.branches.creating') : t('adminPages.branches.create')}
               </button>
             </div>
           </form>

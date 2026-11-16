@@ -42,6 +42,7 @@ import yellowCar from '../../../assets/cars/finovo-yellow-car.webp';
 import greenCar from '../../../assets/cars/finovo-green-car.webp';
 import bmwLogo from '../../../assets/cars/finovo-bmw-logo.webp';
 import lamboLogo from '../../../assets/cars/finovo-lamborghini-logo.webp';
+import { useTranslation } from 'react-i18next';
 
 function getFleetCarAssets(v: Vehicle) {
   const resolved = getCarImage(v);
@@ -65,6 +66,7 @@ function getFleetCarAssets(v: Vehicle) {
 
 
 export function CarsDirectoryPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { confirm } = useConfirm();
 
@@ -173,20 +175,20 @@ export function CarsDirectoryPage() {
     try {
       if (v.status === 'ARCHIVED') {
         const ok = await confirm({
-          title: `Restore ${v.brand} ${v.model}?`,
-          message: 'This will restore the vehicle back to active fleet directory and make it eligible for customer bookings.',
-          confirmText: 'Restore Vehicle',
-          cancelText: 'Cancel',
+          title: t('adminPages.fleet._restoreTitle', { name: `${v.brand} ${v.model}` }),
+          message: t('adminPages.fleet.restoreMessage'),
+          confirmText: t('adminPages.fleet.restoreVehicle'),
+          cancelText: t('adminPages.fleet.cancel'),
           variant: 'success',
         });
         if (!ok) return;
         await fleetApi.restoreVehicle(v.id);
       } else {
         const ok = await confirm({
-          title: `Archive ${v.brand} ${v.model}?`,
-          message: 'This will verify no active bookings exist and hide it from customer listings. You can restore it anytime.',
-          confirmText: 'Archive Vehicle',
-          cancelText: 'Cancel',
+          title: t('adminPages.fleet._archiveTitle', { name: `${v.brand} ${v.model}` }),
+          message: t('adminPages.fleet.archiveMessage'),
+          confirmText: t('adminPages.fleet.archiveVehicle'),
+          cancelText: t('adminPages.fleet.cancel'),
           variant: 'warning',
         });
         if (!ok) return;
@@ -195,8 +197,8 @@ export function CarsDirectoryPage() {
       await loadData();
    } catch (err: any) {
   await confirm({
-    title: 'Operation Failed',
-    message: err.message || 'Unable to complete the vehicle operation. Please try again.',
+    title: t('adminPages.fleet.operationFailed'),
+    message: err.message || t('adminPages.fleet.operationFailedMessage'),
     confirmText: 'OK',
     cancelText: '',
     variant: 'danger',
@@ -206,12 +208,12 @@ export function CarsDirectoryPage() {
 
   const handleDeleteWithConfirm = async (v: Vehicle) => {
     const ok = await confirm({
-      title: `Delete ${v.brand} ${v.model}?`,
-      message: 'Are you sure you want to permanently remove this vehicle from active fleet management? This will preserve historical rental contracts while archiving the car.',
-      confirmText: 'Delete Vehicle',
-      cancelText: 'Keep Vehicle',
+      title: t('adminPages.fleet._deleteCarTitle', { name: `${v.brand} ${v.model}` }),
+      message: t('adminPages.fleet.deleteCarMessage'),
+      confirmText: t('adminPages.fleet.deleteVehicle'),
+      cancelText: t('adminPages.fleet.keepVehicle'),
       variant: 'danger',
-      note: 'Active rentals or reservations must be completed before removal.',
+      note: t('adminPages.fleet.deleteCarNote'),
     });
     if (!ok) return;
     await handleDelete(v.id);
@@ -227,11 +229,11 @@ export function CarsDirectoryPage() {
     <PageContainer>
       {/* ================= HEADER ROW ================= */}
       <PageHeader
-        title="Fleet Directory"
-        subtitle="Manage your luxury vehicle fleet, track live availability, and onboard new vehicles."
+        title={t('adminPages.fleet.directoryTitle')}
+        subtitle={t('adminPages.fleet.directorySubtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Fleet' },
+          { label: t('adminPages.fleet.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.fleet.fleet') },
         ]}
         actions={
           <Link
@@ -260,7 +262,7 @@ export function CarsDirectoryPage() {
             }}
           >
             <Plus size={16} strokeWidth={2.5} />
-            <span>Add Car</span>
+            <span>{t('adminPages.fleet.addCar')}</span>
           </Link>
         }
       />
@@ -270,37 +272,37 @@ export function CarsDirectoryPage() {
       <StatGrid columns={6} style={{ marginBottom: '28px' }}>
         <StatCard
           icon={Car}
-          label="Total Fleet"
+          label={t('adminPages.fleet.totalFleet')}
           value={metrics.total}
           variant="purple"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Available"
+          label={t('adminPages.fleet.available')}
           value={metrics.available}
           variant="green"
         />
         <StatCard
           icon={Clock}
-          label="Rented"
+          label={t('adminPages.fleet.rented')}
           value={metrics.rented}
           variant="blue"
         />
         <StatCard
           icon={Wrench}
-          label="Maintenance"
+          label={t('adminPages.fleet.maintenance')}
           value={metrics.maintenance}
           variant="amber"
         />
         <StatCard
           icon={Shield}
-          label={dashboardStats.expiredDocuments > 0 ? `${dashboardStats.expiredDocuments} Exp. Docs` : 'Expiring Docs'}
+          label={dashboardStats.expiredDocuments > 0 ? t('adminPages.fleet._expiredDocs', { count: dashboardStats.expiredDocuments }) : t('adminPages.fleet.expiringDocs')}
           value={dashboardStats.expiredDocuments + dashboardStats.expiringSoonDocuments}
           variant={dashboardStats.expiredDocuments > 0 ? 'red' : dashboardStats.expiringSoonDocuments > 0 ? 'amber' : 'green'}
         />
         <StatCard
           icon={AlertTriangle}
-          label="Service Due"
+          label={t('adminPages.fleet.serviceDue')}
           value={dashboardStats.maintenanceDue}
           variant={dashboardStats.maintenanceDue > 0 ? 'amber' : 'purple'}
         />
@@ -341,7 +343,7 @@ export function CarsDirectoryPage() {
             <Search size={16} color="#8A7090" style={{ position: 'absolute', left: '14px' }} />
             <input
               type="text"
-              placeholder="Search by brand, model, or registration number..."
+              placeholder={t('adminPages.fleet.searchCars')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -370,7 +372,7 @@ export function CarsDirectoryPage() {
                   setPage(1);
                 }}
                 options={[
-                  { value: 'ALL', label: 'All Categories' },
+                  { value: 'ALL', label: t('adminPages.fleet.allCategories') },
                   ...categories.map((c) => ({ value: c.slug, label: c.name })),
                 ]}
                 size="sm"
@@ -389,12 +391,12 @@ export function CarsDirectoryPage() {
                   setPage(1);
                 }}
                 options={[
-                  { value: 'ALL', label: 'All Statuses' },
-                  { value: 'AVAILABLE', label: 'Available', badge: 'Active', badgeColor: '#DEF7EC' },
-                  { value: 'RENTED', label: 'On Rental', badge: 'Busy', badgeColor: '#FEF3C7' },
-                  { value: 'MAINTENANCE', label: 'In Service', badge: 'Maint', badgeColor: '#FEE2E2' },
-                  { value: 'RESERVED', label: 'Reserved', badge: 'Hold', badgeColor: '#DBEAFE' },
-                  { value: 'ARCHIVED', label: 'Archived', badge: 'Hidden', badgeColor: '#F3F4F6' },
+                  { value: 'ALL', label: t('adminPages.fleet.allStatuses') },
+                  { value: 'AVAILABLE', label: t('adminPages.fleet.available'), badge: t('adminPages.fleet.active'), badgeColor: '#DEF7EC' },
+                  { value: 'RENTED', label: t('adminPages.fleet.onRental'), badge: t('adminPages.fleet.busy'), badgeColor: '#FEF3C7' },
+                  { value: 'MAINTENANCE', label: t('adminPages.fleet.inService'), badge: t('adminPages.fleet.maintShort'), badgeColor: '#FEE2E2' },
+                  { value: 'RESERVED', label: t('adminPages.fleet.reserved'), badge: t('adminPages.fleet.hold'), badgeColor: '#DBEAFE' },
+                  { value: 'ARCHIVED', label: t('adminPages.fleet.archived'), badge: t('adminPages.fleet.hidden'), badgeColor: '#F3F4F6' },
                 ]}
                 size="sm"
                 fullWidth
@@ -424,7 +426,7 @@ export function CarsDirectoryPage() {
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
             >
               <RotateCcw size={14} />
-              <span>Reset</span>
+              <span>{t('adminPages.fleet.reset')}</span>
             </button>
 
             {/* View Toggle (Desktop Only) */}
@@ -461,7 +463,7 @@ export function CarsDirectoryPage() {
                   }}
                 >
                   <List size={15} />
-                  <span>Table</span>
+                  <span>{t('adminPages.fleet.table')}</span>
                 </button>
                 <button
                   type="button"
@@ -483,7 +485,7 @@ export function CarsDirectoryPage() {
                   }}
                 >
                   <LayoutGrid size={15} />
-                  <span>Grid</span>
+                  <span>{t('adminPages.fleet.grid')}</span>
                 </button>
               </div>
             )}
@@ -513,13 +515,13 @@ export function CarsDirectoryPage() {
                   <th style={{ width: '40px', padding: '14px 16px' }}>
                     <input type="checkbox" style={{ accentColor: '#6C1E84', cursor: 'pointer' }} />
                   </th>
-                  <th style={{ padding: '14px 16px' }}>Car</th>
-                  <th style={{ padding: '14px 16px' }}>Category</th>
-                  <th style={{ padding: '14px 16px' }}>Year</th>
-                  <th style={{ padding: '14px 16px' }}>Registration</th>
-                  <th style={{ padding: '14px 16px' }}>Pricing</th>
-                  <th style={{ padding: '14px 16px' }}>Status</th>
-                  <th style={{ padding: '14px 16px', textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 16px' }}>{t('adminPages.fleet.car')}</th>
+                  <th style={{ padding: '14px 16px' }}>{t('adminPages.fleet.category')}</th>
+                  <th style={{ padding: '14px 16px' }}>{t('adminPages.fleet.year')}</th>
+                  <th style={{ padding: '14px 16px' }}>{t('adminPages.fleet.registration')}</th>
+                  <th style={{ padding: '14px 16px' }}>{t('adminPages.fleet.pricing')}</th>
+                  <th style={{ padding: '14px 16px' }}>{t('adminPages.fleet.status')}</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'right' }}>{t('adminPages.fleet.actions')}</th>
                 </tr>
               </thead>
 
@@ -575,7 +577,7 @@ export function CarsDirectoryPage() {
 
                     {/* Category */}
                     <td style={{ padding: '16px', color: '#4A3D4E', fontWeight: 500 }}>
-                      {v.category?.name || 'Sedan'}
+                      {v.category?.name || t('adminPages.fleet._body_Sedan')}
                     </td>
 
                     {/* Year */}
@@ -590,7 +592,7 @@ export function CarsDirectoryPage() {
 
                     {/* Pricing */}
                     <td style={{ padding: '16px', fontWeight: 700, color: '#1A0322' }}>
-                      {formatMoney(resolveVehiclePricing(v).dailyRate, resolveVehiclePricing(v).currency)} / day
+                      {t('adminPages.fleet._perDayAmount', { amount: formatMoney(resolveVehiclePricing(v).dailyRate, resolveVehiclePricing(v).currency) })}
                     </td>
 
                     {/* Status Badge */}
@@ -603,7 +605,7 @@ export function CarsDirectoryPage() {
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/cars/${v.id}`)}
-                          title="View Car Details"
+                          title={t('adminPages.fleet.viewCarDetails')}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -633,7 +635,7 @@ export function CarsDirectoryPage() {
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/cars/${v.id}/edit`)}
-                          title="Edit Car"
+                          title={t('adminPages.fleet.editCar')}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -663,7 +665,7 @@ export function CarsDirectoryPage() {
                         <button
                           type="button"
                           onClick={() => handleArchiveToggle(v)}
-                          title={v.status === 'ARCHIVED' ? 'Restore to Fleet' : 'Archive Vehicle'}
+                          title={v.status === 'ARCHIVED' ? t('adminPages.fleet.restoreToFleet') : t('adminPages.fleet.archiveVehicle')}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -693,7 +695,7 @@ export function CarsDirectoryPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteWithConfirm(v)}
-                          title="Delete Car"
+                          title={t('adminPages.fleet.deleteCar')}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -720,7 +722,7 @@ export function CarsDirectoryPage() {
                 {vehicles.length === 0 && (
                   <tr>
                     <td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: '#8A7090' }}>
-                      {isLoading ? 'Loading vehicles...' : 'No vehicles found matching current criteria.'}
+                      {isLoading ? t('adminPages.fleet.loadingCars') : t('adminPages.fleet.noCars')}
                     </td>
                   </tr>
                 )}
@@ -821,7 +823,7 @@ export function CarsDirectoryPage() {
                           boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                         }}
                       >
-                        {v.category?.name || 'Luxury'}
+                        {v.category?.name || t('adminPages.fleet.luxury')}
                       </span>
                     </div>
 
@@ -914,7 +916,7 @@ export function CarsDirectoryPage() {
                             letterSpacing: '0.04em',
                           }}
                         >
-                          Plate: {v.registrationNumber}
+                          {t('adminPages.fleet.plate')} {v.registrationNumber}
                         </span>
                         {v.trim && (
                           <span style={{ fontSize: '0.75rem', color: '#8A7090', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -949,7 +951,7 @@ export function CarsDirectoryPage() {
                         }}
                       >
                         <Users size={13} color="#6C1E84" />
-                        <span style={{ fontWeight: 600 }}>{v.seats || 5} Seats</span>
+                        <span style={{ fontWeight: 600 }}>{v.seats || 5} {t('adminPages.fleet.seats')}</span>
                       </div>
 
                       <div
@@ -967,7 +969,7 @@ export function CarsDirectoryPage() {
                       >
                         <Fuel size={13} color="#6C1E84" />
                         <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>
-                          {(v.fuelType || 'Petrol').toLowerCase()}
+                          {t(`adminPages.fleet._fuel_${(v.fuelType || 'PETROL').toUpperCase()}`, { defaultValue: (v.fuelType || 'Petrol').toLowerCase() })}
                         </span>
                       </div>
 
@@ -985,7 +987,7 @@ export function CarsDirectoryPage() {
                         }}
                       >
                         <DoorOpen size={13} color="#6C1E84" />
-                        <span style={{ fontWeight: 600 }}>{v.doors || 4} Doors</span>
+                        <span style={{ fontWeight: 600 }}>{v.doors || 4} {t('adminPages.fleet.doors')}</span>
                       </div>
                     </div>
 
@@ -1003,13 +1005,13 @@ export function CarsDirectoryPage() {
                     >
                       <div>
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          Daily Rate
+                          {t('adminPages.fleet.dailyRate')}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
                           <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1A0322', lineHeight: 1.1 }}>
                             {formatMoney(resolveVehiclePricing(v).dailyRate, resolveVehiclePricing(v).currency)}
                           </span>
-                          <span style={{ fontSize: '0.78rem', color: '#8A7090' }}>/ day</span>
+                          <span style={{ fontSize: '0.78rem', color: '#8A7090' }}>{t('adminPages.fleet.perDay')}</span>
                         </div>
                       </div>
 
@@ -1018,7 +1020,7 @@ export function CarsDirectoryPage() {
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/cars/${v.id}`)}
-                          title="View Details"
+                          title={t('adminPages.fleet.viewDetails')}
                           style={{
                             backgroundColor: '#1E0426',
                             border: 'none',
@@ -1037,13 +1039,13 @@ export function CarsDirectoryPage() {
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1E0426')}
                         >
                           <Eye size={13} />
-                          <span>View</span>
+                          <span>{t('adminPages.fleet.view')}</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/cars/${v.id}/edit`)}
-                          title="Edit Car"
+                          title={t('adminPages.fleet.editCar')}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -1072,7 +1074,7 @@ export function CarsDirectoryPage() {
                         <button
                           type="button"
                           onClick={() => handleArchiveToggle(v)}
-                          title={v.status === 'ARCHIVED' ? 'Restore Car' : 'Archive Car'}
+                          title={v.status === 'ARCHIVED' ? t('adminPages.fleet.restoreCar') : t('adminPages.fleet.archiveCar')}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -1101,7 +1103,7 @@ export function CarsDirectoryPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteWithConfirm(v)}
-                          title="Delete Car"
+                          title={t('adminPages.fleet.deleteCar')}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -1139,7 +1141,7 @@ export function CarsDirectoryPage() {
                   border: '1px dashed #E5DFE7',
                 }}
               >
-                {isLoading ? 'Loading vehicles...' : 'No vehicles found matching current criteria.'}
+                {isLoading ? t('adminPages.fleet.loadingCars') : t('adminPages.fleet.noCars')}
               </div>
             )}
           </div>
@@ -1159,7 +1161,7 @@ export function CarsDirectoryPage() {
           }}
         >
           <div>
-            Showing 1 to {vehicles.length} of {totalVehicles} cars
+            {t('adminPages.fleet._showingCars', { shown: vehicles.length, total: totalVehicles })}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

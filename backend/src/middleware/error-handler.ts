@@ -7,7 +7,7 @@ import { AppError } from '../shared/errors/app-error';
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   // Handle Zod validation errors
   if (err instanceof ZodError) {
-    const formattedErrors = err.errors.map((e) => ({
+    const formattedErrors = err.issues.map((e) => ({
       field: e.path.join('.'),
       message: e.message,
     }));
@@ -16,7 +16,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
-        message: err.errors[0]?.message || 'Input validation failed',
+        message: err.issues[0]?.message || 'Input validation failed',
         details: formattedErrors,
       },
     });

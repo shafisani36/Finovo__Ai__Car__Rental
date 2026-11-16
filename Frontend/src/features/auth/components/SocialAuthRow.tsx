@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next';
+import { alertDialog } from '../../../components/common';
+
 interface SocialAuthRowProps {
   label?: string;
   onSocialClick?: (provider: string) => void;
@@ -7,11 +10,19 @@ export function SocialAuthRow({
   label = 'or continue with',
   onSocialClick,
 }: SocialAuthRowProps) {
+  const { t } = useTranslation();
+
   const handleClick = (provider: string) => {
     if (onSocialClick) {
       onSocialClick(provider);
     } else {
-      alert(`Social login with ${provider} is ready for OAuth credentials configuration.`);
+      // Sign-in with this provider is not connected yet (it needs the provider's OAuth keys)
+      void alertDialog({
+        title: t('auth.socialSoonTitle', { provider }),
+        message: t('auth.socialSoonText', { provider }),
+        variant: 'info',
+        confirmText: t('common.actions.close'),
+      });
     }
   };
 

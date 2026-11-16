@@ -4,6 +4,7 @@ import type {
   BookingAddon,
   BookingAddonCode,
   QuoteAvailability,
+  QuoteExtras,
   QuoteResult,
 } from '../features/bookings/api/bookingApi';
 
@@ -23,7 +24,8 @@ export function useBookingQuote(
   vehicleId: string | null | undefined,
   pickupDateTime: string | null,
   returnDateTime: string | null,
-  addons: BookingAddonCode[]
+  addons: BookingAddonCode[],
+  extras: QuoteExtras = {}
 ): BookingQuoteState {
   const [state, setState] = useState<BookingQuoteState>({
     quote: null,
@@ -33,6 +35,10 @@ export function useBookingQuote(
     error: null,
   });
   const addonsKey = [...addons].sort().join(',');
+  const promoCode = extras.promoCode?.trim() || '';
+  const points = extras.points && extras.points > 0 ? Math.floor(extras.points) : 0;
+  const deliveryAddress = extras.deliveryAddress?.trim() || '';
+  const collectionAddress = extras.collectionAddress?.trim() || '';
 
   useEffect(() => {
     if (!vehicleId || !pickupDateTime || !returnDateTime) {
@@ -61,6 +67,10 @@ export function useBookingQuote(
           pickupDateTime,
           returnDateTime,
           ...(addonsKey ? { addons: addonsKey } : {}),
+          ...(promoCode ? { promoCode } : {}),
+          ...(points ? { points } : {}),
+          ...(deliveryAddress ? { deliveryAddress } : {}),
+          ...(collectionAddress ? { collectionAddress } : {}),
         });
         if (!active) return;
         setState({
@@ -86,7 +96,7 @@ export function useBookingQuote(
       active = false;
       window.clearTimeout(timer);
     };
-  }, [vehicleId, pickupDateTime, returnDateTime, addonsKey]);
+  }, [vehicleId, pickupDateTime, returnDateTime, addonsKey, promoCode, points, deliveryAddress, collectionAddress]);
 
   return state;
 }

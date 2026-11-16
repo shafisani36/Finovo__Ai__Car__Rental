@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { auditLogApi } from '../api/auditLogApi';
 import type { SecurityAuditLog } from '../api/auditLogApi';
 import {
@@ -14,6 +15,7 @@ import {
 } from '../../../components/common';
 
 export function AuditLogsPage() {
+  const { t, i18n } = useTranslation();
   const [logs, setLogs] = useState<SecurityAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,11 +67,11 @@ export function AuditLogsPage() {
     <PageContainer>
       {/* Header */}
       <PageHeader
-        title="Security & Operational Audit Trail"
-        subtitle="Immutable system activity stream logging authentication sessions, vehicle dispatches, AI inspection reviews, and state mutations."
+        title={t('adminPages.audit.title')}
+        subtitle={t('adminPages.audit.subtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Audit Trail' },
+          { label: t('adminPages.audit.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.audit.crumb') },
         ]}
       />
 
@@ -102,7 +104,7 @@ export function AuditLogsPage() {
           <Search size={18} color="#685D73" />
           <input
             type="text"
-            placeholder="Search by event, actor email, or IP address..."
+            placeholder={t('adminPages.audit.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -133,7 +135,7 @@ export function AuditLogsPage() {
           }}
         >
           <RotateCcw size={14} />
-          <span>Refresh Feed</span>
+          <span>{t('adminPages.audit.refresh')}</span>
         </button>
       </div>
 
@@ -149,23 +151,23 @@ export function AuditLogsPage() {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <RotateCcw size={24} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading security audit logs...</div>
+            <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.audit.loading')}</div>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <ShieldCheck size={40} color="#D1D5DB" style={{ marginBottom: '12px' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>No audit events found</div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>{t('adminPages.audit.empty')}</div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#685D73' }}>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Event Name</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Actor / Account</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Timestamp</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Network / IP</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>Metadata</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.audit.colEvent')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.audit.colActor')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.audit.colTime')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.audit.colIp')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>{t('adminPages.audit.colMeta')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,7 +207,7 @@ export function AuditLogsPage() {
                           </div>
                         ) : (
                           <span style={{ fontSize: '0.8125rem', color: '#685D73', fontStyle: 'italic' }}>
-                            System Daemon / Unauthenticated
+                            {t('adminPages.audit.system')}
                           </span>
                         )}
                       </td>
@@ -249,10 +251,10 @@ export function AuditLogsPage() {
                             }}
                           >
                             <FileCode size={13} />
-                            <span>Payload</span>
+                            <span>{t('adminPages.audit.payload')}</span>
                           </button>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>None</span>
+                          <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>{t('adminPages.audit.none')}</span>
                         )}
                       </td>
                     </tr>
@@ -270,7 +272,7 @@ export function AuditLogsPage() {
           isOpen={!!selectedLog}
           onClose={() => setSelectedLog(null)}
           title={`${selectedLog.event} Payload`}
-          subtitle={`Logged at ${new Date(selectedLog.createdAt).toLocaleString()}`}
+          subtitle={t('adminPages.audit._loggedAt', { date: new Date(selectedLog.createdAt).toLocaleString(i18n.language) })}
           maxWidth="560px"
         >
           <pre
@@ -309,7 +311,7 @@ export function AuditLogsPage() {
                 cursor: 'pointer',
               }}
             >
-              Close
+              {t('adminPages.audit.close')}
             </button>
           </div>
         </Modal>

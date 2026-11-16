@@ -6,7 +6,8 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthResponse>;
-  register: (fullName: string, email: string, password: string) => Promise<AuthResponse>;
+  /** referralCode is the optional invite code of the friend who referred the new customer */
+  register: (fullName: string, email: string, password: string, referralCode?: string) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
   verifyResetCode: (email: string, code: string) => Promise<boolean>;

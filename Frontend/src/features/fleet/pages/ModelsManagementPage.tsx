@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   Tag,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { alertDialog } from '../../../components/common';
 
 const BODY_TYPES = [
   'Sedan', 'SUV', 'Coupe', 'Convertible', 'Hatchback',
@@ -654,6 +656,7 @@ const cardStyles = `
 `;
 
 export function ModelsManagementPage() {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialBrandId = searchParams.get('brandId') || 'ALL';
   const { confirm } = useConfirm();
@@ -676,6 +679,8 @@ export function ModelsManagementPage() {
   const [modelBrandId, setModelBrandId] = useState('');
   const [modelName, setModelName] = useState('');
   const [modelBodyType, setModelBodyType] = useState('Sedan');
+  // Body types are stored in English; only the label is translated
+  const bodyLabel = (bodyType: string) => t(`adminPages.fleet._body_${bodyType}`, { defaultValue: bodyType });
   const [modelIsActive, setModelIsActive] = useState(true);
   const [isSavingModel, setIsSavingModel] = useState(false);
   const [notification, setNotification] = useState<{
@@ -801,56 +806,56 @@ export function ModelsManagementPage() {
           bodyType: modelBodyType,
           isActive: modelIsActive,
         });
-        showNotification(`Model "${modelName.trim()}" updated successfully`);
+        showNotification(t('adminPages.fleet._modelUpdated', { name: modelName.trim() }));
       } else {
         await fleetApi.createModel({
           name: modelName.trim(),
           brandId: modelBrandId,
           bodyType: modelBodyType,
         });
-        showNotification(`Model "${modelName.trim()}" created successfully`);
+        showNotification(t('adminPages.fleet._modelCreated', { name: modelName.trim() }));
       }
 
       setIsModelModalOpen(false);
       await loadModels();
       await loadBrands();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save model');
+      void alertDialog({ title: t('common.errorTitle'), message: err instanceof Error ? err.message : t('adminPages.fleet.errSaveModel'), variant: 'danger', confirmText: t('common.actions.close') });
     } finally {
       setIsSavingModel(false);
     }
   };
 
   const handleDeleteModel = async (model: VehicleModelItem) => {
-    const brandName = model.brand?.name || 'Brand';
+    const brandName = model.brand?.name || t('adminPages.fleet.brand');
     const ok = await confirm({
-      title: `Delete Model: ${model.name}?`,
-      message: `Are you sure you want to delete "${model.name}" (${brandName})? This will permanently remove this model specification from your fleet options.`,
-      confirmText: 'Delete Model',
-      cancelText: 'Cancel',
+      title: t('adminPages.fleet._deleteModelTitle', { name: model.name }),
+      message: t('adminPages.fleet._deleteModelMessage', { name: model.name, brand: brandName }),
+      confirmText: t('adminPages.fleet.deleteModel'),
+      cancelText: t('adminPages.fleet.cancel'),
       variant: 'danger',
     });
     if (!ok) return;
 
     try {
       await fleetApi.deleteModel(model.id);
-      showNotification(`Model "${model.name}" deleted successfully`);
+      showNotification(t('adminPages.fleet._modelDeleted', { name: model.name }));
       await loadModels();
       await loadBrands();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete model');
+      void alertDialog({ title: t('common.errorTitle'), message: err instanceof Error ? err.message : t('adminPages.fleet.errDeleteModel'), variant: 'danger', confirmText: t('common.actions.close') });
     }
   };
 
   const brandSelectOptions = useMemo(
     () => [
-      { value: 'ALL', label: 'All Brands' },
+      { value: 'ALL', label: t('adminPages.fleet.allBrands') },
       ...brands.map((brand) => ({
         value: brand.id,
         label: `${brand.name} (${brand.models?.length || 0})`,
       })),
     ],
-    [brands]
+    [brands, t]
   );
 
   const modalBrandOptions = useMemo(
@@ -860,20 +865,20 @@ export function ModelsManagementPage() {
 
   const bodyTypeFilterOptions = useMemo(
     () => [
-      { value: 'ALL', label: 'All Body Types' },
-      ...BODY_TYPES.map((bodyType) => ({ value: bodyType, label: bodyType })),
+      { value: 'ALL', label: t('adminPages.fleet.allBodyTypes') },
+      ...BODY_TYPES.map((bodyType) => ({ value: bodyType, label: t(`adminPages.fleet._body_${bodyType}`, { defaultValue: bodyType }) })),
     ],
-    []
+    [t]
   );
 
   const emptyMessage = brands.length === 0
-    ? 'You have not registered any brands yet. Please add a brand before creating models.'
+    ? t('adminPages.fleet.noBrandsForModels')
     : search.trim() ||
       selectedBrandFilter !== 'ALL' ||
       selectedBodyTypeFilter !== 'ALL' ||
       statusFilter !== 'ALL'
-      ? 'No models match your current filters. Try changing your filters or search term.'
-      : 'No vehicle models created yet. Click "Add Model" to configure model variants.';
+      ? t('adminPages.fleet.noModelMatch')
+      : t('adminPages.fleet.noModelsYet');
 
   return (
     <div className="models-page">
@@ -892,23 +897,23 @@ export function ModelsManagementPage() {
       )}
 
       <header>
-        <nav className="models-breadcrumb" aria-label="Breadcrumb">
+        <nav className="models-breadcrumb" aria-label={t('adminPages.fleet.breadcrumb')}>
           <Link to="/admin/dashboard" style={{ color: 'inherit', textDecoration: 'none' }}>
-            Dashboard
+            {t('adminPages.fleet.dashboard')}
           </Link>
           <ChevronRight size={14} />
           <Link to="/admin/cars" style={{ color: 'inherit', textDecoration: 'none' }}>
-            Fleet
+            {t('adminPages.fleet.fleet')}
           </Link>
           <ChevronRight size={14} />
-          <span style={{ color: '#1E0432', fontWeight: 750 }}>Models Directory</span>
+          <span style={{ color: '#1E0432', fontWeight: 750 }}>{t('adminPages.fleet.modelsDirectory')}</span>
         </nav>
 
         <div className="models-page-heading">
           <div style={{ minWidth: 0 }}>
-            <h1 className="models-page-title">Vehicle Models</h1>
+            <h1 className="models-page-title">{t('adminPages.fleet.modelsTitle')}</h1>
             <p className="models-page-description">
-              Configure specific car models, body styling, and default categories associated with each brand.
+              {t('adminPages.fleet.modelsSubtitle')}
             </p>
           </div>
 
@@ -916,15 +921,15 @@ export function ModelsManagementPage() {
             <Link to="/admin/brands" className="fleet-header-action-btn fleet-btn-secondary">
               <Building2 size={17} />
               <span className="fleet-btn-label">
-                <span className="label-full">Manage Brands</span>
-                <span className="label-short">Brands</span>
+                <span className="label-full">{t('adminPages.fleet.manageBrands')}</span>
+                <span className="label-short">{t('adminPages.fleet.brands')}</span>
               </span>
             </Link>
             <Link to="/admin/cars/new" className="fleet-header-action-btn fleet-btn-neutral">
               <Car size={17} />
               <span className="fleet-btn-label">
-                <span className="label-full">Add Vehicle</span>
-                <span className="label-short">Vehicle</span>
+                <span className="label-full">{t('adminPages.fleet.addVehicle')}</span>
+                <span className="label-short">{t('adminPages.fleet.vehicleShort')}</span>
               </span>
             </Link>
             <button
@@ -934,17 +939,17 @@ export function ModelsManagementPage() {
             >
               <Plus size={16} />
               <span className="fleet-btn-label">
-                <span className="label-full">Add Model</span>
-                <span className="label-short">Model</span>
+                <span className="label-full">{t('adminPages.fleet.addModel')}</span>
+                <span className="label-short">{t('adminPages.fleet.model')}</span>
               </span>
             </button>
           </div>
         </div>
       </header>
 
-      <section className="models-stats-grid" aria-label="Model statistics">
+      <section className="models-stats-grid" aria-label={t('adminPages.fleet.modelStats')}>
         <StatCard
-          label="Total Models"
+          label={t('adminPages.fleet.totalModels')}
           value={totalModelsCount}
           caption="Variants in registry"
           icon={<Layers size={23} />}
@@ -952,7 +957,7 @@ export function ModelsManagementPage() {
           iconBackground="rgba(250,184,38,.15)"
         />
         <StatCard
-          label="Active Models"
+          label={t('adminPages.fleet.activeModels')}
           value={activeModelsCount}
           caption="Eligible for inventory"
           icon={<CheckCircle2 size={23} />}
@@ -960,7 +965,7 @@ export function ModelsManagementPage() {
           iconBackground="rgba(16,185,129,.1)"
         />
         <StatCard
-          label="Brands Represented"
+          label={t('adminPages.fleet.brandsRepresented')}
           value={distinctBrandsCount}
           caption="Brands with models"
           icon={<Building2 size={23} />}
@@ -968,7 +973,7 @@ export function ModelsManagementPage() {
           iconBackground="rgba(30,4,50,.05)"
         />
         <StatCard
-          label="Body Styles"
+          label={t('adminPages.fleet.bodyStyles')}
           value={distinctBodyTypesCount}
           caption="Sedan, SUV, Coupe, etc."
           icon={<Car size={23} />}
@@ -977,16 +982,16 @@ export function ModelsManagementPage() {
         />
       </section>
 
-      <section className="fleet-filter-bar" aria-label="Model filters">
+      <section className="fleet-filter-bar" aria-label={t('adminPages.fleet.modelFilters')}>
         <div className="fleet-filter-search-box">
           <Search size={18} color="#8A7090" className="fleet-filter-search-icon" />
           <input
             type="search"
-            placeholder="Search models by name or body style..."
+            placeholder={t('adminPages.fleet.searchModels')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="fleet-filter-search-input"
-            aria-label="Search vehicle models"
+            aria-label={t('adminPages.fleet.searchModelsAria')}
           />
         </div>
 
@@ -1019,9 +1024,9 @@ export function ModelsManagementPage() {
                 value={statusFilter}
                 onChange={(value) => setStatusFilter(value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
                 options={[
-                  { value: 'ALL', label: 'All Status' },
-                  { value: 'ACTIVE', label: 'Active Only' },
-                  { value: 'INACTIVE', label: 'Inactive' },
+                  { value: 'ALL', label: t('adminPages.fleet.allStatus') },
+                  { value: 'ACTIVE', label: t('adminPages.fleet.activeOnly') },
+                  { value: 'INACTIVE', label: t('adminPages.fleet.inactive') },
                 ]}
                 size="sm"
                 fullWidth
@@ -1032,10 +1037,10 @@ export function ModelsManagementPage() {
                 value={sortBy}
                 onChange={(value) => setSortBy(value as 'NAME_ASC' | 'NAME_DESC' | 'BRAND_ASC' | 'NEWEST')}
                 options={[
-                  { value: 'BRAND_ASC', label: 'Sort: Brand (A-Z)' },
-                  { value: 'NAME_ASC', label: 'Sort: Model (A-Z)' },
-                  { value: 'NAME_DESC', label: 'Sort: Model (Z-A)' },
-                  { value: 'NEWEST', label: 'Sort: Recently Added' },
+                  { value: 'BRAND_ASC', label: t('adminPages.fleet.sortBrandAsc') },
+                  { value: 'NAME_ASC', label: t('adminPages.fleet.sortModelAsc') },
+                  { value: 'NAME_DESC', label: t('adminPages.fleet.sortModelDesc') },
+                  { value: 'NEWEST', label: t('adminPages.fleet.sortRecent') },
                 ]}
                 size="sm"
                 fullWidth
@@ -1045,15 +1050,15 @@ export function ModelsManagementPage() {
 
           <div className="fleet-filter-actions">
             <span className="fleet-filter-count-badge">
-              {processedModels.length} {processedModels.length === 1 ? 'model' : 'models'}
+              {t('adminPages.counts.models', { count: processedModels.length })}
             </span>
             {!isMobile && (
-              <div className="fleet-view-toggle" aria-label="View mode">
+              <div className="fleet-view-toggle" aria-label={t('adminPages.fleet.viewMode')}>
                 <button
                   type="button"
                   onClick={() => setViewMode('table')}
-                  title="Table View"
-                  aria-label="Table view"
+                  title={t('adminPages.fleet.tableView')}
+                  aria-label={t('adminPages.fleet.tableViewAria')}
                   aria-pressed={viewMode === 'table'}
                   className={`fleet-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
                 >
@@ -1062,8 +1067,8 @@ export function ModelsManagementPage() {
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
-                  title="Grid Card View"
-                  aria-label="Grid card view"
+                  title={t('adminPages.fleet.gridView')}
+                  aria-label={t('adminPages.fleet.gridViewAria')}
                   aria-pressed={viewMode === 'grid'}
                   className={`fleet-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
                 >
@@ -1077,7 +1082,7 @@ export function ModelsManagementPage() {
 
       {isLoading ? (
         <div className="models-empty-state" role="status">
-          <div style={{ color: '#8A7090', fontWeight: 650 }}>Loading vehicle models...</div>
+          <div style={{ color: '#8A7090', fontWeight: 650 }}>{t('adminPages.fleet.loadingModels')}</div>
         </div>
       ) : processedModels.length === 0 ? (
         <div className="models-empty-state">
@@ -1097,14 +1102,14 @@ export function ModelsManagementPage() {
             <Layers size={29} />
           </div>
           <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1E0432', fontWeight: 800 }}>
-            No Models Found
+            {t('adminPages.fleet.noModels')}
           </h3>
           <p style={{ margin: '10px auto 0', color: '#6A5672', maxWidth: 440, fontSize: '.9rem', lineHeight: 1.6 }}>
             {emptyMessage}
           </p>
           {brands.length === 0 ? (
             <Link to="/admin/brands" className="models-primary-btn" style={{ marginTop: 18 }}>
-              <Plus size={16} /> Create First Brand
+              <Plus size={16} /> {t('adminPages.fleet.createFirstBrand')}
             </Link>
           ) : (
             <button
@@ -1113,7 +1118,7 @@ export function ModelsManagementPage() {
               className="models-primary-btn"
               style={{ marginTop: 18 }}
             >
-              <Plus size={16} /> Create First Model
+              <Plus size={16} /> {t('adminPages.fleet.createFirstModel')}
             </button>
           )}
         </div>
@@ -1123,12 +1128,12 @@ export function ModelsManagementPage() {
             <table className="models-table">
               <thead>
                 <tr>
-                  <th>Model Specification</th>
-                  <th>Manufacturer / Brand</th>
-                  <th>Body Style</th>
-                  <th>Slug</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th>{t('adminPages.fleet.modelSpec')}</th>
+                  <th>{t('adminPages.fleet.manufacturerBrand')}</th>
+                  <th>{t('adminPages.fleet.bodyStyle')}</th>
+                  <th>{t('adminPages.fleet.slugCol')}</th>
+                  <th>{t('adminPages.fleet.status')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('adminPages.fleet.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1157,7 +1162,7 @@ export function ModelsManagementPage() {
                             {model.name}
                           </div>
                           <div style={{ fontSize: '.77rem', color: '#8A7090', marginTop: 3 }}>
-                            Added {new Date(model.createdAt).toLocaleDateString()}
+                            {t('adminPages.fleet._added', { date: new Date(model.createdAt).toLocaleDateString(i18n.language) })}
                           </div>
                         </div>
                       </div>
@@ -1177,14 +1182,14 @@ export function ModelsManagementPage() {
                           >
                             <img
                               src={model.brand.logoUrl}
-                              alt={`${model.brand.name || 'Brand'} logo`}
+                              alt={t('adminPages.fleet._logoName', { name: model.brand.name || t('adminPages.fleet.brand') })}
                               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                             />
                           </div>
                         )}
                         <div>
                           <div style={{ fontWeight: 750, color: '#1E0432', fontSize: '.9rem' }}>
-                            {model.brand?.name || 'Unknown'}
+                            {model.brand?.name || t('adminPages.fleet.unknown')}
                           </div>
                           {model.brand?.country && (
                             <div style={{ fontSize: '.76rem', color: '#8A7090' }}>
@@ -1197,7 +1202,7 @@ export function ModelsManagementPage() {
                     <td>
                       <span className="model-body-badge" style={{ maxWidth: 'none' }}>
                         <Tag size={12} />
-                        {model.bodyType || 'Sedan'}
+                        {bodyLabel(model.bodyType || 'Sedan')}
                       </span>
                     </td>
                     <td>
@@ -1208,7 +1213,7 @@ export function ModelsManagementPage() {
                     <td>
                       <span className={`model-status ${model.isActive ? 'model-status-active' : 'model-status-inactive'}`}>
                         <span className="model-status-dot" />
-                        {model.isActive ? 'Active' : 'Inactive'}
+                        {model.isActive ? t('adminPages.fleet.active') : t('adminPages.fleet.inactive')}
                       </span>
                     </td>
                     <td>
@@ -1251,7 +1256,7 @@ export function ModelsManagementPage() {
                     {model.brand?.logoUrl ? (
                       <img
                         src={model.brand.logoUrl}
-                        alt={`${model.brand.name || 'Brand'} logo`}
+                        alt={t('adminPages.fleet._logoName', { name: model.brand.name || t('adminPages.fleet.brand') })}
                       />
                     ) : (
                       <Car size={23} />
@@ -1259,7 +1264,7 @@ export function ModelsManagementPage() {
                   </div>
                   <div className="model-card-heading">
                     <span className="model-card-brand">
-                      {model.brand?.name || 'Unknown Brand'}
+                      {model.brand?.name || t('adminPages.fleet.unknownBrand')}
                     </span>
                     <h3 className="model-card-name" title={model.name}>
                       {model.name}
@@ -1268,31 +1273,31 @@ export function ModelsManagementPage() {
                 </div>
                 <span className={`model-status ${model.isActive ? 'model-status-active' : 'model-status-inactive'}`}>
                   <span className="model-status-dot" />
-                  {model.isActive ? 'Active' : 'Inactive'}
+                  {model.isActive ? t('adminPages.fleet.active') : t('adminPages.fleet.inactive')}
                 </span>
               </div>
 
               <div className="model-card-details">
                 <div className="model-detail-row">
-                  <span className="model-detail-label">Body style</span>
+                  <span className="model-detail-label">{t('adminPages.fleet.bodyStyleLower')}</span>
                   <span className="model-body-badge">
                     <Tag size={13} />
-                    {model.bodyType || 'Sedan'}
+                    {bodyLabel(model.bodyType || 'Sedan')}
                   </span>
                 </div>
                 <div className="model-detail-row">
-                  <span className="model-detail-label">Model slug</span>
+                  <span className="model-detail-label">{t('adminPages.fleet.modelSlug')}</span>
                   <code className="model-slug" title={model.slug}>{model.slug}</code>
                 </div>
                 <div className="model-detail-row">
-                  <span className="model-detail-label">Date added</span>
+                  <span className="model-detail-label">{t('adminPages.fleet.dateAdded')}</span>
                   <span className="model-created-date">
                     {new Date(model.createdAt).toLocaleDateString()}
                   </span>
                 </div>
                 {model.brand?.country && (
                   <div className="model-detail-row">
-                    <span className="model-detail-label">Country</span>
+                    <span className="model-detail-label">{t('adminPages.fleet.countryShort')}</span>
                     <span className="model-created-date">{model.brand.country}</span>
                   </div>
                 )}
@@ -1304,7 +1309,7 @@ export function ModelsManagementPage() {
                   onClick={() => handleOpenEditModel(model)}
                   className="model-edit-btn"
                 >
-                  <Pencil size={15} /> Edit model
+                  <Pencil size={15} /> {t('adminPages.fleet.editModelShort')}
                 </button>
                 <button
                   type="button"
@@ -1339,19 +1344,19 @@ export function ModelsManagementPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 22 }}>
               <div style={{ minWidth: 0 }}>
                 <h2 id="model-modal-title" style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#1E0432' }}>
-                  {modelEditId ? 'Edit Vehicle Model' : 'Add Vehicle Model'}
+                  {modelEditId ? t('adminPages.fleet.editModelTitle') : t('adminPages.fleet.addModelTitle')}
                 </h2>
                 <p style={{ margin: '5px 0 0', color: '#6A5672', fontSize: '.85rem', lineHeight: 1.5 }}>
                   {modelEditId
-                    ? 'Update model specifications and body classification'
-                    : 'Create a new model variant under a manufacturer'}
+                    ? t('adminPages.fleet.editModelSubtitle')
+                    : t('adminPages.fleet.addModelSubtitle')}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModelModalOpen(false)}
                 className="models-close-btn"
-                aria-label="Close dialog"
+                aria-label={t('adminPages.fleet.closeDialog')}
                 disabled={isSavingModel}
               >
                 <X size={20} />
@@ -1361,13 +1366,13 @@ export function ModelsManagementPage() {
             <form onSubmit={handleSaveModel} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
                 <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 750, color: '#1E0432', marginBottom: 7 }}>
-                  Manufacturer / Brand <span style={{ color: '#EF4444' }}>*</span>
+                  {t('adminPages.fleet.manufacturerBrand')} <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <CustomSelect
                   value={modelBrandId}
                   onChange={setModelBrandId}
                   options={modalBrandOptions}
-                  placeholder="Select a brand..."
+                  placeholder={t('adminPages.fleet.selectBrand')}
                   fullWidth
                   searchable
                   searchPlaceholder="Search brand..."
@@ -1376,33 +1381,33 @@ export function ModelsManagementPage() {
 
               <div>
                 <label htmlFor="model-name" style={{ display: 'block', fontSize: '.85rem', fontWeight: 750, color: '#1E0432', marginBottom: 7 }}>
-                  Model Name <span style={{ color: '#EF4444' }}>*</span>
+                  {t('adminPages.fleet.modelName')} <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <input
                   id="model-name"
                   type="text"
                   required
                   maxLength={100}
-                  placeholder="e.g. Camry, Model 3, X5, Mustang"
+                  placeholder={t('adminPages.fleet.modelPlaceholder')}
                   value={modelName}
                   onChange={(event) => setModelName(event.target.value)}
                   className="fleet-form-input"
                 />
                 {modelName.trim() && (
                   <div style={{ fontSize: '.77rem', color: '#8A7090', marginTop: 5, overflowWrap: 'anywhere' }}>
-                    Slug: <code style={{ color: '#1E0432' }}>{modelName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}</code>
+                    {t('adminPages.fleet.slug')} <code style={{ color: '#1E0432' }}>{modelName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}</code>
                   </div>
                 )}
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 750, color: '#1E0432', marginBottom: 7 }}>
-                  Body Style
+                  {t('adminPages.fleet.bodyStyle')}
                 </label>
                 <CustomSelect
                   value={modelBodyType}
                   onChange={setModelBodyType}
-                  options={BODY_TYPES.map((bodyType) => ({ value: bodyType, label: bodyType }))}
+                  options={BODY_TYPES.map((bodyType) => ({ value: bodyType, label: bodyLabel(bodyType) }))}
                   fullWidth
                   searchable
                   searchPlaceholder="Search body style..."
@@ -1412,16 +1417,16 @@ export function ModelsManagementPage() {
               {Boolean(modelEditId) && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', background: '#FAF7FA', borderRadius: 10 }}>
                   <div>
-                    <div style={{ fontWeight: 750, fontSize: '.9rem', color: '#1E0432' }}>Active Model</div>
+                    <div style={{ fontWeight: 750, fontSize: '.9rem', color: '#1E0432' }}>{t('adminPages.fleet.activeModel')}</div>
                     <div style={{ fontSize: '.77rem', color: '#8A7090', lineHeight: 1.5 }}>
-                      Available for fleet inventory assignment
+                      {t('adminPages.fleet.activeModelHelp')}
                     </div>
                   </div>
                   <input
                     type="checkbox"
                     checked={modelIsActive}
                     onChange={(event) => setModelIsActive(event.target.checked)}
-                    aria-label="Model is active"
+                    aria-label={t('adminPages.fleet.modelActiveAria')}
                     style={{ width: 20, height: 20, flexShrink: 0, accentColor: '#1E0432', cursor: 'pointer' }}
                   />
                 </div>
@@ -1434,7 +1439,7 @@ export function ModelsManagementPage() {
                   className="models-secondary-btn"
                   disabled={isSavingModel}
                 >
-                  Cancel
+                  {t('adminPages.fleet.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -1442,7 +1447,7 @@ export function ModelsManagementPage() {
                   disabled={isSavingModel || !modelName.trim() || !modelBrandId}
                 >
                   <Plus size={16} />
-                  {isSavingModel ? 'Saving...' : modelEditId ? 'Update Model' : 'Create Model'}
+                  {isSavingModel ? t('adminPages.fleet.saving') : modelEditId ? t('adminPages.fleet.updateModel') : t('adminPages.fleet.createModel')}
                 </button>
               </div>
             </form>

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { InspectionService } from './inspection.service';
+import { DamageDisputeService } from './damage-dispute.service';
 
 function param(req: Request, name: string): string {
   const value = req.params[name];
@@ -60,6 +61,33 @@ export class InspectionController {
     try {
       const comparison = await InspectionService.reviewCharge(param(req, 'chargeId'), req.body, req.user?.userId);
       res.status(200).json({ success: true, comparison });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /** Customer disputes one of their own damage charges. */
+  static async openDispute(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await DamageDisputeService.open(param(req, 'chargeId'), req.user!.userId, req.body?.reason);
+      res.status(200).json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async resolveDispute(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await DamageDisputeService.resolve(param(req, 'chargeId'), req.user?.userId, req.body?.decision, req.body?.response);
+      res.status(200).json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async listDisputes(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.status(200).json({ success: true, disputes: await DamageDisputeService.list() });
     } catch (err) {
       next(err);
     }

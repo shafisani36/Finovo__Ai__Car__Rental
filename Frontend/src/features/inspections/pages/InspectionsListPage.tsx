@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { inspectionApi } from '../api/inspectionApi';
 import type { InspectionReport as InspectionRecord } from '../api/inspectionApi';
@@ -19,6 +20,7 @@ import {
 } from '../../../components/common';
 
 export function InspectionsListPage() {
+  const { t } = useTranslation();
   const [inspections, setInspections] = useState<InspectionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'DAMAGE_DETECTED' | 'PRISTINE'>('ALL');
@@ -66,11 +68,11 @@ export function InspectionsListPage() {
     <PageContainer>
       {/* Header & Quick Action */}
       <PageHeader
-        title="AI Vehicle Condition & Damage Inspections"
-        subtitle="Automated multi-angle computer vision surface inspection, anomaly detection, scratch/dent localization, and repair estimation."
+        title={t('adminPages.inspections.listTitle')}
+        subtitle={t('adminPages.inspections.listSubtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'AI Inspections' },
+          { label: t('adminPages.inspections.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.inspections.crumbList') },
         ]}
         badge={
           <span
@@ -86,7 +88,7 @@ export function InspectionsListPage() {
               fontWeight: 800,
             }}
           >
-            <Sparkles size={12} /> Computer Vision
+            <Sparkles size={12} /> {t('adminPages.inspections.computerVision')}
           </span>
         }
         actions={
@@ -109,7 +111,7 @@ export function InspectionsListPage() {
             }}
           >
             <Camera size={18} />
-            <span>New AI Inspection Scan</span>
+            <span>{t('adminPages.inspections.newScan')}</span>
           </Link>
         }
       />
@@ -118,19 +120,19 @@ export function InspectionsListPage() {
       <StatGrid columns={3}>
         <StatCard
           icon={Camera}
-          label="Total Scans Performed"
+          label={t('adminPages.inspections.statTotal')}
           value={totalInspections}
           variant="purple"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Avg AI Condition Score"
+          label={t('adminPages.inspections.statAvg')}
           value={`${averageScore}%`}
           variant="green"
         />
         <StatCard
           icon={ShieldAlert}
-          label="Damage Anomalies Flagged"
+          label={t('adminPages.inspections.statFlagged')}
           value={damageFlaggedCount}
           variant={damageFlaggedCount > 0 ? 'red' : 'green'}
         />
@@ -168,10 +170,10 @@ export function InspectionsListPage() {
               }}
             >
               {tab === 'ALL'
-                ? `All Scans (${inspections.length})`
+                ? t('adminPages.inspections._tabAll', { count: inspections.length })
                 : tab === 'DAMAGE_DETECTED'
-                  ? `Flagged Damage (${damageFlaggedCount})`
-                  : 'Pristine Surface (Passed)'}
+                  ? t('adminPages.inspections._tabFlagged', { count: damageFlaggedCount })
+                  : t('adminPages.inspections.tabClean')}
             </button>
           ))}
         </div>
@@ -192,7 +194,7 @@ export function InspectionsListPage() {
           <Search size={16} color="#685D73" />
           <input
             type="text"
-            placeholder="Search vehicle, plate, booking..."
+            placeholder={t('adminPages.inspections.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -219,14 +221,14 @@ export function InspectionsListPage() {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <RotateCcw size={24} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading inspection scans...</div>
+            <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.inspections.loading')}</div>
           </div>
         ) : filteredInspections.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <Camera size={40} color="#D1D5DB" style={{ marginBottom: '12px' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>No inspection sessions found</div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>{t('adminPages.inspections.emptyTitle')}</div>
             <p style={{ margin: '6px 0 0', fontSize: '0.875rem' }}>
-              Launch an AI inspection scan to record multi-view vehicle exterior photos.
+              {t('adminPages.inspections.emptyDesc')}
             </p>
           </div>
         ) : (
@@ -234,12 +236,12 @@ export function InspectionsListPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#685D73' }}>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Scan Type & Date</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Vehicle</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Rental Agreement</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>AI Vision Score</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Findings</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inspections.colType')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inspections.vehicle')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inspections.colAgreement')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inspections.colScore')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inspections.colFindings')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>{t('adminPages.inspections.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -277,7 +279,7 @@ export function InspectionsListPage() {
                                     : '#4F46E5',
                             }}
                           >
-                            {ins.type} SCAN
+                            {ins.type} {t('adminPages.inspections.scanTag')}
                           </span>
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '4px' }}>
@@ -329,7 +331,7 @@ export function InspectionsListPage() {
                           </>
                         ) : (
                           <div style={{ fontSize: '0.8125rem', color: '#685D73' }}>
-                            Standalone Fleet Audit
+                            {t('adminPages.inspections.standalone')}
                           </div>
                         )}
                       </td>
@@ -386,7 +388,7 @@ export function InspectionsListPage() {
                               }}
                             >
                               <ShieldAlert size={12} />
-                              {ins.findings.length} Issue{ins.findings.length !== 1 ? 's' : ''} Detected
+                              {t('adminPages.inspections._issues', { count: ins.findings.length })}
                             </span>
                           </div>
                         ) : (
@@ -404,7 +406,7 @@ export function InspectionsListPage() {
                             }}
                           >
                             <CheckCircle2 size={12} />
-                            Pristine (0 Defects)
+                            {t('adminPages.inspections.pristine')}
                           </span>
                         )}
                       </td>
@@ -427,7 +429,7 @@ export function InspectionsListPage() {
                           }}
                         >
                           <Eye size={13} />
-                          <span>Inspect Views</span>
+                          <span>{t('adminPages.inspections.inspectViews')}</span>
                         </Link>
                       </td>
                     </tr>

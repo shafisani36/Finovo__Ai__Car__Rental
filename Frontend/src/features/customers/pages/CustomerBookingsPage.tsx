@@ -10,7 +10,13 @@ import {
   Camera,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { customerPortalApi, type CustomerBookingItem } from '../api/customerPortalApi';
+import {
+  customerPortalApi,
+  type CustomerBookingItem,
+  type CancellationPreview,
+  type RefundOutcome,
+} from '../api/customerPortalApi';
+import { CancelBookingModal } from '../components/CancelBookingModal';
 import { formatMoney, getCarImage } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
@@ -35,7 +41,6 @@ export function CustomerBookingsPage() {
   const { t, i18n } = useTranslation();
   const formatDateTime = (value: string) =>
     new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-  const [cancelError, setCancelError] = useState<string | null>(null);
   const [bookings, setBookings] = useState<CustomerBookingItem[]>([]);
   const [activeTab, setActiveTab] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,8 +48,7 @@ export function CustomerBookingsPage() {
 
   // Cancellation Modal state
   const [cancelModalBooking, setCancelModalBooking] = useState<CustomerBookingItem | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelResult, setCancelResult] = useState<string | null>(null);
 
   // Extension Modal state
   const [extendModalBooking, setExtendModalBooking] = useState<CustomerBookingItem | null>(null);
@@ -74,20 +78,14 @@ export function CustomerBookingsPage() {
     fetchBookings();
   }, [fetchBookings]);
 
-  const handleCancelBooking = async () => {
-    if (!cancelModalBooking) return;
-    try {
-      setIsCancelling(true);
-      setCancelError(null);
-      await customerPortalApi.cancelBooking(cancelModalBooking.id, cancelReason);
-      setCancelModalBooking(null);
-      setCancelReason('');
-      await fetchBookings();
-    } catch (err: any) {
-      setCancelError(err?.message || t('portalPages.bookings.errCancel'));
-    } finally {
-      setIsCancelling(false);
+  // Tells the customer what happens to their money after a cancellation
+  const describeCancellation = (result: { terms?: CancellationPreview; refund?: RefundOutcome | null }, currency: string) => {
+    const refund = result.terms?.refund ?? 0;
+    if (refund <= 0) return t('portalPages.cancelModal.doneNoRefund');
+    if (result.refund && result.refund.pendingManual > 0 && result.refund.refundedOnline === 0) {
+      return t('portalPages.cancelModal.doneManual', { amount: formatMoney(refund, currency, 2) });
     }
+    return t('portalPages.cancelModal.doneRefund', { amount: formatMoney(refund, currency, 2) });
   };
 
   const handleExtendBooking = async () => {
@@ -129,6 +127,23 @@ export function CustomerBookingsPage() {
           </Link>
         </div>
       </div>
+
+      {cancelResult && (
+        <div
+          role="status"
+          style={{
+            background: 'rgba(16, 185, 129, 0.1)',
+            color: '#047857',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+          }}
+        >
+          {cancelResult}
+        </div>
+      )}
 
       {/* Tabs and Search Bar */}
       <div className="cp-card" style={{ padding: '16px 20px' }}>
@@ -284,7 +299,7 @@ export function CustomerBookingsPage() {
                         className="cp-btn-danger"
                         style={{ fontSize: '0.85rem' }}
                         onClick={() => {
-                          setCancelError(null);
+                          setCancelResult(null);
                           setCancelModalBooking(booking);
                         }}
                       >
@@ -320,52 +335,19 @@ export function CustomerBookingsPage() {
 
       {/* Cancellation Modal */}
       {cancelModalBooking && (
-        <div className="cp-modal-backdrop">
-          <div className="cp-modal-box">
-            <h2 className="cp-card-title" style={{ marginBottom: '12px' }}>
-              {t('portalPages.bookings.cancelTitle', { number: cancelModalBooking.bookingNumber })}
-            </h2>
-            <p style={{ color: 'var(--cp-text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              {t('portalPages.bookings.cancelQuestion', {
-                vehicle: `${cancelModalBooking.vehicle?.brand || ''} ${cancelModalBooking.vehicle?.model || ''}`.trim(),
-              })}
-            </p>
-
-            {cancelError && (
-              <div role="alert" style={{ color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '12px' }}>
-                {cancelError}
-              </div>
-            )}
-
-            <div className="cp-form-group">
-              <label className="cp-label">{t('portalPages.bookings.reasonOptional')}</label>
-              <textarea
-                className="cp-textarea"
-                rows={3}
-                placeholder={t('portalPages.bookings.reasonPlaceholder')}
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button
-                className="cp-btn-outline"
-                disabled={isCancelling}
-                onClick={() => setCancelModalBooking(null)}
-              >
-                {t('portalPages.bookings.keepBooking')}
-              </button>
-              <button
-                className="cp-btn-danger"
-                disabled={isCancelling}
-                onClick={handleCancelBooking}
-              >
-                {isCancelling ? t('portalPages.bookings.processing') : t('portalPages.bookings.confirmCancel')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CancelBookingModal
+          bookingId={cancelModalBooking.id}
+          title={t('portalPages.bookings.cancelTitle', { number: cancelModalBooking.bookingNumber })}
+          question={t('portalPages.cancelModal.question', {
+            vehicle: `${cancelModalBooking.vehicle?.brand || ''} ${cancelModalBooking.vehicle?.model || ''}`.trim(),
+          })}
+          onClose={() => setCancelModalBooking(null)}
+          onCancelled={async (result) => {
+            setCancelResult(describeCancellation(result, cancelModalBooking.currency));
+            setCancelModalBooking(null);
+            await fetchBookings();
+          }}
+        />
       )}
 
       {/* Extension Modal */}

@@ -4,6 +4,7 @@ import {
   User,
   KeyRound,
   Smartphone,
+  MessageCircle,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -32,6 +33,8 @@ export function CustomerProfilePage() {
   const [driverLicenseNumber, setDriverLicenseNumber] = useState('');
   const [licenseExpiryDate, setLicenseExpiryDate] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState('en');
+  const [smsAlerts, setSmsAlerts] = useState(false);
+  const [whatsappAlerts, setWhatsappAlerts] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -54,6 +57,8 @@ export function CustomerProfilePage() {
         setDriverLicenseNumber(res.customer.driverLicenseNumber || '');
         setLicenseExpiryDate(res.customer.licenseExpiryDate ? res.customer.licenseExpiryDate.split('T')[0] : '');
         setPreferredLanguage(res.customer.preferredLanguage || 'en');
+        setSmsAlerts(Boolean(res.customer.smsAlerts));
+        setWhatsappAlerts(Boolean(res.customer.whatsappAlerts));
       }
 
       // Fetch sessions
@@ -89,6 +94,8 @@ export function CustomerProfilePage() {
         driverLicenseNumber,
         licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate).toISOString() : undefined,
         preferredLanguage,
+        smsAlerts,
+        whatsappAlerts,
       });
 
       if (res.success) {
@@ -284,6 +291,42 @@ export function CustomerProfilePage() {
                 size="md"
               />
             </div>
+          </div>
+
+          {/* Booking alerts by SMS and WhatsApp */}
+          <div style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '20px', marginTop: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <MessageCircle size={18} color="var(--cp-accent)" />
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--cp-primary)', margin: 0 }}>
+                {t('portalPages.profile.alertsTitle')}
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--cp-text-muted)', margin: '0 0 12px' }}>
+              {t('portalPages.profile.alertsDesc')}
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '8px' }}>
+              <input
+                type="checkbox"
+                checked={smsAlerts}
+                onChange={(e) => setSmsAlerts(e.target.checked)}
+                style={{ width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
+              />
+              <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.profile.smsAlerts')}</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={whatsappAlerts}
+                onChange={(e) => setWhatsappAlerts(e.target.checked)}
+                style={{ width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
+              />
+              <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.profile.whatsappAlerts')}</span>
+            </label>
+            {(smsAlerts || whatsappAlerts) && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', margin: '10px 0 0' }}>
+                {t('portalPages.profile.alertsPhoneHint')}
+              </p>
+            )}
           </div>
 
           <div style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '20px', marginTop: '20px' }}>

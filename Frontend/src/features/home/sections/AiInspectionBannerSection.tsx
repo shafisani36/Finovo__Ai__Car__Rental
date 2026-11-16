@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
@@ -282,11 +283,12 @@ export function AiInspectionBannerSection() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
+                  <Link
+                    to="/ai-inspection"
                     className="ai-scan-btn"
                     style={{
                       display: 'inline-flex',
+                      textDecoration: 'none',
                       alignItems: 'center',
                       gap: '6px',
                       backgroundColor: '#3C1246',
@@ -303,7 +305,7 @@ export function AiInspectionBannerSection() {
                   >
                     <span>{t('home.aiInspection.card1Cta')}</span>
                     <ArrowRight size={11} color="#E6D2F4" strokeWidth={2} className="rtl-mirror-arrow" />
-                  </button>
+                  </Link>
                 </div>
               </div>
 

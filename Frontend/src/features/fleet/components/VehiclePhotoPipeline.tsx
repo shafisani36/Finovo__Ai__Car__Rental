@@ -11,6 +11,7 @@ import {
   Camera,
 } from 'lucide-react';
 import { CustomSelect } from '../../../components/common/CustomSelect';
+import { useTranslation } from 'react-i18next';
 
 export interface VehiclePhotoPipelineProps {
   photos: VehiclePhotoInput[];
@@ -19,6 +20,9 @@ export interface VehiclePhotoPipelineProps {
   maxPhotos?: number;
   disabled?: boolean;
 }
+
+/** Captions are stored in English; this maps each one to its translation key. */
+const PERSPECTIVE_KEYS: Record<string, string> = {'Front 3/4 Perspective': 'front34', 'Rear 3/4 Perspective': 'rear34', 'Interior Cabin & Dashboard': 'interior', 'Trunk & Cargo Space': 'trunk', 'Driver Side Profile': 'driverSide', 'Passenger Side Profile': 'passengerSide', 'Engine Bay': 'engine', 'Wheel & Tire Detail': 'wheel', 'Undercarriage': 'undercarriage', 'Custom Inspection Angle': 'custom'};
 
 const DEFAULT_PERSPECTIVES = [
   'Front 3/4 Perspective',
@@ -36,6 +40,9 @@ export function VehiclePhotoPipeline({
   maxPhotos = 6,
   disabled = false,
 }: VehiclePhotoPipelineProps) {
+  const { t } = useTranslation();
+  const perspectiveLabel = (caption: string) =>
+    PERSPECTIVE_KEYS[caption] ? t(`adminPages.photos._p_${PERSPECTIVE_KEYS[caption]}`) : caption;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -51,15 +58,14 @@ export function VehiclePhotoPipeline({
 
     if (photos.length + fileArray.length > maxPhotos) {
       setUploadError(
-        `Cannot upload more than ${maxPhotos} photos. You currently have ${photos.length}. You can only add ${maxPhotos - photos.length
-        } more.`
+        t('adminPages.photos._tooMany', { max: maxPhotos, count: photos.length, left: maxPhotos - photos.length })
       );
       return;
     }
 
     const validFiles = fileArray.filter((file) => {
       if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
-        setUploadError(`File "${file.name}" is not a supported format. Please upload JPEG, PNG, or WEBP.`);
+        setUploadError(t('adminPages.photos._badFormat', { name: file.name }));
         return false;
       }
       if (file.size > 10 * 1024 * 1024) {
@@ -165,7 +171,7 @@ export function VehiclePhotoPipeline({
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <h2 className="car-card-title">5. Mandatory Inspection Photos</h2>
+              <h2 className="car-card-title">{t('adminPages.photos.title')}</h2>
               <span
                 style={{
                   fontSize: '0.74rem',
@@ -177,11 +183,11 @@ export function VehiclePhotoPipeline({
                   border: isCompliant ? '1px solid #A7F3D0' : '1px solid #F8B4B4',
                 }}
               >
-                {isCompliant ? '✓ 4–6 Photos Met' : 'Strict 4–6 Photos'}
+                {isCompliant ? t('adminPages.photos._met') : t('adminPages.photos._strict')}
               </span>
             </div>
             <p className="car-card-subtitle">
-              Upload minimum 4 and maximum 6 high-resolution vehicle views (Front, Rear, Interior & Side)
+              {t('adminPages.photos.subtitle')}
             </p>
           </div>
         </div>
@@ -205,10 +211,10 @@ export function VehiclePhotoPipeline({
             cursor: disabled || photos.length >= maxPhotos ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s',
           }}
-          title="Upload new vehicle inspection photos"
+          title={t('adminPages.photos.uploadTitle')}
         >
           <Upload size={14} />
-          <span>Upload Photos</span>
+          <span>{t('adminPages.photos.upload')}</span>
         </button>
       </div>
 
@@ -241,9 +247,8 @@ export function VehiclePhotoPipeline({
             }}
           >
             {isCompliant
-              ? `Compliance Verified: ${count} of 4 minimum photos attached (maximum ${maxPhotos}).`
-              : `Action Required: Please upload ${neededPhotos} more photo${neededPhotos > 1 ? 's' : ''
-              } to meet minimum compliance.`}
+              ? t('adminPages.photos._compliant', { count, max: maxPhotos })
+              : t('adminPages.photos._needMore', { count: neededPhotos })}
           </span>
         </div>
 
@@ -335,7 +340,7 @@ export function VehiclePhotoPipeline({
                 >
                   <img
                     src={displayUrl}
-                    alt={photo.caption || `Vehicle view ${index + 1}`}
+                    alt={photo.caption ? perspectiveLabel(photo.caption) : t('adminPages.photos._viewAlt', { number: index + 1 })}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -363,7 +368,7 @@ export function VehiclePhotoPipeline({
                       }}
                     >
                       <Star size={12} fill="#1A0322" />
-                      <span>PRIMARY COVER</span>
+                      <span>{t('adminPages.photos.primary')}</span>
                     </div>
                   )}
 
@@ -401,7 +406,7 @@ export function VehiclePhotoPipeline({
                         marginBottom: '4px',
                       }}
                     >
-                      Perspective Angle
+                      {t('adminPages.photos.angle')}
                     </label>
                     <CustomSelect
                       size="sm"
@@ -409,11 +414,9 @@ export function VehiclePhotoPipeline({
                       onChange={(val) => updateCaption(index, val)}
                       disabled={disabled}
                       options={[
-                        ...DEFAULT_PERSPECTIVES.map((persp) => ({ value: persp, label: persp })),
-                        { value: 'Engine Bay', label: 'Engine Bay' },
-                        { value: 'Wheel & Tire Detail', label: 'Wheel & Tire Detail' },
-                        { value: 'Undercarriage', label: 'Undercarriage' },
-                        { value: 'Custom Inspection Angle', label: 'Custom Inspection Angle' },
+                        ...[...DEFAULT_PERSPECTIVES, 'Engine Bay', 'Wheel & Tire Detail', 'Undercarriage', 'Custom Inspection Angle'].map(
+                          (persp) => ({ value: persp, label: perspectiveLabel(persp) })
+                        ),
                       ]}
                     />
                   </div>
@@ -447,11 +450,11 @@ export function VehiclePhotoPipeline({
                         }}
                       >
                         <Star size={13} />
-                        <span>Set Primary</span>
+                        <span>{t('adminPages.photos.setPrimary')}</span>
                       </button>
                     ) : (
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669' }}>
-                        Active Cover
+                        {t('adminPages.photos.activeCover')}
                       </span>
                     )}
 
@@ -472,7 +475,7 @@ export function VehiclePhotoPipeline({
                           cursor: index === 0 ? 'not-allowed' : 'pointer',
                           opacity: index === 0 ? 0.4 : 1,
                         }}
-                        title="Move left"
+                        title={t('adminPages.photos.moveLeft')}
                       >
                         <ChevronLeft size={14} />
                       </button>
@@ -492,7 +495,7 @@ export function VehiclePhotoPipeline({
                           cursor: index === photos.length - 1 ? 'not-allowed' : 'pointer',
                           opacity: index === photos.length - 1 ? 0.4 : 1,
                         }}
-                        title="Move right"
+                        title={t('adminPages.photos.moveRight')}
                       >
                         <ChevronRight size={14} />
                       </button>
@@ -512,7 +515,7 @@ export function VehiclePhotoPipeline({
                           justifyContent: 'center',
                           cursor: 'pointer',
                         }}
-                        title="Remove photo"
+                        title={t('adminPages.photos.removePhoto')}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -578,12 +581,11 @@ export function VehiclePhotoPipeline({
           </div>
 
           <div style={{ fontSize: '0.95rem', color: '#1A0322', fontWeight: 700, marginBottom: '4px' }}>
-            Click or drag & drop vehicle photos here
+            {t('adminPages.photos.dropHere')}
           </div>
 
           <div style={{ fontSize: '0.8125rem', color: '#8A7090', marginBottom: '12px' }}>
-            JPEG, PNG, or WEBP (Max 10MB per file). You can upload up to{' '}
-            <strong>{maxPhotos - count}</strong> more photo{maxPhotos - count !== 1 ? 's' : ''}.
+            {t('adminPages.photos._formats', { count: maxPhotos - count })}
           </div>
 
           <div
@@ -598,7 +600,7 @@ export function VehiclePhotoPipeline({
               fontWeight: 700,
             }}
           >
-            Browse files from device
+            {t('adminPages.photos.browse')}
           </div>
         </div>
       )}

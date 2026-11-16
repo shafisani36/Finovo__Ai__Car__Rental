@@ -22,10 +22,20 @@ async function seedAdmin() {
   const superAdminRole = await prisma.role.findUniqueOrThrow({ where: { name: 'SUPER_ADMIN' } });
   const adminRole = await prisma.role.findUniqueOrThrow({ where: { name: 'ADMIN' } });
 
-  // 2. Ensure default admin user exists
-  const adminEmail = 'admin@finovo.com';
-  const rawPassword = 'Admin@Finovo2026!';
-  const passwordHash = await PasswordService.hashPassword(rawPassword);
+  // 2. Ensure the first admin user exists.
+  // Production takes the email and password from ADMIN_EMAIL / ADMIN_PASSWORD; the public demo
+  // password is only allowed in development, so a live site can never get a known admin login.
+  const isProduction = process.env.NODE_ENV === 'production';
+  const adminEmail = (process.env.ADMIN_EMAIL || (isProduction ? '' : 'admin@finovo.com')).trim().toLowerCase();
+  const rawPassword = process.env.ADMIN_PASSWORD || (isProduction ? '' : 'Admin@Finovo2026!');
+  if (isProduction) {
+    if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+      throw new Error('Set ADMIN_EMAIL to the real admin email address before seeding in production');
+    }
+    if (rawPassword.length < 12 || rawPassword === 'Admin@Finovo2026!') {
+      throw new Error('Set ADMIN_PASSWORD to a private password of at least 12 characters before seeding in production');
+    }
+  }
 
   const existingUser = await prisma.user.findUnique({
     where: { email: adminEmail },
@@ -34,6 +44,7 @@ async function seedAdmin() {
   let userId: string;
 
   if (!existingUser) {
+    const passwordHash = await PasswordService.hashPassword(rawPassword);
     const createdUser = await prisma.user.create({
       data: {
         email: adminEmail,
@@ -47,16 +58,16 @@ async function seedAdmin() {
     userId = createdUser.id;
     console.log(`Created default admin user: ${adminEmail}`);
   } else {
+    // An existing admin keeps the password they chose; seeding again never resets it
     userId = existingUser.id;
     await prisma.user.update({
       where: { id: userId },
       data: {
-        passwordHash,
         status: 'ACTIVE',
         isEmailVerified: true,
       },
     });
-    console.log(`Updated default admin credentials: ${adminEmail}`);
+    console.log(`Admin user already exists, password left unchanged: ${adminEmail}`);
   }
 
   // 3. Assign ADMIN and SUPER_ADMIN roles

@@ -15,6 +15,10 @@ export const env = {
   PORT: parseInt(process.env.PORT || '5000', 10),
   /** The one currency used for every price, booking, invoice and Stripe charge (ISO 4217 code). */
   CURRENCY: (process.env.APP_CURRENCY || 'SAR').trim().toUpperCase(),
+  /** Tax added to every rental (percent). Saudi VAT is 15; the default 8 keeps the current prices. */
+  TAX_RATE_PERCENT: Number(process.env.TAX_RATE_PERCENT ?? 8),
+  /** Name of the tax on quotes, invoices and agreements, for example VAT */
+  TAX_LABEL: (process.env.TAX_LABEL || 'VAT').trim().slice(0, 30),
   DATABASE_URL: process.env.DATABASE_URL || 'mysql://root:@localhost:3306/finovo_car_rental',
   
   JWT: {
@@ -69,6 +73,16 @@ export const env = {
     SMTP_PASS: process.env.SMTP_PASS || '',
   },
 
+  /** Booking alerts by SMS and WhatsApp through Twilio. MESSAGING_PROVIDER: twilio | mock (print in development) | off */
+  MESSAGING: {
+    PROVIDER: (process.env.MESSAGING_PROVIDER || 'mock').toLowerCase(),
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || '',
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || '',
+    /** Sender number for SMS in international format, e.g. +15005550006 */
+    TWILIO_SMS_FROM: process.env.TWILIO_SMS_FROM || '',
+    /** WhatsApp sender approved in Twilio, e.g. +14155238886 */
+    TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM || '',
+  },
   STRIPE: {
     SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
     PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || '',
@@ -92,6 +106,9 @@ export function validateEnv(): void {
   const warnings: string[] = [];
 
   if (!process.env.DATABASE_URL) problems.push('DATABASE_URL is not set');
+  if (!Number.isFinite(env.TAX_RATE_PERCENT) || env.TAX_RATE_PERCENT < 0 || env.TAX_RATE_PERCENT > 50) {
+    problems.push('TAX_RATE_PERCENT must be a number from 0 to 50');
+  }
 
   if (env.IS_PRODUCTION) {
     for (const [name, value, devDefault] of [
@@ -110,10 +127,19 @@ export function validateEnv(): void {
     if (!env.STRIPE.SECRET_KEY) warnings.push('STRIPE_SECRET_KEY is not set: online payments are disabled');
     if (env.STRIPE.SECRET_KEY.startsWith('sk_test_')) warnings.push('Stripe is in TEST mode (sk_test_ key)');
     if (!env.VISION.GEMINI_API_KEY && !env.VISION.OPENAI_API_KEY) warnings.push('No AI vision key: inspections are disabled');
+    if (env.MESSAGING.PROVIDER !== 'twilio') warnings.push('MESSAGING_PROVIDER is not twilio: SMS and WhatsApp alerts will NOT be sent');
   }
 
   if (env.EMAIL.PROVIDER === 'smtp' && (!env.EMAIL.SMTP_HOST || !env.EMAIL.SMTP_USER || !env.EMAIL.SMTP_PASS)) {
     problems.push('EMAIL_PROVIDER=smtp requires SMTP_HOST, SMTP_USER and SMTP_PASS');
+  }
+
+  if (
+    env.MESSAGING.PROVIDER === 'twilio' &&
+    (!env.MESSAGING.TWILIO_ACCOUNT_SID || !env.MESSAGING.TWILIO_AUTH_TOKEN ||
+      (!env.MESSAGING.TWILIO_SMS_FROM && !env.MESSAGING.TWILIO_WHATSAPP_FROM))
+  ) {
+    problems.push('MESSAGING_PROVIDER=twilio requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and a sender number');
   }
 
   for (const w of warnings) console.warn(`[config] WARNING: ${w}`);

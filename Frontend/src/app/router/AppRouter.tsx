@@ -77,6 +77,8 @@ const NewInspectionPage = lazy(() => import('../../features/inspections/pages/Ne
 const InspectionDetailPage = lazy(() => import('../../features/inspections/pages/InspectionDetailPage').then((module) => ({ default: module.InspectionDetailPage })));
 const EmployeesListPage = lazy(() => import('../../features/employees/pages/EmployeesListPage').then((module) => ({ default: module.EmployeesListPage })));
 const BranchesListPage = lazy(() => import('../../features/branches/pages/BranchesListPage').then((module) => ({ default: module.BranchesListPage })));
+const PromoCodesPage = lazy(() => import('../../features/promotions/pages/PromoCodesPage').then((module) => ({ default: module.PromoCodesPage })));
+const DisputesPage = lazy(() => import('../../features/inspections/pages/DisputesPage').then((module) => ({ default: module.DisputesPage })));
 const AuditLogsPage = lazy(() => import('../../features/audit-logs/pages/AuditLogsPage').then((module) => ({ default: module.AuditLogsPage })));
 const InquiriesListPage = lazy(() => import('../../features/inquiries/pages/InquiriesListPage').then((module) => ({ default: module.InquiriesListPage })));
 const UsersManagementPage = lazy(() => import('../../features/users/pages/UsersManagementPage').then((module) => ({ default: module.UsersManagementPage })));
@@ -216,6 +218,10 @@ export function AppRouter() {
             <Route path="inspections" element={<InspectionsListPage />} />
             <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/:id" element={<InspectionDetailPage />} />
+            <Route path="disputes" element={<DisputesPage />} />
+
+            {/* Promotions */}
+            <Route path="promo-codes" element={<PromoCodesPage />} />
 
             {/* Administration & Directory */}
             <Route path="inquiries" element={<InquiriesListPage />} />

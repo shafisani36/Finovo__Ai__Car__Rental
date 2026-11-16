@@ -160,7 +160,40 @@ export interface ReturnPayload {
   additionalAdjustment?: number;
 }
 
+export interface RentalAgreementSummary {
+  agreementNumber: string;
+  signerName: string;
+  signedAt: string;
+  termsVersion: string;
+  emailedAt?: string | null;
+}
+
 export const rentalApi = {
+  /** Current wording of the rental agreement terms the customer signs at pickup. */
+  async getAgreementTerms(): Promise<{ success: boolean; version: string; terms: string[] }> {
+    return authClient.request('/rentals/agreements/terms');
+  },
+
+  async getAgreement(bookingId: string): Promise<{ success: boolean; agreement: RentalAgreementSummary | null }> {
+    return authClient.request(`/rentals/agreements/${bookingId}`);
+  },
+
+  /** Saves the customer's signature, builds the agreement PDF and emails it to the customer. */
+  async signAgreement(payload: {
+    bookingId: string;
+    signerName: string;
+    signatureDataUrl: string;
+    accepted: boolean;
+    pickupInspectionId?: string;
+  }): Promise<{ success: boolean; agreement: RentalAgreementSummary }> {
+    return authClient.request('/rentals/agreements', { method: 'POST', body: JSON.stringify(payload) });
+  },
+
+  /** Endpoint of the agreement PDF (download it with downloadProtectedFile). */
+  agreementPdfEndpoint(bookingId: string): string {
+    return `/rentals/agreements/${bookingId}/pdf`;
+  },
+
   async getRentals(status?: string): Promise<{ success: boolean; rentals: RentalRecord[] }> {
     const query = status && status !== 'ALL' ? `?status=${status}` : '';
     return authClient.request<{ success: boolean; rentals: RentalRecord[] }>(`/rentals${query}`);

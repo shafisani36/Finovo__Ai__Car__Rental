@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { bookingApi, type Booking } from '../api/bookingApi';
 import {
   Calendar,
@@ -20,6 +20,9 @@ import {
   Modal,
 } from '../../../components/common';
 import { formatMoney } from '../../../utils/carImageHelper';
+import { useTranslation } from 'react-i18next';
+import { rentalApi, type RentalAgreementSummary } from '../../rentals/api/rentalApi';
+import { downloadProtectedFile } from '../../../utils/downloadFile';
 
 function VehicleThumbnail({ src, brand, model }: { src?: string; brand: string; model: string }) {
   const [hasError, setHasError] = useState(false);
@@ -75,11 +78,14 @@ function VehicleThumbnail({ src, brand, model }: { src?: string; brand: string; 
 }
 
 export function BookingsListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { confirm } = useConfirm();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  // A link can open the list already filtered, for example ?search=FIN-2026-0001
+  const [search, setSearch] = useState(() => (searchParams.get('search') || '').slice(0, 100));
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -87,6 +93,41 @@ export function BookingsListPage() {
 
   // Selected booking modal state
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  // Signed rental agreement of the booking open in the details dialog, remembered with its booking id
+  const [loadedAgreement, setLoadedAgreement] = useState<{ bookingId: string; agreement: RentalAgreementSummary | null } | null>(null);
+  const [agreementError, setAgreementError] = useState<{ bookingId: string; message: string } | null>(null);
+  const selectedAgreement = selectedBooking && loadedAgreement?.bookingId === selectedBooking.id ? loadedAgreement.agreement : null;
+  const selectedAgreementError = selectedBooking && agreementError?.bookingId === selectedBooking.id ? agreementError.message : null;
+
+  useEffect(() => {
+    if (!selectedBooking) return;
+    let active = true;
+    const bookingId = selectedBooking.id;
+    rentalApi
+      .getAgreement(bookingId)
+      .then((res) => {
+        if (active) setLoadedAgreement({ bookingId, agreement: res.agreement });
+      })
+      .catch(() => {
+        if (active) setLoadedAgreement({ bookingId, agreement: null });
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedBooking]);
+
+  const downloadSelectedAgreement = async () => {
+    if (!selectedBooking || !selectedAgreement) return;
+    try {
+      setAgreementError(null);
+      await downloadProtectedFile(rentalApi.agreementPdfEndpoint(selectedBooking.id), `${selectedAgreement.agreementNumber}.pdf`);
+    } catch (err) {
+      setAgreementError({
+        bookingId: selectedBooking.id,
+        message: err instanceof Error ? err.message : t('adminPages.handover.errDownload'),
+      });
+    }
+  };
 
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
@@ -140,16 +181,16 @@ export function BookingsListPage() {
     <PageContainer>
       {/* ================= HEADER ================= */}
       <PageHeader
-        title="Bookings & Reservations"
-        subtitle="Manage customer reservations, pricing allocations, and dispatch schedules."
+        title={t('adminPages.bookings.title')}
+        subtitle={t('adminPages.bookings.subtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Reservations' },
+          { label: t('adminPages.bookings.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.bookings.crumb') },
         ]}
         actions={
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Link
-              to="/admin/bookings/calendar"
+              to="/admin/calendar"
               style={{
                 backgroundColor: '#FFFFFF',
                 color: '#1A0322',
@@ -166,7 +207,7 @@ export function BookingsListPage() {
               }}
             >
               <Calendar size={16} />
-              <span>Calendar View</span>
+              <span>{t('adminPages.bookings.calendarView')}</span>
             </Link>
 
             <Link
@@ -189,7 +230,7 @@ export function BookingsListPage() {
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FAB826')}
             >
               <Plus size={16} strokeWidth={2.5} />
-              <span>New Booking</span>
+              <span>{t('adminPages.bookings.newBooking')}</span>
             </Link>
           </div>
         }
@@ -232,7 +273,7 @@ export function BookingsListPage() {
                 transition: 'all 0.15s ease',
               }}
             >
-              {st === 'ALL' ? 'All Bookings' : st.charAt(0) + st.slice(1).toLowerCase()}
+              {st === 'ALL' ? t('adminPages.bookings._allBookings') : t(`portalPages.bookings.status.${st}`, { defaultValue: st.charAt(0) + st.slice(1).toLowerCase() })}
             </button>
           ))}
         </div>
@@ -242,7 +283,7 @@ export function BookingsListPage() {
           <Search size={16} color="#9CA3AF" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
-            placeholder="Search booking #, customer..."
+            placeholder={t('adminPages.bookings.search')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -282,7 +323,7 @@ export function BookingsListPage() {
                   color: '#9CA3AF',
                 }}
               >
-                Loading reservations...
+                {t('adminPages.bookings.loading')}
               </div>
             ))}
           </div>
@@ -316,10 +357,10 @@ export function BookingsListPage() {
               <Calendar size={28} />
             </div>
             <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#111827' }}>
-              No Bookings Found
+              {t('adminPages.bookings.emptyTitle')}
             </div>
             <div style={{ fontSize: '0.85rem', maxWidth: '380px', color: '#6B7280' }}>
-              No reservations match your current filter or search criteria.
+              {t('adminPages.bookings.emptyDesc')}
             </div>
           </div>
         ) : (
@@ -377,7 +418,7 @@ export function BookingsListPage() {
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#6B7280', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                       <Clock size={13} color="#9CA3AF" />
-                      <span>Reserved on {formatDate(b.createdAt)}</span>
+                      <span>{t('adminPages.bookings._reservedOn', { date: formatDate(b.createdAt) })}</span>
                     </span>
                   </div>
 
@@ -399,12 +440,12 @@ export function BookingsListPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     <VehicleThumbnail
                       src={b.vehicle?.primaryImageUrl}
-                      brand={b.vehicle?.brand || 'Car'}
+                      brand={b.vehicle?.brand || t('adminPages.bookings.car')}
                       model={b.vehicle?.model || ''}
                     />
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6C1E84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Vehicle
+                        {t('adminPages.bookings.vehicle')}
                       </div>
                       <div
                         style={{
@@ -420,10 +461,10 @@ export function BookingsListPage() {
                         {b.vehicle?.brand} {b.vehicle?.model}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px' }}>
-                        Plate: <strong style={{ color: '#374151' }}>{b.vehicle?.registrationNumber || 'N/A'}</strong>
+                        {t('adminPages.bookings.plate')} <strong style={{ color: '#374151' }}>{b.vehicle?.registrationNumber || 'N/A'}</strong>
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '2px' }}>
-                        {b.vehicle?.category?.name || 'Coupe / Sports'}
+                        {b.vehicle?.category?.name || t('adminPages.bookings.uncategorized')}
                       </div>
                     </div>
                   </div>
@@ -447,7 +488,7 @@ export function BookingsListPage() {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Customer
+                        {t('adminPages.bookings.customer')}
                       </div>
                       <div
                         style={{
@@ -459,7 +500,7 @@ export function BookingsListPage() {
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {b.customer?.fullName || 'Guest Customer'}
+                        {b.customer?.fullName || t('adminPages.bookings.guest')}
                       </div>
                       <div
                         style={{
@@ -497,16 +538,16 @@ export function BookingsListPage() {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Rental Period
+                        {t('adminPages.bookings.period')}
                       </div>
                       <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.88rem' }}>
                         {formatDate(b.pickupDateTime)} – {formatDate(b.returnDateTime)}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <MapPin size={12} color="#9CA3AF" />
-                        <span>{b.pickupBranch?.name || 'Finovo Hub'}</span>
+                        <span>{b.pickupBranch?.name || t('adminPages.bookings.hub')}</span>
                         <span style={{ fontWeight: 700, color: '#D97706' }}>
-                          ({b.totalDays} {b.totalDays === 1 ? 'day' : 'days'})
+                          ({t('adminPages.counts.days', { count: b.totalDays })})
                         </span>
                       </div>
                     </div>
@@ -530,13 +571,13 @@ export function BookingsListPage() {
                     </div>
                     <div>
                       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Total Amount
+                        {t('adminPages.bookings.totalAmount')}
                       </div>
                       <div style={{ fontWeight: 800, color: '#1E0426', fontSize: '1.25rem', lineHeight: '1.2' }}>
                         {formatMoney(Number(b.totalAmount), b.currency, 2)}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '2px' }}>
-                        {formatMoney(Number(b.dailyRate), b.currency, 2)} / day
+                        {t('adminPages.bookings._perDay', { amount: formatMoney(Number(b.dailyRate), b.currency, 2) })}
                       </div>
                     </div>
                   </div>
@@ -557,7 +598,7 @@ export function BookingsListPage() {
                   {b.status === 'CONFIRMED' && (
                     <button
                       onClick={() => navigate(`/admin/rentals/handover/${b.id}`)}
-                      title="Handover Vehicle"
+                      title={t('adminPages.bookings.handoverVehicle')}
                       style={{
                         backgroundColor: '#FAB826',
                         border: 'none',
@@ -577,7 +618,7 @@ export function BookingsListPage() {
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FAB826')}
                     >
                       <KeyRound size={15} />
-                      <span>Handover</span>
+                      <span>{t('adminPages.bookings.handover')}</span>
                     </button>
                   )}
 
@@ -600,7 +641,7 @@ export function BookingsListPage() {
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E5E7EB')}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F3F4F6')}
                   >
-                    <span>Details</span>
+                    <span>{t('adminPages.bookings.details')}</span>
                   </button>
                 </div>
               </div>
@@ -627,7 +668,7 @@ export function BookingsListPage() {
           }}
         >
           <div>
-            Showing <strong>{bookings.length}</strong> of <strong>{totalCount}</strong> reservations
+            {t('adminPages.bookings._showing', { shown: bookings.length, total: totalCount })}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
@@ -644,10 +685,10 @@ export function BookingsListPage() {
                 fontSize: '0.825rem',
               }}
             >
-              Previous
+              {t('adminPages.bookings.previous')}
             </button>
             <span style={{ fontWeight: 700, color: '#111827', fontSize: '0.85rem' }}>
-              Page {page} of {totalPages}
+              {t('adminPages.bookings._page', { page, pages: totalPages })}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -663,7 +704,7 @@ export function BookingsListPage() {
                 fontSize: '0.825rem',
               }}
             >
-              Next
+              {t('adminPages.bookings.next')}
             </button>
           </div>
         </div>
@@ -674,8 +715,8 @@ export function BookingsListPage() {
         <Modal
           isOpen={!!selectedBooking}
           onClose={() => setSelectedBooking(null)}
-          title={`Booking ${selectedBooking.bookingNumber}`}
-          subtitle={`Created on ${formatDate(selectedBooking.createdAt)}`}
+          title={t('adminPages.bookings._modalTitle', { number: selectedBooking.bookingNumber })}
+          subtitle={t('adminPages.bookings._createdOn', { date: formatDate(selectedBooking.createdAt) })}
           maxWidth="560px"
         >
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
@@ -688,41 +729,97 @@ export function BookingsListPage() {
                 {selectedBooking.vehicle.brand} {selectedBooking.vehicle.model}
               </div>
               <div style={{ color: '#6B7280', fontSize: '0.8rem' }}>
-                Plate: {selectedBooking.vehicle.registrationNumber} • Category: {selectedBooking.vehicle.category.name}
+                {t('adminPages.bookings._plateCategory', { plate: selectedBooking.vehicle.registrationNumber, category: selectedBooking.vehicle.category.name })}
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '12px' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>Customer</div>
+                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{t('adminPages.bookings.customer')}</div>
                 <div style={{ fontWeight: 700 }}>{selectedBooking.customer.fullName}</div>
                 <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>{selectedBooking.customer.email}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>Duration & Branches</div>
-                <div style={{ fontWeight: 700 }}>{selectedBooking.totalDays} Days ({formatMoney(Number(selectedBooking.dailyRate), selectedBooking.currency, 2)}/day)</div>
-                <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>Pickup: {selectedBooking.pickupBranch.name}</div>
+                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{t('adminPages.bookings.durationBranches')}</div>
+                <div style={{ fontWeight: 700 }}>{t('adminPages.bookings._days', { count: selectedBooking.totalDays, rate: formatMoney(Number(selectedBooking.dailyRate), selectedBooking.currency, 2) })}</div>
+                <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>{t('adminPages.bookings._pickupBranch', { branch: selectedBooking.pickupBranch.name })}</div>
               </div>
             </div>
 
             <div style={{ borderTop: '1px solid #ECEAEF', paddingTop: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>Subtotal</span>
+                <span>{t('adminPages.bookings.subtotal')}</span>
                 <strong>{formatMoney(Number(selectedBooking.subtotal), selectedBooking.currency, 2)}</strong>
               </div>
+              {Number(selectedBooking.deliveryFee || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>{t('adminPages.bookingExtras.deliveryFee')}</span>
+                  <strong>{formatMoney(Number(selectedBooking.deliveryFee), selectedBooking.currency, 2)}</strong>
+                </div>
+              )}
+              {Number(selectedBooking.promoDiscount || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>{t('adminPages.bookingExtras.promo', { code: selectedBooking.promoCode?.code || '' })}</span>
+                  <strong>−{formatMoney(Number(selectedBooking.promoDiscount), selectedBooking.currency, 2)}</strong>
+                </div>
+              )}
+              {Number(selectedBooking.pointsDiscount || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>{t('adminPages.bookingExtras.points', { count: selectedBooking.pointsRedeemed || 0 })}</span>
+                  <strong>−{formatMoney(Number(selectedBooking.pointsDiscount), selectedBooking.currency, 2)}</strong>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>Taxes & Fees</span>
+                <span>{t('adminPages.bookings.taxes')}</span>
                 <strong>{formatMoney(Number(selectedBooking.taxAmount), selectedBooking.currency, 2)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>Security Deposit (Refundable)</span>
+                <span>{t('adminPages.bookings.deposit')}</span>
                 <strong>{formatMoney(Number(selectedBooking.depositAmount), selectedBooking.currency, 2)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 800, borderTop: '1px solid #ECEAEF', paddingTop: '8px' }}>
-                <span>Total Amount</span>
+                <span>{t('adminPages.bookings.totalAmount')}</span>
                 <span style={{ color: '#059669' }}>{formatMoney(Number(selectedBooking.totalAmount), selectedBooking.currency, 2)}</span>
               </div>
+              {selectedBooking.status === 'CANCELLED' && selectedBooking.cancellationFee !== null && selectedBooking.cancellationFee !== undefined && (
+                <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#4B5563' }}>
+                  {t('adminPages.bookingExtras.cancelled', {
+                    fee: formatMoney(Number(selectedBooking.cancellationFee), selectedBooking.currency, 2),
+                    refund: formatMoney(Number(selectedBooking.refundAmount || 0), selectedBooking.currency, 2),
+                  })}
+                </div>
+              )}
             </div>
+
+            {(selectedBooking.deliveryAddress || selectedBooking.collectionAddress) && (
+              <div style={{ borderTop: '1px solid #ECEAEF', paddingTop: '12px', fontSize: '0.88rem' }}>
+                {selectedBooking.deliveryAddress && (
+                  <div>{t('adminPages.handover.deliverTo', { address: selectedBooking.deliveryAddress })}</div>
+                )}
+                {selectedBooking.collectionAddress && (
+                  <div>{t('adminPages.handover.collectFrom', { address: selectedBooking.collectionAddress })}</div>
+                )}
+              </div>
+            )}
+
+            {selectedAgreement && (
+              <div style={{ borderTop: '1px solid #ECEAEF', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '0.88rem' }}>
+                <span>
+                  {t('adminPages.bookingExtras.agreement', {
+                    number: selectedAgreement.agreementNumber,
+                    name: selectedAgreement.signerName,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  onClick={downloadSelectedAgreement}
+                  style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #ECEAEF', background: '#FFFFFF', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {t('adminPages.handover.downloadPdf')}
+                </button>
+                {selectedAgreementError && <span role="alert" style={{ color: '#B91C1C' }}>{selectedAgreementError}</span>}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -731,14 +828,14 @@ export function BookingsListPage() {
               <button
                 type="button"
                 onClick={async () => {
-                  const customerName = selectedBooking.customer?.fullName || 'the customer';
+                  const customerName = selectedBooking.customer?.fullName || t('adminPages.bookings._theCustomer');
                   const ok = await confirm({
-                    title: `Cancel Booking ${selectedBooking.bookingNumber}?`,
-                    message: `Are you sure you want to cancel the booking for ${customerName}? Any security deposit pre-authorization will be released.`,
-                    confirmText: 'Cancel Booking',
-                    cancelText: 'Keep Booking',
+                    title: t('adminPages.bookings._cancelTitle', { number: selectedBooking.bookingNumber }),
+                    message: t('adminPages.bookings._cancelMessage', { name: customerName }),
+                    confirmText: t('adminPages.bookings.cancelBooking'),
+                    cancelText: t('adminPages.bookings.keepBooking'),
                     variant: 'danger',
-                    note: 'The allocated vehicle will immediately be returned to available fleet inventory.',
+                    note: t('adminPages.bookings.cancelNote'),
                   });
                   if (!ok) return;
                   handleStatusChange(selectedBooking.id, 'CANCELLED');
@@ -753,7 +850,7 @@ export function BookingsListPage() {
                   cursor: 'pointer',
                 }}
               >
-                Cancel Booking
+                {t('adminPages.bookings.cancelBooking')}
               </button>
             )}
             {selectedBooking.status === 'CONFIRMED' && (
@@ -772,7 +869,7 @@ export function BookingsListPage() {
                   cursor: 'pointer',
                 }}
               >
-                Proceed to Handover →
+                {t('adminPages.bookings.proceedHandover')}
               </button>
             )}
             <button
@@ -787,7 +884,7 @@ export function BookingsListPage() {
                 cursor: 'pointer',
               }}
             >
-              Close
+              {t('adminPages.bookings.close')}
             </button>
           </div>
         </Modal>

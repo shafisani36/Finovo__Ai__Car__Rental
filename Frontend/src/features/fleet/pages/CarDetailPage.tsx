@@ -58,8 +58,10 @@ import { useConfirm } from '../../../components/common/ConfirmModal';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { parseVehicleNotes } from '../../../utils/vehicleNotesHelper';
 import './CarDetailPage.css';
+import { useTranslation } from 'react-i18next';
 
 export function CarDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { confirm } = useConfirm();
@@ -166,13 +168,13 @@ export function CarDetailPage() {
           setVehicle(res.vehicle);
           loadSubResources(id);
         } else if (isMounted) {
-          throw new Error('Vehicle not returned');
+          throw new Error(t('adminPages.carDetail.errNotReturned'));
         }
       })
       .catch((err) => {
         if (isMounted) {
           setVehicle(null);
-          setError(err?.message || 'Failed to load vehicle profile');
+          setError(err?.message || t('adminPages.carDetail.errLoad'));
         }
       })
       .finally(() => {
@@ -182,6 +184,8 @@ export function CarDetailPage() {
     return () => {
       isMounted = false;
     };
+    // Loads once per record; the language is only used for error text, so a language change must not reload the form
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, loadSubResources]);
 
   // Loading Screen
@@ -189,7 +193,7 @@ export function CarDetailPage() {
     return (
       <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '60px 0', textAlign: 'center' }}>
         <div style={{ fontSize: '1.1rem', color: '#66566A', fontWeight: 600 }}>
-          Loading vehicle details...
+          {t('adminPages.carDetail.loading')}
         </div>
       </div>
     );
@@ -200,10 +204,10 @@ export function CarDetailPage() {
     return (
       <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '60px 0', textAlign: 'center' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1A0322', marginBottom: '12px' }}>
-          Vehicle Not Found
+          {t('adminPages.carDetail.notFound')}
         </h2>
         <p style={{ color: '#66566A', marginBottom: '24px' }}>
-          The requested vehicle does not exist or has been removed from the fleet.
+          {t('adminPages.carDetail.notFoundDesc')}
         </p>
         <Link
           to="/admin/cars"
@@ -220,7 +224,7 @@ export function CarDetailPage() {
           }}
         >
           <ArrowLeft size={16} />
-          <span>Back to Cars</span>
+          <span>{t('adminPages.carDetail.backToCars')}</span>
         </Link>
       </div>
     );
@@ -261,7 +265,7 @@ export function CarDetailPage() {
             }}
           >
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#0E9F6E' }} />
-            Available
+            {t('adminPages.carDetail.available')}
           </span>
         );
       case 'RENTED':
@@ -280,7 +284,7 @@ export function CarDetailPage() {
             }}
           >
             <Clock size={14} color="#3F83F8" />
-            Rented
+            {t('adminPages.carDetail.rented')}
           </span>
         );
       case 'MAINTENANCE':
@@ -299,7 +303,7 @@ export function CarDetailPage() {
             }}
           >
             <Wrench size={14} color="#D97706" />
-            Maintenance
+            {t('adminPages.carDetail.maintenance')}
           </span>
         );
       case 'ARCHIVED':
@@ -318,7 +322,7 @@ export function CarDetailPage() {
             }}
           >
             <Archive size={14} color="#6B7280" />
-            Archived
+            {t('adminPages.carDetail.archived')}
           </span>
         );
       default:
@@ -344,7 +348,7 @@ export function CarDetailPage() {
 
   // Helper for Document Expiry Badge
   const getExpiryBadge = (expiresAt?: string | null) => {
-    if (!expiresAt) return <span style={{ color: '#8A7090' }}>No Expiry Date</span>;
+    if (!expiresAt) return <span style={{ color: '#8A7090' }}>{t('adminPages.carDetail.noExpiryDate')}</span>;
     const exp = new Date(expiresAt);
     const now = new Date();
     const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -360,7 +364,7 @@ export function CarDetailPage() {
             fontSize: '0.775rem',
           }}
         >
-          Expired ({Math.abs(diffDays)}d ago)
+          {t('adminPages.carDetail._expired', { days: Math.abs(diffDays) })}
         </span>
       );
     }
@@ -376,7 +380,7 @@ export function CarDetailPage() {
             fontSize: '0.775rem',
           }}
         >
-          Expiring Soon ({diffDays}d)
+          {t('adminPages.carDetail._expiringSoon', { days: diffDays })}
         </span>
       );
     }
@@ -391,7 +395,7 @@ export function CarDetailPage() {
           fontSize: '0.775rem',
         }}
       >
-        Valid ({diffDays}d)
+        {t('adminPages.carDetail._valid', { days: diffDays })}
       </span>
     );
   };
@@ -413,7 +417,7 @@ export function CarDetailPage() {
       if (res.vehicle) setVehicle(res.vehicle);
       await loadSubResources(vehicle.id);
     } catch (err: any) {
-      setArchiveError(err.message || 'Operation failed');
+      setArchiveError(err.message || t('adminPages.carDetail.errOperation'));
     } finally {
       setArchiveActionLoading(false);
     }
@@ -435,7 +439,7 @@ export function CarDetailPage() {
     } catch (err: any) {
       setAvailResult({
         isAvailable: false,
-        reason: err.message || 'Availability check failed. Please check date range.',
+        reason: err.message || t('adminPages.carDetail.errAvailability'),
       });
     } finally {
       setIsCheckingAvail(false);
@@ -446,10 +450,10 @@ export function CarDetailPage() {
   const handleDeleteDocument = async (docId: string) => {
     if (!vehicle) return;
     const ok = await confirm({
-      title: 'Delete Vehicle Document?',
-      message: 'Are you sure you want to permanently delete this document from the vehicle records? This action cannot be undone.',
-      confirmText: 'Delete Document',
-      cancelText: 'Cancel',
+      title: t('adminPages.carDetail.deleteDocTitle'),
+      message: t('adminPages.carDetail.deleteDocMessage'),
+      confirmText: t('adminPages.carDetail.deleteDoc'),
+      cancelText: t('adminPages.carDetail.cancel'),
       variant: 'danger',
     });
     if (!ok) return;
@@ -466,10 +470,10 @@ export function CarDetailPage() {
   const handleDeletePricingTier = async (tierId: string) => {
     if (!vehicle) return;
     const ok = await confirm({
-      title: 'Remove Pricing Tier?',
-      message: 'Are you sure you want to remove this duration discount tier? Future bookings will no longer apply this discount rate.',
-      confirmText: 'Remove Tier',
-      cancelText: 'Cancel',
+      title: t('adminPages.carDetail.removeTierTitle'),
+      message: t('adminPages.carDetail.removeTierMessage'),
+      confirmText: t('adminPages.carDetail.removeTier'),
+      cancelText: t('adminPages.carDetail.cancel'),
       variant: 'danger',
     });
     if (!ok) return;
@@ -491,7 +495,7 @@ export function CarDetailPage() {
       <div className="car-detail-header">
         <div className="car-detail-breadcrumb">
           <Link to="/admin/cars" style={{ color: '#8A7090', textDecoration: 'none', fontWeight: 500 }}>
-            Cars
+            {t('adminPages.carDetail.cars')}
           </Link>
           <span style={{ fontSize: '0.75rem' }}>›</span>
           <span style={{ color: '#2E0738', fontWeight: 600 }}>
@@ -505,9 +509,7 @@ export function CarDetailPage() {
               {vehicle.brand} {vehicle.model}
             </h1>
             <p className="car-detail-subtitle">
-              Fleet Code: <strong>{vehicle.vehicleCode || 'FLEET-AUTOGEN'}</strong> • Reg:{' '}
-              <strong style={{ fontFamily: 'monospace' }}>{vehicle.registrationNumber}</strong> • Year:{' '}
-              {vehicle.year}
+              {t('adminPages.carDetail._subtitle', { code: vehicle.vehicleCode || 'FLEET-AUTOGEN', plate: vehicle.registrationNumber, year: vehicle.year })}
             </p>
           </div>
 
@@ -520,10 +522,10 @@ export function CarDetailPage() {
               type="button"
               onClick={() => setActiveTab('availability')}
               className="car-btn-secondary"
-              title="Verify booking date availability"
+              title={t('adminPages.carDetail.checkDatesTitle')}
             >
               <CalendarCheck size={16} />
-              <span>Check Dates</span>
+              <span>{t('adminPages.carDetail.checkDates')}</span>
             </button>
 
             {/* Archive / Restore Button */}
@@ -534,10 +536,10 @@ export function CarDetailPage() {
                 setIsArchiveModalOpen(true);
               }}
               className="car-btn-secondary"
-              title={vehicle.status === 'ARCHIVED' ? 'Restore Vehicle' : 'Archive Vehicle'}
+              title={vehicle.status === 'ARCHIVED' ? t('adminPages.carDetail.restoreVehicle') : t('adminPages.carDetail.archiveVehicle')}
             >
               {vehicle.status === 'ARCHIVED' ? <RotateCcw size={16} /> : <Archive size={16} />}
-              <span>{vehicle.status === 'ARCHIVED' ? 'Restore' : 'Archive'}</span>
+              <span>{vehicle.status === 'ARCHIVED' ? t('adminPages.carDetail.restore') : t('adminPages.carDetail.archive')}</span>
             </button>
 
             {/* Edit Button */}
@@ -547,7 +549,7 @@ export function CarDetailPage() {
               className="car-edit-btn"
             >
               <Pencil size={16} strokeWidth={2.5} />
-              <span>Edit</span>
+              <span>{t('adminPages.carDetail.edit')}</span>
             </button>
           </div>
         </div>
@@ -572,20 +574,20 @@ export function CarDetailPage() {
                 type="button"
                 className="car-photo-icon-btn"
                 onClick={() => setFitMode((prev) => (prev === 'cover' ? 'contain' : 'cover'))}
-                title={fitMode === 'cover' ? 'Fit complete car' : 'Fill frame'}
+                title={fitMode === 'cover' ? t('adminPages.carDetail.fitCar') : t('adminPages.carDetail.fillFrame')}
               >
                 {fitMode === 'cover' ? <Minimize2 size={13} /> : <Scan size={13} />}
-                <span>{fitMode === 'cover' ? 'Fit car' : 'Fill card'}</span>
+                <span>{fitMode === 'cover' ? t('adminPages.carDetail.fitCarShort') : t('adminPages.carDetail.fillCard')}</span>
               </button>
 
               <button
                 type="button"
                 className="car-photo-icon-btn"
                 onClick={() => setIsViewerOpen(true)}
-                title="Expand photo to fullscreen"
+                title={t('adminPages.carDetail.expandTitle')}
               >
                 <Maximize2 size={13} />
-                <span>Expand</span>
+                <span>{t('adminPages.carDetail.expand')}</span>
               </button>
             </div>
 
@@ -596,7 +598,7 @@ export function CarDetailPage() {
                   type="button"
                   className="car-photo-nav-btn prev"
                   onClick={handlePrevPhoto}
-                  aria-label="Previous photo"
+                  aria-label={t('adminPages.carDetail.prevPhoto')}
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -604,7 +606,7 @@ export function CarDetailPage() {
                   type="button"
                   className="car-photo-nav-btn next"
                   onClick={handleNextPhoto}
-                  aria-label="Next photo"
+                  aria-label={t('adminPages.carDetail.nextPhoto')}
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -693,14 +695,14 @@ export function CarDetailPage() {
                   }}
                 >
                   {vehicle.pricingMethod === 'per_km'
-                    ? 'Per-KM'
+                    ? t('adminPages.carDetail.perKm')
                     : vehicle.pricingMethod === 'hourly'
-                    ? 'Hourly'
+                    ? t('adminPages.carDetail.hourly')
                     : vehicle.pricingMethod === 'monthly'
-                    ? 'Monthly'
+                    ? t('adminPages.carDetail.monthly')
                     : vehicle.pricingMethod === 'daily_extra_km'
-                    ? 'Daily + Extra KM'
-                    : 'Daily'}
+                    ? t('adminPages.carDetail.dailyExtra')
+                    : t('adminPages.carDetail.daily')}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#8A7090', fontWeight: 600 }}>
                   {vehicle.currency || APP_CURRENCY}
@@ -724,17 +726,17 @@ export function CarDetailPage() {
                     : '/day'}
                 </span>
               </div>
-              <div className="car-stat-label">Active Rental Rate</div>
+              <div className="car-stat-label">{t('adminPages.carDetail.activeRate')}</div>
               <div className="car-stat-sub">
                 {vehicle.pricingMethod === 'per_km'
-                  ? `Min Trip: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()} • Dep: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()}`
+                  ? t('adminPages.carDetail._subPerKm', { min: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()}`, deposit: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()}` })
                   : vehicle.pricingMethod === 'hourly'
-                  ? `Min: ${vehicle.minimumBillableHours || 1}h • Step: ${vehicle.billingIncrementMinutes || 60}m • Grace: ${vehicle.gracePeriodMinutes || 0}m`
+                  ? t('adminPages.carDetail._subHourly', { hours: vehicle.minimumBillableHours || 1, step: vehicle.billingIncrementMinutes || 60, grace: vehicle.gracePeriodMinutes || 0 })
                   : vehicle.pricingMethod === 'monthly'
-                  ? `Deposit: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()} • ${vehicle.partialMonthPolicy === 'prorated_daily' ? 'Prorated Daily' : 'Full Month'}`
+                  ? t('adminPages.carDetail._subMonthly', { deposit: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()}`, policy: vehicle.partialMonthPolicy === 'prorated_daily' ? t('adminPages.carDetail.prorated') : t('adminPages.carDetail.fullMonth') })
                   : vehicle.pricingMethod === 'daily_extra_km'
-                  ? `Inc: ${vehicle.mileageLimitPerDay || 200} km/day • Extra: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.extraMileageCharge || 0)}/km`
-                  : `Deposit: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()} • Inc: ${vehicle.mileageLimitPerDay ? `${vehicle.mileageLimitPerDay} km/day` : 'Unlimited'}`}
+                  ? t('adminPages.carDetail._subExtra', { km: vehicle.mileageLimitPerDay || 200, extra: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.extraMileageCharge || 0)}` })
+                  : t('adminPages.carDetail._subDaily', { deposit: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()}`, included: vehicle.mileageLimitPerDay ? t('adminPages.carDetail._kmPerDay', { km: vehicle.mileageLimitPerDay }) : t('adminPages.carDetail.unlimited') })}
               </div>
             </div>
           </div>
@@ -749,9 +751,9 @@ export function CarDetailPage() {
                 {vehicle.mileage.toLocaleString()}
                 <span className="car-stat-unit">km</span>
               </div>
-              <div className="car-stat-label">Current Odometer</div>
+              <div className="car-stat-label">{t('adminPages.carDetail.odometer')}</div>
               <div className="car-stat-sub">
-                Next Service:{' '}
+                {t('adminPages.carDetail.nextService')}{' '}
                 {vehicle.nextServiceMileage
                   ? `${vehicle.nextServiceMileage.toLocaleString()} km`
                   : '20,000 km'}
@@ -766,11 +768,11 @@ export function CarDetailPage() {
             </div>
             <div className="car-stat-body">
               <div className="car-stat-value" style={{ fontSize: '1.25rem' }}>
-                {vehicle.branch?.name || 'Central Hub'}
+                {vehicle.branch?.name || t('adminPages.carDetail.centralHub')}
               </div>
-              <div className="car-stat-label">Assigned Location</div>
+              <div className="car-stat-label">{t('adminPages.carDetail.location')}</div>
               <div className="car-stat-sub">
-                Bay: {vehicle.parkingSpot || 'A-12'} • Code: {vehicle.vehicleCode || 'FLEET-01'}
+                {t('adminPages.carDetail._bayCode', { bay: vehicle.parkingSpot || 'A-12', code: vehicle.vehicleCode || 'FLEET-01' })}
               </div>
             </div>
           </div>
@@ -786,7 +788,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('overview')}
           >
             <Car size={16} />
-            <span>Overview</span>
+            <span>{t('adminPages.carDetail.tabOverview')}</span>
           </button>
 
           <button
@@ -795,7 +797,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('specifications')}
           >
             <Cpu size={16} />
-            <span>Technical Specs</span>
+            <span>{t('adminPages.carDetail.tabSpecs')}</span>
           </button>
 
           <button
@@ -804,7 +806,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('pricing')}
           >
             <Banknote size={16} />
-            <span>Pricing & Policies</span>
+            <span>{t('adminPages.carDetail.tabPricing')}</span>
             <span className="car-tab-badge">{pricingTiers.length}</span>
           </button>
 
@@ -814,7 +816,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('documents')}
           >
             <Shield size={16} />
-            <span>Documents & Expiry</span>
+            <span>{t('adminPages.carDetail.tabDocuments')}</span>
             <span className="car-tab-badge">{documents.length}</span>
           </button>
 
@@ -824,7 +826,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('maintenance')}
           >
             <Wrench size={16} />
-            <span>Maintenance & Service</span>
+            <span>{t('adminPages.carDetail.tabMaintenance')}</span>
             <span className="car-tab-badge">{maintenanceRecords.length}</span>
           </button>
 
@@ -834,7 +836,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('damages')}
           >
             <AlertTriangle size={16} />
-            <span>Damage History</span>
+            <span>{t('adminPages.carDetail.tabDamage')}</span>
             <span className="car-tab-badge">{damageReports.length}</span>
           </button>
 
@@ -844,7 +846,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('odometer')}
           >
             <Gauge size={16} />
-            <span>Odometer Logs</span>
+            <span>{t('adminPages.carDetail.tabOdometer')}</span>
             <span className="car-tab-badge">{odometerLogs.length}</span>
           </button>
 
@@ -854,7 +856,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('locations')}
           >
             <MapPin size={16} />
-            <span>Locations</span>
+            <span>{t('adminPages.carDetail.tabLocations')}</span>
             <span className="car-tab-badge">{locationLogs.length}</span>
           </button>
 
@@ -864,7 +866,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('availability')}
           >
             <CalendarCheck size={16} />
-            <span>Bookings & Availability</span>
+            <span>{t('adminPages.carDetail.tabBookings')}</span>
             <span className="car-tab-badge">{bookings.length}</span>
           </button>
 
@@ -874,7 +876,7 @@ export function CarDetailPage() {
             onClick={() => setActiveTab('audit')}
           >
             <Activity size={16} />
-            <span>Audit Trail</span>
+            <span>{t('adminPages.carDetail.tabAudit')}</span>
             <span className="car-tab-badge">{auditLogs.length}</span>
           </button>
         </nav>
@@ -890,7 +892,7 @@ export function CarDetailPage() {
                 <div className="car-section-icon">
                   <Sliders size={20} />
                 </div>
-                <h2 className="car-section-title">Vehicle Specifications</h2>
+                <h2 className="car-section-title">{t('adminPages.carDetail.specsTitle')}</h2>
               </div>
             </div>
 
@@ -898,15 +900,15 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Car size={18} color="#8A7090" />
-                  <span>Category</span>
+                  <span>{t('adminPages.carDetail.category')}</span>
                 </div>
-                <div className="car-spec-val">{vehicle.category?.name || 'Sedan'}</div>
+                <div className="car-spec-val">{vehicle.category?.name || t('adminPages.fleet._body_Sedan')}</div>
               </div>
 
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Settings size={18} color="#8A7090" />
-                  <span>Transmission</span>
+                  <span>{t('adminPages.carDetail.transmission')}</span>
                 </div>
                 <div className="car-spec-val">
                   {vehicle.transmission.charAt(0) + vehicle.transmission.slice(1).toLowerCase()}
@@ -916,7 +918,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Fuel size={18} color="#8A7090" />
-                  <span>Fuel type</span>
+                  <span>{t('adminPages.carDetail.fuelType')}</span>
                 </div>
                 <div className="car-spec-val">
                   {vehicle.fuelType.charAt(0) + vehicle.fuelType.slice(1).toLowerCase()}
@@ -926,7 +928,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Users size={18} color="#8A7090" />
-                  <span>Seats</span>
+                  <span>{t('adminPages.carDetail.seats')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.seats}</div>
               </div>
@@ -934,7 +936,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <DoorOpen size={18} color="#8A7090" />
-                  <span>Doors</span>
+                  <span>{t('adminPages.carDetail.doors')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.doors}</div>
               </div>
@@ -942,15 +944,15 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Palette size={18} color="#8A7090" />
-                  <span>Color</span>
+                  <span>{t('adminPages.carDetail.color')}</span>
                 </div>
-                <div className="car-spec-val">{vehicle.color || 'White'}</div>
+                <div className="car-spec-val">{vehicle.color || t('adminPages.addCar._color_White')}</div>
               </div>
 
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Gauge size={18} color="#8A7090" />
-                  <span>Mileage</span>
+                  <span>{t('adminPages.carDetail.mileage')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.mileage.toLocaleString()} km</div>
               </div>
@@ -990,7 +992,7 @@ export function CarDetailPage() {
                       <Sparkles size={20} />
                     </div>
                     <h2 className="car-section-title">
-                      Equipment & Smart Features ({featuresList.length})
+                      {t('adminPages.carDetail._features', { count: featuresList.length })}
                     </h2>
                   </div>
                 </div>
@@ -1014,9 +1016,9 @@ export function CarDetailPage() {
                   <Shield size={20} />
                 </div>
                 <div>
-                  <h2 className="car-section-title">Compliance, Insurance & Service</h2>
+                  <h2 className="car-section-title">{t('adminPages.carDetail.complianceTitle')}</h2>
                   <div className="car-section-subtitle">
-                    Active policy, road tax, and service mileage intervals
+                    {t('adminPages.carDetail.complianceSubtitle')}
                   </div>
                 </div>
               </div>
@@ -1024,53 +1026,53 @@ export function CarDetailPage() {
 
             <div className="car-compliance-grid">
               <div className="car-compliance-card">
-                <div className="car-compliance-title">Insurance Policy</div>
+                <div className="car-compliance-title">{t('adminPages.carDetail.insurance')}</div>
                 <div className="car-compliance-value">
                   {vehicle.insurancePolicyNumber || 'POL-FIN-2026-8819'}
                 </div>
                 <div className="car-compliance-sub">
-                  Expires:{' '}
+                  {t('adminPages.carDetail.expires')}{' '}
                   {vehicle.insuranceExpiry
                     ? new Date(vehicle.insuranceExpiry).toLocaleDateString()
-                    : 'Active'}
+                    : t('adminPages.carDetail.active')}
                 </div>
               </div>
 
               <div className="car-compliance-card">
-                <div className="car-compliance-title">Registration / Road Tax</div>
+                <div className="car-compliance-title">{t('adminPages.carDetail.registration')}</div>
                 <div className="car-compliance-value">{vehicle.registrationNumber}</div>
                 <div className="car-compliance-sub">
-                  Renewal Due:{' '}
+                  {t('adminPages.carDetail.renewalDue')}{' '}
                   {vehicle.registrationExpiry
                     ? new Date(vehicle.registrationExpiry).toLocaleDateString()
-                    : 'Current Year'}
+                    : t('adminPages.carDetail.currentYear')}
                 </div>
               </div>
 
               <div className="car-compliance-card">
-                <div className="car-compliance-title">Last Workshop Service</div>
+                <div className="car-compliance-title">{t('adminPages.carDetail.lastService')}</div>
                 <div className="car-compliance-value">
                   {vehicle.lastServiceMileage
                     ? `${vehicle.lastServiceMileage.toLocaleString()} km`
                     : '10,000 km'}
                 </div>
                 <div className="car-compliance-sub">
-                  Date:{' '}
+                  {t('adminPages.carDetail.date')}{' '}
                   {vehicle.lastServiceDate
                     ? new Date(vehicle.lastServiceDate).toLocaleDateString()
-                    : 'Recent'}
+                    : t('adminPages.carDetail.recent')}
                 </div>
               </div>
 
               <div className="car-compliance-card">
-                <div className="car-compliance-title">Next Service Scheduled</div>
+                <div className="car-compliance-title">{t('adminPages.carDetail.nextServiceScheduled')}</div>
                 <div className="car-compliance-value" style={{ color: '#059669' }}>
                   {vehicle.nextServiceMileage
                     ? `${vehicle.nextServiceMileage.toLocaleString()} km`
                     : '20,000 km'}
                 </div>
                 <div className="car-compliance-sub">
-                  Remaining: ~
+                  {t('adminPages.carDetail.remaining')}
                   {Math.max(
                     0,
                     (vehicle.nextServiceMileage || 20000) - vehicle.mileage
@@ -1089,13 +1091,13 @@ export function CarDetailPage() {
                   <Camera size={20} />
                 </div>
                 <div>
-                  <h2 className="car-section-title">Photo Gallery ({photos.length} photos)</h2>
+                  <h2 className="car-section-title">{t('adminPages.carDetail._gallery', { count: photos.length })}</h2>
                   <div className="car-section-subtitle">
-                    Full multi-angle views (Front, Rear, Interior, and Side perspectives)
+                    {t('adminPages.carDetail.galleryHint')}
                   </div>
                 </div>
               </div>
-              <span className="car-badge-verified">Multi-Angle Verified</span>
+              <span className="car-badge-verified">{t('adminPages.carDetail.multiAngle')}</span>
             </div>
 
             <div className="car-gallery-grid">
@@ -1126,7 +1128,7 @@ export function CarDetailPage() {
                       {vehicle.photos?.[idx]?.caption || `Photo #${idx + 1}`}
                     </span>
                     {vehicle.photos?.[idx]?.isPrimary && (
-                      <span className="car-gallery-primary-tag">PRIMARY</span>
+                      <span className="car-gallery-primary-tag">{t('adminPages.carDetail.primary')}</span>
                     )}
                   </div>
                 </div>
@@ -1141,12 +1143,12 @@ export function CarDetailPage() {
                 <div className="car-section-icon">
                   <FileText size={22} />
                 </div>
-                <h2 className="car-section-title">Fleet Notes</h2>
+                <h2 className="car-section-title">{t('adminPages.carDetail.fleetNotes')}</h2>
               </div>
             </div>
             <div className="car-notes-body">
               {parsedNotes.notesText ||
-                'Well-maintained vehicle, fully inspected and ready for booking operations.'}
+                t('adminPages.carDetail.defaultNotes')}
             </div>
           </div>
         </div>
@@ -1162,7 +1164,7 @@ export function CarDetailPage() {
                 <div className="car-section-icon">
                   <Cpu size={20} />
                 </div>
-                <h2 className="car-section-title">Powertrain & Performance</h2>
+                <h2 className="car-section-title">{t('adminPages.carDetail.powertrain')}</h2>
               </div>
             </div>
 
@@ -1170,7 +1172,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Cpu size={18} color="#8A7090" />
-                  <span>Engine Displacement</span>
+                  <span>{t('adminPages.carDetail.engine')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.engineSize || '2.0L Turbocharged'}</div>
               </div>
@@ -1178,7 +1180,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Activity size={18} color="#8A7090" />
-                  <span>Horsepower</span>
+                  <span>{t('adminPages.carDetail.horsepower')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.horsePower ? `${vehicle.horsePower} HP` : '190 HP'}</div>
               </div>
@@ -1186,7 +1188,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Settings size={18} color="#8A7090" />
-                  <span>Drivetrain</span>
+                  <span>{t('adminPages.carDetail.drivetrain')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.drivetrain || 'AWD (All-Wheel Drive)'}</div>
               </div>
@@ -1194,7 +1196,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Sliders size={18} color="#8A7090" />
-                  <span>Transmission</span>
+                  <span>{t('adminPages.carDetail.transmission')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.transmission}</div>
               </div>
@@ -1202,7 +1204,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Fuel size={18} color="#8A7090" />
-                  <span>Fuel Type</span>
+                  <span>{t('adminPages.carDetail.fuelTypeCap')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.fuelType}</div>
               </div>
@@ -1210,7 +1212,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Gauge size={18} color="#8A7090" />
-                  <span>Fuel Level %</span>
+                  <span>{t('adminPages.carDetail.fuelLevel')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.fuelLevelPercent ?? 100}%</div>
               </div>
@@ -1218,7 +1220,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Fuel size={18} color="#8A7090" />
-                  <span>Fuel Tank Capacity</span>
+                  <span>{t('adminPages.carDetail.tank')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.fuelTankCapacity || '60 Liters'}</div>
               </div>
@@ -1226,16 +1228,16 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Car size={18} color="#8A7090" />
-                  <span>Trim & Variant</span>
+                  <span>{t('adminPages.carDetail.trim')}</span>
                 </div>
-                <div className="car-spec-val">{vehicle.trim || 'Standard Equipment'}</div>
+                <div className="car-spec-val">{vehicle.trim || t('adminPages.carDetail.standardEquipment')}</div>
               </div>
 
               {extraSpecs?.acceleration0to100 && (
                 <div className="car-spec-row">
                   <div className="car-spec-label">
                     <Zap size={18} color="#8A7090" />
-                    <span>0-100 km/h Acceleration</span>
+                    <span>{t('adminPages.carDetail.acceleration')}</span>
                   </div>
                   <div className="car-spec-val">{extraSpecs.acceleration0to100}s</div>
                 </div>
@@ -1245,7 +1247,7 @@ export function CarDetailPage() {
                 <div className="car-spec-row">
                   <div className="car-spec-label">
                     <Gauge size={18} color="#8A7090" />
-                    <span>Top Speed</span>
+                    <span>{t('adminPages.carDetail.topSpeed')}</span>
                   </div>
                   <div className="car-spec-val">{extraSpecs.topSpeed} km/h</div>
                 </div>
@@ -1255,7 +1257,7 @@ export function CarDetailPage() {
                 <div className="car-spec-row">
                   <div className="car-spec-label">
                     <Sliders size={18} color="#8A7090" />
-                    <span>Peak Torque</span>
+                    <span>{t('adminPages.carDetail.torque')}</span>
                   </div>
                   <div className="car-spec-val">{extraSpecs.torqueNm} Nm</div>
                 </div>
@@ -1265,7 +1267,7 @@ export function CarDetailPage() {
                 <div className="car-spec-row">
                   <div className="car-spec-label">
                     <Fuel size={18} color="#8A7090" />
-                    <span>Combined Fuel Economy</span>
+                    <span>{t('adminPages.carDetail.economy')}</span>
                   </div>
                   <div className="car-spec-val">{extraSpecs.fuelEconomy} L/100km</div>
                 </div>
@@ -1280,7 +1282,7 @@ export function CarDetailPage() {
                 <div className="car-section-icon">
                   <Sliders size={20} />
                 </div>
-                <h2 className="car-section-title">Body, Dimensions & Telematics</h2>
+                <h2 className="car-section-title">{t('adminPages.carDetail.body')}</h2>
               </div>
             </div>
 
@@ -1288,27 +1290,27 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Users size={18} color="#8A7090" />
-                  <span>Seating Capacity</span>
+                  <span>{t('adminPages.carDetail.seating')}</span>
                 </div>
-                <div className="car-spec-val">{vehicle.seats} Passengers</div>
+                <div className="car-spec-val">{t('adminPages.carDetail._passengers', { count: vehicle.seats })}</div>
               </div>
 
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <DoorOpen size={18} color="#8A7090" />
-                  <span>Door Count</span>
+                  <span>{t('adminPages.carDetail.doorCount')}</span>
                 </div>
-                <div className="car-spec-val">{vehicle.doors} Doors</div>
+                <div className="car-spec-val">{t('adminPages.carDetail._doors', { count: vehicle.doors })}</div>
               </div>
 
               {extraSpecs?.luggageCapacityBags !== undefined && (
                 <div className="car-spec-row">
                   <div className="car-spec-label">
                     <Briefcase size={18} color="#8A7090" />
-                    <span>Luggage Capacity</span>
+                    <span>{t('adminPages.carDetail.luggage')}</span>
                   </div>
                   <div className="car-spec-val">
-                    {extraSpecs.luggageCapacityBags} Large Bags {extraSpecs.cabinBagsCapacity ? `(${extraSpecs.cabinBagsCapacity} Cabin)` : ''}
+                    {t('adminPages.carDetail._largeBags', { count: Number(extraSpecs.luggageCapacityBags) || 0 })} {extraSpecs.cabinBagsCapacity ? t('adminPages.carDetail._cabinBags', { count: Number(extraSpecs.cabinBagsCapacity) }) : ''}
                   </div>
                 </div>
               )}
@@ -1316,7 +1318,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Palette size={18} color="#8A7090" />
-                  <span>Exterior Color</span>
+                  <span>{t('adminPages.carDetail.exteriorColor')}</span>
                 </div>
                 <div className="car-spec-val">
                   <span
@@ -1330,14 +1332,14 @@ export function CarDetailPage() {
                       verticalAlign: 'middle',
                     }}
                   />
-                  {vehicle.color || 'White'}
+                  {vehicle.color || t('adminPages.addCar._color_White')}
                 </div>
               </div>
 
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Shield size={18} color="#8A7090" />
-                  <span>17-Digit VIN</span>
+                  <span>{t('adminPages.carDetail.vin')}</span>
                 </div>
                 <div className="car-spec-val" style={{ fontFamily: 'monospace' }}>
                   {vehicle.vin || 'VIN-NOT-SET'}
@@ -1347,7 +1349,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Car size={18} color="#8A7090" />
-                  <span>Ownership Type</span>
+                  <span>{t('adminPages.carDetail.ownership')}</span>
                 </div>
                 <div className="car-spec-val">{vehicle.ownershipType || 'OWNED'}</div>
               </div>
@@ -1355,7 +1357,7 @@ export function CarDetailPage() {
               <div className="car-spec-row">
                 <div className="car-spec-label">
                   <Cpu size={18} color="#8A7090" />
-                  <span>Telematics Device ID</span>
+                  <span>{t('adminPages.carDetail.telematics')}</span>
                 </div>
                 <div className="car-spec-val" style={{ fontFamily: 'monospace' }}>
                   {vehicle.telematicsDeviceId || 'TEL-OBD2-ACTIVE'}
@@ -1371,9 +1373,9 @@ export function CarDetailPage() {
         <div className="car-submodule-wrap">
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Rental Rates & Pricing Engine Configuration</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail.ratesTitle')}</h3>
               <p className="car-submodule-sub">
-                Standard pricing methods, durational rules, excess mileage caps, and rate history
+                {t('adminPages.carDetail.ratesSubtitle')}
               </p>
             </div>
             <button
@@ -1382,7 +1384,7 @@ export function CarDetailPage() {
               onClick={() => setIsAddPricingOpen(true)}
             >
               <Plus size={16} />
-              <span>Add Rate Tier</span>
+              <span>{t('adminPages.carDetail.addTier')}</span>
             </button>
           </div>
 
@@ -1417,16 +1419,16 @@ export function CarDetailPage() {
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 800, color: '#1E0426' }}>
-                  Contracted Method:{' '}
+                  {t('adminPages.carDetail.contractedMethod')}{' '}
                   {vehicle.pricingMethod === 'per_km'
-                    ? 'Method B — Per-Kilometer Rental'
+                    ? t('adminPages.carDetail.methodB')
                     : vehicle.pricingMethod === 'hourly'
-                    ? 'Method D — Hourly Rental'
+                    ? t('adminPages.carDetail.methodD')
                     : vehicle.pricingMethod === 'monthly'
-                    ? 'Method E — Monthly Rental'
+                    ? t('adminPages.carDetail.methodE')
                     : vehicle.pricingMethod === 'daily_extra_km'
-                    ? 'Method C — Daily + Extra Kilometers'
-                    : 'Method A — Standard Daily Rental'}
+                    ? t('adminPages.carDetail.methodC')
+                    : t('adminPages.carDetail.methodA')}
                 </span>
                 <span
                   style={{
@@ -1438,11 +1440,11 @@ export function CarDetailPage() {
                     borderRadius: '12px',
                   }}
                 >
-                  Strictly Enforced
+                  {t('adminPages.carDetail.enforced')}
                 </span>
               </div>
               <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: '#66566A', lineHeight: 1.5 }}>
-                Online booking quotes and final return settlements for this vehicle are calculated by the server using this permitted method. Rates and policies are permanently snapshotted into bookings upon confirmation.
+                {t('adminPages.carDetail.methodExplainer')}
               </p>
             </div>
           </div>
@@ -1480,12 +1482,12 @@ export function CarDetailPage() {
                 </div>
                 <div className="car-stat-label">
                   {vehicle.pricingMethod === 'per_km'
-                    ? 'Per-Kilometer Rate'
+                    ? t('adminPages.carDetail.rateKm')
                     : vehicle.pricingMethod === 'hourly'
-                    ? 'Hourly Base Rate'
+                    ? t('adminPages.carDetail.rateHourly')
                     : vehicle.pricingMethod === 'monthly'
-                    ? 'Monthly Contract Rate'
-                    : 'Daily Base Rate'}
+                    ? t('adminPages.carDetail.rateMonthly')
+                    : t('adminPages.carDetail.rateDaily')}
                 </div>
               </div>
             </div>
@@ -1497,23 +1499,23 @@ export function CarDetailPage() {
                   {vehicle.pricingMethod === 'per_km'
                     ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()}`
                     : vehicle.pricingMethod === 'hourly'
-                    ? `${vehicle.minimumBillableHours || 1} hrs min`
+                    ? t('adminPages.carDetail._hoursMin', { hours: vehicle.minimumBillableHours || 1 })
                     : vehicle.pricingMethod === 'monthly'
-                    ? `${vehicle.partialMonthPolicy === 'prorated_daily' ? 'Prorated Daily' : 'Full Month'}`
+                    ? (vehicle.partialMonthPolicy === 'prorated_daily' ? t('adminPages.carDetail.prorated') : t('adminPages.carDetail.fullMonth'))
                     : vehicle.pricingMethod === 'daily_extra_km'
-                    ? `${vehicle.mileageLimitPerDay || 200} km/day`
-                    : `${vehicle.mileageLimitPerDay ? `${vehicle.mileageLimitPerDay} km/day` : 'Unlimited'}`}
+                    ? t('adminPages.carDetail._kmPerDay', { km: vehicle.mileageLimitPerDay || 200 })
+                    : vehicle.mileageLimitPerDay ? t('adminPages.carDetail._kmPerDay', { km: vehicle.mileageLimitPerDay }) : t('adminPages.carDetail.unlimited')}
                 </div>
                 <div className="car-stat-label">
                   {vehicle.pricingMethod === 'per_km'
-                    ? 'Minimum Trip Charge Floor'
+                    ? t('adminPages.carDetail.minTrip')
                     : vehicle.pricingMethod === 'hourly'
-                    ? `Increment: ${vehicle.billingIncrementMinutes || 60}m`
+                    ? t('adminPages.carDetail._increment', { minutes: vehicle.billingIncrementMinutes || 60 })
                     : vehicle.pricingMethod === 'monthly'
-                    ? 'Partial Month Policy'
+                    ? t('adminPages.carDetail.partialPolicy')
                     : vehicle.pricingMethod === 'daily_extra_km'
-                    ? `Extra: ${vehicle.currency || APP_CURRENCY} ${Number(vehicle.extraMileageCharge || 0)}/km`
-                    : 'Daily Mileage Allowance'}
+                    ? t('adminPages.carDetail._extraKm', { amount: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.extraMileageCharge || 0)}` })
+                    : t('adminPages.carDetail.dailyAllowance')}
                 </div>
               </div>
             </div>
@@ -1524,7 +1526,7 @@ export function CarDetailPage() {
                 <div className="car-stat-value">
                   {vehicle.currency || APP_CURRENCY} {Number(vehicle.securityDeposit || 0).toLocaleString()}
                 </div>
-                <div className="car-stat-label">Refundable Security Deposit</div>
+                <div className="car-stat-label">{t('adminPages.carDetail.deposit')}</div>
               </div>
             </div>
 
@@ -1532,9 +1534,9 @@ export function CarDetailPage() {
             <div className="car-stat-card">
               <div className="car-stat-body">
                 <div className="car-stat-value" style={{ fontSize: '1.25rem' }}>
-                  {vehicle.gracePeriodMinutes || 0} min
+                  {vehicle.gracePeriodMinutes || 0} {t('adminPages.carDetail.min')}
                 </div>
-                <div className="car-stat-label">Return Grace Period</div>
+                <div className="car-stat-label">{t('adminPages.carDetail.grace')}</div>
               </div>
             </div>
           </div>
@@ -1544,15 +1546,15 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Tier Name</th>
-                  <th>Method</th>
-                  <th>Base Rate</th>
-                  <th>Deposit</th>
-                  <th>Included KM</th>
-                  <th>Extra KM Rate</th>
-                  <th>Valid Period</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th>{t('adminPages.carDetail.tierName')}</th>
+                  <th>{t('adminPages.carDetail.method')}</th>
+                  <th>{t('adminPages.carDetail.baseRate')}</th>
+                  <th>{t('adminPages.carDetail.depositShort')}</th>
+                  <th>{t('adminPages.carDetail.includedKm')}</th>
+                  <th>{t('adminPages.carDetail.extraKmRate')}</th>
+                  <th>{t('adminPages.carDetail.validPeriod')}</th>
+                  <th>{t('adminPages.carDetail.status')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('adminPages.carDetail.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1578,13 +1580,13 @@ export function CarDetailPage() {
                       {tier.currency || APP_CURRENCY} {Number(tier.baseRate).toLocaleString()}
                     </td>
                     <td>{tier.currency || APP_CURRENCY} {Number(tier.securityDeposit || 0).toLocaleString()}</td>
-                    <td>{tier.includedKmPerDay ? `${tier.includedKmPerDay} km` : 'Unlimited'}</td>
+                    <td>{tier.includedKmPerDay ? `${tier.includedKmPerDay} km` : t('adminPages.carDetail.unlimited')}</td>
                     <td>
                       {tier.extraKmRate ? `${tier.currency || APP_CURRENCY} ${Number(tier.extraKmRate).toLocaleString()}/km` : '—'}
                     </td>
                     <td style={{ fontSize: '0.8rem', color: '#66566A' }}>
-                      {tier.validFrom ? new Date(tier.validFrom).toLocaleDateString() : 'Always'} →{' '}
-                      {tier.validUntil ? new Date(tier.validUntil).toLocaleDateString() : 'Indefinite'}
+                      {tier.validFrom ? new Date(tier.validFrom).toLocaleDateString() : t('adminPages.carDetail.always')} →{' '}
+                      {tier.validUntil ? new Date(tier.validUntil).toLocaleDateString() : t('adminPages.carDetail.indefinite')}
                     </td>
                     <td>
                       <span
@@ -1597,7 +1599,7 @@ export function CarDetailPage() {
                           borderRadius: '12px',
                         }}
                       >
-                        {tier.isActive ? 'Active' : 'Inactive'}
+                        {tier.isActive ? t('adminPages.carDetail.active') : t('adminPages.carDetail.inactive')}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -1621,19 +1623,21 @@ export function CarDetailPage() {
                           <Banknote size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          Standard Base Rate Active
+                          {t('adminPages.carDetail.standardRateActive')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          This vehicle is currently billed using its standard {vehicle.pricingMethod} rate ({vehicle.currency || APP_CURRENCY}{' '}
-                          {Number(
-                            vehicle.pricingMethod === 'per_km'
-                              ? vehicle.perKmRate || 0
-                              : vehicle.pricingMethod === 'hourly'
-                              ? vehicle.hourlyRate || 0
-                              : vehicle.pricingMethod === 'monthly'
-                              ? vehicle.monthlyRate || 0
-                              : vehicle.dailyRate || 0
-                          ).toLocaleString()}).
+                          {t('adminPages.carDetail._standardRate', {
+                            method: vehicle.pricingMethod,
+                            amount: `${vehicle.currency || APP_CURRENCY} ${Number(
+                              vehicle.pricingMethod === 'per_km'
+                                ? vehicle.perKmRate || 0
+                                : vehicle.pricingMethod === 'hourly'
+                                ? vehicle.hourlyRate || 0
+                                : vehicle.pricingMethod === 'monthly'
+                                ? vehicle.monthlyRate || 0
+                                : vehicle.dailyRate || 0
+                            ).toLocaleString()}`,
+                          })}
                         </div>
                       </div>
                     </td>
@@ -1650,9 +1654,9 @@ export function CarDetailPage() {
         <div className="car-submodule-wrap">
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Compliance Documents & Expiry Tracking</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail.docsTitle')}</h3>
               <p className="car-submodule-sub">
-                Insurance certificates, road permits, safety inspections, and registration records
+                {t('adminPages.carDetail.docsSubtitle')}
               </p>
             </div>
             <button
@@ -1661,7 +1665,7 @@ export function CarDetailPage() {
               onClick={() => setIsAddDocOpen(true)}
             >
               <Plus size={16} />
-              <span>Add Document</span>
+              <span>{t('adminPages.carDetail.addDoc')}</span>
             </button>
           </div>
 
@@ -1669,14 +1673,14 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Title & Number</th>
-                  <th>Issued Date</th>
-                  <th>Expiry Date</th>
-                  <th>Status</th>
-                  <th>Verification</th>
-                  <th>File</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th>{t('adminPages.carDetail.type')}</th>
+                  <th>{t('adminPages.carDetail.titleNumber')}</th>
+                  <th>{t('adminPages.carDetail.issued')}</th>
+                  <th>{t('adminPages.carDetail.expiry')}</th>
+                  <th>{t('adminPages.carDetail.status')}</th>
+                  <th>{t('adminPages.carDetail.verification')}</th>
+                  <th>{t('adminPages.carDetail.file')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('adminPages.carDetail.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1703,11 +1707,11 @@ export function CarDetailPage() {
                       </div>
                     </td>
                     <td>
-                      {doc.issuedAt ? new Date(doc.issuedAt).toLocaleDateString() : 'Not recorded'}
+                      {doc.issuedAt ? new Date(doc.issuedAt).toLocaleDateString() : t('adminPages.carDetail.notRecorded')}
                     </td>
                     <td>
                       <div>
-                        {doc.expiresAt ? new Date(doc.expiresAt).toLocaleDateString() : 'No expiry'}
+                        {doc.expiresAt ? new Date(doc.expiresAt).toLocaleDateString() : t('adminPages.carDetail.noExpiry')}
                       </div>
                     </td>
                     <td>{getExpiryBadge(doc.expiresAt)}</td>
@@ -1741,10 +1745,10 @@ export function CarDetailPage() {
                           }}
                         >
                           <ExternalLink size={14} />
-                          <span>View</span>
+                          <span>{t('adminPages.carDetail.view')}</span>
                         </a>
                       ) : (
-                        <span style={{ color: '#A092A5' }}>No file</span>
+                        <span style={{ color: '#A092A5' }}>{t('adminPages.carDetail.noFile')}</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -1768,11 +1772,10 @@ export function CarDetailPage() {
                           <Shield size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          No Documents Uploaded Yet
+                          {t('adminPages.carDetail.noDocs')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          Upload insurance certificates, registration papers, and road permits to
-                          track expiry alerts automatically.
+                          {t('adminPages.carDetail.noDocsHint')}
                         </div>
                       </div>
                     </td>
@@ -1789,9 +1792,9 @@ export function CarDetailPage() {
         <div className="car-submodule-wrap">
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Maintenance & Workshop Services</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail.maintTitle')}</h3>
               <p className="car-submodule-sub">
-                Scheduled servicing, preventive checks, mechanical repairs, and parts replacement
+                {t('adminPages.carDetail.maintSubtitle')}
               </p>
             </div>
             <button
@@ -1800,7 +1803,7 @@ export function CarDetailPage() {
               onClick={() => setIsAddMaintOpen(true)}
             >
               <Plus size={16} />
-              <span>Log Maintenance</span>
+              <span>{t('adminPages.carDetail.logMaint')}</span>
             </button>
           </div>
 
@@ -1808,14 +1811,14 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th>Service Provider</th>
-                  <th>Scheduled Date</th>
-                  <th>Completed Date</th>
-                  <th>Mileage</th>
-                  <th>Cost</th>
-                  <th>Status</th>
+                  <th>{t('adminPages.carDetail.type')}</th>
+                  <th>{t('adminPages.carDetail.description')}</th>
+                  <th>{t('adminPages.carDetail.provider')}</th>
+                  <th>{t('adminPages.carDetail.scheduledDate')}</th>
+                  <th>{t('adminPages.carDetail.completedDate')}</th>
+                  <th>{t('adminPages.carDetail.mileage')}</th>
+                  <th>{t('adminPages.carDetail.cost')}</th>
+                  <th>{t('adminPages.carDetail.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1836,12 +1839,12 @@ export function CarDetailPage() {
                       </span>
                     </td>
                     <td style={{ fontWeight: 600, color: '#1A0322' }}>{m.description}</td>
-                    <td>{m.serviceProvider || 'Authorized Center'}</td>
+                    <td>{m.serviceProvider || t('adminPages.carDetail.authorizedCenter')}</td>
                     <td>
                       {m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td>
-                      {m.completedAt ? new Date(m.completedAt).toLocaleDateString() : 'In Progress'}
+                      {m.completedAt ? new Date(m.completedAt).toLocaleDateString() : t('adminPages.carDetail.inProgress')}
                     </td>
                     <td>{m.odometerValue ? `${m.odometerValue.toLocaleString()} km` : '—'}</td>
                     <td style={{ fontWeight: 700, color: '#1A0322' }}>
@@ -1882,10 +1885,10 @@ export function CarDetailPage() {
                           <Wrench size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          No Maintenance History Logged
+                          {t('adminPages.carDetail.noMaint')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          All scheduled services and workshop repair orders will appear here.
+                          {t('adminPages.carDetail.noMaintHint')}
                         </div>
                       </div>
                     </td>
@@ -1902,9 +1905,9 @@ export function CarDetailPage() {
         <div className="car-submodule-wrap">
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Vehicle Damage Incidents & Reports</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail.damageTitle')}</h3>
               <p className="car-submodule-sub">
-                Track dents, scratches, glass chips, interior issues, and repair estimates
+                {t('adminPages.carDetail.damageSubtitle')}
               </p>
             </div>
             <button
@@ -1913,7 +1916,7 @@ export function CarDetailPage() {
               onClick={() => setIsAddDamageOpen(true)}
             >
               <Plus size={16} />
-              <span>Report Damage</span>
+              <span>{t('adminPages.carDetail.reportDamage')}</span>
             </button>
           </div>
 
@@ -1921,12 +1924,12 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Severity</th>
-                  <th>Damage Type</th>
-                  <th>Description</th>
-                  <th>Estimated Cost</th>
-                  <th>Reported Date</th>
-                  <th>Resolution Status</th>
+                  <th>{t('adminPages.carDetail.severity')}</th>
+                  <th>{t('adminPages.carDetail.damageType')}</th>
+                  <th>{t('adminPages.carDetail.description')}</th>
+                  <th>{t('adminPages.carDetail.estimatedCost')}</th>
+                  <th>{t('adminPages.carDetail.reportedDate')}</th>
+                  <th>{t('adminPages.carDetail.resolution')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2001,10 +2004,10 @@ export function CarDetailPage() {
                           <CheckCircle2 size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          Zero Damage Reports on Record
+                          {t('adminPages.carDetail.noDamage')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          This vehicle is in pristine condition with no open incidents or pending bodywork.
+                          {t('adminPages.carDetail.noDamageHint')}
                         </div>
                       </div>
                     </td>
@@ -2021,9 +2024,9 @@ export function CarDetailPage() {
         <div className="car-submodule-wrap">
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Verified Odometer Mileage History</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail.odoTitle')}</h3>
               <p className="car-submodule-sub">
-                Audit trail of odometer readings captured during check-ins, returns, and servicing
+                {t('adminPages.carDetail.odoSubtitle')}
               </p>
             </div>
             <button
@@ -2032,7 +2035,7 @@ export function CarDetailPage() {
               onClick={() => setIsAddOdoOpen(true)}
             >
               <Plus size={16} />
-              <span>Record Mileage</span>
+              <span>{t('adminPages.carDetail.recordMileage')}</span>
             </button>
           </div>
 
@@ -2040,11 +2043,11 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Odometer Reading</th>
-                  <th>Source</th>
-                  <th>Recorded By</th>
-                  <th>Notes</th>
+                  <th>{t('adminPages.carDetail.timestamp')}</th>
+                  <th>{t('adminPages.carDetail.reading')}</th>
+                  <th>{t('adminPages.carDetail.source')}</th>
+                  <th>{t('adminPages.carDetail.recordedBy')}</th>
+                  <th>{t('adminPages.carDetail.notes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2068,7 +2071,7 @@ export function CarDetailPage() {
                         {log.source}
                       </span>
                     </td>
-                    <td>{log.recordedBy || 'System Automated'}</td>
+                    <td>{log.recordedBy || t('adminPages.carDetail.systemAuto')}</td>
                     <td style={{ color: '#66566A' }}>{log.notes || '—'}</td>
                   </tr>
                 ))}
@@ -2081,10 +2084,10 @@ export function CarDetailPage() {
                           <Gauge size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          No Odometer Audit Logs Found
+                          {t('adminPages.carDetail.noOdo')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          Current vehicle odometer is registered at {vehicle.mileage.toLocaleString()} km.
+                          {t('adminPages.carDetail._odoCurrent', { km: vehicle.mileage.toLocaleString() })}
                         </div>
                       </div>
                     </td>
@@ -2101,9 +2104,9 @@ export function CarDetailPage() {
         <div className="car-submodule-wrap">
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Location History & Branch Assignments</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail.locTitle')}</h3>
               <p className="car-submodule-sub">
-                Branch reassignments, parking bay spots, and recorded telematic check-ins
+                {t('adminPages.carDetail.locSubtitle')}
               </p>
             </div>
           </div>
@@ -2127,11 +2130,11 @@ export function CarDetailPage() {
               </div>
               <div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1A0322' }}>
-                  {vehicle.branch?.name || 'Central Rental Hub'}
+                  {vehicle.branch?.name || t('adminPages.carDetail.centralRentalHub')}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#66566A' }}>
-                  Current Parking Bay: <strong>{vehicle.parkingSpot || 'Bay A-12'}</strong> •
-                  Branch Code: {vehicle.branch?.code || 'MAIN-01'}
+                  {t('adminPages.carDetail._currentBay', { bay: vehicle.parkingSpot || 'Bay A-12' })}
+                  {t('adminPages.carDetail._branchCode', { code: vehicle.branch?.code || 'MAIN-01' })}
                 </div>
               </div>
             </div>
@@ -2141,12 +2144,12 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Branch</th>
-                  <th>Parking Bay</th>
-                  <th>Source</th>
-                  <th>Coordinates</th>
-                  <th>Notes</th>
+                  <th>{t('adminPages.carDetail.timestamp')}</th>
+                  <th>{t('adminPages.carDetail.branch')}</th>
+                  <th>{t('adminPages.carDetail.parkingBay')}</th>
+                  <th>{t('adminPages.carDetail.source')}</th>
+                  <th>{t('adminPages.carDetail.coordinates')}</th>
+                  <th>{t('adminPages.carDetail.notes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2154,7 +2157,7 @@ export function CarDetailPage() {
                   <tr key={loc.id}>
                     <td>{new Date(loc.recordedAt).toLocaleString()}</td>
                     <td style={{ fontWeight: 700, color: '#1A0322' }}>
-                      {loc.branch?.name || 'Designated Fleet Bay'}
+                      {loc.branch?.name || t('adminPages.carDetail.designatedBay')}
                     </td>
                     <td>{loc.parkingBay || '—'}</td>
                     <td>
@@ -2174,7 +2177,7 @@ export function CarDetailPage() {
                     <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
                       {loc.latitude && loc.longitude
                         ? `${Number(loc.latitude).toFixed(4)}, ${Number(loc.longitude).toFixed(4)}`
-                        : 'Hub Fixed'}
+                        : t('adminPages.carDetail.hubFixed')}
                     </td>
                     <td style={{ color: '#66566A' }}>{loc.notes || '—'}</td>
                   </tr>
@@ -2188,10 +2191,10 @@ export function CarDetailPage() {
                           <MapPin size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          No Reassignment Logs
+                          {t('adminPages.carDetail.noLoc')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          This vehicle remains stationed at its home branch ({vehicle.branch?.name || 'Central Hub'}).
+                          {t('adminPages.carDetail._homeBranch', { branch: vehicle.branch?.name || t('adminPages.carDetail.centralHub') })}
                         </div>
                       </div>
                     </td>
@@ -2212,17 +2215,17 @@ export function CarDetailPage() {
               <CalendarCheck size={22} color="#6C1E84" />
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1A0322' }}>
-                  Live Fleet Availability & Conflict Diagnostic Tool
+                  {t('adminPages.carDetail.availTitle')}
                 </h3>
                 <p style={{ margin: '2px 0 0', fontSize: '0.825rem', color: '#66566A' }}>
-                  Queries database reservations, active rental holds, and maintenance locks in real time
+                  {t('adminPages.carDetail.availSubtitle')}
                 </p>
               </div>
             </div>
 
             <form onSubmit={handleCheckAvailability} className="car-avail-form">
               <div className="car-field-group">
-                <label className="car-field-label">Pickup Date & Time</label>
+                <label className="car-field-label">{t('adminPages.carDetail.pickupDate')}</label>
                 <input
                   type="datetime-local"
                   required
@@ -2233,7 +2236,7 @@ export function CarDetailPage() {
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Return Date & Time</label>
+                <label className="car-field-label">{t('adminPages.carDetail.returnDate')}</label>
                 <input
                   type="datetime-local"
                   required
@@ -2249,7 +2252,7 @@ export function CarDetailPage() {
                 className="car-btn-primary"
                 style={{ height: '42px', padding: '0 24px', alignSelf: 'flex-end' }}
               >
-                {isCheckingAvail ? 'Verifying...' : 'Verify Fleet Availability'}
+                {isCheckingAvail ? t('adminPages.carDetail.verifying') : t('adminPages.carDetail.verify')}
               </button>
             </form>
 
@@ -2267,13 +2270,12 @@ export function CarDetailPage() {
                 )}
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>
-                    {availResult.isAvailable ? 'AVAILABLE FOR RESERVATION' : 'BOOKING CONFLICT DETECTED'}
+                    {availResult.isAvailable ? t('adminPages.carDetail.availableForBooking') : t('adminPages.carDetail.conflict')}
                   </div>
                   <div style={{ marginTop: '4px', fontSize: '0.85rem' }}>{availResult.reason}</div>
                   {availResult.conflictingBooking && (
                     <div style={{ marginTop: '6px', fontSize: '0.8rem', opacity: 0.9 }}>
-                      Conflicting Reservation ID: #{availResult.conflictingBooking.bookingNumber} (
-                      {availResult.conflictingBooking.status})
+                      {t('adminPages.carDetail._conflicting', { number: availResult.conflictingBooking.bookingNumber, status: availResult.conflictingBooking.status })}
                     </div>
                   )}
                 </div>
@@ -2284,9 +2286,9 @@ export function CarDetailPage() {
           {/* Booking History Table */}
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Vehicle Booking History ({bookings.length})</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail._bookingHistory', { count: bookings.length })}</h3>
               <p className="car-submodule-sub">
-                Confirmed, active, and completed rental reservations for this vehicle
+                {t('adminPages.carDetail.bookingHistoryHint')}
               </p>
             </div>
           </div>
@@ -2295,13 +2297,13 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Booking #</th>
-                  <th>Customer</th>
-                  <th>Pickup Date</th>
-                  <th>Return Date</th>
-                  <th>Duration</th>
-                  <th>Total Amount</th>
-                  <th>Status</th>
+                  <th>{t('adminPages.carDetail.bookingNumber')}</th>
+                  <th>{t('adminPages.carDetail.customer')}</th>
+                  <th>{t('adminPages.carDetail.pickupDateShort')}</th>
+                  <th>{t('adminPages.carDetail.returnDateShort')}</th>
+                  <th>{t('adminPages.carDetail.duration')}</th>
+                  <th>{t('adminPages.carDetail.total')}</th>
+                  <th>{t('adminPages.carDetail.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2312,7 +2314,7 @@ export function CarDetailPage() {
                     </td>
                     <td>
                       <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                        {b.customer?.fullName || 'Guest Customer'}
+                        {b.customer?.fullName || t('adminPages.carDetail.guest')}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#8A7090' }}>
                         {b.customer?.email || '—'}
@@ -2320,7 +2322,7 @@ export function CarDetailPage() {
                     </td>
                     <td>{new Date(b.pickupDateTime).toLocaleString()}</td>
                     <td>{new Date(b.returnDateTime).toLocaleString()}</td>
-                    <td>{b.totalDays} day(s)</td>
+                    <td>{t('adminPages.carDetail._days', { count: b.totalDays })}</td>
                     <td style={{ fontWeight: 700, color: '#1A0322' }}>
                       ${Number(b.totalAmount).toFixed(2)} {b.currency}
                     </td>
@@ -2363,10 +2365,10 @@ export function CarDetailPage() {
                           <CalendarCheck size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          No Bookings Recorded Yet
+                          {t('adminPages.carDetail.noBookings')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          This vehicle is completely unreserved and available for immediate booking.
+                          {t('adminPages.carDetail.noBookingsHint')}
                         </div>
                       </div>
                     </td>
@@ -2383,9 +2385,9 @@ export function CarDetailPage() {
         <div className="car-submodule-wrap">
           <div className="car-submodule-actions">
             <div>
-              <h3 className="car-submodule-title">Fleet Security & Operational Audit Log</h3>
+              <h3 className="car-submodule-title">{t('adminPages.carDetail.auditTitle')}</h3>
               <p className="car-submodule-sub">
-                Immutable chronological log of privileged changes, odometer adjustments, and status transitions
+                {t('adminPages.carDetail.auditSubtitle')}
               </p>
             </div>
           </div>
@@ -2394,11 +2396,11 @@ export function CarDetailPage() {
             <table className="car-data-table">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Action</th>
-                  <th>Details</th>
-                  <th>Actor</th>
-                  <th>IP Address</th>
+                  <th>{t('adminPages.carDetail.timestamp')}</th>
+                  <th>{t('adminPages.carDetail.action')}</th>
+                  <th>{t('adminPages.carDetail.details')}</th>
+                  <th>{t('adminPages.carDetail.actor')}</th>
+                  <th>{t('adminPages.carDetail.ip')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2422,7 +2424,7 @@ export function CarDetailPage() {
                       </span>
                     </td>
                     <td style={{ color: '#1A0322', fontWeight: 500 }}>{log.details || '—'}</td>
-                    <td>{log.userEmail || log.userId || 'System'}</td>
+                    <td>{log.userEmail || log.userId || t('adminPages.carDetail.system')}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#8A7090' }}>
                       {log.ipAddress || '127.0.0.1'}
                     </td>
@@ -2437,11 +2439,10 @@ export function CarDetailPage() {
                           <Activity size={24} />
                         </div>
                         <div style={{ fontWeight: 700, color: '#1A0322' }}>
-                          No Prior Audit Events Recorded
+                          {t('adminPages.carDetail.noAudit')}
                         </div>
                         <div style={{ fontSize: '0.85rem' }}>
-                          Audit entries will be automatically created whenever fleet managers modify
-                          specifications, add documents, or log servicing.
+                          {t('adminPages.carDetail.noAuditHint')}
                         </div>
                       </div>
                     </td>
@@ -2523,7 +2524,7 @@ export function CarDetailPage() {
           <div className="car-modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="car-modal-header">
               <h3 className="car-modal-title">
-                {vehicle.status === 'ARCHIVED' ? 'Restore Vehicle to Fleet' : 'Archive Vehicle from Active Fleet'}
+                {vehicle.status === 'ARCHIVED' ? t('adminPages.carDetail.restoreTitle') : t('adminPages.carDetail.archiveTitle')}
               </h3>
               <button
                 type="button"
@@ -2553,19 +2554,15 @@ export function CarDetailPage() {
               <p style={{ margin: 0, color: '#4A3D4E', fontSize: '0.925rem', lineHeight: 1.5 }}>
                 {vehicle.status === 'ARCHIVED' ? (
                   <>
-                    Restoring <strong>{vehicle.brand} {vehicle.model}</strong> ({vehicle.registrationNumber})
-                    will make it available again for customer catalog listings, branch dispatch, and active bookings.
+                    {t('adminPages.carDetail._restoreText', { name: `${vehicle.brand} ${vehicle.model}`, plate: vehicle.registrationNumber })}
                   </>
                 ) : (
                   <>
-                    Archiving <strong>{vehicle.brand} {vehicle.model}</strong> will hide it from customer rental
-                    searches and prevent new reservations.
+                    {t('adminPages.carDetail._archiveText', { name: `${vehicle.brand} ${vehicle.model}` })}
                     <br />
                     <br />
                     <span style={{ fontSize: '0.85rem', color: '#66566A' }}>
-                      <em>Note:</em> The system verifies that no active or future confirmed bookings exist before
-                      allowing safe archival. All historical bookings, financial transactions, and maintenance records
-                      are preserved.
+                      {t('adminPages.carDetail.archiveNote')}
                     </span>
                   </>
                 )}
@@ -2578,7 +2575,7 @@ export function CarDetailPage() {
                 onClick={() => setIsArchiveModalOpen(false)}
                 className="car-btn-secondary"
               >
-                Cancel
+                {t('adminPages.carDetail.cancel')}
               </button>
               <button
                 type="button"
@@ -2587,10 +2584,10 @@ export function CarDetailPage() {
                 className={vehicle.status === 'ARCHIVED' ? 'car-btn-primary' : 'car-btn-danger'}
               >
                 {archiveActionLoading
-                  ? 'Processing...'
+                  ? t('adminPages.carDetail.processing')
                   : vehicle.status === 'ARCHIVED'
-                  ? 'Confirm Restore'
-                  : 'Confirm Archive'}
+                  ? t('adminPages.carDetail.confirmRestore')
+                  : t('adminPages.carDetail.confirmArchive')}
               </button>
             </div>
           </div>
@@ -2625,6 +2622,7 @@ function AddDocumentModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [documentType, setDocumentType] = useState('INSURANCE');
   const [title, setTitle] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
@@ -2651,7 +2649,7 @@ function AddDocumentModal({
       });
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Failed to save document record');
+      setError(err.message || t('adminPages.carDetail.errSaveDoc'));
     } finally {
       setIsSubmitting(false);
     }
@@ -2661,7 +2659,7 @@ function AddDocumentModal({
     <div className="car-modal-overlay" onClick={onClose}>
       <div className="car-modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="car-modal-header">
-          <h3 className="car-modal-title">Upload & Register Document</h3>
+          <h3 className="car-modal-title">{t('adminPages.carDetail.uploadDoc')}</h3>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
             <X size={20} />
           </button>
@@ -2674,27 +2672,27 @@ function AddDocumentModal({
             )}
 
             <div className="car-field-group">
-              <label className="car-field-label">Document Type *</label>
+              <label className="car-field-label">{t('adminPages.carDetail.docType')}</label>
               <CustomSelect
                 value={documentType}
                 onChange={(val) => setDocumentType(val)}
                 options={[
-                  { value: 'INSURANCE', label: 'Insurance Policy Certificate' },
-                  { value: 'REGISTRATION', label: 'Vehicle Registration / Title' },
-                  { value: 'ROAD_TAX', label: 'Road Tax Decal' },
-                  { value: 'SAFETY_INSPECTION', label: 'Government Safety Inspection' },
-                  { value: 'COMMERCIAL_PERMIT', label: 'Commercial Transport Permit' },
-                  { value: 'OTHER', label: 'Other Operational Document' },
+                  { value: 'INSURANCE', label: t('adminPages.carDetail.docInsurance') },
+                  { value: 'REGISTRATION', label: t('adminPages.carDetail.docRegistration') },
+                  { value: 'ROAD_TAX', label: t('adminPages.carDetail.docRoadTax') },
+                  { value: 'SAFETY_INSPECTION', label: t('adminPages.carDetail.docInspection') },
+                  { value: 'COMMERCIAL_PERMIT', label: t('adminPages.carDetail.docPermit') },
+                  { value: 'OTHER', label: t('adminPages.carDetail.docOther') },
                 ]}
               />
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Document Title *</label>
+              <label className="car-field-label">{t('adminPages.carDetail.docTitle')}</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Comprehensive Commercial Insurance"
+                placeholder={t('adminPages.carDetail.docTitlePlaceholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="car-field-input"
@@ -2702,7 +2700,7 @@ function AddDocumentModal({
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Document / Policy Number</label>
+              <label className="car-field-label">{t('adminPages.carDetail.docNumber')}</label>
               <input
                 type="text"
                 placeholder="e.g. POL-2026-991823"
@@ -2714,7 +2712,7 @@ function AddDocumentModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
-                <label className="car-field-label">Issued Date</label>
+                <label className="car-field-label">{t('adminPages.carDetail.issued')}</label>
                 <input
                   type="date"
                   value={issuedAt}
@@ -2724,7 +2722,7 @@ function AddDocumentModal({
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Expiry Date</label>
+                <label className="car-field-label">{t('adminPages.carDetail.expiry')}</label>
                 <input
                   type="date"
                   value={expiresAt}
@@ -2735,10 +2733,10 @@ function AddDocumentModal({
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Document File URL (or Storage Key)</label>
+              <label className="car-field-label">{t('adminPages.carDetail.docUrl')}</label>
               <input
                 type="text"
-                placeholder="https://... or storage file path"
+                placeholder={t('adminPages.carDetail.docUrlPlaceholder')}
                 value={fileUrl}
                 onChange={(e) => setFileUrl(e.target.value)}
                 className="car-field-input"
@@ -2746,10 +2744,10 @@ function AddDocumentModal({
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Notes & Conditions</label>
+              <label className="car-field-label">{t('adminPages.carDetail.docNotes')}</label>
               <textarea
                 rows={2}
-                placeholder="Any special endorsements or stipulations"
+                placeholder={t('adminPages.carDetail.docNotesPlaceholder')}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="car-field-input"
@@ -2759,10 +2757,10 @@ function AddDocumentModal({
 
           <div className="car-modal-footer">
             <button type="button" onClick={onClose} className="car-btn-secondary">
-              Cancel
+              {t('adminPages.carDetail.cancel')}
             </button>
             <button type="submit" disabled={isSubmitting} className="car-btn-primary">
-              {isSubmitting ? 'Saving...' : 'Register Document'}
+              {isSubmitting ? t('adminPages.carDetail.saving') : t('adminPages.carDetail.registerDoc')}
             </button>
           </div>
         </form>
@@ -2782,6 +2780,7 @@ function AddMaintenanceModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [maintenanceType, setMaintenanceType] = useState('SCHEDULED_SERVICE');
   const [description, setDescription] = useState('');
   const [serviceProvider, setServiceProvider] = useState('');
@@ -2821,7 +2820,7 @@ function AddMaintenanceModal({
     <div className="car-modal-overlay" onClick={onClose}>
       <div className="car-modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="car-modal-header">
-          <h3 className="car-modal-title">Log Maintenance or Service</h3>
+          <h3 className="car-modal-title">{t('adminPages.carDetail.maintModalTitle')}</h3>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
             <X size={20} />
           </button>
@@ -2830,30 +2829,30 @@ function AddMaintenanceModal({
         <form onSubmit={handleSubmit}>
           <div className="car-modal-body">
             <div className="car-field-group">
-              <label className="car-field-label">Maintenance Category *</label>
+              <label className="car-field-label">{t('adminPages.carDetail.maintCategory')}</label>
               <CustomSelect
                 value={maintenanceType}
                 onChange={(val) => setMaintenanceType(val)}
                 options={[
-                  { value: 'SCHEDULED_SERVICE', label: 'Scheduled Routine Service' },
-                  { value: 'OIL_CHANGE', label: 'Engine Oil & Filter Service' },
-                  { value: 'TIRE_SERVICE', label: 'Tire Rotation / Replacement' },
-                  { value: 'BRAKE_SERVICE', label: 'Brake Inspection & Pads' },
-                  { value: 'MECHANICAL_REPAIR', label: 'Mechanical Workshop Repair' },
-                  { value: 'BODYWORK', label: 'Bodywork & Paint Touch-up' },
-                  { value: 'ELECTRICAL', label: 'Electrical & Sensor Calibration' },
-                  { value: 'INSPECTION', label: 'State Safety Inspection' },
-                  { value: 'OTHER', label: 'Other Workshop Service' },
+                  { value: 'SCHEDULED_SERVICE', label: t('adminPages.carDetail.mtScheduled') },
+                  { value: 'OIL_CHANGE', label: t('adminPages.carDetail.mtOil') },
+                  { value: 'TIRE_SERVICE', label: t('adminPages.carDetail.mtTire') },
+                  { value: 'BRAKE_SERVICE', label: t('adminPages.carDetail.mtBrake') },
+                  { value: 'MECHANICAL_REPAIR', label: t('adminPages.carDetail.mtMechanical') },
+                  { value: 'BODYWORK', label: t('adminPages.carDetail.mtBody') },
+                  { value: 'ELECTRICAL', label: t('adminPages.carDetail.mtElectrical') },
+                  { value: 'INSPECTION', label: t('adminPages.carDetail.mtInspection') },
+                  { value: 'OTHER', label: t('adminPages.carDetail.mtOther') },
                 ]}
               />
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Description of Work *</label>
+              <label className="car-field-label">{t('adminPages.carDetail.workDescription')}</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. 20,000 km Major Service & Synthetic Oil"
+                placeholder={t('adminPages.carDetail.workPlaceholder')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="car-field-input"
@@ -2862,10 +2861,10 @@ function AddMaintenanceModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
-                <label className="car-field-label">Service Provider</label>
+                <label className="car-field-label">{t('adminPages.carDetail.provider')}</label>
                 <input
                   type="text"
-                  placeholder="e.g. Porsche Center Workshop"
+                  placeholder={t('adminPages.carDetail.providerPlaceholder')}
                   value={serviceProvider}
                   onChange={(e) => setServiceProvider(e.target.value)}
                   className="car-field-input"
@@ -2873,7 +2872,7 @@ function AddMaintenanceModal({
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Cost (USD)</label>
+                <label className="car-field-label">{t('adminPages.carDetail._costLabel', { currency: APP_CURRENCY })}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -2886,7 +2885,7 @@ function AddMaintenanceModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
-                <label className="car-field-label">Scheduled Date</label>
+                <label className="car-field-label">{t('adminPages.carDetail.scheduledDate')}</label>
                 <input
                   type="date"
                   value={scheduledAt}
@@ -2896,7 +2895,7 @@ function AddMaintenanceModal({
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Completed Date</label>
+                <label className="car-field-label">{t('adminPages.carDetail.completedDate')}</label>
                 <input
                   type="date"
                   value={completedAt}
@@ -2907,21 +2906,21 @@ function AddMaintenanceModal({
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Current Status</label>
+              <label className="car-field-label">{t('adminPages.carDetail.currentStatus')}</label>
               <CustomSelect
                 value={status}
                 onChange={(val) => setStatus(val)}
                 options={[
-                  { value: 'SCHEDULED', label: 'Scheduled' },
-                  { value: 'IN_PROGRESS', label: 'In Progress' },
-                  { value: 'COMPLETED', label: 'Completed' },
-                  { value: 'CANCELLED', label: 'Cancelled' },
+                  { value: 'SCHEDULED', label: t('adminPages.carDetail.stScheduled') },
+                  { value: 'IN_PROGRESS', label: t('adminPages.carDetail.inProgress') },
+                  { value: 'COMPLETED', label: t('adminPages.carDetail.stCompleted') },
+                  { value: 'CANCELLED', label: t('adminPages.carDetail.stCancelled') },
                 ]}
               />
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Odometer at Service (km)</label>
+              <label className="car-field-label">{t('adminPages.carDetail.odometerAtService')}</label>
               <input
                 type="number"
                 value={odometerValue}
@@ -2931,10 +2930,10 @@ function AddMaintenanceModal({
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Work Notes</label>
+              <label className="car-field-label">{t('adminPages.carDetail.workNotes')}</label>
               <textarea
                 rows={2}
-                placeholder="Technician observations or parts installed"
+                placeholder={t('adminPages.carDetail.workNotesPlaceholder')}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="car-field-input"
@@ -2944,10 +2943,10 @@ function AddMaintenanceModal({
 
           <div className="car-modal-footer">
             <button type="button" onClick={onClose} className="car-btn-secondary">
-              Cancel
+              {t('adminPages.carDetail.cancel')}
             </button>
             <button type="submit" disabled={isSubmitting} className="car-btn-primary">
-              {isSubmitting ? 'Saving...' : 'Save Maintenance'}
+              {isSubmitting ? t('adminPages.carDetail.saving') : t('adminPages.carDetail.saveMaint')}
             </button>
           </div>
         </form>
@@ -2965,6 +2964,7 @@ function AddDamageModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [damageType, setDamageType] = useState('SCRATCH');
   const [severity, setSeverity] = useState('LOW');
   const [description, setDescription] = useState('');
@@ -2998,7 +2998,7 @@ function AddDamageModal({
     <div className="car-modal-overlay" onClick={onClose}>
       <div className="car-modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="car-modal-header">
-          <h3 className="car-modal-title">Report Vehicle Damage</h3>
+          <h3 className="car-modal-title">{t('adminPages.carDetail.damageModalTitle')}</h3>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
             <X size={20} />
           </button>
@@ -3008,43 +3008,43 @@ function AddDamageModal({
           <div className="car-modal-body">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
-                <label className="car-field-label">Damage Type *</label>
+                <label className="car-field-label">{t('adminPages.carDetail.damageTypeReq')}</label>
                 <CustomSelect
                   value={damageType}
                   onChange={(val) => setDamageType(val)}
                   options={[
-                    { value: 'SCRATCH', label: 'Paint Scratch' },
-                    { value: 'DENT', label: 'Body Dent' },
-                    { value: 'WINDSHIELD', label: 'Windshield Chip / Crack' },
-                    { value: 'INTERIOR', label: 'Upholstery / Interior Stain' },
-                    { value: 'WHEEL', label: 'Alloy Wheel Scuff' },
-                    { value: 'MECHANICAL', label: 'Mechanical Issue' },
-                    { value: 'OTHER', label: 'Other Incident' },
+                    { value: 'SCRATCH', label: t('adminPages.carDetail.dmScratch') },
+                    { value: 'DENT', label: t('adminPages.carDetail.dmDent') },
+                    { value: 'WINDSHIELD', label: t('adminPages.carDetail.dmWindshield') },
+                    { value: 'INTERIOR', label: t('adminPages.carDetail.dmInterior') },
+                    { value: 'WHEEL', label: t('adminPages.carDetail.dmWheel') },
+                    { value: 'MECHANICAL', label: t('adminPages.carDetail.dmMechanical') },
+                    { value: 'OTHER', label: t('adminPages.carDetail.dmOther') },
                   ]}
                 />
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Severity Level *</label>
+                <label className="car-field-label">{t('adminPages.carDetail.severityReq')}</label>
                 <CustomSelect
                   value={severity}
                   onChange={(val) => setSeverity(val)}
                   options={[
-                    { value: 'LOW', label: 'Low (Cosmetic)' },
-                    { value: 'MEDIUM', label: 'Medium (Requires Touch-up)' },
-                    { value: 'HIGH', label: 'High (Safety concern)' },
-                    { value: 'CRITICAL', label: 'Critical (Vehicle grounded)' },
+                    { value: 'LOW', label: t('adminPages.carDetail.svLow') },
+                    { value: 'MEDIUM', label: t('adminPages.carDetail.svMedium') },
+                    { value: 'HIGH', label: t('adminPages.carDetail.svHigh') },
+                    { value: 'CRITICAL', label: t('adminPages.carDetail.svCritical') },
                   ]}
                 />
               </div>
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Damage Description *</label>
+              <label className="car-field-label">{t('adminPages.carDetail.damageDescription')}</label>
               <textarea
                 rows={3}
                 required
-                placeholder="Describe location, size, and circumstances of damage"
+                placeholder={t('adminPages.carDetail.damagePlaceholder')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="car-field-input"
@@ -3053,7 +3053,7 @@ function AddDamageModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
-                <label className="car-field-label">Estimated Repair Cost ($)</label>
+                <label className="car-field-label">{t('adminPages.carDetail._repairCostLabel', { currency: APP_CURRENCY })}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -3064,24 +3064,24 @@ function AddDamageModal({
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Initial Status</label>
+                <label className="car-field-label">{t('adminPages.carDetail.initialStatus')}</label>
                 <CustomSelect
                   value={status}
                   onChange={(val) => setStatus(val)}
                   options={[
-                    { value: 'REPORTED', label: 'Reported' },
-                    { value: 'UNDER_REVIEW', label: 'Under Review' },
-                    { value: 'IN_REPAIR', label: 'In Repair' },
+                    { value: 'REPORTED', label: t('adminPages.carDetail.dsReported') },
+                    { value: 'UNDER_REVIEW', label: t('adminPages.carDetail.dsReview') },
+                    { value: 'IN_REPAIR', label: t('adminPages.carDetail.dsRepair') },
                   ]}
                 />
               </div>
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Additional Notes</label>
+              <label className="car-field-label">{t('adminPages.carDetail.additionalNotes')}</label>
               <textarea
                 rows={2}
-                placeholder="Optional inspection or witness remarks"
+                placeholder={t('adminPages.carDetail.additionalPlaceholder')}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="car-field-input"
@@ -3091,10 +3091,10 @@ function AddDamageModal({
 
           <div className="car-modal-footer">
             <button type="button" onClick={onClose} className="car-btn-secondary">
-              Cancel
+              {t('adminPages.carDetail.cancel')}
             </button>
             <button type="submit" disabled={isSubmitting} className="car-btn-primary">
-              {isSubmitting ? 'Submitting...' : 'File Damage Report'}
+              {isSubmitting ? t('adminPages.carDetail.submitting') : t('adminPages.carDetail.fileDamage')}
             </button>
           </div>
         </form>
@@ -3114,6 +3114,7 @@ function AddOdometerModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [reading, setReading] = useState<number>(currentMileage);
   const [source, setSource] = useState('MANUAL_AUDIT');
   const [notes, setNotes] = useState('');
@@ -3125,11 +3126,11 @@ function AddOdometerModal({
     e.preventDefault();
     if (reading < currentMileage) {
       const ok = await confirm({
-        title: 'Confirm Calibration Rollback',
-        message: `The entered reading (${Number(reading).toLocaleString()} km) is lower than current odometer (${currentMileage.toLocaleString()} km).`,
-        note: 'This will be flagged in the vehicle audit log as an odometer rollback.',
-        confirmText: 'Confirm Rollback',
-        cancelText: 'Cancel',
+        title: t('adminPages.carDetail.rollbackTitle'),
+        message: t('adminPages.carDetail._rollbackMessage', { reading: Number(reading).toLocaleString(), current: currentMileage.toLocaleString() }),
+        note: t('adminPages.carDetail.rollbackNote'),
+        confirmText: t('adminPages.carDetail.confirmRollback'),
+        cancelText: t('adminPages.carDetail.cancel'),
         variant: 'warning',
       });
       if (!ok) {
@@ -3146,7 +3147,7 @@ function AddOdometerModal({
       });
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Failed to record odometer reading');
+      setError(err.message || t('adminPages.carDetail.errOdo'));
     } finally {
       setIsSubmitting(false);
     }
@@ -3156,7 +3157,7 @@ function AddOdometerModal({
     <div className="car-modal-overlay" onClick={onClose}>
       <div className="car-modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="car-modal-header">
-          <h3 className="car-modal-title">Record Verified Odometer Reading</h3>
+          <h3 className="car-modal-title">{t('adminPages.carDetail.odoModalTitle')}</h3>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
             <X size={20} />
           </button>
@@ -3169,7 +3170,7 @@ function AddOdometerModal({
             )}
 
             <div className="car-field-group">
-              <label className="car-field-label">Current Meter Reading (km) *</label>
+              <label className="car-field-label">{t('adminPages.carDetail.currentReading')}</label>
               <input
                 type="number"
                 required
@@ -3181,25 +3182,25 @@ function AddOdometerModal({
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Source of Log</label>
+              <label className="car-field-label">{t('adminPages.carDetail.logSource')}</label>
               <CustomSelect
                 value={source}
                 onChange={(val) => setSource(val)}
                 options={[
-                  { value: 'MANUAL_AUDIT', label: 'Manual Yard Inspection' },
-                  { value: 'TRIP_RETURN', label: 'Customer Trip Return Check-in' },
-                  { value: 'TRIP_START', label: 'Pre-rental Dispatch Check-out' },
-                  { value: 'MAINTENANCE', label: 'Workshop Service Reading' },
-                  { value: 'CALIBRATION', label: 'Cluster Calibration' },
+                  { value: 'MANUAL_AUDIT', label: t('adminPages.carDetail.srcManual') },
+                  { value: 'TRIP_RETURN', label: t('adminPages.carDetail.srcReturn') },
+                  { value: 'TRIP_START', label: t('adminPages.carDetail.srcStart') },
+                  { value: 'MAINTENANCE', label: t('adminPages.carDetail.srcMaintenance') },
+                  { value: 'CALIBRATION', label: t('adminPages.carDetail.srcCalibration') },
                 ]}
               />
             </div>
 
             <div className="car-field-group">
-              <label className="car-field-label">Notes</label>
+              <label className="car-field-label">{t('adminPages.carDetail.notes')}</label>
               <textarea
                 rows={2}
-                placeholder="Reason for odometer verification"
+                placeholder={t('adminPages.carDetail.odoNotesPlaceholder')}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="car-field-input"
@@ -3209,10 +3210,10 @@ function AddOdometerModal({
 
           <div className="car-modal-footer">
             <button type="button" onClick={onClose} className="car-btn-secondary">
-              Cancel
+              {t('adminPages.carDetail.cancel')}
             </button>
             <button type="submit" disabled={isSubmitting} className="car-btn-primary">
-              {isSubmitting ? 'Recording...' : 'Update Odometer'}
+              {isSubmitting ? t('adminPages.carDetail.recording') : t('adminPages.carDetail.updateOdo')}
             </button>
           </div>
         </form>
@@ -3232,6 +3233,7 @@ function AddPricingTierModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [rateName, setRateName] = useState('High Season Special');
   const [pricingMethod, setPricingMethod] = useState<'daily' | 'per_km' | 'daily_extra_km' | 'hourly' | 'monthly'>('daily');
   const [currency, setCurrency] = useState('PKR');
@@ -3268,7 +3270,7 @@ function AddPricingTierModal({
     <div className="car-modal-overlay" onClick={onClose}>
       <div className="car-modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="car-modal-header">
-          <h3 className="car-modal-title">Create Rental Pricing Tier</h3>
+          <h3 className="car-modal-title">{t('adminPages.carDetail.tierModalTitle')}</h3>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
             <X size={20} />
           </button>
@@ -3277,11 +3279,11 @@ function AddPricingTierModal({
         <form onSubmit={handleSubmit}>
           <div className="car-modal-body">
             <div className="car-field-group">
-              <label className="car-field-label">Tier Name *</label>
+              <label className="car-field-label">{t('adminPages.carDetail.tierNameReq')}</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Corporate Rate, High Season, Long Term"
+                placeholder={t('adminPages.carDetail.tierPlaceholder')}
                 value={rateName}
                 onChange={(e) => setRateName(e.target.value)}
                 className="car-field-input"
@@ -3290,22 +3292,22 @@ function AddPricingTierModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
-                <label className="car-field-label">Pricing Method *</label>
+                <label className="car-field-label">{t('adminPages.carDetail.pricingMethodReq')}</label>
                 <CustomSelect
                   value={pricingMethod}
                   onChange={(val) => setPricingMethod(val as any)}
                   options={[
-                    { value: 'daily', label: 'Daily Rental' },
-                    { value: 'per_km', label: 'Per-Kilometer' },
-                    { value: 'daily_extra_km', label: 'Daily + Extra KM' },
-                    { value: 'hourly', label: 'Hourly Rental' },
-                    { value: 'monthly', label: 'Monthly Rental' },
+                    { value: 'daily', label: t('adminPages.carDetail.pmDaily') },
+                    { value: 'per_km', label: t('adminPages.carDetail.pmKm') },
+                    { value: 'daily_extra_km', label: t('adminPages.carDetail.dailyExtra') },
+                    { value: 'hourly', label: t('adminPages.carDetail.pmHourly') },
+                    { value: 'monthly', label: t('adminPages.carDetail.pmMonthly') },
                   ]}
                 />
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Currency *</label>
+                <label className="car-field-label">{t('adminPages.carDetail.currencyReq')}</label>
                 <CustomSelect
                   value={currency}
                   onChange={(val) => setCurrency(val)}
@@ -3321,7 +3323,7 @@ function AddPricingTierModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div className="car-field-group">
-                <label className="car-field-label">Base Rate ({currency}) *</label>
+                <label className="car-field-label">{t('adminPages.carDetail._tierBase', { currency })}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -3333,7 +3335,7 @@ function AddPricingTierModal({
               </div>
 
               <div className="car-field-group">
-                <label className="car-field-label">Security Deposit ({currency})</label>
+                <label className="car-field-label">{t('adminPages.carDetail._tierDeposit', { currency })}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -3347,7 +3349,7 @@ function AddPricingTierModal({
             {(pricingMethod === 'daily' || pricingMethod === 'daily_extra_km') && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div className="car-field-group">
-                  <label className="car-field-label">Included KM / Day</label>
+                  <label className="car-field-label">{t('adminPages.carDetail.includedKmDay')}</label>
                   <input
                     type="number"
                     value={includedKmPerDay}
@@ -3357,7 +3359,7 @@ function AddPricingTierModal({
                 </div>
 
                 <div className="car-field-group">
-                  <label className="car-field-label">Extra KM Fee ({currency}/km)</label>
+                  <label className="car-field-label">{t('adminPages.carDetail._tierExtra', { currency })}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -3372,10 +3374,10 @@ function AddPricingTierModal({
 
           <div className="car-modal-footer">
             <button type="button" onClick={onClose} className="car-btn-secondary">
-              Cancel
+              {t('adminPages.carDetail.cancel')}
             </button>
             <button type="submit" disabled={isSubmitting} className="car-btn-primary">
-              {isSubmitting ? 'Creating...' : 'Create Rate Tier'}
+              {isSubmitting ? t('adminPages.carDetail.creating') : t('adminPages.carDetail.createTier')}
             </button>
           </div>
         </form>
@@ -3405,6 +3407,7 @@ function CarImageLightbox({
   onPrev,
   onNext,
 }: CarImageLightboxProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
@@ -3427,7 +3430,7 @@ function CarImageLightbox({
         type="button"
         className="car-lightbox-close"
         onClick={onClose}
-        title="Close viewer (Esc)"
+        title={t('adminPages.carDetail.closeViewer')}
       >
         <X size={22} />
       </button>
@@ -3445,7 +3448,7 @@ function CarImageLightbox({
               e.stopPropagation();
               onPrev();
             }}
-            title="Previous photo (Arrow Left)"
+            title={t('adminPages.carDetail.prevPhotoKey')}
           >
             <ChevronLeft size={28} />
           </button>
@@ -3456,7 +3459,7 @@ function CarImageLightbox({
               e.stopPropagation();
               onNext();
             }}
-            title="Next photo (Arrow Right)"
+            title={t('adminPages.carDetail.nextPhotoKey')}
           >
             <ChevronRight size={28} />
           </button>
@@ -3466,7 +3469,7 @@ function CarImageLightbox({
       <div className="car-lightbox-content" onClick={(e) => e.stopPropagation()}>
         <img
           src={currentPhoto}
-          alt={`${carName} - Large View`}
+          alt={t('adminPages.carDetail._largeView', { name: carName })}
           className="car-lightbox-img"
           onError={(e) => {
             const target = e.currentTarget;

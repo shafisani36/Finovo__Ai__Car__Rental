@@ -20,6 +20,7 @@ import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader } from '../../../components/common';
 import { formatMoney, getCarImage, APP_CURRENCY } from '../../../utils/carImageHelper';
 import '../../inspections/components/inspection.css';
+import { useTranslation } from 'react-i18next';
 
 const FUEL_LEVELS = ['100%', '75%', '50%', '25%', '10%'].map((v) => ({ value: v, label: v }));
 
@@ -54,6 +55,7 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export function ReturnVehiclePage() {
+  const { t, i18n } = useTranslation();
   const { rentalId } = useParams<{ rentalId: string }>();
   const navigate = useNavigate();
 
@@ -99,7 +101,7 @@ export function ReturnVehiclePage() {
           setComparison(detail.inspection.comparison || null);
         }
       } catch (err) {
-        if (active) setLoadError(errorMessage(err, 'Failed to load rental'));
+        if (active) setLoadError(errorMessage(err, t('adminPages.rentals.errLoadRental')));
       } finally {
         if (active) setLoading(false);
       }
@@ -107,6 +109,8 @@ export function ReturnVehiclePage() {
     return () => {
       active = false;
     };
+    // Loads once per record; the language is only used for error text, so a language change must not reload the form
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rentalId]);
 
   const pickupInspection = rental?.inspections?.find((i) => i.type === 'PICKUP');
@@ -145,7 +149,7 @@ export function ReturnVehiclePage() {
       } catch (err) {
         if (active) {
           setPreview(null);
-          setPreviewError(errorMessage(err, 'Could not calculate the settlement'));
+          setPreviewError(errorMessage(err, t('adminPages.rentals.errSettlement')));
         }
       }
     }, 350);
@@ -153,12 +157,12 @@ export function ReturnVehiclePage() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [rental, returnInspection, mileageValid, mileageNumber, endFuelLevel, fuelCharge, additionalAdjustment, chargesKey]);
+  }, [rental, returnInspection, mileageValid, mileageNumber, endFuelLevel, fuelCharge, additionalAdjustment, chargesKey, t]);
 
   const runScan = async () => {
     if (!rental) return;
     if (missingViews.length > 0) {
-      setError(`Take the required photos first: ${missingViews.map((v) => VIEW_LABELS[v]).join(', ')}`);
+      setError(t('adminPages.rentals._needPhotos', { views: missingViews.map((v) => t(`inspectionReport.views.${v}`, { defaultValue: VIEW_LABELS[v] })).join(', ') }));
       return;
     }
     setScanning(true);
@@ -170,7 +174,7 @@ export function ReturnVehiclePage() {
       // New damage usually means the car needs repair before the next booking
       setSendToMaintenance(Boolean(res.inspection.comparison && res.inspection.comparison.newDamageCount > 0));
     } catch (err) {
-      setError(errorMessage(err, 'The AI inspection failed. Please try again.'));
+      setError(errorMessage(err, t('adminPages.rentals.errScan')));
     } finally {
       setScanning(false);
     }
@@ -179,7 +183,7 @@ export function ReturnVehiclePage() {
   const completeReturn = async () => {
     if (!rental || !returnInspection) return;
     if (!mileageValid) {
-      setError(`Enter the odometer reading (at least ${rental.startMileage} km)`);
+      setError(t('adminPages.rentals._errReturnOdometer', { km: rental.startMileage }));
       return;
     }
     setSubmitting(true);
@@ -197,7 +201,7 @@ export function ReturnVehiclePage() {
       });
       navigate('/admin/rentals');
     } catch (err) {
-      setError(errorMessage(err, 'Failed to complete the return'));
+      setError(errorMessage(err, t('adminPages.rentals.errReturn')));
     } finally {
       setSubmitting(false);
     }
@@ -207,7 +211,7 @@ export function ReturnVehiclePage() {
     return (
       <div style={{ padding: '80px', textAlign: 'center', color: '#685D73' }}>
         <RotateCcw size={28} style={{ animation: 'spin 1s linear infinite' }} />
-        <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading rental…</div>
+        <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.rentals.loadingRental')}</div>
       </div>
     );
   }
@@ -216,10 +220,10 @@ export function ReturnVehiclePage() {
     return (
       <div style={{ maxWidth: '800px', margin: '40px auto', textAlign: 'center' }}>
         <AlertTriangle size={48} color="#EF4444" style={{ marginBottom: '16px' }} />
-        <h2 style={{ color: '#1E0426' }}>Rental not found</h2>
+        <h2 style={{ color: '#1E0426' }}>{t('adminPages.rentals.rentalNotFound')}</h2>
         <p style={{ color: '#685D73', marginBottom: '24px' }}>{loadError}</p>
         <Link to="/admin/rentals" style={{ ...primaryButton, textDecoration: 'none' }}>
-          Back to rentals
+          {t('adminPages.rentals.backToRentals')}
         </Link>
       </div>
     );
@@ -227,18 +231,18 @@ export function ReturnVehiclePage() {
 
   const blockedReason =
     rental.status !== 'ACTIVE'
-      ? 'This rental has already been returned.'
+      ? t('adminPages.rentals.alreadyReturned')
       : !pickupInspection
-        ? 'This rental has no pickup inspection, so the return cannot be compared automatically.'
+        ? t('adminPages.rentals.noPickupInspection')
         : null;
   const isClean = comparison ? comparison.newDamageCount === 0 && comparison.totalActiveCharges === 0 : false;
 
   return (
     <PageContainer>
       <PageHeader
-        breadcrumbs={[{ label: 'Rentals', href: '/admin/rentals' }, { label: `Return #${rental.booking.bookingNumber}` }]}
-        title="Vehicle return"
-        subtitle="Scan the car with AI, compare with the pickup inspection, then settle and close the rental."
+        breadcrumbs={[{ label: t('adminPages.rentals.crumbRentals'), href: '/admin/rentals' }, { label: `Return #${rental.booking.bookingNumber}` }]}
+        title={t('adminPages.rentals.returnTitle')}
+        subtitle={t('adminPages.rentals.returnSubtitle')}
       />
 
       {(error || blockedReason) && (
@@ -269,24 +273,24 @@ export function ReturnVehiclePage() {
             style={{ width: '100px', height: '70px', borderRadius: '10px', objectFit: 'cover', backgroundColor: '#F7F5F8' }}
           />
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>VEHICLE</div>
+            <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>{t('adminPages.rentals.vehicleCaps')}</div>
             <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E0426' }}>
               {rental.vehicle.brand} {rental.vehicle.model}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#685D73' }}>
-              Plate: {rental.vehicle.registrationNumber} · Out at {rental.startMileage} km, fuel {rental.startFuelLevel}
+              {t('adminPages.rentals.plate')} {rental.vehicle.registrationNumber} · {t('adminPages.rentals._outAt', { km: rental.startMileage, fuel: rental.startFuelLevel })}
             </div>
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>RENTER</div>
+          <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>{t('adminPages.rentals.renterCaps')}</div>
           <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E0426' }}>{rental.booking.customer.fullName}</div>
           <div style={{ fontSize: '0.8rem', color: '#685D73' }}>
-            Due back {new Date(rental.booking.returnDateTime).toLocaleString()}
+            {t('adminPages.rentals._dueBack', { date: new Date(rental.booking.returnDateTime).toLocaleString(i18n.language) })}
           </div>
           {pickupInspection && (
             <div style={{ fontSize: '0.8rem', color: '#685D73' }}>
-              Condition at pickup: <strong>{pickupInspection.overallScore}%</strong>
+              {t('adminPages.rentals.conditionAtPickup')} <strong>{pickupInspection.overallScore}%</strong>
             </div>
           )}
         </div>
@@ -297,13 +301,12 @@ export function ReturnVehiclePage() {
           {/* Step 1 */}
           <section style={card}>
             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
-              <ScanLine size={20} /> Step 1 · AI return inspection
+              <ScanLine size={20} /> {t('adminPages.rentals.returnStep1')}
             </h3>
             {!comparison ? (
               <>
                 <p style={{ margin: 0, color: '#685D73', fontSize: '0.875rem' }}>
-                  Take each photo from the same angle as at pickup (the faded pickup photo is shown as a guide). The AI
-                  compares both photos side by side and only charges damage that was not there at pickup.
+                  {t('adminPages.rentals.returnHelp')}
                 </p>
                 <VehiclePhotoCapture
                   value={photos}
@@ -314,7 +317,7 @@ export function ReturnVehiclePage() {
                 {scanning ? (
                   <div className="insp-progress" role="status">
                     <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                    AI is comparing the return photos with the pickup photos. This usually takes 20-90 seconds…
+                    {t('adminPages.rentals.comparing')}
                   </div>
                 ) : (
                   <button
@@ -323,7 +326,7 @@ export function ReturnVehiclePage() {
                     disabled={missingViews.length > 0}
                     onClick={runScan}
                   >
-                    <ScanLine size={18} /> Run AI inspection and compare
+                    <ScanLine size={18} /> {t('adminPages.rentals.runCompare')}
                   </button>
                 )}
               </>
@@ -345,20 +348,20 @@ export function ReturnVehiclePage() {
                 >
                   {isClean ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
                   {isClean
-                    ? 'Return report matches the pickup report. The car can be returned without a damage fine.'
-                    : `New damage found. A fine of ${formatMoney(comparison.totalActiveCharges, comparison.currency)} will be added to the settlement. Waive any item you do not want to charge.`}
+                    ? t('adminPages.rentals.cleanReturn')
+                    : t('adminPages.rentals._newDamage', { amount: formatMoney(comparison.totalActiveCharges, comparison.currency) })}
                 </div>
-                <DamageComparisonView comparison={comparison} onChange={setComparison} editable />
+                <DamageComparisonView comparison={comparison} onChange={setComparison} editable canResolveDisputes />
               </>
             )}
           </section>
 
           {/* Step 2 */}
           <section style={{ ...card, opacity: comparison ? 1 : 0.55 }} aria-disabled={!comparison}>
-            <h3 style={{ margin: 0, color: '#1E0426' }}>Step 2 · Settlement and return</h3>
+            <h3 style={{ margin: 0, color: '#1E0426' }}>{t('adminPages.rentals.returnStep2')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '14px' }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
-                Odometer (km)
+                {t('adminPages.rentals.odometer')}
                 <input
                   type="number"
                   min={rental.startMileage}
@@ -370,7 +373,7 @@ export function ReturnVehiclePage() {
                 />
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
-                Fuel level
+                {t('adminPages.rentals.fuelLevel')}
                 <CustomSelect
                   value={endFuelLevel}
                   onChange={(v) => setEndFuelLevel(String(v))}
@@ -380,7 +383,7 @@ export function ReturnVehiclePage() {
                 />
               </div>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
-                Fuel charge ({currency})
+                {t('adminPages.rentals._fuelChargeLabel', { currency })}
                 <input
                   type="number"
                   min={0}
@@ -391,7 +394,7 @@ export function ReturnVehiclePage() {
                 />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
-                Other adjustment ({currency})
+                {t('adminPages.rentals._adjustmentLabel', { currency })}
                 <input
                   type="number"
                   value={additionalAdjustment}
@@ -404,7 +407,7 @@ export function ReturnVehiclePage() {
             <textarea
               value={conditionNotes}
               onChange={(e) => setConditionNotes(e.target.value)}
-              placeholder="Return notes (optional)"
+              placeholder={t('adminPages.rentals.returnNotes')}
               rows={2}
               disabled={!comparison}
               style={{ width: '100%', borderRadius: '10px', border: '1px solid #ECEAEF', padding: '10px', boxSizing: 'border-box', fontFamily: 'inherit' }}
@@ -416,39 +419,39 @@ export function ReturnVehiclePage() {
                 <table className="insp-table">
                   <tbody>
                     <tr>
-                      <td>Distance driven</td>
+                      <td>{t('adminPages.rentals.distance')}</td>
                       <td>
                         {preview.odometer.actualDistanceTraveled} km
-                        {preview.odometer.extraKm > 0 ? ` (${preview.odometer.extraKm} km extra)` : ''}
+                        {preview.odometer.extraKm > 0 ? ` (${t('adminPages.rentals._kmExtra', { km: preview.odometer.extraKm })})` : ''}
                       </td>
                     </tr>
                     <tr>
-                      <td>Extra km charge</td>
+                      <td>{t('adminPages.rentals.extraKm')}</td>
                       <td>{formatMoney(preview.breakdown.extraKmCharge, preview.currency, 2)}</td>
                     </tr>
                     <tr>
-                      <td>Late return {preview.duration.lateHours > 0 ? `(${preview.duration.lateHours} h)` : ''}</td>
+                      <td>{t('adminPages.rentals.lateReturn')} {preview.duration.lateHours > 0 ? `(${preview.duration.lateHours} h)` : ''}</td>
                       <td>{formatMoney(preview.breakdown.lateFee, preview.currency, 2)}</td>
                     </tr>
                     <tr>
-                      <td>Damage fine (AI comparison)</td>
+                      <td>{t('adminPages.rentals.damageFine')}</td>
                       <td>{formatMoney(preview.breakdown.damageCharge, preview.currency, 2)}</td>
                     </tr>
                     <tr>
-                      <td>Fuel charge</td>
+                      <td>{t('adminPages.rentals.fuelCharge')}</td>
                       <td>{formatMoney(preview.breakdown.fuelCharge, preview.currency, 2)}</td>
                     </tr>
                     <tr>
-                      <td>Deducted from deposit</td>
+                      <td>{t('adminPages.rentals.deducted')}</td>
                       <td>{formatMoney(preview.depositAccounting.deductions, preview.currency, 2)}</td>
                     </tr>
                     <tr>
-                      <td>Deposit refund to customer</td>
+                      <td>{t('adminPages.rentals.depositRefund')}</td>
                       <td>{formatMoney(preview.depositAccounting.refundableDeposit, preview.currency, 2)}</td>
                     </tr>
                     <tr>
                       <td>
-                        <strong>{preview.financialSummary.isRefundDue ? 'Refund to customer' : 'Customer still owes'}</strong>
+                        <strong>{preview.financialSummary.isRefundDue ? t('adminPages.rentals._refundToCustomer') : t('adminPages.rentals._customerOwes')}</strong>
                       </td>
                       <td>
                         <strong>
@@ -482,11 +485,10 @@ export function ReturnVehiclePage() {
               />
               <span>
                 <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1E0426' }}>
-                  <Wrench size={16} /> Send to garage
+                  <Wrench size={16} /> {t('adminPages.rentals.sendToGarage')}
                 </strong>
                 <span style={{ fontSize: '0.85rem', color: '#685D73' }}>
-                  The car is marked as in maintenance and cannot be booked until the repair is completed in the car's
-                  maintenance tab.
+                  {t('adminPages.rentals.garageHelp')}
                 </span>
               </span>
             </label>
@@ -498,7 +500,7 @@ export function ReturnVehiclePage() {
               onClick={completeReturn}
             >
               <CheckCircle2 size={18} />
-              {submitting ? 'Completing…' : sendToMaintenance ? 'Complete return and send to garage' : 'Complete return'}
+              {submitting ? t('adminPages.rentals._completing') : sendToMaintenance ? t('adminPages.rentals._completeGarage') : t('adminPages.rentals._complete')}
             </button>
           </section>
         </>

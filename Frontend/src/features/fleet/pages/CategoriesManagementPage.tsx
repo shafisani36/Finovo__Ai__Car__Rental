@@ -23,12 +23,14 @@ import {
 } from 'lucide-react';
 import './CategoriesManagementPage.css';
 import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
+import { useTranslation } from 'react-i18next';
 
 export type CategoryWithCount = VehicleCategory & {
   _count?: { vehicles: number };
 };
 
 export function CategoriesManagementPage() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
 
   const [categories, setCategories] = useState<CategoryWithCount[]>([]);
@@ -70,11 +72,11 @@ export function CategoriesManagementPage() {
       }
     } catch (err: any) {
       console.error('Failed to load categories:', err);
-      setErrorMessage(err?.message || 'Failed to load vehicle categories.');
+      setErrorMessage(err?.message || t('adminPages.fleet.errLoadCategories'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadCategories();
@@ -123,14 +125,14 @@ export function CategoriesManagementPage() {
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setModalError('Category name is required.');
+      setModalError(t('adminPages.fleet.errCategoryName'));
       return;
     }
 
     const trimmedSlug = (slug.trim() || trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
     const parsedRate = parseFloat(baseRate);
     if (isNaN(parsedRate) || parsedRate < 0) {
-      setModalError('Please enter a valid non-negative base daily rate.');
+      setModalError(t('adminPages.fleet.errRate'));
       return;
     }
 
@@ -143,7 +145,7 @@ export function CategoriesManagementPage() {
           description: description.trim() || undefined,
           baseRate: parsedRate,
         });
-        setSuccessMessage(`Category "${trimmedName}" updated successfully.`);
+        setSuccessMessage(t('adminPages.fleet._categoryUpdated', { name: trimmedName }));
       } else {
         await fleetApi.createCategory({
           name: trimmedName,
@@ -151,7 +153,7 @@ export function CategoriesManagementPage() {
           description: description.trim() || undefined,
           baseRate: parsedRate,
         });
-        setSuccessMessage(`Category "${trimmedName}" created successfully.`);
+        setSuccessMessage(t('adminPages.fleet._categoryCreated', { name: trimmedName }));
       }
 
       setIsModalOpen(false);
@@ -159,7 +161,7 @@ export function CategoriesManagementPage() {
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       console.error('Error saving category:', err);
-      setModalError(err?.message || 'Failed to save vehicle category.');
+      setModalError(err?.message || t('adminPages.fleet.errSaveCategory'));
     } finally {
       setIsSaving(false);
     }
@@ -170,33 +172,33 @@ export function CategoriesManagementPage() {
     const vehicleCount = cat._count?.vehicles || 0;
     if (vehicleCount > 0) {
       await confirm({
-        title: 'Cannot Delete Category',
-        message: `Category "${cat.name}" has ${vehicleCount} vehicle(s) actively assigned to it. Reassign or remove these vehicles from the fleet before deleting this category.`,
+        title: t('adminPages.fleet.cannotDeleteCategory'),
+        message: t('adminPages.fleet._categoryInUse', { name: cat.name, count: vehicleCount }),
         variant: 'warning',
-        confirmText: 'Understood',
+        confirmText: t('adminPages.fleet.understood'),
         cancelText: '',
       });
       return;
     }
 
     const confirmed = await confirm({
-      title: 'Delete Fleet Category',
-      message: `Are you sure you want to permanently delete the category "${cat.name}"? This action cannot be undone.`,
+      title: t('adminPages.fleet.deleteCategoryTitle'),
+      message: t('adminPages.fleet._deleteCategoryMessage', { name: cat.name }),
       variant: 'danger',
-      confirmText: 'Delete Category',
-      cancelText: 'Cancel',
+      confirmText: t('adminPages.fleet.deleteCategory'),
+      cancelText: t('adminPages.fleet.cancel'),
     });
 
     if (!confirmed) return;
 
     try {
       await fleetApi.deleteCategory(cat.id);
-      setSuccessMessage(`Category "${cat.name}" removed successfully.`);
+      setSuccessMessage(t('adminPages.fleet._categoryRemoved', { name: cat.name }));
       await loadCategories();
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       console.error('Error deleting category:', err);
-      setErrorMessage(err?.message || 'Failed to delete category.');
+      setErrorMessage(err?.message || t('adminPages.fleet.errDeleteCategory'));
       setTimeout(() => setErrorMessage(null), 5000);
     }
   };
@@ -239,10 +241,10 @@ export function CategoriesManagementPage() {
   }, [categories]);
 
   const topCategory = useMemo(() => {
-    if (categories.length === 0) return 'None';
+    if (categories.length === 0) return t('adminPages.fleet.none');
     const sorted = [...categories].sort((a, b) => (b._count?.vehicles || 0) - (a._count?.vehicles || 0));
     return sorted[0]._count?.vehicles ? sorted[0].name : sorted[0].name;
-  }, [categories]);
+  }, [categories, t]);
 
   // Helper for Category icon badge styling
   const getCategoryColor = (name: string) => {
@@ -259,19 +261,19 @@ export function CategoriesManagementPage() {
     <div className="cat-container">
       {/* Breadcrumb */}
       <div className="cat-breadcrumb">
-        <Link to="/admin/dashboard">Dashboard</Link>
+        <Link to="/admin/dashboard">{t('adminPages.fleet.dashboard')}</Link>
         <ChevronRight size={14} />
-        <Link to="/admin/cars">Fleet</Link>
+        <Link to="/admin/cars">{t('adminPages.fleet.fleet')}</Link>
         <ChevronRight size={14} />
-        <span className="cat-breadcrumb-current">Fleet Categories</span>
+        <span className="cat-breadcrumb-current">{t('adminPages.fleet.categoriesTitle')}</span>
       </div>
 
       {/* Page Header */}
       <div className="cat-header">
         <div className="cat-header-title-wrap">
-          <h1 className="cat-header-title">Fleet Categories</h1>
+          <h1 className="cat-header-title">{t('adminPages.fleet.categoriesTitle')}</h1>
           <p className="cat-header-desc">
-            Manage vehicle classes, baseline commercial rental tariffs, and cabin seating guidelines.
+            {t('adminPages.fleet.categoriesSubtitle')}
           </p>
         </div>
 
@@ -283,7 +285,7 @@ export function CategoriesManagementPage() {
             className="cat-btn-refresh"
           >
             <RefreshCw size={15} className={isLoading ? 'spin-icon' : ''} />
-            <span>Refresh</span>
+            <span>{t('adminPages.fleet.refresh')}</span>
           </button>
 
           <button
@@ -292,7 +294,7 @@ export function CategoriesManagementPage() {
             className="cat-btn-primary"
           >
             <Plus size={16} strokeWidth={2.5} />
-            <span>New Category</span>
+            <span>{t('adminPages.fleet.newCategory')}</span>
           </button>
         </div>
       </div>
@@ -356,9 +358,9 @@ export function CategoriesManagementPage() {
       <div className="cat-kpi-grid">
         <div className="cat-kpi-card">
           <div className="cat-kpi-content">
-            <div className="cat-kpi-label">Total Categories</div>
+            <div className="cat-kpi-label">{t('adminPages.fleet.totalCategories')}</div>
             <div className="cat-kpi-value">{categories.length}</div>
-            <div className="cat-kpi-subtext">Standard vehicle classes</div>
+            <div className="cat-kpi-subtext">{t('adminPages.fleet.totalCategoriesSub')}</div>
           </div>
           <div className="cat-kpi-icon" style={{ backgroundColor: '#F5EEF8', color: '#6C1E84' }}>
             <Tag size={20} />
@@ -367,9 +369,9 @@ export function CategoriesManagementPage() {
 
         <div className="cat-kpi-card">
           <div className="cat-kpi-content">
-            <div className="cat-kpi-label">Vehicles Assigned</div>
+            <div className="cat-kpi-label">{t('adminPages.fleet.vehiclesAssigned')}</div>
             <div className="cat-kpi-value">{totalVehiclesCount}</div>
-            <div className="cat-kpi-subtext">Across all active fleets</div>
+            <div className="cat-kpi-subtext">{t('adminPages.fleet.vehiclesAssignedSub')}</div>
           </div>
           <div className="cat-kpi-icon" style={{ backgroundColor: '#ECFDF5', color: '#059669' }}>
             <Car size={20} />
@@ -378,9 +380,9 @@ export function CategoriesManagementPage() {
 
         <div className="cat-kpi-card">
           <div className="cat-kpi-content">
-            <div className="cat-kpi-label">Avg Baseline Rate</div>
+            <div className="cat-kpi-label">{t('adminPages.fleet.avgRate')}</div>
             <div className="cat-kpi-value">{formatMoney(avgBaseRate)}</div>
-            <div className="cat-kpi-subtext">Per calendar day</div>
+            <div className="cat-kpi-subtext">{t('adminPages.fleet.avgRateSub')}</div>
           </div>
           <div className="cat-kpi-icon" style={{ backgroundColor: '#FEF8E7', color: '#D97706' }}>
             <Banknote size={20} />
@@ -389,9 +391,9 @@ export function CategoriesManagementPage() {
 
         <div className="cat-kpi-card">
           <div className="cat-kpi-content">
-            <div className="cat-kpi-label">Largest Category</div>
+            <div className="cat-kpi-label">{t('adminPages.fleet.largestCategory')}</div>
             <div className="cat-kpi-value" title={topCategory}>{topCategory}</div>
-            <div className="cat-kpi-subtext">By registered inventory</div>
+            <div className="cat-kpi-subtext">{t('adminPages.fleet.largestCategorySub')}</div>
           </div>
           <div className="cat-kpi-icon" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>
             <Layers size={20} />
@@ -406,7 +408,7 @@ export function CategoriesManagementPage() {
             <Search size={16} color="#8A7090" />
             <input
               type="text"
-              placeholder="Search category, slug, or keywords..."
+              placeholder={t('adminPages.fleet.searchCategories')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="cat-search-input"
@@ -423,7 +425,7 @@ export function CategoriesManagementPage() {
           </div>
 
           <span className="cat-search-count">
-            Showing <strong>{filteredCategories.length}</strong> of {categories.length}
+            {t('adminPages.fleet._showingOf', { shown: filteredCategories.length, total: categories.length })}
           </span>
         </div>
 
@@ -435,11 +437,11 @@ export function CategoriesManagementPage() {
               value={sortBy}
               onChange={(val) => setSortBy(val as any)}
               options={[
-                { value: 'NAME_ASC', label: 'Name (A to Z)' },
-                { value: 'NAME_DESC', label: 'Name (Z to A)' },
-                { value: 'RATE_DESC', label: 'Rate (High to Low)' },
-                { value: 'RATE_ASC', label: 'Rate (Low to High)' },
-                { value: 'VEHICLES_DESC', label: 'Most Vehicles' },
+                { value: 'NAME_ASC', label: t('adminPages.fleet.nameAsc') },
+                { value: 'NAME_DESC', label: t('adminPages.fleet.nameDesc') },
+                { value: 'RATE_DESC', label: t('adminPages.fleet.rateDesc') },
+                { value: 'RATE_ASC', label: t('adminPages.fleet.rateAsc') },
+                { value: 'VEHICLES_DESC', label: t('adminPages.fleet.mostVehicles') },
               ]}
             />
           </div>
@@ -452,7 +454,7 @@ export function CategoriesManagementPage() {
               className={`cat-view-btn ${viewMode === 'table' ? 'active' : ''}`}
             >
               <List size={15} />
-              <span>Table</span>
+              <span>{t('adminPages.fleet.table')}</span>
             </button>
             <button
               type="button"
@@ -460,7 +462,7 @@ export function CategoriesManagementPage() {
               className={`cat-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
             >
               <LayoutGrid size={15} />
-              <span>Grid</span>
+              <span>{t('adminPages.fleet.grid')}</span>
             </button>
           </div>
         </div>
@@ -480,10 +482,10 @@ export function CategoriesManagementPage() {
         >
           <Tag size={44} style={{ margin: '0 auto 14px', color: '#6C1E84', opacity: 0.7 }} />
           <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', color: '#1E0432', fontWeight: 800 }}>
-            No Categories Found
+            {t('adminPages.fleet.noCategories')}
           </h3>
           <p style={{ margin: '0 0 16px', fontSize: 'clamp(0.82rem, 1.4vw, 0.88rem)' }}>
-            {search ? `No categories matched "${search}". Try clearing your search.` : 'No vehicle categories have been added yet.'}
+            {search ? t('adminPages.fleet._noCategoryMatch', { search }) : t('adminPages.fleet.noCategoriesYet')}
           </p>
           <button
             type="button"
@@ -499,7 +501,7 @@ export function CategoriesManagementPage() {
               cursor: 'pointer',
             }}
           >
-            Create First Category
+            {t('adminPages.fleet.createFirstCategory')}
           </button>
         </div>
       ) : effectiveViewMode === 'table' ? (
@@ -509,12 +511,12 @@ export function CategoriesManagementPage() {
             <table className="cat-table">
               <thead>
                 <tr>
-                  <th style={{ width: '220px' }}>Category</th>
-                  <th style={{ width: '140px' }}>Slug ID</th>
-                  <th>Description & Scope</th>
-                  <th style={{ width: '150px' }}>Base Daily Rate</th>
-                  <th style={{ width: '130px' }}>Fleet Inventory</th>
-                  <th style={{ width: '100px', textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: '220px' }}>{t('adminPages.fleet.category')}</th>
+                  <th style={{ width: '140px' }}>{t('adminPages.fleet.slugIdShort')}</th>
+                  <th>{t('adminPages.fleet.descriptionScope')}</th>
+                  <th style={{ width: '150px' }}>{t('adminPages.fleet.baseDailyRate')}</th>
+                  <th style={{ width: '130px' }}>{t('adminPages.fleet.fleetInventory')}</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>{t('adminPages.fleet.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -571,7 +573,7 @@ export function CategoriesManagementPage() {
 
                       {/* Description - Responsive fluid font & clean line wrap */}
                       <td className="cat-table-desc">
-                        {cat.description || <span style={{ color: '#B5A7BC', fontStyle: 'italic' }}>No description set</span>}
+                        {cat.description || <span style={{ color: '#B5A7BC', fontStyle: 'italic' }}>{t('adminPages.fleet.noDescription')}</span>}
                       </td>
 
                       {/* Base Rate */}
@@ -579,7 +581,7 @@ export function CategoriesManagementPage() {
                         <div style={{ fontWeight: 800, color: '#1E0432', fontSize: 'clamp(0.88rem, 1.3vw, 0.95rem)' }}>
                           {formatMoney(Number(cat.baseRate || 0))}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: '#8A7090' }}>/ day standard</div>
+                        <div style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.fleet.perDayStandard')}</div>
                       </td>
 
                       {/* Fleet Count */}
@@ -602,7 +604,7 @@ export function CategoriesManagementPage() {
                           }}
                         >
                           <Car size={13} color={count > 0 ? '#6C1E84' : '#8A7090'} />
-                          <span>{count} {count === 1 ? 'Car' : 'Cars'}</span>
+                          <span>{t('adminPages.fleet._carCount', { count })}</span>
                         </Link>
                       </td>
 
@@ -612,7 +614,7 @@ export function CategoriesManagementPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(cat)}
-                            title="Edit Category"
+                            title={t('adminPages.fleet.editCategory')}
                             className="cat-action-btn cat-action-btn-edit"
                           >
                             <Pencil size={14} />
@@ -620,7 +622,7 @@ export function CategoriesManagementPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteCategory(cat)}
-                            title="Delete Category"
+                            title={t('adminPages.fleet.deleteCategory')}
                             className="cat-action-btn cat-action-btn-delete"
                           >
                             <Trash2 size={14} />
@@ -684,22 +686,22 @@ export function CategoriesManagementPage() {
                       }}
                     >
                       <Car size={12} />
-                      <span>{count} {count === 1 ? 'vehicle' : 'vehicles'}</span>
+                      <span>{t('adminPages.counts.vehicles', { count })}</span>
                     </div>
                   </div>
 
                   {/* Responsive Card Description */}
                   <p className="cat-card-desc">
-                    {cat.description || 'No cabin classification details provided.'}
+                    {cat.description || t('adminPages.fleet.noCabinDetails')}
                   </p>
                 </div>
 
                 <div className="cat-card-footer">
                   <div>
-                    <div className="cat-card-rate-label">Base Rate</div>
+                    <div className="cat-card-rate-label">{t('adminPages.fleet.baseRate')}</div>
                     <div className="cat-card-rate-value">
                       {formatMoney(Number(cat.baseRate || 0))}
-                      <span className="cat-card-rate-unit"> / day</span>
+                      <span className="cat-card-rate-unit"> {t('adminPages.fleet.perDay')}</span>
                     </div>
                   </div>
 
@@ -723,7 +725,7 @@ export function CategoriesManagementPage() {
                       }}
                     >
                       <Pencil size={13} />
-                      <span>Edit</span>
+                      <span>{t('adminPages.fleet.edit')}</span>
                     </button>
                     <button
                       type="button"
@@ -770,10 +772,10 @@ export function CategoriesManagementPage() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 'clamp(1rem, 2vw, 1.15rem)', fontWeight: 800, color: '#1E0432' }}>
-                    {editId ? 'Edit Category' : 'Create New Category'}
+                    {editId ? t('adminPages.fleet.editCategory') : t('adminPages.fleet.createCategoryTitle')}
                   </h3>
                   <p style={{ margin: 0, fontSize: '0.78rem', color: '#66566A' }}>
-                    {editId ? 'Update tariff rates and classification' : 'Define vehicle class and baseline rate'}
+                    {editId ? t('adminPages.fleet.editCategorySubtitle') : t('adminPages.fleet.createCategorySubtitle')}
                   </p>
                 </div>
               </div>
@@ -829,12 +831,12 @@ export function CategoriesManagementPage() {
                       marginBottom: '6px',
                     }}
                   >
-                    Category Name *
+                    {t('adminPages.fleet.categoryNameReq')}
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Luxury SUV, Executive Sedan, Van / Minibus"
+                    placeholder={t('adminPages.fleet.categoryPlaceholder')}
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     style={{
@@ -863,11 +865,11 @@ export function CategoriesManagementPage() {
                       marginBottom: '6px',
                     }}
                   >
-                    Identifier Slug (Unique URL identifier)
+                    {t('adminPages.fleet.slugLabel')}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. luxury-suv, executive-sedan, van-minibus"
+                    placeholder={t('adminPages.fleet.slugPlaceholder')}
                     value={slug}
                     onChange={(e) => {
                       setSlugTouched(true);
@@ -889,7 +891,7 @@ export function CategoriesManagementPage() {
                     }}
                   />
                   <div style={{ fontSize: '0.74rem', color: '#8A7090', marginTop: '4px' }}>
-                    Auto-generated from category name; used for filtering and booking tariff lookups.
+                    {t('adminPages.fleet.slugHelp')}
                   </div>
                 </div>
 
@@ -904,7 +906,7 @@ export function CategoriesManagementPage() {
                       marginBottom: '6px',
                     }}
                   >
-                    Baseline Daily Rate ({APP_CURRENCY} / Day) *
+                    {t('adminPages.fleet._rateLabel', { currency: APP_CURRENCY })}
                   </label>
                   <div
                     style={{
@@ -953,7 +955,7 @@ export function CategoriesManagementPage() {
                     />
                   </div>
                   <div style={{ fontSize: '0.74rem', color: '#8A7090', marginTop: '4px' }}>
-                    Default commercial rental rate suggested when creating cars assigned to this category.
+                    {t('adminPages.fleet.rateHelp')}
                   </div>
                 </div>
 
@@ -968,11 +970,11 @@ export function CategoriesManagementPage() {
                       marginBottom: '6px',
                     }}
                   >
-                    Description & Cabin Classification
+                    {t('adminPages.fleet.descriptionLabel')}
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="e.g. Compact and full-size SUVs with 5 to 8 passenger capacity and standard 4WD/AWD."
+                    placeholder={t('adminPages.fleet.descriptionPlaceholder')}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="cat-modal-desc-input"
@@ -998,7 +1000,7 @@ export function CategoriesManagementPage() {
                     minHeight: '42px',
                   }}
                 >
-                  Cancel
+                  {t('adminPages.fleet.cancel')}
                 </button>
 
                 <button
@@ -1023,12 +1025,12 @@ export function CategoriesManagementPage() {
                   {isSaving ? (
                     <>
                       <RefreshCw size={14} className="spin-icon" />
-                      <span>Saving...</span>
+                      <span>{t('adminPages.fleet.saving')}</span>
                     </>
                   ) : (
                     <>
                       <Check size={16} strokeWidth={2.5} />
-                      <span>{editId ? 'Save Changes' : 'Create Category'}</span>
+                      <span>{editId ? t('adminPages.fleet.saveChanges') : t('adminPages.fleet.createCategory')}</span>
                     </>
                   )}
                 </button>

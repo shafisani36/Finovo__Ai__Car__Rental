@@ -23,6 +23,8 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { alertDialog } from '../../../components/common';
 
 function BrandLogoThumbnail({
   url,
@@ -76,6 +78,7 @@ function BrandLogoThumbnail({
 }
 
 export function BrandsManagementPage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { confirm } = useConfirm();
 
@@ -129,7 +132,7 @@ export function BrandsManagementPage() {
     const isSvg = file.name.toLowerCase().endsWith('.svg') || file.type === 'image/svg+xml';
     if (!validMimes.includes(file.type.toLowerCase()) && !isSvg) {
       setLogoValidationError(
-        `Unsupported file type "${file.name}". Please upload a PNG, JPG, WEBP, or SVG image.`
+        t('adminPages.fleet._badLogoType', { name: file.name })
       );
       return;
     }
@@ -138,7 +141,7 @@ export function BrandsManagementPage() {
     const MAX_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       setLogoValidationError(
-        `Logo file "${file.name}" exceeds 5MB limit (${formatFileSize(file.size)}). Please compress or select a smaller image.`
+        t('adminPages.fleet._logoTooBig', { name: file.name, size: formatFileSize(file.size) })
       );
       return;
     }
@@ -146,7 +149,7 @@ export function BrandsManagementPage() {
     const ext = file.name.split('.').pop()?.toUpperCase() || 'IMAGE';
     const reader = new FileReader();
     reader.onerror = () => {
-      setLogoValidationError('Unable to read the selected file. Please try again.');
+      setLogoValidationError(t('adminPages.fleet.errReadFile'));
     };
     reader.onload = (e) => {
       const dataUrl = e.target?.result;
@@ -280,7 +283,7 @@ export function BrandsManagementPage() {
       brand.logoUrl
         ? {
             name: `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-logo`,
-            sizeFormatted: 'Uploaded',
+            sizeFormatted: t('adminPages.fleet.uploaded'),
             format: brand.logoUrl.endsWith('.svg') ? 'SVG' : 'PNG',
           }
         : null
@@ -304,19 +307,19 @@ export function BrandsManagementPage() {
           logoUrl: brandLogoUrl.trim() || undefined,
           isActive: brandIsActive,
         });
-        showNotification(`Brand "${brandName}" updated successfully`);
+        showNotification(t('adminPages.fleet._brandUpdated', { name: brandName }));
       } else {
         await fleetApi.createBrand({
           name: brandName.trim(),
           country: brandCountry.trim() || undefined,
           logoUrl: brandLogoUrl.trim() || undefined,
         });
-        showNotification(`Brand "${brandName}" created successfully`);
+        showNotification(t('adminPages.fleet._brandCreated', { name: brandName }));
       }
       setIsBrandModalOpen(false);
       await loadBrands();
     } catch (err: any) {
-      alert(err.message || 'Failed to save brand');
+      void alertDialog({ title: t('common.errorTitle'), message: err.message || t('adminPages.fleet.errSaveBrand'), variant: 'danger', confirmText: t('common.actions.close') });
     } finally {
       setIsSavingBrand(false);
     }
@@ -326,20 +329,20 @@ export function BrandsManagementPage() {
   const handleDeleteBrand = async (brand: VehicleBrandItem) => {
     const modelCount = brand.models?.length || 0;
     const ok = await confirm({
-      title: `Delete Brand: ${brand.name}?`,
-      message: `Are you sure you want to delete "${brand.name}"? This action will permanently remove the brand and all ${modelCount} associated model definitions from your fleet catalog.`,
-      confirmText: 'Delete Brand',
-      cancelText: 'Keep Brand',
+      title: t('adminPages.fleet._deleteBrandTitle', { name: brand.name }),
+      message: t('adminPages.fleet._deleteBrandMessage', { name: brand.name, count: modelCount }),
+      confirmText: t('adminPages.fleet.deleteBrand'),
+      cancelText: t('adminPages.fleet.keepBrand'),
       variant: 'danger',
     });
     if (!ok) return;
 
     try {
       await fleetApi.deleteBrand(brand.id);
-      showNotification(`Brand "${brand.name}" deleted successfully`);
+      showNotification(t('adminPages.fleet._brandDeleted', { name: brand.name }));
       await loadBrands();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete brand');
+      void alertDialog({ title: t('common.errorTitle'), message: err.message || t('adminPages.fleet.errDeleteBrand'), variant: 'danger', confirmText: t('common.actions.close') });
     }
   };
 
@@ -374,23 +377,23 @@ export function BrandsManagementPage() {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#8A7090', marginBottom: '8px' }}>
           <Link to="/admin/dashboard" style={{ color: '#8A7090', textDecoration: 'none', fontWeight: 500 }}>
-            Dashboard
+            {t('adminPages.fleet.dashboard')}
           </Link>
           <ChevronRight size={14} />
           <Link to="/admin/cars" style={{ color: '#8A7090', textDecoration: 'none', fontWeight: 500 }}>
-            Fleet
+            {t('adminPages.fleet.fleet')}
           </Link>
           <ChevronRight size={14} />
-          <span style={{ color: '#1E0432', fontWeight: 700 }}>Brands Directory</span>
+          <span style={{ color: '#1E0432', fontWeight: 700 }}>{t('adminPages.fleet.brandsDirectory')}</span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ fontSize: '1.95rem', fontWeight: 800, color: '#1E0432', margin: 0, letterSpacing: '-0.02em' }}>
-              Vehicle Brands
+              {t('adminPages.fleet.brandsTitle')}
             </h1>
             <p style={{ margin: '6px 0 0', color: '#6A5672', fontSize: '0.95rem' }}>
-              Manage automotive manufacturers, official emblem logos, origins, and connected models.
+              {t('adminPages.fleet.brandsSubtitle')}
             </p>
           </div>
 
@@ -401,8 +404,8 @@ export function BrandsManagementPage() {
             >
               <Layers size={17} color="#8A7090" />
               <span className="fleet-btn-label">
-                <span className="label-full">Manage Models</span>
-                <span className="label-short">Models</span>
+                <span className="label-full">{t('adminPages.fleet.manageModels')}</span>
+                <span className="label-short">{t('adminPages.fleet.models')}</span>
               </span>
             </Link>
 
@@ -412,8 +415,8 @@ export function BrandsManagementPage() {
             >
               <Car size={17} />
               <span className="fleet-btn-label">
-                <span className="label-full">Add Vehicle</span>
-                <span className="label-short">Vehicle</span>
+                <span className="label-full">{t('adminPages.fleet.addVehicle')}</span>
+                <span className="label-short">{t('adminPages.fleet.vehicleShort')}</span>
               </span>
             </Link>
 
@@ -424,8 +427,8 @@ export function BrandsManagementPage() {
             >
               <Plus size={16} strokeWidth={2.5} />
               <span className="fleet-btn-label">
-                <span className="label-full">Add Brand</span>
-                <span className="label-short">Brand</span>
+                <span className="label-full">{t('adminPages.fleet.addBrand')}</span>
+                <span className="label-short">{t('adminPages.fleet.brand')}</span>
               </span>
             </button>
           </div>
@@ -454,12 +457,12 @@ export function BrandsManagementPage() {
         >
           <div>
             <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A7090', letterSpacing: '0.04em' }}>
-              Total Brands
+              {t('adminPages.fleet.totalBrands')}
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1E0432', marginTop: '4px' }}>
               {totalBrandsCount}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>Manufacturers configured</div>
+            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>{t('adminPages.fleet.totalBrandsSub')}</div>
           </div>
           <div
             style={{
@@ -491,12 +494,12 @@ export function BrandsManagementPage() {
         >
           <div>
             <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#10B981', letterSpacing: '0.04em' }}>
-              Active Brands
+              {t('adminPages.fleet.activeBrands')}
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1E0432', marginTop: '4px' }}>
               {activeBrandsCount}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>Visible in client booking</div>
+            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>{t('adminPages.fleet.activeBrandsSub')}</div>
           </div>
           <div
             style={{
@@ -528,12 +531,12 @@ export function BrandsManagementPage() {
         >
           <div>
             <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A7090', letterSpacing: '0.04em' }}>
-              Linked Models
+              {t('adminPages.fleet.linkedModels')}
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1E0432', marginTop: '4px' }}>
               {totalModelsCount}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>Variants across all brands</div>
+            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>{t('adminPages.fleet.linkedModelsSub')}</div>
           </div>
           <div
             style={{
@@ -565,12 +568,12 @@ export function BrandsManagementPage() {
         >
           <div>
             <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A7090', letterSpacing: '0.04em' }}>
-              Global Origins
+              {t('adminPages.fleet.origins')}
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1E0432', marginTop: '4px' }}>
               {uniqueCountriesCount}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>Countries represented</div>
+            <div style={{ fontSize: '0.8rem', color: '#6A5672', marginTop: '2px' }}>{t('adminPages.fleet.originsSub')}</div>
           </div>
           <div
             style={{
@@ -596,7 +599,7 @@ export function BrandsManagementPage() {
           <Search size={18} color="#8A7090" className="fleet-filter-search-icon" />
           <input
             type="text"
-            placeholder="Search brands by name, country, or slug..."
+            placeholder={t('adminPages.fleet.searchBrands')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="fleet-filter-search-input"
@@ -611,9 +614,9 @@ export function BrandsManagementPage() {
                 value={statusFilter}
                 onChange={(val) => setStatusFilter(val as any)}
                 options={[
-                  { value: 'ALL', label: 'All Status' },
-                  { value: 'ACTIVE', label: 'Active Only' },
-                  { value: 'INACTIVE', label: 'Inactive' },
+                  { value: 'ALL', label: t('adminPages.fleet.allStatus') },
+                  { value: 'ACTIVE', label: t('adminPages.fleet.activeOnly') },
+                  { value: 'INACTIVE', label: t('adminPages.fleet.inactive') },
                 ]}
                 size="sm"
                 fullWidth={true}
@@ -625,10 +628,10 @@ export function BrandsManagementPage() {
                 value={sortBy}
                 onChange={(val) => setSortBy(val as any)}
                 options={[
-                  { value: 'NAME_ASC', label: 'Sort: Name (A-Z)' },
-                  { value: 'NAME_DESC', label: 'Sort: Name (Z-A)' },
-                  { value: 'MODELS_DESC', label: 'Sort: Most Models' },
-                  { value: 'NEWEST', label: 'Sort: Recently Added' },
+                  { value: 'NAME_ASC', label: t('adminPages.fleet.sortNameAsc') },
+                  { value: 'NAME_DESC', label: t('adminPages.fleet.sortNameDesc') },
+                  { value: 'MODELS_DESC', label: t('adminPages.fleet.sortMostModels') },
+                  { value: 'NEWEST', label: t('adminPages.fleet.sortRecent') },
                 ]}
                 size="sm"
                 fullWidth={true}
@@ -639,14 +642,14 @@ export function BrandsManagementPage() {
           {/* Action Footer / View Switcher */}
           <div className="fleet-filter-actions">
             <span className="fleet-filter-count-badge">
-              {processedBrands.length} {processedBrands.length === 1 ? 'brand' : 'brands'}
+              {t('adminPages.counts.brands', { count: processedBrands.length })}
             </span>
             {!isMobile && (
               <div className="fleet-view-toggle">
                 <button
                   type="button"
                   onClick={() => setViewMode('table')}
-                  title="Table View"
+                  title={t('adminPages.fleet.tableView')}
                   className={`fleet-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
                 >
                   <List size={17} />
@@ -654,7 +657,7 @@ export function BrandsManagementPage() {
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
-                  title="Grid Card View"
+                  title={t('adminPages.fleet.gridView')}
                   className={`fleet-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
                 >
                   <LayoutGrid size={17} />
@@ -676,7 +679,7 @@ export function BrandsManagementPage() {
             border: '1.5px solid #EFEAEF',
           }}
         >
-          <div style={{ color: '#8A7090', fontSize: '1rem', fontWeight: 600 }}>Loading brand records...</div>
+          <div style={{ color: '#8A7090', fontSize: '1rem', fontWeight: 600 }}>{t('adminPages.fleet.loadingBrands')}</div>
         </div>
       ) : processedBrands.length === 0 ? (
         <div
@@ -706,11 +709,11 @@ export function BrandsManagementPage() {
           >
             <Building2 size={30} />
           </div>
-          <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1E0432', fontWeight: 800 }}>No Brands Found</h3>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1E0432', fontWeight: 800 }}>{t('adminPages.fleet.noBrands')}</h3>
           <p style={{ margin: 0, color: '#6A5672', maxWidth: '420px', fontSize: '0.92rem' }}>
             {search.trim()
-              ? `No brand matching "${search}". Try adjusting your search or filters.`
-              : 'You have not added any brands yet. Click "Add Brand" to register automotive manufacturers.'}
+              ? t('adminPages.fleet._noBrandMatch', { search })
+              : t('adminPages.fleet.noBrandsYet')}
           </p>
           <button
             type="button"
@@ -742,7 +745,7 @@ export function BrandsManagementPage() {
             }}
           >
             <Plus size={16} strokeWidth={2.5} />
-            <span>Create First Brand</span>
+            <span>{t('adminPages.fleet.createFirstBrand')}</span>
           </button>
         </div>
       ) : effectiveViewMode === 'table' ? (
@@ -761,22 +764,22 @@ export function BrandsManagementPage() {
               <thead>
                 <tr style={{ backgroundColor: '#FBF9FB', borderBottom: '1.5px solid #EFEAEF' }}>
                   <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Manufacturer
+                    {t('adminPages.fleet.manufacturer')}
                   </th>
                   <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Country / Origin
+                    {t('adminPages.fleet.country')}
                   </th>
                   <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Slug Identifier
+                    {t('adminPages.fleet.slugId')}
                   </th>
                   <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Models
+                    {t('adminPages.fleet.models')}
                   </th>
                   <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Status
+                    {t('adminPages.fleet.status')}
                   </th>
                   <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>
-                    Actions
+                    {t('adminPages.fleet.actions')}
                   </th>
                 </tr>
               </thead>
@@ -800,7 +803,7 @@ export function BrandsManagementPage() {
                           <div>
                             <div style={{ fontWeight: 800, color: '#1E0432', fontSize: '0.98rem' }}>{brand.name}</div>
                             <div style={{ fontSize: '0.78rem', color: '#8A7090', marginTop: '2px' }}>
-                              Created {new Date(brand.createdAt).toLocaleDateString()}
+                              {t('adminPages.fleet._created', { date: new Date(brand.createdAt).toLocaleDateString(i18n.language) })}
                             </div>
                           </div>
                         </div>
@@ -814,7 +817,7 @@ export function BrandsManagementPage() {
                             {brand.country}
                           </span>
                         ) : (
-                          <span style={{ color: '#A08DA4', fontStyle: 'italic' }}>Global</span>
+                          <span style={{ color: '#A08DA4', fontStyle: 'italic' }}>{t('adminPages.fleet.global')}</span>
                         )}
                       </td>
 
@@ -853,10 +856,10 @@ export function BrandsManagementPage() {
                             fontWeight: 700,
                             cursor: 'pointer',
                           }}
-                          title="View models under this brand"
+                          title={t('adminPages.fleet.viewBrandModels')}
                         >
                           <Layers size={13} color="#FAB826" />
-                          <span>{modelsCount} {modelsCount === 1 ? 'Model' : 'Models'}</span>
+                          <span>{t('adminPages.fleet._modelCount', { count: modelsCount })}</span>
                           <ChevronRight size={13} color="#8A7090" />
                         </button>
                       </td>
@@ -878,7 +881,7 @@ export function BrandsManagementPage() {
                             }}
                           >
                             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }} />
-                            Active
+                            {t('adminPages.fleet.active')}
                           </span>
                         ) : (
                           <span
@@ -895,7 +898,7 @@ export function BrandsManagementPage() {
                             }}
                           >
                             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
-                            Inactive
+                            {t('adminPages.fleet.inactive')}
                           </span>
                         )}
                       </td>
@@ -906,7 +909,7 @@ export function BrandsManagementPage() {
                           <button
                             type="button"
                             onClick={() => navigate(`/admin/models?brandId=${brand.id}`)}
-                            title="Manage Models for this brand"
+                            title={t('adminPages.fleet.manageBrandModels')}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -922,13 +925,13 @@ export function BrandsManagementPage() {
                             }}
                           >
                             <Layers size={14} color="#8A7090" />
-                            <span>Models</span>
+                            <span>{t('adminPages.fleet.models')}</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleOpenEditBrand(brand)}
-                            title="Edit Brand details"
+                            title={t('adminPages.fleet.editBrandDetails')}
                             style={{
                               width: '32px',
                               height: '32px',
@@ -948,7 +951,7 @@ export function BrandsManagementPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteBrand(brand)}
-                            title="Delete Brand"
+                            title={t('adminPages.fleet.deleteBrand')}
                             style={{
                               width: '32px',
                               height: '32px',
@@ -1019,7 +1022,7 @@ export function BrandsManagementPage() {
                         }}
                       >
                         <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }} />
-                        Active
+                        {t('adminPages.fleet.active')}
                       </span>
                     ) : (
                       <span
@@ -1036,7 +1039,7 @@ export function BrandsManagementPage() {
                         }}
                       >
                         <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
-                        Inactive
+                        {t('adminPages.fleet.inactive')}
                       </span>
                     )}
                   </div>
@@ -1044,7 +1047,7 @@ export function BrandsManagementPage() {
                   <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1E0432' }}>{brand.name}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', fontSize: '0.85rem', color: '#6A5672' }}>
                     <Globe size={14} color="#8A7090" />
-                    <span>{brand.country || 'Global Origin'}</span>
+                    <span>{brand.country || t('adminPages.fleet.globalOrigin')}</span>
                     <span>•</span>
                     <span style={{ fontFamily: 'monospace', color: '#8A7090' }}>{brand.slug}</span>
                   </div>
@@ -1061,7 +1064,7 @@ export function BrandsManagementPage() {
                   }}
                 >
                   <div style={{ fontSize: '0.85rem', color: '#6A5672', fontWeight: 600 }}>
-                    Connected Models: <strong style={{ color: '#1E0432' }}>{modelsCount}</strong>
+                    {t('adminPages.fleet.connectedModels')} <strong style={{ color: '#1E0432' }}>{modelsCount}</strong>
                   </div>
                   <button
                     type="button"
@@ -1078,7 +1081,7 @@ export function BrandsManagementPage() {
                       gap: '4px',
                     }}
                   >
-                    View Models <ChevronRight size={14} />
+                    {t('adminPages.fleet.viewModels')} <ChevronRight size={14} />
                   </button>
                 </div>
 
@@ -1103,7 +1106,7 @@ export function BrandsManagementPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    <Pencil size={14} /> Edit
+                    <Pencil size={14} /> {t('adminPages.fleet.edit')}
                   </button>
                   <button
                     type="button"
@@ -1121,7 +1124,7 @@ export function BrandsManagementPage() {
                       justifyContent: 'center',
                       cursor: 'pointer',
                     }}
-                    title="Delete Brand"
+                    title={t('adminPages.fleet.deleteBrand')}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -1167,10 +1170,10 @@ export function BrandsManagementPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#1E0432' }}>
-                  {brandEditId ? 'Edit Brand' : 'Add Automotive Brand'}
+                  {brandEditId ? t('adminPages.fleet.editBrand') : t('adminPages.fleet.addBrandTitle')}
                 </h2>
                 <p style={{ margin: '4px 0 0', color: '#6A5672', fontSize: '0.88rem' }}>
-                  {brandEditId ? 'Update brand details and logo emblem' : 'Register a new vehicle manufacturer into the system'}
+                  {brandEditId ? t('adminPages.fleet.editBrandSubtitle') : t('adminPages.fleet.addBrandSubtitle')}
                 </p>
               </div>
               <button
@@ -1194,19 +1197,19 @@ export function BrandsManagementPage() {
               {/* Brand Name */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1E0432', marginBottom: '6px' }}>
-                  Brand Name <span style={{ color: '#EF4444' }}>*</span>
+                  {t('adminPages.fleet.brandName')} <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Porsche, BMW, Mercedes-Benz, Tesla"
+                  placeholder={t('adminPages.fleet.brandPlaceholder')}
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                   className="fleet-form-input"
                 />
                 {brandName.trim() && (
                   <div style={{ fontSize: '0.78rem', color: '#8A7090', marginTop: '4px' }}>
-                    Slug: <code style={{ color: '#1E0432' }}>{brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}</code>
+                    {t('adminPages.fleet.slug')} <code style={{ color: '#1E0432' }}>{brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}</code>
                   </div>
                 )}
               </div>
@@ -1214,11 +1217,11 @@ export function BrandsManagementPage() {
               {/* Country of Origin */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1E0432', marginBottom: '6px' }}>
-                  Country of Origin
+                  {t('adminPages.fleet.countryOrigin')}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Germany, Japan, United States, Italy, Sweden"
+                  placeholder={t('adminPages.fleet.countryPlaceholder')}
                   value={brandCountry}
                   onChange={(e) => setBrandCountry(e.target.value)}
                   className="fleet-form-input"
@@ -1230,14 +1233,14 @@ export function BrandsManagementPage() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E0432', margin: 0 }}>
-                      Brand Logo
+                      {t('adminPages.fleet.brandLogo')}
                     </label>
                     <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#8A7090', backgroundColor: '#F0EBF2', padding: '2px 8px', borderRadius: '6px' }}>
-                      Optional
+                      {t('adminPages.fleet.optional')}
                     </span>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: '#8A7090' }}>
-                    PNG, SVG, WEBP, or JPG • Max 5MB
+                    {t('adminPages.fleet.logoFormats')}
                   </span>
                 </div>
 
@@ -1273,7 +1276,7 @@ export function BrandsManagementPage() {
                         display: 'flex',
                         alignItems: 'center',
                       }}
-                      title="Dismiss error"
+                      title={t('adminPages.fleet.dismissError')}
                     >
                       <X size={14} />
                     </button>
@@ -1316,7 +1319,7 @@ export function BrandsManagementPage() {
                       >
                         <img
                           src={brandLogoUrl}
-                          alt="Brand Logo"
+                          alt={t('adminPages.fleet.brandLogo')}
                           style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
@@ -1335,7 +1338,7 @@ export function BrandsManagementPage() {
                             textOverflow: 'ellipsis',
                           }}
                         >
-                          {logoFileMeta?.name || `${brandName.trim() || 'Brand'} Logo`}
+                          {logoFileMeta?.name || t('adminPages.fleet._logoName', { name: brandName.trim() || t('adminPages.fleet.brand') })}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '3px' }}>
                           <span
@@ -1352,7 +1355,7 @@ export function BrandsManagementPage() {
                               gap: '3px',
                             }}
                           >
-                            <Check size={11} strokeWidth={3} /> Ready
+                            <Check size={11} strokeWidth={3} /> {t('adminPages.fleet.ready')}
                           </span>
                           {logoFileMeta?.format && (
                             <span
@@ -1401,10 +1404,10 @@ export function BrandsManagementPage() {
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                         }}
-                        title="Choose a different image"
+                        title={t('adminPages.fleet.chooseImage')}
                       >
                         <RefreshCw size={12} />
-                        <span>Replace</span>
+                        <span>{t('adminPages.fleet.replace')}</span>
                       </button>
 
                       <button
@@ -1423,7 +1426,7 @@ export function BrandsManagementPage() {
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                         }}
-                        title="Remove brand logo"
+                        title={t('adminPages.fleet.removeLogo')}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -1481,10 +1484,10 @@ export function BrandsManagementPage() {
 
                     <div>
                       <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1E0432' }}>
-                        {isDraggingLogo ? 'Drop brand logo here' : 'Click to upload or drag & drop'}
+                        {isDraggingLogo ? t('adminPages.fleet.dropLogo') : t('adminPages.fleet.clickUpload')}
                       </div>
                       <div style={{ fontSize: '0.76rem', color: '#8A7090', marginTop: '2px' }}>
-                        PNG, SVG, WEBP, or JPG • Max 5MB (Transparent emblem recommended)
+                        {t('adminPages.fleet.logoFormatsHint')}
                       </div>
                     </div>
 
@@ -1504,7 +1507,7 @@ export function BrandsManagementPage() {
                         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       }}
                     >
-                      Browse Image Files
+                      {t('adminPages.fleet.browseImages')}
                     </span>
                   </div>
                 )}
@@ -1527,8 +1530,8 @@ export function BrandsManagementPage() {
               {/* Status Toggle */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: '#FAF7FA', borderRadius: '10px' }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E0432' }}>Active Brand</div>
-                  <div style={{ fontSize: '0.78rem', color: '#8A7090' }}>Allow vehicles under this brand to be selected in inventory</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1E0432' }}>{t('adminPages.fleet.activeBrand')}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#8A7090' }}>{t('adminPages.fleet.activeBrandHelp')}</div>
                 </div>
                 <input
                   type="checkbox"
@@ -1553,7 +1556,7 @@ export function BrandsManagementPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  Cancel
+                  {t('adminPages.fleet.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -1587,7 +1590,7 @@ export function BrandsManagementPage() {
                   }}
                 >
                   <Plus size={16} strokeWidth={2.5} />
-                  <span>{isSavingBrand ? 'Saving...' : brandEditId ? 'Update Brand' : 'Create Brand'}</span>
+                  <span>{isSavingBrand ? t('adminPages.fleet.saving') : brandEditId ? t('adminPages.fleet.updateBrand') : t('adminPages.fleet.createBrand')}</span>
                 </button>
               </div>
             </form>

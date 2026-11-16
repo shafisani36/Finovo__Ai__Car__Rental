@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from '../endpoints';
 import type {
   Booking,
   BookingAddon,
+  BookingOptions,
   CreateBookingPayload,
   QuoteAvailability,
   QuoteResult,
@@ -42,6 +43,10 @@ export const bookingsApi = {
     returnDateTime: string;
     /** Comma separated add-on codes, priced on the server */
     addons?: string;
+    promoCode?: string;
+    points?: number;
+    deliveryAddress?: string;
+    collectionAddress?: string;
   }): Promise<{
     success: boolean;
     quote: QuoteResult;
@@ -49,6 +54,13 @@ export const bookingsApi = {
     addonCatalog: BookingAddon[];
   }> => {
     return apiClient.get(API_ENDPOINTS.BOOKINGS.QUOTE, { params });
+  },
+
+  /**
+   * Public checkout rules: delivery fee, reward point rules and the cancellation policy
+   */
+  options: async (): Promise<{ success: boolean; options: BookingOptions }> => {
+    return apiClient.get(API_ENDPOINTS.BOOKINGS.OPTIONS);
   },
 
   /**

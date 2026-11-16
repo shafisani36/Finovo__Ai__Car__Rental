@@ -32,6 +32,15 @@ export interface Booking {
   currency: string;
   notes?: string;
   createdAt: string;
+  promoDiscount?: number | string;
+  pointsRedeemed?: number;
+  pointsDiscount?: number | string;
+  deliveryAddress?: string | null;
+  collectionAddress?: string | null;
+  deliveryFee?: number | string;
+  cancellationFee?: number | string | null;
+  refundAmount?: number | string | null;
+  promoCode?: { code: string } | null;
   customer: {
     id: string;
     fullName: string;
@@ -81,6 +90,40 @@ export interface CreateBookingPayload {
   returnDateTime: string;
   notes?: string;
   addons?: BookingAddonCode[];
+  /** Optional promo code; the server checks it again when the booking is saved */
+  promoCode?: string;
+  /** Reward points the signed-in customer wants to spend on this booking */
+  pointsToRedeem?: number;
+  /** Address where the car is brought to the customer (adds a delivery fee) */
+  deliveryAddress?: string;
+  /** Address where the car is collected from at the end (adds a delivery fee) */
+  collectionAddress?: string;
+}
+
+/** Extra checkout choices that change the server quote. */
+export interface QuoteExtras {
+  promoCode?: string;
+  points?: number;
+  deliveryAddress?: string;
+  collectionAddress?: string;
+}
+
+export interface AppliedPromo {
+  promoCodeId: string;
+  code: string;
+  description?: string | null;
+  amount: number;
+}
+
+/** Public checkout rules served by GET /bookings/options. */
+export interface BookingOptions {
+  currency: string;
+  /** Tax added to rentals, in percent, and its name (for example VAT) */
+  taxRatePercent: number;
+  taxLabel: string;
+  deliveryFeePerTrip: number;
+  points: { pointValue: number; minRedeemPoints: number; maxSharePercent: number; pointsPerHundred: number };
+  cancellation: { freeCancellationHours: number; lateFee: 'ONE_DAY' };
 }
 
 export type BookingAddonCode = 'PROTECTION_STANDARD' | 'PROTECTION_PREMIUM' | 'GPS' | 'CHILD_SEAT' | 'EXTRA_DRIVER';
@@ -149,6 +192,13 @@ export interface QuoteResult {
   taxRatePercent?: number;
   rentalTotal?: number;
   lineItems?: PricingBreakdownItem[];
+  deliveryFee?: number;
+  deliveryAddress?: string | null;
+  collectionAddress?: string | null;
+  promo?: AppliedPromo | null;
+  pointsRedeemed?: number;
+  pointsDiscount?: number;
+  pointValue?: number;
 }
 
 export interface CalendarEvent {

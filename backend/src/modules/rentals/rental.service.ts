@@ -3,6 +3,8 @@ import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import { RentalPricingService } from '../fleet/rental-pricing.service';
 import { PICKUP_SCAN_VALID_HOURS } from '../inspections/inspection.service';
+import { ReferralService } from '../loyalty/referral.service';
+import { MessagingService } from '../notifications/messaging.service';
 
 export interface HandoverDTO {
   bookingId: string;
@@ -49,7 +51,8 @@ export class RentalService {
         gracePeriodMinutes: snap.gracePeriodMinutes ?? 30,
         partialMonthPolicy: snap.partialMonthPolicy,
         depositAmount: snap.depositAmount ? Number(snap.depositAmount) : null,
-        taxRatePercent: snap.taxRatePercent ? Number(snap.taxRatePercent) : 8,
+        // A booking keeps the tax rate it was priced with (0% is a valid rate)
+        taxRatePercent: snap.taxRatePercent !== null && snap.taxRatePercent !== undefined ? Number(snap.taxRatePercent) : env.TAX_RATE_PERCENT,
       };
     }
 
@@ -70,7 +73,7 @@ export class RentalService {
       gracePeriodMinutes: 30,
       partialMonthPolicy: 'prorated_daily',
       depositAmount: Number(booking.depositAmount || 0),
-      taxRatePercent: 8,
+      taxRatePercent: env.TAX_RATE_PERCENT,
     };
   }
 
@@ -168,6 +171,9 @@ export class RentalService {
     });
     if (!comparison) {
       throw AppError.badRequest('The return inspection has no comparison with the pickup inspection');
+    }
+    if (comparison.damage_charges.some((c) => c.status === 'DISPUTED')) {
+      throw AppError.badRequest('The customer disputed a damage charge. Answer the dispute before completing the return.');
     }
     const active = comparison.damage_charges.filter((c) => c.status !== 'REJECTED' && c.status !== 'SETTLED');
     const damageCharge = Math.round(active.reduce((sum, c) => sum + Number(c.proposedAmount), 0) * 100) / 100;
@@ -269,6 +275,12 @@ export class RentalService {
       throw AppError.badRequest('The pickup inspection is too old. Please scan the vehicle again before handover.');
     }
 
+    // The customer signs the rental agreement before receiving the keys
+    const agreement = await prisma.rentalAgreement.findUnique({ where: { bookingId: booking.id }, select: { id: true } });
+    if (!agreement) {
+      throw AppError.badRequest('The customer must sign the rental agreement before the keys are handed over');
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create Rental record
       const rental = await tx.rental.create({
@@ -331,6 +343,7 @@ export class RentalService {
       return rental;
     });
 
+    void MessagingService.notifyBooking(booking.id, 'RENTAL_STARTED');
     return result;
   }
 
@@ -550,6 +563,9 @@ export class RentalService {
       };
     });
 
+    void MessagingService.notifyBooking(result.bookingId, 'RENTAL_RETURNED');
+    // A first finished rental of an invited customer earns the inviter their reward
+    void ReferralService.rewardForCompletedRental(rental.booking.customerId);
     return result;
   }
 }

@@ -57,6 +57,13 @@ export const API_ENDPOINTS = {
     QUOTE: '/bookings/quote',
     AVAILABILITY: '/bookings/availability',
     CALENDAR: '/bookings/calendar',
+    OPTIONS: '/bookings/options',
+  },
+
+  // Promo codes (staff)
+  PROMO_CODES: {
+    LIST: '/promo-codes',
+    BY_ID: (id: string) => `/promo-codes/${id}`,
   },
 
   // Rentals Lifecycle (Handover / Return / Settlement)
@@ -66,6 +73,10 @@ export const API_ENDPOINTS = {
     HANDOVER: '/rentals/handover',
     PREVIEW_SETTLEMENT: '/rentals/preview-settlement',
     RETURN: '/rentals/return',
+    AGREEMENT_TERMS: '/rentals/agreements/terms',
+    AGREEMENTS: '/rentals/agreements',
+    AGREEMENT: (bookingId: string) => `/rentals/agreements/${bookingId}`,
+    AGREEMENT_PDF: (bookingId: string) => `/rentals/agreements/${bookingId}/pdf`,
   },
 
   // Inspections & AI Computer Vision
@@ -76,6 +87,9 @@ export const API_ENDPOINTS = {
     FOR_BOOKING: (bookingId: string) => `/inspections/booking/${bookingId}`,
     COMPARISON: (id: string) => `/inspections/comparisons/${id}`,
     REVIEW_CHARGE: (chargeId: string) => `/inspections/charges/${chargeId}/review`,
+    OPEN_DISPUTE: (chargeId: string) => `/inspections/charges/${chargeId}/dispute`,
+    RESOLVE_DISPUTE: (chargeId: string) => `/inspections/charges/${chargeId}/resolve-dispute`,
+    DISPUTES: '/inspections/disputes',
   },
 
   // Customer Management
@@ -95,6 +109,7 @@ export const API_ENDPOINTS = {
   // Dashboard Aggregates
   DASHBOARD: {
     OVERVIEW: '/dashboard/overview',
+    NOTIFICATIONS: '/dashboard/notifications',
   },
 
   // Public Inquiries

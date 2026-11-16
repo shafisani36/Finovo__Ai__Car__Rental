@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
 import { getCarImage, getCarGallery, getCarGalleryEntries, isFullBleedCarPhoto, resolveVehiclePricing, formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
+import { useBookingOptions } from '../../../hooks/useBookingOptions';
 
 export function CustomerVehicleDetailPage() {
   const { t } = useTranslation();
@@ -26,6 +27,7 @@ export function CustomerVehicleDetailPage() {
 
   const [vehicle, setVehicle] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const bookingOptions = useBookingOptions();
 
   // Quote / Trip Estimator
   const tomorrow = new Date();
@@ -93,8 +95,9 @@ export function CustomerVehicleDetailPage() {
   );
 
   const subtotal = vehicle ? vehicle.dailyRate * daysCount : 0;
-  // Same tax rate the server applies to bookings (BOOKING_TAX_RATE_PERCENT)
-  const estimatedTax = subtotal * 0.08;
+  // Same tax rate the server applies to new bookings
+  const taxRatePercent = bookingOptions?.taxRatePercent ?? 0;
+  const estimatedTax = Math.round(subtotal * taxRatePercent) / 100;
   const estimatedTotal = subtotal + estimatedTax;
 
   if (isLoading) {
@@ -389,7 +392,7 @@ export function CustomerVehicleDetailPage() {
                 <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(subtotal, undefined, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.vehicle.tax')}</span>
+                <span style={{ color: 'var(--cp-text-muted)' }}>{t('portalPages.vehicle.tax', { rate: taxRatePercent, label: bookingOptions?.taxLabel || '' })}</span>
                 <span style={{ fontWeight: 700, color: 'var(--cp-primary)' }}>{formatMoney(estimatedTax, undefined, 2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>

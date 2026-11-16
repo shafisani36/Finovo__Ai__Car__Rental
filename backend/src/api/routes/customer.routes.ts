@@ -14,6 +14,8 @@ customerRouter.use(authenticate);
 customerRouter.get('/portal/overview', CustomerPortalController.getOverview);
 customerRouter.get('/portal/bookings', CustomerPortalController.listBookings);
 customerRouter.get('/portal/bookings/:id', CustomerPortalController.getBookingById);
+customerRouter.get('/portal/bookings/:id/agreement', CustomerPortalController.downloadAgreement);
+customerRouter.get('/portal/bookings/:id/cancellation', CustomerPortalController.cancellationPreview);
 customerRouter.post('/portal/bookings/:id/cancel', CustomerPortalController.cancelBooking);
 customerRouter.post('/portal/bookings/:id/extend', CustomerPortalController.extendBooking);
 

@@ -7,6 +7,7 @@ import { EmailService } from '../../infrastructure/email/email.service';
 import { AuditService } from '../audit/audit.service';
 import { SessionService } from '../sessions/session.service';
 import { RoleService } from '../identity/role.service';
+import { ReferralService } from '../loyalty/referral.service';
 import {
   RegisterInput,
   LoginInput,
@@ -21,6 +22,10 @@ export const REGISTER_RESPONSE_MESSAGE =
 
 const VERIFICATION_TOKEN_HOURS = 24;
 
+
+/** Wrong passwords in a row before the account is locked, and for how long. */
+const MAX_FAILED_LOGINS = 5;
+const LOCKOUT_MINUTES = 15;
 export class AuthService {
   /** Creates a fresh single-use email verification link and emails it. Older links stop working. */
   static async issueVerificationEmail(user: { id: string; email: string; fullName: string }) {
@@ -92,6 +97,9 @@ export class AuthService {
    * Registers a new user with Argon2id password hashing and default least-privilege role
    */
   static async register(input: RegisterInput, ipAddress?: string, userAgent?: string) {
+    // A wrong invite code is refused before anything else, so it never says whether an email is registered
+    const referrer = await ReferralService.resolveCode(input.referralCode, input.email);
+
     const existing = await prisma.user.findUnique({
       where: { email: input.email },
     });
@@ -147,6 +155,24 @@ export class AuthService {
         },
       });
 
+      // Customer profile, linked to the friend who invited them (only for someone who never rented before)
+      const existingCustomer = await tx.customer.findUnique({
+        where: { email: newUser.email },
+        select: { id: true, referredById: true, _count: { select: { bookings: true } } },
+      });
+      const canBeReferred = Boolean(referrer) && (!existingCustomer || (!existingCustomer.referredById && existingCustomer._count.bookings === 0));
+      const referralData = canBeReferred && referrer ? { referredById: referrer.id, referredAt: new Date() } : {};
+      if (existingCustomer) {
+        await tx.customer.update({
+          where: { id: existingCustomer.id },
+          data: { userId: newUser.id, ...(existingCustomer.id !== referrer?.id ? referralData : {}) },
+        });
+      } else {
+        await tx.customer.create({
+          data: { userId: newUser.id, email: newUser.email, fullName: newUser.fullName, ...referralData },
+        });
+      }
+
       // Generate single-use verification token
       const rawVerificationToken = TokenHashService.generateRandomToken(32);
       const tokenHash = TokenHashService.hashToken(rawVerificationToken);
@@ -173,7 +199,7 @@ export class AuthService {
       event: 'AUTH_REGISTER_SUCCESS',
       ipAddress,
       userAgent,
-      metadata: { email: input.email },
+      metadata: { email: input.email, referralCode: referrer?.code || null },
     });
 
     return {
@@ -233,15 +259,48 @@ export class AuthService {
       throw AppError.forbidden('Your account has been suspended. Please contact Finovo customer support.');
     }
 
+    // Account lockout: stops password guessing on one account even from many different IP addresses
+    if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+      const minutes = Math.max(1, Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000));
+      await AuditService.log({ userId: user.id, event: 'AUTH_LOGIN_BLOCKED_LOCKED_ACCOUNT', ipAddress, userAgent });
+      throw AppError.tooManyRequests(
+        `Too many wrong passwords. This account is locked for ${minutes} more minute${minutes === 1 ? '' : 's'}. You can also reset your password.`
+      );
+    }
+
     const isMatch = await PasswordService.verifyPassword(input.password, user.passwordHash);
     if (!isMatch) {
+      // Counted in the database in one step, so parallel attempts cannot slip past the limit
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginCount: { increment: 1 } },
+        select: { failedLoginCount: true },
+      });
+      const locked = updated.failedLoginCount >= MAX_FAILED_LOGINS;
+      if (locked) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lockedUntil: new Date(Date.now() + LOCKOUT_MINUTES * 60_000), failedLoginCount: 0 },
+        });
+      }
       await AuditService.log({
         userId: user.id,
-        event: 'AUTH_LOGIN_FAILED_INVALID_PASSWORD',
+        event: locked ? 'AUTH_ACCOUNT_LOCKED' : 'AUTH_LOGIN_FAILED_INVALID_PASSWORD',
         ipAddress,
         userAgent,
+        metadata: { failedAttempts: updated.failedLoginCount },
       });
+      if (locked) {
+        throw AppError.tooManyRequests(
+          `Too many wrong passwords. This account is locked for ${LOCKOUT_MINUTES} minutes. You can also reset your password.`
+        );
+      }
       throw AppError.unauthorized('Invalid email or password');
+    }
+
+    // A correct password clears earlier failures
+    if (user.failedLoginCount > 0 || user.lockedUntil) {
+      await prisma.user.update({ where: { id: user.id }, data: { failedLoginCount: 0, lockedUntil: null } });
     }
 
     // Transparent password rehashing if parameters changed
@@ -532,7 +591,8 @@ export class AuthService {
       // Update password
       prisma.user.update({
         where: { id: user.id },
-        data: { passwordHash: newPasswordHash },
+        // A new password also lifts a lockout from wrong guesses
+        data: { passwordHash: newPasswordHash, failedLoginCount: 0, lockedUntil: null },
       }),
       // Invalidate the reset token
       prisma.passwordResetToken.update({

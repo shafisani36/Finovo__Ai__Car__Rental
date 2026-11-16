@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { employeeApi } from '../api/employeeApi';
 import type { EmployeeUser } from '../api/employeeApi';
 import {
@@ -19,6 +20,7 @@ import {
 } from '../../../components/common';
 
 export function EmployeesListPage() {
+  const { t } = useTranslation();
   const [employees, setEmployees] = useState<EmployeeUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,11 +61,11 @@ export function EmployeesListPage() {
     <PageContainer>
       {/* Header */}
       <PageHeader
-        title="Staff & Organizational Access Control"
-        subtitle="Manage internal staff accounts, role-based authorization levels, and administrative operators across branches."
+        title={t('adminPages.staff.title')}
+        subtitle={t('adminPages.staff.subtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Staff' },
+          { label: t('adminPages.staff.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.staff.crumb') },
         ]}
       />
 
@@ -71,19 +73,19 @@ export function EmployeesListPage() {
       <StatGrid columns={3}>
         <StatCard
           icon={Users}
-          label="Total Staff Users"
+          label={t('adminPages.staff.statTotal')}
           value={totalEmployees}
           variant="purple"
         />
         <StatCard
           icon={ShieldCheck}
-          label="Administrators"
+          label={t('adminPages.staff.statAdmins')}
           value={adminCount}
           variant="amber"
         />
         <StatCard
           icon={UserCheck}
-          label="Active Status"
+          label={t('adminPages.staff.statActive')}
           value={activeCount}
           variant="green"
         />
@@ -104,7 +106,7 @@ export function EmployeesListPage() {
         <Search size={18} color="#685D73" />
         <input
           type="text"
-          placeholder="Filter staff by name, email, or role..."
+          placeholder={t('adminPages.staff.search')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
@@ -129,24 +131,24 @@ export function EmployeesListPage() {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <RotateCcw size={24} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading staff directory...</div>
+            <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.staff.loading')}</div>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <Users size={40} color="#D1D5DB" style={{ marginBottom: '12px' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>No staff members found</div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>{t('adminPages.staff.empty')}</div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#685D73' }}>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Staff Member</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Email Address</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Assigned Role(s)</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Email Verification</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Created Date</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.staff.colMember')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.staff.colEmail')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.staff.colRoles')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.staff.colVerification')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.staff.colStatus')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.staff.colCreated')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,7 +181,7 @@ export function EmployeesListPage() {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, color: '#1E0426' }}>{user.fullName}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#685D73' }}>ID: {user.id.slice(0, 8)}...</div>
+                          <div style={{ fontSize: '0.75rem', color: '#685D73' }}>{t('adminPages.staff.idLabel')} {user.id.slice(0, 8)}...</div>
                         </div>
                       </div>
                     </td>
@@ -227,7 +229,7 @@ export function EmployeesListPage() {
                           }}
                         >
                           <CheckCircle2 size={13} />
-                          Verified
+                          {t('adminPages.staff.verified')}
                         </span>
                       ) : (
                         <span
@@ -241,7 +243,7 @@ export function EmployeesListPage() {
                           }}
                         >
                           <Clock size={13} />
-                          Unverified
+                          {t('adminPages.staff.unverified')}
                         </span>
                       )}
                     </td>

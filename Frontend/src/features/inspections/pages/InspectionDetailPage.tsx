@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../../components/common';
@@ -7,6 +8,7 @@ import { InspectionReportView } from '../components/InspectionReportView';
 import { DamageComparisonView } from '../components/DamageComparisonView';
 
 export function InspectionDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [inspection, setInspection] = useState<InspectionReport | null>(null);
   const [comparison, setComparison] = useState<DamageComparison | null>(null);
@@ -24,7 +26,7 @@ export function InspectionDetailPage() {
         setInspection(res.inspection);
         setComparison(res.inspection.comparison || null);
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : 'Failed to load inspection');
+        if (active) setError(err instanceof Error ? err.message : t('adminPages.inspections.errLoadOne'));
       } finally {
         if (active) setLoading(false);
       }
@@ -32,7 +34,7 @@ export function InspectionDetailPage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, t]);
 
   if (loading) {
     return (
@@ -46,9 +48,9 @@ export function InspectionDetailPage() {
     return (
       <div style={{ maxWidth: '700px', margin: '40px auto', textAlign: 'center' }}>
         <AlertTriangle size={44} color="#EF4444" />
-        <h2 style={{ color: '#1E0426' }}>Inspection not found</h2>
+        <h2 style={{ color: '#1E0426' }}>{t('adminPages.inspections.notFound')}</h2>
         <p style={{ color: '#685D73' }}>{error}</p>
-        <Link to="/admin/inspections">Back to inspections</Link>
+        <Link to="/admin/inspections">{t('adminPages.inspections.backToList')}</Link>
       </div>
     );
   }
@@ -59,7 +61,7 @@ export function InspectionDetailPage() {
   return (
     <PageContainer>
       <PageHeader
-        breadcrumbs={[{ label: 'Inspections', href: '/admin/inspections' }, { label: inspection.id.slice(0, 10) }]}
+        breadcrumbs={[{ label: t('adminPages.inspections.crumb'), href: '/admin/inspections' }, { label: inspection.id.slice(0, 10) }]}
         title={`${inspection.type.charAt(0)}${inspection.type.slice(1).toLowerCase()} inspection`}
         subtitle={
           inspection.vehicle
@@ -68,7 +70,7 @@ export function InspectionDetailPage() {
         }
       />
       {comparison ? (
-        <DamageComparisonView comparison={comparison} onChange={setComparison} editable={editable} />
+        <DamageComparisonView comparison={comparison} onChange={setComparison} editable={editable} canResolveDisputes={editable} />
       ) : (
         <InspectionReportView report={inspection} />
       )}

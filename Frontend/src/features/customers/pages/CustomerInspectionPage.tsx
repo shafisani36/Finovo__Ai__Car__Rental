@@ -79,7 +79,7 @@ export function CustomerInspectionPage() {
           <p className="cp-empty-desc">{error}</p>
         </div>
       ) : comparison ? (
-        <DamageComparisonView comparison={comparison} />
+        <DamageComparisonView comparison={comparison} onChange={setComparison} canDispute />
       ) : pickup ? (
         <InspectionReportView report={pickup} />
       ) : (

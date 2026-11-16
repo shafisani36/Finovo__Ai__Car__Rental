@@ -85,6 +85,33 @@ export interface DamageCharge {
   currency: string;
   status: 'PROPOSED' | 'EVIDENCE_REVIEW' | 'APPROVED' | 'REJECTED' | 'CUSTOMER_NOTIFIED' | 'SETTLED' | 'DISPUTED';
   notes: string | null;
+  /** The customer's reason when the charge was disputed */
+  disputeReason?: string | null;
+  disputeOpenedAt?: string | null;
+  disputeResolvedAt?: string | null;
+  /** Staff answer to the dispute */
+  disputeResponse?: string | null;
+  /** Last moment the customer can still dispute the charge */
+  disputeWindowEndsAt?: string | null;
+}
+
+/** A disputed damage charge in the staff review list. */
+export interface DamageDispute {
+  id: string;
+  bookingId: string;
+  bookingNumber: string;
+  customerName: string;
+  customerEmail: string;
+  vehicle: string;
+  registrationNumber: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: DamageCharge['status'];
+  reason: string | null;
+  response: string | null;
+  openedAt: string | null;
+  resolvedAt: string | null;
 }
 
 export interface DamageComparison {
@@ -159,6 +186,24 @@ export const inspectionApi = {
     return apiClient.post<{ success: boolean; inspection: InspectionReport }>('/inspections/analyze', payload, {
       timeoutMs: 180_000,
     });
+  },
+
+  /** Customer disagrees with a damage charge and explains why. */
+  openDispute(chargeId: string, reason: string) {
+    return apiClient.post<{ success: boolean; status: 'DISPUTED' }>(`/inspections/charges/${chargeId}/dispute`, { reason });
+  },
+
+  /** Staff decision on a disputed charge: ACCEPT waives it (refunding it if already paid), REJECT keeps it. */
+  resolveDispute(chargeId: string, decision: 'ACCEPT' | 'REJECT', response: string) {
+    return apiClient.post<{
+      success: boolean;
+      decision: 'ACCEPT' | 'REJECT';
+      refund: { refundedOnline: number; pendingManual: number; failed: number } | null;
+    }>(`/inspections/charges/${chargeId}/resolve-dispute`, { decision, response });
+  },
+
+  listDisputes() {
+    return apiClient.get<{ success: boolean; disputes: DamageDispute[] }>('/inspections/disputes');
   },
 
   reviewCharge(chargeId: string, decision: 'APPROVED' | 'REJECTED', notes?: string) {

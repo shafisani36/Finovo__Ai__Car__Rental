@@ -5,6 +5,7 @@ import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { env } from '../../config/env.config';
 import { AWAITING_PAYMENT_STATUS, BookingService } from '../bookings/booking.service';
+import { MessagingService } from '../notifications/messaging.service';
 
 /** Currencies Stripe charges without minor units. */
 const ZERO_DECIMAL_CURRENCIES = new Set([
@@ -15,7 +16,7 @@ const PAYABLE_BOOKING_STATUSES = ['PENDING', 'RESERVED', 'CONFIRMED', 'READY_FOR
 
 let stripeClient: Stripe | null = null;
 
-function getStripe(): Stripe {
+export function getStripe(): Stripe {
   if (!env.STRIPE.SECRET_KEY) {
     throw new AppError(
       'Online payments are not configured. Set STRIPE_SECRET_KEY in the backend environment.',
@@ -33,7 +34,7 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function toMinorUnits(amount: number, currency: string): number {
+export function toMinorUnits(amount: number, currency: string): number {
   return ZERO_DECIMAL_CURRENCIES.has(currency.toLowerCase()) ? Math.round(amount) : Math.round(amount * 100);
 }
 
@@ -328,6 +329,9 @@ export class StripePaymentService {
           settlementStatus: settled ? 'SETTLED' : 'PARTIALLY_PAID',
         },
       });
+      if (booking.status === 'PENDING') {
+        void MessagingService.notifyBooking(booking.id, 'BOOKING_CONFIRMED');
+      }
 
       const alreadyNotified = await prisma.customerNotification.findFirst({
         where: { customerId: booking.customerId, category: 'PAYMENT', actionUrl: `/customer/payments?pi=${intent.id}` },

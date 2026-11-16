@@ -1,8 +1,8 @@
 /**
- * Finovo AI Pre-Trained Automotive Fleet Database
- * 
- * Provides verified OEM manufacturer specifications for high accuracy fleet registration.
- * Pre-populates technical, dimension, performance, equipment, and rental policy data.
+ * Built-in model templates for the Add Car page.
+ *
+ * Typical published specifications and suggested starting prices for a few popular models.
+ * Staff should check every value against the real car before saving; photos are never taken from here.
  */
 
 export interface PretrainedVehicleSpec {

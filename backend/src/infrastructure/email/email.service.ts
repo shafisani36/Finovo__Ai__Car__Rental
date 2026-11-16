@@ -11,6 +11,7 @@ interface OutgoingEmail {
   /** Optional highlighted block (a code) and a button link. */
   highlight?: string;
   action?: { label: string; url: string };
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
 }
 
 let transporter: Transporter | null = null;
@@ -63,6 +64,7 @@ async function deliver(email: OutgoingEmail): Promise<void> {
       subject: email.subject,
       text: email.text,
       html: renderHtml(email),
+      attachments: email.attachments,
     });
     return;
   }
@@ -76,6 +78,7 @@ async function deliver(email: OutgoingEmail): Promise<void> {
   console.log(`\n=================== [EMAIL (dev mock)] ${email.subject} ===================`);
   console.log(`To: ${email.to}`);
   console.log(email.text);
+  for (const a of email.attachments || []) console.log(`Attachment: ${a.filename} (${a.content.length} bytes)`);
   console.log('===========================================================================\n');
 }
 
@@ -139,6 +142,21 @@ export class EmailService {
   }
 
   /** Sends a staff reply to a customer inquiry. */
+  /** Sends the signed rental agreement as a PDF attachment. */
+  static async sendRentalAgreement(email: string, fullName: string, bookingNumber: string, pdf: Buffer, filename: string): Promise<void> {
+    await deliver({
+      to: email,
+      subject: `Your rental agreement for booking #${bookingNumber}`,
+      text: `Hi ${fullName},\n\nThank you for renting with Finovo. Your signed rental agreement for booking #${bookingNumber} is attached.\n\nFinovo Car Rental`,
+      paragraphs: [
+        `Hi ${fullName},`,
+        `Thank you for renting with Finovo. Your signed rental agreement for booking #${bookingNumber} is attached. You can also download it any time from your account.`,
+        'Drive safe!',
+      ],
+      attachments: [{ filename, content: pdf, contentType: 'application/pdf' }],
+    });
+  }
+
   static async sendInquiryReply(email: string, fullName: string, subject: string, replyMessage: string): Promise<void> {
     await deliver({
       to: email,

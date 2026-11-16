@@ -3,7 +3,18 @@ import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { env } from '../../config/env.config';
 import { AuthService } from '../auth/auth.service';
 import { AppError } from '../../shared/errors/app-error';
-import { RentalPricingService, QuoteAddonInput } from '../fleet/rental-pricing.service';
+import { RentalPricingService, QuoteAddonInput, QuoteFixedDiscount } from '../fleet/rental-pricing.service';
+import { PromoCodeService } from '../promotions/promo-code.service';
+import {
+  LoyaltyService,
+  MAX_POINTS_SHARE_PERCENT,
+  MIN_REDEEM_POINTS,
+  POINTS_PER_HUNDRED,
+  POINT_VALUE,
+} from '../loyalty/loyalty.service';
+import { FREE_CANCELLATION_HOURS } from './cancellation-policy';
+import { ReferralService } from '../loyalty/referral.service';
+import { MessagingService } from '../notifications/messaging.service';
 
 export interface CreateBookingDTO {
   customerId?: string;
@@ -16,6 +27,24 @@ export interface CreateBookingDTO {
   estimatedKm?: number;
   driverRequired?: boolean;
   addons?: string[];
+  promoCode?: string;
+  pointsToRedeem?: number;
+  deliveryAddress?: string;
+  collectionAddress?: string;
+}
+
+/** Extra choices that change the price: delivery, promo code and reward points. */
+export interface QuoteOptions {
+  deliveryAddress?: unknown;
+  collectionAddress?: unknown;
+  promoCode?: unknown;
+  pointsToRedeem?: unknown;
+  /** Customer the booking is for; needed for promo code limits and reward points */
+  customerId?: string | null;
+  /** Transaction client, so limits are re-checked atomically when the booking is saved */
+  db?: Prisma.TransactionClient;
+  /** Booking being re-priced, which must not count against its own promo code limits */
+  excludeBookingId?: string;
 }
 
 export interface BookingActor {
@@ -56,7 +85,8 @@ export const PAYMENT_HOLD_MINUTES = 30;
 export const TURNAROUND_BUFFER_MS = 2 * 60 * 60 * 1000;
 
 /** Tax rate applied to every customer quote. */
-export const BOOKING_TAX_RATE_PERCENT = 8;
+/** Tax rate for new bookings, from TAX_RATE_PERCENT (each booking keeps the rate it was priced with). */
+export const BOOKING_TAX_RATE_PERCENT = env.TAX_RATE_PERCENT;
 
 /**
  * Server-side add-on catalog. Clients only send add-on codes; prices are always resolved here.
@@ -78,6 +108,18 @@ export const BOOKING_ADDON_CATALOG: Record<string, QuoteAddonInput> = {
   CHILD_SEAT: { code: 'CHILD_SEAT', description: 'Child safety seat', unitPrice: 8, chargeUnit: 'DAY' },
   EXTRA_DRIVER: { code: 'EXTRA_DRIVER', description: 'Additional driver', unitPrice: 15, chargeUnit: 'DAY' },
 };
+
+/** Fee for each trip when the car is delivered to, or collected from, the customer's address. */
+export const DELIVERY_FEE_PER_TRIP = 75;
+
+/** Cleans an address typed by the customer; returns null when none was given. */
+function cleanAddress(raw: unknown, field: string): string | null {
+  const value = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (!value) return null;
+  if (value.length < 10) throw AppError.badRequest(`${field} is too short. Please enter the full address.`);
+  if (value.length > 300) throw AppError.badRequest(`${field} must be at most 300 characters`);
+  return value;
+}
 
 /** Longest rental and furthest pickup date a customer can book online. */
 export const MAX_ONLINE_RENTAL_DAYS = 90;
@@ -245,9 +287,15 @@ export class BookingService {
     returnDate: Date,
     estimatedKm?: number,
     driverRequired?: boolean,
-    addonCodes?: unknown
+    addonCodes?: unknown,
+    options: QuoteOptions = {}
   ) {
     const addons = resolveAddons(addonCodes);
+    const deliveryAddress = cleanAddress(options.deliveryAddress, 'Delivery address');
+    const collectionAddress = cleanAddress(options.collectionAddress, 'Collection address');
+    const deliveryFee = DELIVERY_FEE_PER_TRIP * ((deliveryAddress ? 1 : 0) + (collectionAddress ? 1 : 0));
+    const requestedPoints = Math.floor(Number(options.pointsToRedeem) || 0);
+    const promoCodeInput = String(options.promoCode ?? '').trim();
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId },
       include: { category: true },
@@ -261,7 +309,7 @@ export class BookingService {
       throw AppError.badRequest('Vehicle is decommissioned or archived');
     }
 
-    const pricingQuote = RentalPricingService.calculateQuote({
+    const pricingRequest = {
       pricingConfig: {
         pricingMethod: vehicle.pricingMethod,
         currency: env.CURRENCY,
@@ -285,7 +333,53 @@ export class BookingService {
       driverRequired: Boolean(driverRequired),
       taxRatePercent: BOOKING_TAX_RATE_PERCENT,
       addons,
-    });
+      deliveryFee,
+      deliveryDescription:
+        deliveryAddress && collectionAddress
+          ? 'Car delivery and collection'
+          : deliveryAddress
+            ? 'Car delivery to your address'
+            : 'Car collection from your address',
+    };
+
+    // First pass gives the subtotal that promo codes and points are worked out from
+    const basePricing = RentalPricingService.calculateQuote(pricingRequest);
+    const eligibleAmount = basePricing.subtotal;
+    const fixedDiscounts: QuoteFixedDiscount[] = [];
+
+    let promo: Awaited<ReturnType<typeof PromoCodeService.evaluate>> | null = null;
+    if (promoCodeInput) {
+      promo = await PromoCodeService.evaluate(
+        promoCodeInput,
+        options.customerId || null,
+        eligibleAmount,
+        options.db,
+        options.excludeBookingId
+      );
+      if (promo.amount > 0) fixedDiscounts.push({ description: `Promo code ${promo.code}`, amount: promo.amount });
+    }
+
+    let points = { points: 0, amount: 0, available: 0, maxUsable: 0 };
+    if (requestedPoints > 0) {
+      if (!options.customerId) throw AppError.badRequest('Sign in to use your reward points');
+      if (requestedPoints < MIN_REDEEM_POINTS) {
+        throw AppError.badRequest(`You can use at least ${MIN_REDEEM_POINTS} points`);
+      }
+      const balance = await LoyaltyService.getBalance(options.customerId, options.db);
+      const result = LoyaltyService.pointsDiscount(requestedPoints, balance.available, eligibleAmount - (promo?.amount || 0));
+      if (requestedPoints > balance.available) {
+        throw AppError.badRequest(`You have ${balance.available} points available`);
+      }
+      if (requestedPoints > result.maxUsable) {
+        throw AppError.badRequest(`You can use at most ${result.maxUsable} points on this booking`);
+      }
+      points = { points: result.points, amount: result.amount, available: balance.available, maxUsable: result.maxUsable };
+      if (points.amount > 0) fixedDiscounts.push({ description: `Reward points (${points.points})`, amount: points.amount });
+    }
+
+    const pricingQuote = fixedDiscounts.length
+      ? RentalPricingService.calculateQuote({ ...pricingRequest, fixedDiscounts })
+      : basePricing;
 
     return {
       vehicleId: vehicle.id,
@@ -306,6 +400,15 @@ export class BookingService {
       driverFee: pricingQuote.driverFee,
       addonsTotal: pricingQuote.addonsTotal,
       selectedAddons: addons.map((a) => a.code),
+      deliveryAddress,
+      collectionAddress,
+      deliveryFee: pricingQuote.deliveryFee,
+      promo: promo
+        ? { promoCodeId: promo.promoCodeId, code: promo.code, description: promo.description, amount: promo.amount }
+        : null,
+      pointsRedeemed: points.points,
+      pointsDiscount: points.amount,
+      pointValue: POINT_VALUE,
       taxRatePercent: BOOKING_TAX_RATE_PERCENT,
       discountAmount: pricingQuote.discountAmount,
       taxableAmount: pricingQuote.taxableAmount,
@@ -316,6 +419,26 @@ export class BookingService {
       grandTotal: pricingQuote.grandTotal,
       lineItems: pricingQuote.lineItems,
       pricingEngineVersion: pricingQuote.pricingEngineVersion,
+    };
+  }
+
+  /** Rules the checkout shows to customers; the server enforces the same values. */
+  static publicOptions() {
+    return {
+      currency: env.CURRENCY,
+      taxRatePercent: BOOKING_TAX_RATE_PERCENT,
+      taxLabel: env.TAX_LABEL,
+      deliveryFeePerTrip: DELIVERY_FEE_PER_TRIP,
+      points: {
+        pointValue: POINT_VALUE,
+        minRedeemPoints: MIN_REDEEM_POINTS,
+        maxSharePercent: MAX_POINTS_SHARE_PERCENT,
+        pointsPerHundred: POINTS_PER_HUNDRED,
+      },
+      cancellation: {
+        freeCancellationHours: FREE_CANCELLATION_HOURS,
+        lateFee: 'ONE_DAY',
+      },
     };
   }
 
@@ -367,16 +490,6 @@ export class BookingService {
       throw AppError.conflict(availCheck.conflictReason || 'Vehicle is not available for requested interval');
     }
 
-    // Calculate server-authoritative quote
-    const quote = await this.calculateQuote(
-      dto.vehicleId,
-      pickupDate,
-      returnDate,
-      dto.estimatedKm,
-      dto.driverRequired,
-      dto.addons
-    );
-
     // Staff may book on behalf of any customer; customers always book for themselves
     let customer =
       isStaff && dto.customerId
@@ -406,6 +519,24 @@ export class BookingService {
       throw AppError.notFound('Customer profile not found. Please log in or provide a valid customerId.');
     }
     const bookingCustomer = customer;
+
+    // Server-authoritative quote, including delivery, promo code and reward points
+    const quoteOptions: QuoteOptions = {
+      deliveryAddress: dto.deliveryAddress,
+      collectionAddress: dto.collectionAddress,
+      promoCode: dto.promoCode,
+      pointsToRedeem: dto.pointsToRedeem,
+      customerId: bookingCustomer.id,
+    };
+    const quote = await this.calculateQuote(
+      dto.vehicleId,
+      pickupDate,
+      returnDate,
+      dto.estimatedKm,
+      dto.driverRequired,
+      dto.addons,
+      quoteOptions
+    );
 
     // Resolve branches: explicit ids must exist, otherwise use the vehicle home branch or first active branch
     const resolveBranch = async (branchId?: string) => {
@@ -450,6 +581,15 @@ export class BookingService {
         );
       }
 
+      // Promo code limits and the points balance are checked again inside the transaction,
+      // so two bookings made at the same moment cannot use the same code or points twice
+      if (quote.promo || quote.pointsRedeemed > 0) {
+        await this.calculateQuote(dto.vehicleId, pickupDate, returnDate, dto.estimatedKm, dto.driverRequired, dto.addons, {
+          ...quoteOptions,
+          db: tx,
+        });
+      }
+
       // Create booking record
       const created = await tx.booking.create({
         data: {
@@ -472,6 +612,13 @@ export class BookingService {
           settlementStatus: initialSettlement,
           currency: quote.currency,
           notes: dto.notes || null,
+          promoCodeId: quote.promo?.promoCodeId || null,
+          promoDiscount: quote.promo?.amount || 0,
+          pointsRedeemed: quote.pointsRedeemed,
+          pointsDiscount: quote.pointsDiscount,
+          deliveryAddress: quote.deliveryAddress,
+          collectionAddress: quote.collectionAddress,
+          deliveryFee: quote.deliveryFee,
         },
         include: {
           customer: true,
@@ -541,12 +688,20 @@ export class BookingService {
             rentalTotal: quote.rentalTotal,
             depositAmount: quote.depositAmount,
             currency: quote.currency,
+            promoCode: quote.promo?.code || null,
+            pointsRedeemed: quote.pointsRedeemed,
+            deliveryFee: quote.deliveryFee,
           }),
         },
       });
 
       return created;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
+
+    // Staff bookings are confirmed straight away; online bookings are confirmed when paid
+    if (initialStatus === 'CONFIRMED') {
+      void MessagingService.notifyBooking(booking.id, 'BOOKING_CONFIRMED');
+    }
 
     return booking;
   }
@@ -598,6 +753,7 @@ export class BookingService {
           pickupBranch: true,
           returnBranch: true,
           rental: true,
+          promoCode: { select: { code: true } },
         },
       }),
     ]);
@@ -629,6 +785,7 @@ export class BookingService {
         },
         pickupBranch: true,
         returnBranch: true,
+        promoCode: { select: { code: true } },
         pricingSnapshot: true,
         breakdownItems: true,
         rental: {
@@ -663,6 +820,13 @@ export class BookingService {
     const booking = await prisma.booking.findUnique({ where: { id } });
     if (!booking) {
       throw AppError.notFound('Booking not found');
+    }
+
+    // Cancelling refunds the customer under the cancellation policy
+    if (newStatus === 'CANCELLED' && booking.status !== 'CANCELLED') {
+      const { BookingCancellationService } = await import('./booking-cancellation.service.js');
+      await BookingCancellationService.cancel(id, { reason, actorUserId, by: 'STAFF' });
+      return prisma.booking.findUnique({ where: { id }, include: { customer: true, vehicle: true } });
     }
 
     // Re-activating a released booking must not double-book the vehicle
@@ -704,6 +868,7 @@ export class BookingService {
       },
     });
 
+    if (newStatus === 'COMPLETED') void ReferralService.rewardForCompletedRental(updated.customerId);
     return updated;
   }
 

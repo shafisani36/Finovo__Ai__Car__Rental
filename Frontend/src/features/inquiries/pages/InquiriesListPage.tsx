@@ -18,8 +18,10 @@ import {
   CustomSelect,
 } from '../../../components/common';
 import { inquiryApi, type Inquiry } from '../../../api/services/inquiry.api';
+import { useTranslation } from 'react-i18next';
 
 export function InquiriesListPage() {
+  const { t, i18n } = useTranslation();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +54,7 @@ export function InquiriesListPage() {
       }
     } catch (err: any) {
       console.error('Failed to load inquiries:', err);
-      setActionError('Failed to fetch inquiries.');
+      setActionError(t('adminPages.inquiries.errLoad'));
     } finally {
       setLoading(false);
     }
@@ -75,17 +77,17 @@ export function InquiriesListPage() {
         if (selectedInquiry?.id === inquiryId) {
           setSelectedInquiry((prev) => (prev ? { ...prev, status: newStatus } : null));
         }
-        setActionSuccess(`Inquiry marked as ${newStatus}`);
+        setActionSuccess(t('adminPages.inquiries._marked', { status: t(`adminPages.inquiries._status_${newStatus}`) }));
       }
     } catch (err: any) {
-      setActionError(err.message || 'Failed to update status.');
+      setActionError(err.message || t('adminPages.inquiries.errStatus'));
     }
   };
 
   const handleSendReply = async () => {
     if (!selectedInquiry) return;
     if (!replyText.trim()) {
-      setActionError('Reply message cannot be empty.');
+      setActionError(t('adminPages.inquiries.errEmptyReply'));
       return;
     }
 
@@ -100,10 +102,10 @@ export function InquiriesListPage() {
         );
         setSelectedInquiry(res.inquiry);
         setReplyText('');
-        setActionSuccess('Reply sent successfully and recorded in inquiry history.');
+        setActionSuccess(t('adminPages.inquiries.replySent'));
       }
     } catch (err: any) {
-      setActionError(err.message || 'Failed to send reply.');
+      setActionError(err.message || t('adminPages.inquiries.errReply'));
     } finally {
       setSendingReply(false);
     }
@@ -120,10 +122,10 @@ export function InquiriesListPage() {
           setSelectedInquiry(null);
         }
         setInquiryToDelete(null);
-        setActionSuccess('Inquiry deleted successfully.');
+        setActionSuccess(t('adminPages.inquiries.deleted'));
       }
     } catch (err: any) {
-      setActionError(err.message || 'Failed to delete inquiry.');
+      setActionError(err.message || t('adminPages.inquiries.errDelete'));
     } finally {
       setDeleting(false);
     }
@@ -140,25 +142,25 @@ export function InquiriesListPage() {
         return {
           bg: 'rgba(239, 68, 68, 0.12)',
           color: '#DC2626',
-          label: 'NEW',
+          label: t('adminPages.inquiries._status_NEW'),
         };
       case 'IN_PROGRESS':
         return {
           bg: 'rgba(245, 183, 22, 0.18)',
           color: '#B45309',
-          label: 'IN PROGRESS',
+          label: t('adminPages.inquiries._status_IN_PROGRESS'),
         };
       case 'REPLIED':
         return {
           bg: 'rgba(16, 185, 129, 0.14)',
           color: '#059669',
-          label: 'REPLIED',
+          label: t('adminPages.inquiries._status_REPLIED'),
         };
       case 'CLOSED':
         return {
           bg: 'rgba(107, 114, 128, 0.14)',
           color: '#4B5563',
-          label: 'CLOSED',
+          label: t('adminPages.inquiries._status_CLOSED'),
         };
       default:
         return { bg: '#ECEAEF', color: '#1E0426', label: status };
@@ -169,11 +171,11 @@ export function InquiriesListPage() {
     <PageContainer>
       {/* Header */}
       <PageHeader
-        title="Customer Inquiries & Messages"
-        subtitle="Review, manage, and respond to incoming inquiries submitted via the Contact Us portal."
+        title={t('adminPages.inquiries.title')}
+        subtitle={t('adminPages.inquiries.subtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Inquiries' },
+          { label: t('adminPages.inquiries.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.inquiries.crumb') },
         ]}
       />
 
@@ -232,25 +234,25 @@ export function InquiriesListPage() {
       <StatGrid columns={4}>
         <StatCard
           icon={MessageSquare}
-          label="Total Inquiries"
+          label={t('adminPages.inquiries.statTotal')}
           value={totalCount}
           variant="purple"
         />
         <StatCard
           icon={Clock}
-          label="Pending / New"
+          label={t('adminPages.inquiries.statNew')}
           value={newCount}
           variant="gold"
         />
         <StatCard
           icon={RotateCcw}
-          label="In Progress"
+          label={t('adminPages.inquiries.statProgress')}
           value={inProgressCount}
           variant="purple"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Replied"
+          label={t('adminPages.inquiries.statReplied')}
           value={repliedCount}
           variant="green"
         />
@@ -289,7 +291,7 @@ export function InquiriesListPage() {
                 transition: 'all 0.15s ease',
               }}
             >
-              {st === 'ALL' ? 'All Inquiries' : st.replace('_', ' ')}
+              {st === 'ALL' ? t('adminPages.inquiries._all') : t(`adminPages.inquiries._status_${st}`, { defaultValue: st.replace('_', ' ') })}
             </button>
           ))}
         </div>
@@ -310,7 +312,7 @@ export function InquiriesListPage() {
             />
             <input
               type="text"
-              placeholder="Search sender, email, subject..."
+              placeholder={t('adminPages.inquiries.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -338,7 +340,7 @@ export function InquiriesListPage() {
               cursor: 'pointer',
             }}
           >
-            Search
+            {t('adminPages.inquiries.searchBtn')}
           </button>
         </form>
       </div>
@@ -355,14 +357,14 @@ export function InquiriesListPage() {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <RotateCcw size={24} style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading customer inquiries...</div>
+            <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.inquiries.loading')}</div>
           </div>
         ) : inquiries.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <MessageSquare size={40} color="#D1D5DB" style={{ marginBottom: '12px' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>No inquiries found</div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>{t('adminPages.inquiries.empty')}</div>
             <div style={{ fontSize: '0.875rem', marginTop: '4px' }}>
-              Inquiries submitted through the Contact Us page will appear here.
+              {t('adminPages.inquiries.emptyDesc')}
             </div>
           </div>
         ) : (
@@ -370,11 +372,11 @@ export function InquiriesListPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#685D73' }}>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Sender</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Subject & Message</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Submitted</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inquiries.sender')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inquiries.colSubject')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inquiries.colStatus')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.inquiries.colSubmitted')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>{t('adminPages.inquiries.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -462,7 +464,7 @@ export function InquiriesListPage() {
                             }}
                           >
                             <Eye size={13} />
-                            View & Reply
+                            {t('adminPages.inquiries.viewReply')}
                           </button>
                           <button
                             type="button"
@@ -479,7 +481,7 @@ export function InquiriesListPage() {
                               color: '#DC2626',
                               cursor: 'pointer',
                             }}
-                            title="Delete Inquiry"
+                            title={t('adminPages.inquiries.deleteInquiry')}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -499,8 +501,8 @@ export function InquiriesListPage() {
         <Modal
           isOpen={!!selectedInquiry}
           onClose={() => setSelectedInquiry(null)}
-          title={`Inquiry from ${selectedInquiry.name}`}
-          subtitle={`Submitted on ${new Date(selectedInquiry.createdAt).toLocaleString()}`}
+          title={t('adminPages.inquiries._from', { name: selectedInquiry.name })}
+          subtitle={t('adminPages.inquiries._submittedOn', { date: new Date(selectedInquiry.createdAt).toLocaleString(i18n.language) })}
           maxWidth="700px"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -518,27 +520,27 @@ export function InquiriesListPage() {
               }}
             >
               <div>
-                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600 }}>Sender</div>
+                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600 }}>{t('adminPages.inquiries.sender')}</div>
                 <div style={{ fontWeight: 700, color: '#1E0426' }}>{selectedInquiry.name}</div>
               </div>
               <div>
-                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600 }}>Email</div>
+                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600 }}>{t('adminPages.inquiries.email')}</div>
                 <div style={{ fontWeight: 700, color: '#1E0426' }}>{selectedInquiry.email}</div>
               </div>
               <div>
-                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600 }}>Phone</div>
-                <div style={{ fontWeight: 700, color: '#1E0426' }}>{selectedInquiry.phone || 'Not provided'}</div>
+                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600 }}>{t('adminPages.inquiries.phone')}</div>
+                <div style={{ fontWeight: 700, color: '#1E0426' }}>{selectedInquiry.phone || t('adminPages.inquiries.notProvided')}</div>
               </div>
               <div>
-                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Status Control</div>
+                <div style={{ color: '#8A7090', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>{t('adminPages.inquiries.statusControl')}</div>
                 <CustomSelect<Inquiry['status']>
                   value={selectedInquiry.status}
                   onChange={(val) => handleStatusChange(selectedInquiry.id, val)}
                   options={[
-                    { value: 'NEW', label: 'NEW' },
-                    { value: 'IN_PROGRESS', label: 'IN PROGRESS' },
-                    { value: 'REPLIED', label: 'REPLIED' },
-                    { value: 'CLOSED', label: 'CLOSED' },
+                    { value: 'NEW', label: t('adminPages.inquiries._status_NEW') },
+                    { value: 'IN_PROGRESS', label: t('adminPages.inquiries._status_IN_PROGRESS') },
+                    { value: 'REPLIED', label: t('adminPages.inquiries._status_REPLIED') },
+                    { value: 'CLOSED', label: t('adminPages.inquiries._status_CLOSED') },
                   ]}
                   size="sm"
                 />
@@ -548,13 +550,13 @@ export function InquiriesListPage() {
             {/* Inquiry Content */}
             <div>
               <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#8A7090', marginBottom: '6px' }}>
-                Subject
+                {t('adminPages.inquiries.subject')}
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E0426' }}>
                 {selectedInquiry.subject}
               </div>
               <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#8A7090', marginTop: '16px', marginBottom: '6px' }}>
-                Message
+                {t('adminPages.inquiries.message')}
               </div>
               <div
                 style={{
@@ -584,7 +586,7 @@ export function InquiriesListPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ fontWeight: 800, color: '#166534', fontSize: '0.875rem' }}>
-                    ✓ Reply Sent ({selectedInquiry.repliedBy || 'Admin'})
+                    {t('adminPages.inquiries._replySent', { name: selectedInquiry.repliedBy || t('adminPages.inquiries.crumbAdmin') })}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#15803D' }}>
                     {selectedInquiry.repliedAt ? new Date(selectedInquiry.repliedAt).toLocaleString() : ''}
@@ -599,11 +601,11 @@ export function InquiriesListPage() {
             {/* Reply Composer */}
             <div style={{ borderTop: '1px solid #ECEAEF', paddingTop: '16px' }}>
               <div style={{ fontWeight: 800, fontSize: '0.925rem', color: '#1E0426', marginBottom: '8px' }}>
-                {selectedInquiry.replyMessage ? 'Send Another Reply' : 'Compose Email Reply'}
+                {selectedInquiry.replyMessage ? t('adminPages.inquiries._another') : t('adminPages.inquiries._compose')}
               </div>
               <textarea
                 rows={4}
-                placeholder={`Type your reply to ${selectedInquiry.name}...`}
+                placeholder={t('adminPages.inquiries._replyPlaceholder', { name: selectedInquiry.name })}
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 style={{
@@ -634,7 +636,7 @@ export function InquiriesListPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  Close
+                  {t('adminPages.inquiries.close')}
                 </button>
                 <button
                   type="button"
@@ -656,7 +658,7 @@ export function InquiriesListPage() {
                   }}
                 >
                   <Send size={14} />
-                  {sendingReply ? 'Sending Email...' : 'Send Reply'}
+                  {sendingReply ? t('adminPages.inquiries._sending') : t('adminPages.inquiries._send')}
                 </button>
               </div>
             </div>
@@ -669,11 +671,11 @@ export function InquiriesListPage() {
         <Modal
           isOpen={!!inquiryToDelete}
           onClose={() => setInquiryToDelete(null)}
-          title="Confirm Deletion"
+          title={t('adminPages.inquiries.confirmDelete')}
           maxWidth="440px"
         >
           <div style={{ color: '#4A315A', fontSize: '0.925rem', lineHeight: '1.5' }}>
-            Are you sure you want to delete the inquiry from <strong>{inquiryToDelete.name}</strong> regarding <em>"{inquiryToDelete.subject}"</em>? This action cannot be undone.
+            {t('adminPages.inquiries._deleteQuestion', { name: inquiryToDelete.name, subject: inquiryToDelete.subject })}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
             <button
@@ -690,7 +692,7 @@ export function InquiriesListPage() {
                 cursor: 'pointer',
               }}
             >
-              Cancel
+              {t('adminPages.inquiries.cancel')}
             </button>
             <button
               type="button"
@@ -707,7 +709,7 @@ export function InquiriesListPage() {
                 cursor: deleting ? 'not-allowed' : 'pointer',
               }}
             >
-              {deleting ? 'Deleting...' : 'Delete Inquiry'}
+              {deleting ? t('adminPages.inquiries._deleting') : t('adminPages.inquiries.deleteInquiry')}
             </button>
           </div>
         </Modal>

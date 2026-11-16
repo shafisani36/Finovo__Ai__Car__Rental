@@ -7,6 +7,9 @@ const API_BASE_URL =
 
 const DEFAULT_TIMEOUT_MS = 15000;
 
+
+/** Browser flag (not a secret) saying a session may exist; the refresh token itself stays in an HttpOnly cookie. */
+const SESSION_HINT_KEY = 'finovo_session_hint';
 export class ApiClient {
   private baseURL: string;
   private accessToken: string | null = null;
@@ -28,11 +31,24 @@ export class ApiClient {
     try {
       if (token) {
         localStorage.setItem('finovo_access_token', token);
+        // Marks that this browser has signed in, so a session refresh is worth trying later
+        localStorage.setItem(SESSION_HINT_KEY, '1');
       } else {
         localStorage.removeItem('finovo_access_token');
+        localStorage.removeItem(SESSION_HINT_KEY);
       }
     } catch {
       // Ignore storage write issues (e.g. private mode)
+    }
+  }
+
+  /** False only when this browser has certainly never signed in (or signed out since). */
+  private mayHaveSession(): boolean {
+    try {
+      return localStorage.getItem(SESSION_HINT_KEY) === '1' || Boolean(localStorage.getItem('finovo_access_token'));
+    } catch {
+      // Storage is blocked (private mode): the cookie may still hold a session, so try
+      return true;
     }
   }
 
@@ -66,6 +82,8 @@ export class ApiClient {
    * Performs an authenticated token refresh against the backend.
    */
   public async refreshToken(): Promise<{ accessToken: string } | null> {
+    // A visitor who never signed in on this browser has no session to refresh: skip the request
+    if (!this.mayHaveSession()) return null;
     try {
       const res = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
@@ -92,6 +110,7 @@ export class ApiClient {
       params,
       timeoutMs = DEFAULT_TIMEOUT_MS,
       skipAuth = false,
+      responseType = 'json',
       correlationId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       signal: userSignal,
       body,
@@ -193,6 +212,10 @@ export class ApiClient {
         });
         response = await retryPromise;
       }
+    }
+
+    if (responseType === 'blob' && response.ok) {
+      return (await response.blob()) as T;
     }
 
     // Parse JSON response body safely

@@ -22,6 +22,8 @@ export const registerSchema = z.object({
       passwordComplexityRegex,
       'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
     ),
+  /** Optional invite code of the friend who referred this customer; checked against real customers */
+  referralCode: z.string().trim().max(20, 'This invite code is not valid').optional().or(z.literal('')),
 });
 
 export const loginSchema = z.object({

@@ -19,6 +19,18 @@ export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
   return Promise.resolve(window.confirm(text));
 }
 
+/**
+ * Shows a message in the application's dialog with a single button (used instead of the browser alert box).
+ */
+export async function alertDialog(options: Omit<ConfirmOptions, 'hideCancel'>): Promise<void> {
+  if (globalConfirmBridge) {
+    await globalConfirmBridge({ variant: 'info', ...options, hideCancel: true });
+    return;
+  }
+  const text = typeof options.message === 'string' ? options.message : options.title;
+  window.alert(text);
+}
+
 export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [modalOptions, setModalOptions] = useState<ConfirmOptions | null>(null);
   const resolverRef = useRef<((value: boolean) => void) | null>(null);

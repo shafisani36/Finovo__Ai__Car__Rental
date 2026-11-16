@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { AuthSplitLayout } from '../layouts/AuthSplitLayout';
 import { AuthInput } from '../components/AuthInput';
 import { SocialAuthRow } from '../components/SocialAuthRow';
 import { useAuth } from '../context';
-import { User, Mail, Lock, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Lock, CheckCircle2, Gift } from 'lucide-react';
+import { apiClient } from '../../../api/client';
+import { ApiError } from '../../../api/errors';
+
+/** Invite codes look like FIN7K3QX9 (letters and digits without look-alikes). */
+const REFERRAL_CODE_PATTERN = /^FIN[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
+const normalizeReferralCode = (value: string) => value.trim().toUpperCase().replace(/[\s-]/g, '');
 
 export function RegisterPage() {
   const { t } = useTranslation();
@@ -17,6 +23,20 @@ export function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // Optional invite code, filled from a shared link such as /register?ref=FIN7K3QX9
+  const [searchParams] = useSearchParams();
+  const [referralCode, setReferralCode] = useState(() => (searchParams.get('ref') || '').slice(0, 20));
+  // Result of the server check, remembered together with the code it belongs to
+  const [referralCheck, setReferralCheck] = useState<{ code: string; state: 'valid' | 'invalid' | 'unverified' } | null>(null);
+  const normalizedReferral = normalizeReferralCode(referralCode);
+  const referralFormatOk = REFERRAL_CODE_PATTERN.test(normalizedReferral);
+  const referralState: 'empty' | 'checking' | 'valid' | 'invalid' | 'unverified' = !normalizedReferral
+    ? 'empty'
+    : !referralFormatOk
+      ? 'invalid'
+      : referralCheck?.code === normalizedReferral
+        ? referralCheck.state
+        : 'checking';
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,15 +67,44 @@ export function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Checks the invite code with the server while the person types (the server checks it again at signup)
+  useEffect(() => {
+    if (!normalizedReferral || !referralFormatOk) return;
+    const code = normalizedReferral;
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await apiClient.get<{ success: boolean; valid: boolean }>(`/auth/referral-codes/${encodeURIComponent(code)}`, {
+          skipAuth: true,
+        });
+        if (active) setReferralCheck({ code, state: res.valid ? 'valid' : 'invalid' });
+      } catch (err) {
+        if (!active) return;
+        // Too many checks or no connection: the code could not be checked now, so it is not called wrong.
+        // The server still checks it strictly when the account is created.
+        const status = err instanceof ApiError ? err.status : 0;
+        setReferralCheck({ code, state: status === 400 || status === 404 ? 'invalid' : 'unverified' });
+      }
+    }, 400);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [normalizedReferral, referralFormatOk]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setServerError(null);
 
     if (!validate()) return;
+    if (referralState === 'invalid' || referralState === 'checking') {
+      setErrors((prev) => ({ ...prev, referralCode: t('auth.referralInvalid') }));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      await register(fullName.trim(), email.trim(), password);
+      await register(fullName.trim(), email.trim(), password, normalizedReferral || undefined);
       setIsSuccess(true);
       setTimeout(() => {
         navigate('/login', {
@@ -197,6 +246,31 @@ export function RegisterPage() {
               error={errors.confirmPassword}
               required
             />
+
+            <AuthInput
+              label={t('auth.referralLabel')}
+              icon={<Gift size={18} />}
+              placeholder={t('auth.referralPlaceholder')}
+              value={referralCode}
+              maxLength={20}
+              autoComplete="off"
+              onChange={(e) => {
+                setReferralCode(e.target.value);
+                if (errors.referralCode) setErrors((prev) => ({ ...prev, referralCode: '' }));
+              }}
+              error={errors.referralCode || (referralState === 'invalid' ? t('auth.referralInvalid') : undefined)}
+            />
+            {referralState === 'valid' && (
+              <p role="status" style={{ margin: '-10px 0 16px', fontSize: '0.8rem', color: '#047857', fontWeight: 600 }}>
+                {t('auth.referralValid')}
+              </p>
+            )}
+            {referralState === 'unverified' && (
+              <p style={{ margin: '-10px 0 16px', fontSize: '0.8rem', color: '#6B5E70' }}>{t('auth.referralUnverified')}</p>
+            )}
+            {referralState === 'checking' && (
+              <p style={{ margin: '-10px 0 16px', fontSize: '0.8rem', color: '#6B5E70' }}>{t('auth.referralChecking')}</p>
+            )}
 
             {/* Terms of Service Checkbox */}
             <div style={{ marginBottom: '22px' }}>

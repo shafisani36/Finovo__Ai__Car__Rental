@@ -8,13 +8,17 @@ import {
   ChevronLeft,
   AlertCircle,
   Check,
+  Tag,
+  Gift,
+  Truck,
+  X,
 } from 'lucide-react';
 import { vehiclesApi } from '../../../api/services/vehicles.api';
 import { branchesApi } from '../../../api/services/branches.api';
 import { bookingsApi } from '../../../api/services/bookings.api';
 import { customerPortalApi } from '../api/customerPortalApi';
 import { useBookingQuote, toLocalIso } from '../../../hooks/useBookingQuote';
-import type { BookingAddonCode } from '../../bookings/api/bookingApi';
+import type { BookingAddonCode, BookingOptions } from '../../bookings/api/bookingApi';
 import { StripePaymentForm } from '../../payments/components/StripePaymentForm';
 import type { StripeConfirmResponse } from '../../../api/services/payments.api';
 import { useAuth } from '../../auth/context';
@@ -90,6 +94,25 @@ export function CustomerCheckoutPage() {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
+  // Checkout rules (delivery fee, reward points, cancellation) published by the backend
+  const [bookingOptions, setBookingOptions] = useState<BookingOptions | null>(null);
+
+  // Promo code: only applied after the server accepts it
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromoCode, setAppliedPromoCode] = useState('');
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+
+  // Reward points
+  const [pointsBalance, setPointsBalance] = useState(0);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+
+  // Delivery to an address and collection from an address
+  const [deliveryEnabled, setDeliveryEnabled] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [collectionEnabled, setCollectionEnabled] = useState(false);
+  const [collectionAddress, setCollectionAddress] = useState('');
+
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
@@ -130,6 +153,16 @@ export function CustomerCheckoutPage() {
         } catch {
           // Profile pre-fill is optional
         }
+
+        // Checkout rules and the reward point balance are optional extras
+        const [optionsResult, rewardsResult] = await Promise.allSettled([
+          bookingsApi.options(),
+          customerPortalApi.getRewards(),
+        ]);
+        if (isMounted && optionsResult.status === 'fulfilled') setBookingOptions(optionsResult.value.options);
+        if (isMounted && rewardsResult.status === 'fulfilled') {
+          setPointsBalance(Math.max(0, Math.floor(rewardsResult.value.pointsBalance || 0)));
+        }
       } catch (err: any) {
         if (isMounted) setLoadError(err?.message || t('portalPages.checkout.errLoad'));
       } finally {
@@ -153,20 +186,102 @@ export function CustomerCheckoutPage() {
   ];
   const pickupIso = toLocalIso(pickupDate, pickupTime);
   const returnIso = toLocalIso(returnDate, returnTime);
+  // An address is only sent once it is long enough to be a real address
+  const MIN_ADDRESS_LENGTH = 10;
+  const activeDeliveryAddress =
+    deliveryEnabled && deliveryAddress.trim().length >= MIN_ADDRESS_LENGTH ? deliveryAddress.trim() : '';
+  const activeCollectionAddress =
+    collectionEnabled && collectionAddress.trim().length >= MIN_ADDRESS_LENGTH ? collectionAddress.trim() : '';
+  const deliveryAddressMissing =
+    (deliveryEnabled && !activeDeliveryAddress) || (collectionEnabled && !activeCollectionAddress);
+  const quoteExtras = {
+    promoCode: appliedPromoCode || undefined,
+    points: pointsToRedeem || undefined,
+    deliveryAddress: activeDeliveryAddress || undefined,
+    collectionAddress: activeCollectionAddress || undefined,
+  };
   const {
     quote,
     availability,
     addonCatalog,
     isLoading: isQuoteLoading,
     error: quoteError,
-  } = useBookingQuote(vehicle?.id, pickupIso, returnIso, selectedAddons);
+  } = useBookingQuote(vehicle?.id, pickupIso, returnIso, selectedAddons, quoteExtras);
   const currency = quote?.currency || vehicle?.currency || '';
   const addonPrice = (code: BookingAddonCode) => {
     const addon = addonCatalog.find((a) => a.code === code);
     return addon ? formatMoney(addon.unitPrice, currency) : '…';
   };
   const isUnavailable = availability ? !availability.available : false;
+
+  // Reward point limits: the minimum to spend, the balance, and the share of the rental points may cover
+  const pointRules = bookingOptions?.points;
+  const pointValue = pointRules?.pointValue ?? 0.1;
+  const minRedeemPoints = pointRules?.minRedeemPoints ?? 100;
+  const rentalBeforeTax = quote
+    ? (quote.lineItems || [])
+        .filter((item) => item.lineType !== 'deposit' && item.lineType !== 'tax' && item.lineType !== 'discount')
+        .reduce((sum, item) => sum + item.amount, 0) - (quote.promo?.amount || 0)
+    : 0;
+  const maxPointsByShare = pointRules
+    ? Math.floor((Math.max(0, rentalBeforeTax) * (pointRules.maxSharePercent / 100)) / pointValue)
+    : 0;
+  const maxUsablePoints = Math.max(0, Math.min(pointsBalance, maxPointsByShare));
+  const canUsePoints = pointsBalance >= minRedeemPoints && maxUsablePoints >= minRedeemPoints;
+
+  const applyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code || !vehicle || !pickupIso || !returnIso) return;
+    setIsCheckingPromo(true);
+    setPromoError(null);
+    try {
+      // Ask the server first, so a wrong code never breaks the price summary
+      const res = await bookingsApi.quote({
+        vehicleId: vehicle.id,
+        pickupDateTime: pickupIso,
+        returnDateTime: returnIso,
+        ...(selectedAddons.length ? { addons: [...selectedAddons].sort().join(',') } : {}),
+        promoCode: code,
+        ...(activeDeliveryAddress ? { deliveryAddress: activeDeliveryAddress } : {}),
+        ...(activeCollectionAddress ? { collectionAddress: activeCollectionAddress } : {}),
+      });
+      if (!res.quote?.promo) throw new Error(t('portalPages.checkout.promoInvalid'));
+      setAppliedPromoCode(res.quote.promo.code);
+      setPromoInput('');
+      // The point limit depends on the price after the promo, so start points again
+      setPointsToRedeem(0);
+    } catch (err: any) {
+      setPromoError(err?.message || t('portalPages.checkout.promoInvalid'));
+    } finally {
+      setIsCheckingPromo(false);
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedPromoCode('');
+    setPromoError(null);
+    setPointsToRedeem(0);
+  };
+
+  const changePoints = (value: number) => {
+    if (!Number.isFinite(value) || value <= 0) {
+      setPointsToRedeem(0);
+      return;
+    }
+    setPointsToRedeem(Math.min(maxUsablePoints, Math.max(minRedeemPoints, Math.floor(value))));
+  };
+  // Keep the chosen points inside the limit when the price changes (other dates, extras or promo)
+  useEffect(() => {
+    if (!quote || pointsToRedeem === 0 || pendingBooking) return;
+    if (pointsToRedeem > maxUsablePoints) {
+      // Correcting an earlier choice against the new server price is a real synchronisation step
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPointsToRedeem(maxUsablePoints >= minRedeemPoints ? maxUsablePoints : 0);
+    }
+  }, [quote, pointsToRedeem, maxUsablePoints, minRedeemPoints, pendingBooking]);
+
   const canContinueTrip = Boolean(quote) && !isUnavailable && !isQuoteLoading && Boolean(pickupBranchId);
+  const canContinueExtras = canContinueTrip && !deliveryAddressMissing;
 
   // Step 4 -> 5: create the booking (held as PENDING until Stripe confirms the payment)
   const handleProceedToPayment = async () => {
@@ -186,6 +301,10 @@ export function CustomerCheckoutPage() {
         pickupDateTime: pickupIso,
         returnDateTime: returnIso,
         addons: selectedAddons,
+        ...(appliedPromoCode ? { promoCode: appliedPromoCode } : {}),
+        ...(pointsToRedeem > 0 ? { pointsToRedeem } : {}),
+        ...(activeDeliveryAddress ? { deliveryAddress: activeDeliveryAddress } : {}),
+        ...(activeCollectionAddress ? { collectionAddress: activeCollectionAddress } : {}),
         notes: JSON.stringify({
           driver: { name: driverName, email: driverEmail, phone: driverPhone, licenseNumber },
         }),
@@ -597,12 +716,88 @@ export function CustomerCheckoutPage() {
                 </label>
               </div>
 
+              {/* Delivery to the customer's address and collection at the end */}
+              <div style={{ borderTop: '1px solid var(--cp-border)', paddingTop: '20px', marginBottom: '24px' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', fontWeight: 800, color: 'var(--cp-primary)', margin: '0 0 4px' }}>
+                  <Truck size={18} />
+                  {t('portalPages.checkout.deliveryTitle')}
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)', margin: '0 0 14px' }}>
+                  {t('portalPages.checkout.deliveryIntro', {
+                    fee: formatMoney(bookingOptions?.deliveryFeePerTrip ?? 0, currency, 2),
+                  })}
+                </p>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={deliveryEnabled}
+                    onChange={(e) => setDeliveryEnabled(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
+                  />
+                  <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.checkout.deliverToMe')}</span>
+                </label>
+                {deliveryEnabled && (
+                  <div style={{ marginBottom: '14px' }}>
+                    <label className="cp-label" htmlFor="checkout-delivery-address">{t('portalPages.checkout.deliveryAddress')}</label>
+                    <input
+                      id="checkout-delivery-address"
+                      type="text"
+                      className="cp-input"
+                      maxLength={300}
+                      value={deliveryAddress}
+                      placeholder={t('portalPages.checkout.addressPlaceholder')}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                    />
+                    {!activeDeliveryAddress && (
+                      <div style={{ fontSize: '0.78rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
+                        {t('portalPages.checkout.addressHint', { count: MIN_ADDRESS_LENGTH })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={collectionEnabled}
+                    onChange={(e) => setCollectionEnabled(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--cp-accent)' }}
+                  />
+                  <span style={{ fontWeight: 600, color: 'var(--cp-primary)' }}>{t('portalPages.checkout.collectFromMe')}</span>
+                </label>
+                {collectionEnabled && (
+                  <div>
+                    <label className="cp-label" htmlFor="checkout-collection-address">{t('portalPages.checkout.collectionAddress')}</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        id="checkout-collection-address"
+                        type="text"
+                        className="cp-input"
+                        maxLength={300}
+                        value={collectionAddress}
+                        placeholder={t('portalPages.checkout.addressPlaceholder')}
+                        onChange={(e) => setCollectionAddress(e.target.value)}
+                      />
+                      {deliveryEnabled && activeDeliveryAddress && (
+                        <button type="button" className="cp-btn-outline" style={{ whiteSpace: 'nowrap' }} onClick={() => setCollectionAddress(deliveryAddress)}>
+                          {t('portalPages.checkout.sameAddress')}
+                        </button>
+                      )}
+                    </div>
+                    {!activeCollectionAddress && (
+                      <div style={{ fontSize: '0.78rem', color: 'var(--cp-text-muted)', marginTop: '4px' }}>
+                        {t('portalPages.checkout.addressHint', { count: MIN_ADDRESS_LENGTH })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button className="cp-btn-outline" onClick={() => setStep(1)}>
                   <ChevronLeft size={16} />
                   {t('portalPages.checkout.back')}
                 </button>
-                <button className="cp-btn-primary" onClick={() => setStep(3)}>
+                <button className="cp-btn-primary" onClick={() => setStep(3)} disabled={!canContinueExtras} style={{ opacity: canContinueExtras ? 1 : 0.6 }}>
                   {t('portalPages.checkout.continueToDriver')}
                   <ChevronRight size={16} />
                 </button>
@@ -688,6 +883,11 @@ export function CustomerCheckoutPage() {
                 <li>{t('portalPages.checkout.term2')}</li>
                 <li>{t('portalPages.checkout.term3')}</li>
                 <li>{t('portalPages.checkout.term4')}</li>
+                <li>
+                  {t('portalPages.checkout.cancellationTerm', {
+                    count: bookingOptions?.cancellation.freeCancellationHours ?? 24,
+                  })}
+                </li>
               </ul>
 
               {/* Agreement checkbox */}
@@ -712,9 +912,9 @@ export function CustomerCheckoutPage() {
                 </button>
                 <button
                   className="cp-btn-primary"
-                  disabled={isSubmitting || !agreedToTerms || !canContinueTrip}
+                  disabled={isSubmitting || !agreedToTerms || !canContinueExtras}
                   onClick={handleProceedToPayment}
-                  style={{ opacity: isSubmitting || !agreedToTerms || !canContinueTrip ? 0.6 : 1 }}
+                  style={{ opacity: isSubmitting || !agreedToTerms || !canContinueExtras ? 0.6 : 1 }}
                 >
                   {isSubmitting ? t('portalPages.checkout.reserving') : t('portalPages.checkout.continueToPayment')}
                   <ChevronRight size={16} />
@@ -818,6 +1018,129 @@ export function CustomerCheckoutPage() {
                 </>
               )}
             </div>
+
+            {quoteError && step > 1 && (
+              <div role="alert" style={{ marginTop: '12px', color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.85rem' }}>
+                {quoteError}
+              </div>
+            )}
+
+            {/* Promo code */}
+            <div style={{ borderTop: '1px solid var(--cp-border)', marginTop: '16px', paddingTop: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.88rem', color: 'var(--cp-primary)', marginBottom: '8px' }}>
+                <Tag size={16} />
+                {t('portalPages.checkout.promoTitle')}
+              </div>
+              {appliedPromoCode ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#047857', fontSize: '0.85rem' }}>
+                  <span>
+                    {t('portalPages.checkout.promoApplied', {
+                      code: appliedPromoCode,
+                      amount: formatMoney(quote?.promo?.amount ?? 0, currency, 2),
+                    })}
+                  </span>
+                  {!pendingBooking && (
+                    <button type="button" onClick={removePromo} aria-label={t('portalPages.checkout.promoRemove')} title={t('portalPages.checkout.promoRemove')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex' }}>
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <form
+                  style={{ display: 'flex', gap: '8px' }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    applyPromo();
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="cp-input"
+                    aria-label={t('portalPages.checkout.promoTitle')}
+                    placeholder={t('portalPages.checkout.promoPlaceholder')}
+                    value={promoInput}
+                    maxLength={32}
+                    disabled={Boolean(pendingBooking)}
+                    onChange={(e) => {
+                      setPromoInput(e.target.value);
+                      setPromoError(null);
+                    }}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  <button
+                    type="submit"
+                    className="cp-btn-outline"
+                    disabled={!promoInput.trim() || isCheckingPromo || Boolean(pendingBooking) || !quote}
+                  >
+                    {isCheckingPromo ? t('portalPages.checkout.promoChecking') : t('portalPages.checkout.promoApply')}
+                  </button>
+                </form>
+              )}
+              {promoError && (
+                <div role="alert" style={{ color: 'var(--cp-danger)', fontSize: '0.8rem', marginTop: '6px' }}>
+                  {promoError}
+                </div>
+              )}
+            </div>
+
+            {/* Reward points */}
+            {pointsBalance > 0 && (
+              <div style={{ borderTop: '1px solid var(--cp-border)', marginTop: '16px', paddingTop: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.88rem', color: 'var(--cp-primary)', marginBottom: '4px' }}>
+                  <Gift size={16} />
+                  {t('portalPages.checkout.pointsTitle')}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--cp-text-muted)', marginBottom: '8px' }}>
+                  {t('portalPages.checkout.pointsBalance', {
+                    count: pointsBalance,
+                    value: formatMoney(pointsBalance * pointValue, currency, 2),
+                  })}
+                </div>
+                {canUsePoints ? (
+                  <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', marginBottom: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={pointsToRedeem > 0}
+                        disabled={Boolean(pendingBooking)}
+                        onChange={(e) => changePoints(e.target.checked ? maxUsablePoints : 0)}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--cp-accent)' }}
+                      />
+                      {t('portalPages.checkout.pointsUse')}
+                    </label>
+                    {pointsToRedeem > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                          type="number"
+                          className="cp-input"
+                          aria-label={t('portalPages.checkout.pointsTitle')}
+                          min={minRedeemPoints}
+                          max={maxUsablePoints}
+                          step={10}
+                          value={pointsToRedeem}
+                          disabled={Boolean(pendingBooking)}
+                          onChange={(e) => changePoints(Number(e.target.value))}
+                          style={{ width: '120px' }}
+                        />
+                        <span style={{ fontSize: '0.82rem', color: 'var(--cp-text-muted)' }}>
+                          = {formatMoney(pointsToRedeem * pointValue, currency, 2)}
+                        </span>
+                      </div>
+                    )}
+                    <div style={{ fontSize: '0.75rem', color: 'var(--cp-text-muted)', marginTop: '6px' }}>
+                      {t('portalPages.checkout.pointsRules', {
+                        min: minRedeemPoints,
+                        percent: pointRules?.maxSharePercent ?? 50,
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--cp-text-muted)' }}>
+                    {t('portalPages.checkout.pointsNotEnough', { min: minRedeemPoints })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* AI Guarantee Trust Badge */}
             <div

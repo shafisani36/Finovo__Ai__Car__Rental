@@ -2,6 +2,8 @@ import { Banknote, Clock, Navigation, Calendar, Info, Check, Sparkles } from 'lu
 import type { PricingMethod } from '../types/fleet.types';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { APP_CURRENCY } from '../../../utils/carImageHelper';
+import { useTranslation } from 'react-i18next';
+import { useBookingOptions } from '../../../hooks/useBookingOptions';
 
 export interface VehiclePricingState {
   pricingMethod: PricingMethod;
@@ -90,6 +92,8 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
   onCatalogChange,
   isEditMode = false,
 }) => {
+  const { t } = useTranslation();
+  const bookingOptions = useBookingOptions();
   const {
     pricingMethod,
     currency,
@@ -119,12 +123,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         const sampleDays = 3;
         const subtotal = rate * sampleDays;
         return {
-          title: `3-Day Sample Rental (${cur})`,
-          calculationText: `3 billable days × ${cur} ${rate.toLocaleString()} / day`,
+          title: t('adminPages.pricing._s_daily_title', { currency: cur }),
+          calculationText: t('adminPages.pricing._s_daily_calc', { rate: `${cur} ${rate.toLocaleString()}` }),
           subtotal,
           deposit,
           grandTotal: subtotal + deposit,
-          notes: `Includes grace period of ${gracePeriodMinutes || 0} min before stepping to next billable day.`,
+          notes: t('adminPages.pricing._s_daily_notes', { minutes: gracePeriodMinutes || 0 }),
         };
       }
       case 'per_km': {
@@ -134,14 +138,14 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         const rawCharge = sampleKm * rate;
         const subtotal = Math.max(rawCharge, minTrip);
         return {
-          title: `150 KM Sample Trip (${cur})`,
-          calculationText: `${sampleKm} km × ${cur} ${rate} / km = ${cur} ${rawCharge.toLocaleString()}${
-            rawCharge < minTrip ? ` (Adjusted to min trip ${cur} ${minTrip.toLocaleString()})` : ''
-          }`,
+          title: t('adminPages.pricing._s_km_title', { currency: cur }),
+          calculationText:
+            t('adminPages.pricing._s_km_calc', { km: sampleKm, rate: `${cur} ${rate}`, total: `${cur} ${rawCharge.toLocaleString()}` }) +
+            (rawCharge < minTrip ? t('adminPages.pricing._s_km_adjusted', { amount: `${cur} ${minTrip.toLocaleString()}` }) : ''),
           subtotal,
           deposit,
           grandTotal: subtotal + deposit,
-          notes: `Minimum trip charge of ${cur} ${minTrip.toLocaleString()} applies if distance charge is lower.`,
+          notes: t('adminPages.pricing._s_km_notes', { amount: `${cur} ${minTrip.toLocaleString()}` }),
         };
       }
       case 'daily_extra_km': {
@@ -156,12 +160,18 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         const extraCharge = extra * excessRate;
         const subtotal = baseRental + extraCharge;
         return {
-          title: `3-Day Trip @ 700 KM (${cur})`,
-          calculationText: `Base: 3 days × ${cur} ${rate.toLocaleString()} = ${cur} ${baseRental.toLocaleString()} + Extra: ${extra} km × ${cur} ${excessRate} = ${cur} ${extraCharge.toLocaleString()}`,
+          title: t('adminPages.pricing._s_extra_title', { currency: cur }),
+          calculationText: t('adminPages.pricing._s_extra_calc', {
+            rate: `${cur} ${rate.toLocaleString()}`,
+            base: `${cur} ${baseRental.toLocaleString()}`,
+            km: extra,
+            excess: `${cur} ${excessRate}`,
+            extra: `${cur} ${extraCharge.toLocaleString()}`,
+          }),
           subtotal,
           deposit,
           grandTotal: subtotal + deposit,
-          notes: `Included mileage: ${included} km (${cap} km/day). Overage billed at ${cur} ${excessRate}/km.`,
+          notes: t('adminPages.pricing._s_extra_notes', { included, cap, excess: `${cur} ${excessRate}` }),
         };
       }
       case 'hourly': {
@@ -169,36 +179,36 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         const sampleHours = 4;
         const subtotal = rate * sampleHours;
         return {
-          title: `4-Hour Event Rental (${cur})`,
-          calculationText: `4 hours × ${cur} ${rate.toLocaleString()} / hr`,
+          title: t('adminPages.pricing._s_hourly_title', { currency: cur }),
+          calculationText: t('adminPages.pricing._s_hourly_calc', { rate: `${cur} ${rate.toLocaleString()}` }),
           subtotal,
           deposit,
           grandTotal: subtotal + deposit,
-          notes: `Billed in ${billingIncrementMinutes || 60}-min increments. Grace period: ${gracePeriodMinutes || 0} mins.`,
+          notes: t('adminPages.pricing._s_hourly_notes', { increment: billingIncrementMinutes || 60, grace: gracePeriodMinutes || 0 }),
         };
       }
       case 'monthly': {
         const rate = parseFloat(monthlyRate) || 0;
         const subtotal = rate;
         return {
-          title: `1-Month Commercial Lease (${cur})`,
-          calculationText: `1 calendar month contract = ${cur} ${rate.toLocaleString()}`,
+          title: t('adminPages.pricing._s_monthly_title', { currency: cur }),
+          calculationText: t('adminPages.pricing._s_monthly_calc', { rate: `${cur} ${rate.toLocaleString()}` }),
           subtotal,
           deposit,
           grandTotal: subtotal + deposit,
-          notes: `Partial months billed via '${partialMonthPolicy || 'prorated_daily'}' policy.`,
+          notes: t('adminPages.pricing._s_monthly_notes', { policy: partialMonthPolicy || 'prorated_daily' }),
         };
       }
       default: {
         const rate = parseFloat(dailyRate) || 0;
         const subtotal = rate * 3;
         return {
-          title: `3-Day Sample Rental (${cur})`,
-          calculationText: `3 billable days × ${cur} ${rate.toLocaleString()} / day`,
+          title: t('adminPages.pricing._s_daily_title', { currency: cur }),
+          calculationText: t('adminPages.pricing._s_daily_calc', { rate: `${cur} ${rate.toLocaleString()}` }),
           subtotal,
           deposit,
           grandTotal: subtotal + deposit,
-          notes: `Standard daily rental configuration.`,
+          notes: t('adminPages.pricing._s_default_notes'),
         };
       }
     }
@@ -215,16 +225,16 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
             <Banknote size={20} />
           </div>
           <div>
-            <h2 className="car-card-title">4. Commercial Pricing & Rental Policy</h2>
+            <h2 className="car-card-title">{t('adminPages.pricing.title')}</h2>
             <p className="car-card-subtitle">
-              Configure billing method, base commercial tariffs, grace periods, and deposit rules
+              {t('adminPages.pricing.subtitle')}
             </p>
           </div>
         </div>
 
         {/* Currency Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654' }}>Currency:</span>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654' }}>{t('adminPages.pricing.currency')}</span>
           {/* The whole site prices and charges in one currency, so it is shown but not editable */}
           <span
             style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#1E0426', padding: '6px 12px', borderRadius: '8px', background: '#F4EEF6' }}
@@ -251,7 +261,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         >
           <Info size={18} color="#2563EB" style={{ flexShrink: 0 }} />
           <span>
-            <strong>Historical Integrity Protection:</strong> Any modifications to these pricing rules will create a new versioned tier for future quotes. Confirmed bookings preserve their accepted contract rates and will never be altered.
+            <strong>{t('adminPages.pricing.historyTitle')}</strong> {t('adminPages.pricing.historyText')}
           </span>
         </div>
       )}
@@ -259,7 +269,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
       {/* Pricing Method Selector Grid (5 Methods) */}
       <div style={{ marginBottom: '22px' }}>
         <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '10px' }}>
-          Permitted Vehicle Pricing Method * (One active method per vehicle)
+          {t('adminPages.pricing.methodLabel')}
         </label>
         <div
           style={{
@@ -291,7 +301,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isSelected ? '#6C1E84' : '#66566A' }}>
                     {method.icon}
                     <span style={{ fontSize: '0.875rem', fontWeight: 800, color: isSelected ? '#6C1E84' : '#1A0322' }}>
-                      {method.name}
+                      {t(`adminPages.pricing._m_${method.id}_name`, { defaultValue: method.name })}
                     </span>
                   </div>
                   {isSelected && (
@@ -312,7 +322,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   )}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#66566A', lineHeight: 1.35 }}>
-                  {method.description}
+                  {t(`adminPages.pricing._m_${method.id}_desc`, { defaultValue: method.description })}
                 </div>
                 <div
                   style={{
@@ -323,7 +333,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                     paddingTop: '6px',
                   }}
                 >
-                  Ideal: {method.bestFor}
+                  {t('adminPages.pricing._ideal', { text: t(`adminPages.pricing._m_${method.id}_best`, { defaultValue: method.bestFor }) })}
                 </div>
               </div>
             );
@@ -342,7 +352,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         }}
       >
         <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#6C1E84', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-          Configuring: {PRICING_METHODS.find((m) => m.id === pricingMethod)?.name} Parameters
+          {t('adminPages.pricing._configuring', { method: t(`adminPages.pricing._m_${pricingMethod}_name`, { defaultValue: PRICING_METHODS.find((m) => m.id === pricingMethod)?.name }) })}
         </div>
 
         {/* METHOD A: Daily Rental */}
@@ -350,7 +360,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Daily Rate ({currency}) *
+                {t('adminPages.pricing._lblDaily', { currency })}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -376,13 +386,13 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Weekly Discount Rate ({currency}) (7+ Days)
+                {t('adminPages.pricing._lblWeekly', { currency })}
               </label>
               <input
                 type="number"
                 min="0"
                 step="any"
-                placeholder="Optional weekly bundle"
+                placeholder={t('adminPages.pricing.weeklyPlaceholder')}
                 value={weeklyRate}
                 onChange={(e) => onChange('weeklyRate', e.target.value)}
                 style={{
@@ -399,13 +409,13 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Grace Period (Minutes)
+                {t('adminPages.pricing.grace')}
               </label>
               <input
                 type="number"
                 min="0"
                 step="5"
-                placeholder="e.g. 30 or 60"
+                placeholder={t('adminPages.pricing.gracePlaceholder')}
                 value={gracePeriodMinutes}
                 onChange={(e) => onChange('gracePeriodMinutes', e.target.value)}
                 style={{
@@ -418,12 +428,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   color: '#1A0322',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>Late returns within grace period avoid full extra-day fee</span>
+              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.graceHelp')}</span>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Refundable Security Deposit ({currency})
+                {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
                 type="number"
@@ -442,7 +452,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   color: '#1A0322',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>Separated from rental revenue; reimbursed upon return</span>
+              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.depositHelp')}</span>
             </div>
           </div>
         )}
@@ -452,7 +462,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Per-Kilometer Rate ({currency}/km) *
+                {t('adminPages.pricing._lblPerKm', { currency })}
               </label>
               <input
                 type="number"
@@ -476,7 +486,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Minimum Trip Charge ({currency}) *
+                {t('adminPages.pricing._lblMinTrip', { currency })}
               </label>
               <input
                 type="number"
@@ -496,12 +506,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   color: '#1A0322',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>Trip fee cannot fall below this floor</span>
+              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.minTripHelp')}</span>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Refundable Security Deposit ({currency})
+                {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
                 type="number"
@@ -529,7 +539,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Base Daily Rate ({currency}) *
+                {t('adminPages.pricing._lblBaseDaily', { currency })}
               </label>
               <input
                 type="number"
@@ -553,7 +563,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Included Mileage Allowance (KM/day) *
+                {t('adminPages.pricing.includedKm')}
               </label>
               <input
                 type="number"
@@ -573,12 +583,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   color: '#1A0322',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>E.g. 200 km/day = 600 km included for a 3-day booking</span>
+              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.includedKmHelp')}</span>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Excess Distance Fee ({currency}/km) *
+                {t('adminPages.pricing._lblExcess', { currency })}
               </label>
               <input
                 type="number"
@@ -598,12 +608,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   color: '#1A0322',
                 }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>Rate charged per verified km over the allowance</span>
+              <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.excessHelp')}</span>
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Refundable Security Deposit ({currency})
+                {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
                 type="number"
@@ -631,7 +641,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Hourly Rate ({currency}/hr) *
+                {t('adminPages.pricing._lblHourly', { currency })}
               </label>
               <input
                 type="number"
@@ -655,7 +665,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Minimum Billable Hours
+                {t('adminPages.pricing.minHours')}
               </label>
               <input
                 type="number"
@@ -677,21 +687,21 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Billing Increment (Minutes)
+                {t('adminPages.pricing.increment')}
               </label>
               <CustomSelect
                 value={billingIncrementMinutes}
                 onChange={(val) => onChange('billingIncrementMinutes', val)}
                 options={[
-                  { value: '30', label: '30 Minutes (Half-hour steps)' },
-                  { value: '60', label: '60 Minutes (Full-hour steps)' },
+                  { value: '30', label: t('adminPages.pricing.increment30') },
+                  { value: '60', label: t('adminPages.pricing.increment60') },
                 ]}
               />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Refundable Security Deposit ({currency})
+                {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
                 type="number"
@@ -719,7 +729,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Monthly Subscription Rate ({currency}) *
+                {t('adminPages.pricing._lblMonthly', { currency })}
               </label>
               <input
                 type="number"
@@ -743,21 +753,21 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Partial Month Billing Policy
+                {t('adminPages.pricing.partialPolicy')}
               </label>
               <CustomSelect
                 value={partialMonthPolicy}
                 onChange={(val) => onChange('partialMonthPolicy', val)}
                 options={[
-                  { value: 'prorated_daily', label: 'Prorated Daily (1/30th monthly rate per day)' },
-                  { value: 'full_month', label: 'Full Month (Ceil to complete month)' },
+                  { value: 'prorated_daily', label: t('adminPages.pricing.prorated') },
+                  { value: 'full_month', label: t('adminPages.pricing.fullMonth') },
                 ]}
               />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Monthly Mileage Cap (KM)
+                {t('adminPages.pricing.monthlyCap')}
               </label>
               <input
                 type="number"
@@ -779,7 +789,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-                Refundable Security Deposit ({currency})
+                {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
                 type="number"
@@ -820,7 +830,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #F0EBF2', paddingBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', fontWeight: 800, color: '#1A0322' }}>
             <Sparkles size={16} color="#6C1E84" />
-            <span>Interactive Real-Time Pricing Preview</span>
+            <span>{t('adminPages.pricing.previewTitle')}</span>
           </div>
           <span
             style={{
@@ -842,15 +852,15 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
 
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '4px' }}>
           <div style={{ fontSize: '0.8125rem', color: '#66566A' }}>
-            Rental Subtotal: <strong>{currency} {sample.subtotal.toLocaleString()}</strong> + Security Deposit: <strong>{currency} {sample.deposit.toLocaleString()}</strong>
+            {t('adminPages.pricing._previewLine', { subtotal: `${currency} ${sample.subtotal.toLocaleString()}`, deposit: `${currency} ${sample.deposit.toLocaleString()}` })}
           </div>
           <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#6C1E84' }}>
-            Est. Total: {currency} {sample.grandTotal.toLocaleString()}
+            {t('adminPages.pricing._previewTotal', { total: `${currency} ${sample.grandTotal.toLocaleString()}` })}
           </div>
         </div>
 
         <div style={{ fontSize: '0.75rem', color: '#8A7090', fontStyle: 'italic' }}>
-          * {sample.notes} Taxes (8%) applied at checkout. Deposit is held separately from rental earnings.
+          * {sample.notes} {t('adminPages.pricing.previewTax', { rate: bookingOptions?.taxRatePercent ?? 0, label: bookingOptions?.taxLabel || '' })}
         </div>
       </div>
 
@@ -858,15 +868,15 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '18px', paddingTop: '16px', borderTop: '1px solid #ECE7ED' }}>
         <div>
           <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
-            Fleet Operational Status
+            {t('adminPages.pricing.fleetStatus')}
           </label>
           <CustomSelect
             value={status}
             onChange={(val) => onStatusChange(val)}
             options={[
-              { value: 'AVAILABLE', label: 'AVAILABLE', sublabel: 'Eligible for immediate customer reservation', badge: 'Active', badgeColor: '#DEF7EC' },
-              { value: 'MAINTENANCE', label: 'MAINTENANCE', sublabel: 'Inspection, detailing, repair or scheduled service', badge: 'Hold', badgeColor: '#FEF08A' },
-              { value: 'RESERVED', label: 'RESERVED', sublabel: 'Staged for customer pickup or dispatch', badge: 'Staged', badgeColor: '#E0E7FF' },
+              { value: 'AVAILABLE', label: t('adminPages.pricing._st_AVAILABLE'), sublabel: t('adminPages.pricing.stAvailableDesc'), badge: t('adminPages.pricing.stActive'), badgeColor: '#DEF7EC' },
+              { value: 'MAINTENANCE', label: t('adminPages.pricing._st_MAINTENANCE'), sublabel: t('adminPages.pricing.stMaintenanceDesc'), badge: t('adminPages.pricing.stHold'), badgeColor: '#FEF08A' },
+              { value: 'RESERVED', label: t('adminPages.pricing._st_RESERVED'), sublabel: t('adminPages.pricing.stReservedDesc'), badge: t('adminPages.pricing.stStaged'), badgeColor: '#E0E7FF' },
             ]}
           />
         </div>
@@ -880,7 +890,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
             style={{ width: '18px', height: '18px', accentColor: '#6C1E84', cursor: 'pointer' }}
           />
           <label htmlFor="publicCatalogToggle" style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1A0322', cursor: 'pointer' }}>
-            Publish to Public Customer Reservation Catalog
+            {t('adminPages.pricing.publish')}
           </label>
         </div>
       </div>

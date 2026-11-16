@@ -22,8 +22,10 @@ import {
   StatusBadge,
   Modal,
 } from '../../../components/common';
+import { useTranslation } from 'react-i18next';
 
 export function RentalsListPage() {
+  const { t, i18n } = useTranslation();
   const [rentals, setRentals] = useState<RentalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'RETURNED'>('ALL');
@@ -67,11 +69,11 @@ export function RentalsListPage() {
     <PageContainer>
       {/* Header & Actions */}
       <PageHeader
-        title="Rental Operations & Handover"
-        subtitle="Track active vehicles on the road, manage pickup handovers, and process returns with automated odometer verification."
+        title={t('adminPages.rentals.listTitle')}
+        subtitle={t('adminPages.rentals.listSubtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Rentals' },
+          { label: t('adminPages.rentals.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.rentals.crumbRentals') },
         ]}
         actions={
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -93,7 +95,7 @@ export function RentalsListPage() {
               }}
             >
               <Calendar size={16} />
-              <span>View Bookings</span>
+              <span>{t('adminPages.rentals.viewBookings')}</span>
             </Link>
             <Link
               to="/admin/inspections/new"
@@ -113,7 +115,7 @@ export function RentalsListPage() {
               }}
             >
               <ShieldAlert size={16} />
-              <span>AI Vehicle Scan</span>
+              <span>{t('adminPages.rentals.aiScan')}</span>
             </Link>
           </div>
         }
@@ -123,19 +125,19 @@ export function RentalsListPage() {
       <StatGrid columns={3}>
         <StatCard
           icon={KeyRound}
-          label="Active on Road"
+          label={t('adminPages.rentals.active')}
           value={activeCount}
           variant="green"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Completed Returns"
+          label={t('adminPages.rentals.statReturned')}
           value={returnedCount}
           variant="blue"
         />
         <StatCard
           icon={Car}
-          label="Total Fleet Tracked"
+          label={t('adminPages.rentals.statTotal')}
           value={rentals.length}
           variant="amber"
         />
@@ -172,7 +174,7 @@ export function RentalsListPage() {
                 transition: 'all 0.2s',
               }}
             >
-              {tab === 'ALL' ? 'All Rentals' : tab === 'ACTIVE' ? 'Active on Road' : 'Returned'}
+              {tab === 'ALL' ? t('adminPages.rentals.tabAll') : tab === 'ACTIVE' ? t('adminPages.rentals.active') : t('adminPages.rentals.tabReturned')}
             </button>
           ))}
         </div>
@@ -193,7 +195,7 @@ export function RentalsListPage() {
           <Search size={16} color="#685D73" />
           <input
             type="text"
-            placeholder="Search booking #, customer, car..."
+            placeholder={t('adminPages.rentals.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -220,14 +222,14 @@ export function RentalsListPage() {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <RotateCcw size={24} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading rental operations...</div>
+            <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.rentals.loading')}</div>
           </div>
         ) : filteredRentals.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <KeyRound size={40} color="#D1D5DB" style={{ marginBottom: '12px' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>No rental agreements found</div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>{t('adminPages.rentals.empty')}</div>
             <p style={{ margin: '6px 0 0', fontSize: '0.875rem' }}>
-              Confirm confirmed bookings to initiate a vehicle handover and generate rental agreements.
+              {t('adminPages.rentals.emptyDesc')}
             </p>
           </div>
         ) : (
@@ -235,13 +237,13 @@ export function RentalsListPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#685D73' }}>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Rental / Booking</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Vehicle</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Customer</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Dispatched</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Odometer & Fuel</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.rentals.colRental')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.rentals.colVehicle')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.rentals.colCustomer')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.rentals.colDispatched')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.rentals.colOdometer')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.rentals.colStatus')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>{t('adminPages.rentals.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -259,7 +261,7 @@ export function RentalsListPage() {
                       <td style={{ padding: '16px 20px' }}>
                         <div style={{ fontWeight: 700, color: '#1E0426' }}>{rental.booking.bookingNumber}</div>
                         <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '2px' }}>
-                          ID: {rental.id.slice(0, 8)}...
+                          {t('adminPages.rentals.idLabel')} {rental.id.slice(0, 8)}...
                         </div>
                       </td>
 
@@ -282,7 +284,7 @@ export function RentalsListPage() {
                               {rental.vehicle.brand} {rental.vehicle.model}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
-                              {rental.vehicle.registrationNumber} • {rental.vehicle.category?.name || 'Standard'}
+                              {rental.vehicle.registrationNumber} • {rental.vehicle.category?.name || t('adminPages.rentals.standard')}
                             </div>
                           </div>
                         </div>
@@ -316,7 +318,7 @@ export function RentalsListPage() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#059669', marginTop: '2px' }}>
                           <Droplet size={12} />
-                          Fuel: {rental.startFuelLevel} {rental.endFuelLevel ? `(returned ${rental.endFuelLevel})` : ''}
+                          {t('adminPages.rentals.fuel')} {rental.startFuelLevel} {rental.endFuelLevel ? `(returned ${rental.endFuelLevel})` : ''}
                         </div>
                       </td>
 
@@ -341,7 +343,7 @@ export function RentalsListPage() {
                               cursor: 'pointer',
                             }}
                           >
-                            Details
+                            {t('adminPages.rentals.details')}
                           </button>
 
                           {isActive && (
@@ -363,7 +365,7 @@ export function RentalsListPage() {
                               }}
                             >
                               <RotateCcw size={13} />
-                              <span>Process Return</span>
+                              <span>{t('adminPages.rentals.processReturn')}</span>
                             </Link>
                           )}
                         </div>
@@ -382,13 +384,13 @@ export function RentalsListPage() {
         <Modal
           isOpen={!!selectedRental}
           onClose={() => setSelectedRental(null)}
-          title={`Rental Agreement #${selectedRental.booking.bookingNumber}`}
-          subtitle={`Status: ${selectedRental.status} • Rental ID: ${selectedRental.id}`}
+          title={t('adminPages.rentals._modalTitle', { number: selectedRental.booking.bookingNumber })}
+          subtitle={t('adminPages.rentals._modalSubtitle', { status: selectedRental.status, id: selectedRental.id })}
           maxWidth="640px"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '16px', marginBottom: '20px' }}>
             <div style={{ padding: '14px', backgroundColor: '#FAF9FB', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>CUSTOMER</div>
+              <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>{t('adminPages.rentals.customerCaps')}</div>
               <div style={{ fontWeight: 700, color: '#1E0426', marginTop: '4px' }}>
                 {selectedRental.booking.customer.fullName}
               </div>
@@ -396,36 +398,36 @@ export function RentalsListPage() {
                 {selectedRental.booking.customer.email}
               </div>
               <div style={{ fontSize: '0.8125rem', color: '#685D73' }}>
-                License: {selectedRental.booking.customer.driverLicenseNumber || 'Not provided'}
+                {t('adminPages.rentals.license')} {selectedRental.booking.customer.driverLicenseNumber || t('adminPages.rentals.notProvided')}
               </div>
             </div>
 
             <div style={{ padding: '14px', backgroundColor: '#FAF9FB', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>VEHICLE ASSIGNED</div>
+              <div style={{ fontSize: '0.75rem', color: '#685D73', fontWeight: 600 }}>{t('adminPages.rentals.vehicleAssigned')}</div>
               <div style={{ fontWeight: 700, color: '#1E0426', marginTop: '4px' }}>
                 {selectedRental.vehicle.brand} {selectedRental.vehicle.model} ({selectedRental.vehicle.year})
               </div>
               <div style={{ fontSize: '0.8125rem', color: '#685D73' }}>
-                Plate: {selectedRental.vehicle.registrationNumber}
+                {t('adminPages.rentals.plate')} {selectedRental.vehicle.registrationNumber}
               </div>
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '12px', marginBottom: '20px' }}>
             <div style={{ padding: '12px', border: '1px solid #ECEAEF', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: '#685D73' }}>Start Mileage</div>
+              <div style={{ fontSize: '0.75rem', color: '#685D73' }}>{t('adminPages.rentals.startMileage')}</div>
               <div style={{ fontWeight: 700, fontSize: '1rem', color: '#1E0426', marginTop: '2px' }}>
-                {selectedRental.startMileage.toLocaleString()} km
+                {selectedRental.startMileage.toLocaleString()} {t('adminPages.rentals.km')}
               </div>
             </div>
             <div style={{ padding: '12px', border: '1px solid #ECEAEF', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: '#685D73' }}>Start Fuel Level</div>
+              <div style={{ fontSize: '0.75rem', color: '#685D73' }}>{t('adminPages.rentals.startFuel')}</div>
               <div style={{ fontWeight: 700, fontSize: '1rem', color: '#059669', marginTop: '2px' }}>
                 {selectedRental.startFuelLevel}
               </div>
             </div>
             <div style={{ padding: '12px', border: '1px solid #ECEAEF', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: '#685D73' }}>Dispatched At</div>
+              <div style={{ fontSize: '0.75rem', color: '#685D73' }}>{t('adminPages.rentals.dispatchedAt')}</div>
               <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E0426', marginTop: '4px' }}>
                 {new Date(selectedRental.pickedUpAt || selectedRental.startedAt || selectedRental.createdAt).toLocaleDateString()}
               </div>
@@ -434,11 +436,13 @@ export function RentalsListPage() {
 
           {selectedRental.status === 'RETURNED' && (
             <div style={{ padding: '14px', backgroundColor: 'rgba(16, 185, 129, 0.08)', borderRadius: '10px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#059669' }}>Return Recorded</div>
+              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#059669' }}>{t('adminPages.rentals.returnRecorded')}</div>
               <div style={{ fontSize: '0.875rem', color: '#1E0426', marginTop: '4px' }}>
-                End Mileage: <strong>{selectedRental.endMileage?.toLocaleString()} km</strong> (Distance:{' '}
-                <strong>{((selectedRental.endMileage || 0) - selectedRental.startMileage).toLocaleString()} km</strong>)
-                • End Fuel: <strong>{selectedRental.endFuelLevel}</strong>
+                {t('adminPages.rentals._returnSummary', {
+                  end: selectedRental.endMileage?.toLocaleString(i18n.language) ?? '—',
+                  distance: ((selectedRental.endMileage || 0) - selectedRental.startMileage).toLocaleString(i18n.language),
+                  fuel: selectedRental.endFuelLevel || '—',
+                })}
               </div>
             </div>
           )}
@@ -457,7 +461,7 @@ export function RentalsListPage() {
                 cursor: 'pointer',
               }}
             >
-              Close
+              {t('adminPages.rentals.close')}
             </button>
 
             {selectedRental.status === 'ACTIVE' && (
@@ -477,7 +481,7 @@ export function RentalsListPage() {
                 }}
               >
                 <RotateCcw size={16} />
-                <span>Proceed to Return</span>
+                <span>{t('adminPages.rentals.proceedReturn')}</span>
               </Link>
             )}
           </div>

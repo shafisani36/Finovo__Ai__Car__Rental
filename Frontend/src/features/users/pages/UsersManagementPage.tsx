@@ -19,8 +19,10 @@ import {
 } from '../../../components/common';
 import { adminApi, type AdminUser } from '../../../api/services/admin.api';
 import { useAuth } from '../../../features/auth/context';
+import { useTranslation } from 'react-i18next';
 
 export function UsersManagementPage() {
+  const { t } = useTranslation();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ export function UsersManagementPage() {
       }
     } catch (err: any) {
       console.error('Failed to load users:', err);
-      setActionError('Failed to fetch system users.');
+      setActionError(t('adminPages.users.errLoad'));
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ export function UsersManagementPage() {
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.fullName.trim() || !createForm.email.trim() || !createForm.password.trim()) {
-      setActionError('Full Name, Email, and Password are required.');
+      setActionError(t('adminPages.users.errRequired'));
       return;
     }
 
@@ -99,7 +101,7 @@ export function UsersManagementPage() {
       });
 
       if (res.success) {
-        setActionSuccess(`User ${res.user.fullName} created successfully.`);
+        setActionSuccess(t('adminPages.users._created', { name: res.user.fullName }));
         setIsCreateOpen(false);
         setCreateForm({
           fullName: '',
@@ -111,7 +113,7 @@ export function UsersManagementPage() {
         loadUsers();
       }
     } catch (err: any) {
-      setActionError(err.message || 'Failed to create user.');
+      setActionError(err.message || t('adminPages.users.errCreate'));
     } finally {
       setSaving(false);
     }
@@ -145,12 +147,12 @@ export function UsersManagementPage() {
       });
 
       if (res.success) {
-        setActionSuccess(`User ${res.user.fullName} updated successfully.`);
+        setActionSuccess(t('adminPages.users._updated', { name: res.user.fullName }));
         setEditingUser(null);
         loadUsers();
       }
     } catch (err: any) {
-      setActionError(err.message || 'Failed to update user.');
+      setActionError(err.message || t('adminPages.users.errUpdate'));
     } finally {
       setSaving(false);
     }
@@ -163,12 +165,12 @@ export function UsersManagementPage() {
       setActionError(null);
       const res = await adminApi.deleteUser(userToDelete.id);
       if (res.success) {
-        setActionSuccess('User removed successfully.');
+        setActionSuccess(t('adminPages.users.removed'));
         setUserToDelete(null);
         loadUsers();
       }
     } catch (err: any) {
-      setActionError(err.message || 'Failed to remove user.');
+      setActionError(err.message || t('adminPages.users.errRemove'));
     } finally {
       setDeleting(false);
     }
@@ -183,11 +185,11 @@ export function UsersManagementPage() {
     <PageContainer>
       {/* Header */}
       <PageHeader
-        title="Manage Users & Access Roles"
-        subtitle="Provision accounts, administer role-based privileges, review user statuses, and enforce security policies."
+        title={t('adminPages.users.title')}
+        subtitle={t('adminPages.users.subtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Users' },
+          { label: t('adminPages.users.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.users.crumb') },
         ]}
       />
 
@@ -246,25 +248,25 @@ export function UsersManagementPage() {
       <StatGrid columns={4}>
         <StatCard
           icon={Users}
-          label="Total Users"
+          label={t('adminPages.users.statTotal')}
           value={totalUsers}
           variant="purple"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Active Accounts"
+          label={t('adminPages.users.statActive')}
           value={activeCount}
           variant="green"
         />
         <StatCard
           icon={Shield}
-          label="Administrators"
+          label={t('adminPages.users.statAdmins')}
           value={adminCount}
           variant="purple"
         />
         <StatCard
           icon={Users}
-          label="Customers"
+          label={t('adminPages.users.statCustomers')}
           value={customerCount}
           variant="gold"
         />
@@ -303,7 +305,7 @@ export function UsersManagementPage() {
                 transition: 'all 0.15s ease',
               }}
             >
-              {r === 'ALL' ? 'All Roles' : r.replace('_', ' ')}
+              {r === 'ALL' ? t('adminPages.users._allRoles') : t(`adminPages.users._role_${r}`, { defaultValue: r.replace('_', ' ') })}
             </button>
           ))}
         </div>
@@ -315,7 +317,7 @@ export function UsersManagementPage() {
               <Search size={16} style={{ position: 'absolute', left: '12px', color: '#8A7090' }} />
               <input
                 type="text"
-                placeholder="Search by name, email..."
+                placeholder={t('adminPages.users.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
@@ -345,7 +347,7 @@ export function UsersManagementPage() {
                 cursor: 'pointer',
               }}
             >
-              Search
+              {t('adminPages.users.searchBtn')}
             </button>
           </form>
 
@@ -370,7 +372,7 @@ export function UsersManagementPage() {
             }}
           >
             <UserPlus size={15} />
-            Create User
+            {t('adminPages.users.createUser')}
           </button>
         </div>
       </div>
@@ -387,24 +389,24 @@ export function UsersManagementPage() {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <RotateCcw size={24} style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading user accounts...</div>
+            <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.users.loading')}</div>
           </div>
         ) : users.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <Users size={40} color="#D1D5DB" style={{ marginBottom: '12px' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>No users found</div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>{t('adminPages.users.empty')}</div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#685D73' }}>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>User Profile</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Contact</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Assigned Role</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Account Status</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Created Date</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.users.colProfile')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.users.colContact')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.users.colRole')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.users.accountStatus')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.users.colCreated')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>{t('adminPages.users.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -442,10 +444,10 @@ export function UsersManagementPage() {
                           </div>
                           <div>
                             <div style={{ fontWeight: 700, color: '#1E0426' }}>
-                              {u.fullName} {isCurrent && <span style={{ color: '#8A7090', fontSize: '0.75rem' }}>(You)</span>}
+                              {u.fullName} {isCurrent && <span style={{ color: '#8A7090', fontSize: '0.75rem' }}>{t('adminPages.users.you')}</span>}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#8A7090' }}>
-                              ID: {u.id.slice(0, 10)}...
+                              {t('adminPages.users.idLabel')} {u.id.slice(0, 10)}...
                             </div>
                           </div>
                         </div>
@@ -454,7 +456,7 @@ export function UsersManagementPage() {
                       {/* Contact */}
                       <td style={{ padding: '16px 20px' }}>
                         <div style={{ color: '#1E0426' }}>{u.email}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#685D73' }}>{u.phone || 'No phone'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#685D73' }}>{u.phone || t('adminPages.users._noPhone')}</div>
                       </td>
 
                       {/* Role */}
@@ -476,7 +478,7 @@ export function UsersManagementPage() {
                             color: isSuperAdmin ? '#B45309' : isAdmin ? '#4A1270' : '#1D4ED8',
                           }}
                         >
-                          {u.roles.join(', ') || 'CUSTOMER'}
+                          {u.roles.map((role) => t(`adminPages.users._role_${role}`, { defaultValue: role })).join(', ') || t('adminPages.users._role_CUSTOMER')}
                         </span>
                       </td>
 
@@ -535,14 +537,14 @@ export function UsersManagementPage() {
                             }}
                           >
                             <Edit size={13} />
-                            Edit
+                            {t('adminPages.users.edit')}
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setUserToDelete(u)}
                             disabled={isCurrent}
-                            title={isCurrent ? 'Cannot delete your own account' : 'Delete User'}
+                            title={isCurrent ? t('adminPages.users._cannotDeleteSelf') : t('adminPages.users.deleteUser')}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -575,19 +577,19 @@ export function UsersManagementPage() {
         <Modal
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
-          title="Create New User Account"
-          subtitle="Provision an enterprise user with assigned role and credentials."
+          title={t('adminPages.users.createTitle')}
+          subtitle={t('adminPages.users.createSubtitle')}
           maxWidth="520px"
         >
           <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Full Name *
+                {t('adminPages.users.fullNameReq')}
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Sarah Jenkins"
+                placeholder={t('adminPages.users.namePlaceholder')}
                 value={createForm.fullName}
                 onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
                 style={{
@@ -606,7 +608,7 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Email Address *
+                {t('adminPages.users.emailReq')}
               </label>
               <input
                 type="email"
@@ -630,7 +632,7 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Phone Number (Optional)
+                {t('adminPages.users.phoneOptional')}
               </label>
               <input
                 type="text"
@@ -653,7 +655,7 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Temporary Password * (minimum 8 characters)
+                {t('adminPages.users.tempPassword')}
               </label>
               <input
                 type="password"
@@ -678,15 +680,15 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                System Role *
+                {t('adminPages.users.roleReq')}
               </label>
               <CustomSelect
                 value={createForm.role}
                 onChange={(val) => setCreateForm({ ...createForm, role: String(val) })}
                 options={[
-                  { value: 'CUSTOMER', label: 'CUSTOMER (Standard Renter)', sublabel: 'Self-service booking & portal' },
-                  { value: 'ADMIN', label: 'ADMIN (Operations Manager)', sublabel: 'Fleet & rental management' },
-                  { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN (System Root)', sublabel: 'Full platform control' },
+                  { value: 'CUSTOMER', label: t('adminPages.users._optCustomer'), sublabel: t('adminPages.users._optCustomerDesc') },
+                  { value: 'ADMIN', label: t('adminPages.users._optAdmin'), sublabel: t('adminPages.users._optAdminDesc') },
+                  { value: 'SUPER_ADMIN', label: t('adminPages.users._optSuper'), sublabel: t('adminPages.users._optSuperDesc') },
                 ]}
                 size="md"
                 menuPlacement="top"
@@ -708,7 +710,7 @@ export function UsersManagementPage() {
                   cursor: 'pointer',
                 }}
               >
-                Cancel
+                {t('adminPages.users.cancel')}
               </button>
               <button
                 type="submit"
@@ -724,7 +726,7 @@ export function UsersManagementPage() {
                   cursor: saving ? 'not-allowed' : 'pointer',
                 }}
               >
-                {saving ? 'Creating...' : 'Create Account'}
+                {saving ? t('adminPages.users._creating') : t('adminPages.users._createAccount')}
               </button>
             </div>
           </form>
@@ -736,14 +738,14 @@ export function UsersManagementPage() {
         <Modal
           isOpen={!!editingUser}
           onClose={() => setEditingUser(null)}
-          title={`Edit User: ${editingUser.fullName}`}
+          title={t('adminPages.users._editTitle', { name: editingUser.fullName })}
           subtitle={`Email: ${editingUser.email}`}
           maxWidth="520px"
         >
           <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Full Name
+                {t('adminPages.users.fullName')}
               </label>
               <input
                 type="text"
@@ -765,7 +767,7 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Phone Number
+                {t('adminPages.users.phoneNumber')}
               </label>
               <input
                 type="text"
@@ -787,15 +789,15 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Account Status
+                {t('adminPages.users.accountStatus')}
               </label>
               <CustomSelect<AdminUser['status']>
                 value={editForm.status}
                 onChange={(val) => setEditForm({ ...editForm, status: val })}
                 options={[
-                  { value: 'ACTIVE', label: 'ACTIVE' },
-                  { value: 'SUSPENDED', label: 'SUSPENDED' },
-                  { value: 'PENDING_VERIFICATION', label: 'PENDING VERIFICATION' },
+                  { value: 'ACTIVE', label: t('adminPages.users._status_ACTIVE') },
+                  { value: 'SUSPENDED', label: t('adminPages.users._status_SUSPENDED') },
+                  { value: 'PENDING_VERIFICATION', label: t('adminPages.users._status_PENDING_VERIFICATION') },
                 ]}
                 size="md"
                 menuPlacement="top"
@@ -804,15 +806,15 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Access Role
+                {t('adminPages.users.accessRole')}
               </label>
               <CustomSelect
                 value={editForm.role}
                 onChange={(val) => setEditForm({ ...editForm, role: String(val) })}
                 options={[
-                  { value: 'CUSTOMER', label: 'CUSTOMER' },
-                  { value: 'ADMIN', label: 'ADMIN' },
-                  { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN' },
+                  { value: 'CUSTOMER', label: t('adminPages.users._role_CUSTOMER') },
+                  { value: 'ADMIN', label: t('adminPages.users._role_ADMIN') },
+                  { value: 'SUPER_ADMIN', label: t('adminPages.users._role_SUPER_ADMIN') },
                 ]}
                 size="md"
                 menuPlacement="top"
@@ -821,11 +823,11 @@ export function UsersManagementPage() {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                Reset Password (Optional - leave blank to keep unchanged)
+                {t('adminPages.users.resetPassword')}
               </label>
               <input
                 type="password"
-                placeholder="New password (optional)"
+                placeholder={t('adminPages.users.newPassword')}
                 value={editForm.password}
                 onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                 style={{
@@ -857,7 +859,7 @@ export function UsersManagementPage() {
                   cursor: 'pointer',
                 }}
               >
-                Cancel
+                {t('adminPages.users.cancel')}
               </button>
               <button
                 type="submit"
@@ -873,7 +875,7 @@ export function UsersManagementPage() {
                   cursor: saving ? 'not-allowed' : 'pointer',
                 }}
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? t('adminPages.users._saving') : t('adminPages.users._save')}
               </button>
             </div>
           </form>
@@ -885,11 +887,11 @@ export function UsersManagementPage() {
         <Modal
           isOpen={!!userToDelete}
           onClose={() => setUserToDelete(null)}
-          title="Confirm User Deletion"
+          title={t('adminPages.users.confirmDelete')}
           maxWidth="440px"
         >
           <div style={{ color: '#4A315A', fontSize: '0.925rem', lineHeight: '1.5' }}>
-            Are you sure you want to permanently delete user <strong>{userToDelete.fullName}</strong> ({userToDelete.email})? This action cannot be reversed.
+            {t('adminPages.users._deleteQuestion', { name: userToDelete.fullName, email: userToDelete.email })}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
             <button
@@ -906,7 +908,7 @@ export function UsersManagementPage() {
                 cursor: 'pointer',
               }}
             >
-              Cancel
+              {t('adminPages.users.cancel')}
             </button>
             <button
               type="button"
@@ -923,7 +925,7 @@ export function UsersManagementPage() {
                 cursor: deleting ? 'not-allowed' : 'pointer',
               }}
             >
-              {deleting ? 'Deleting...' : 'Delete User'}
+              {deleting ? t('adminPages.users._deleting') : t('adminPages.users.deleteUser')}
             </button>
           </div>
         </Modal>

@@ -12,10 +12,11 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx src/seed_categories.ts && tsx src/seed_admin.ts && tsx src/seed_vehicles.ts",
+    "prisma:seed:production": "tsx src/seed_categories.ts && tsx src/seed_admin.ts",
     "seed:customer": "tsx src/seed_customer.ts",
     "test:auth": "tsx tests/unit/auth.test.ts",
     "test:pricing": "tsx tests/unit/pricing.test.ts",
-    "test": "tsx tests/unit/auth.test.ts && tsx tests/unit/pricing.test.ts && tsx tests/unit/translation.test.ts && tsx tests/unit/booking-availability.test.ts && tsx tests/unit/inspection-assessment.test.ts && tsx tests/unit/inspection-consistency.test.ts",
+    "test": "tsx tests/unit/auth.test.ts && tsx tests/unit/pricing.test.ts && tsx tests/unit/translation.test.ts && tsx tests/unit/booking-availability.test.ts && tsx tests/unit/inspection-assessment.test.ts && tsx tests/unit/inspection-consistency.test.ts && tsx tests/unit/offers.test.ts",
     "test:translation": "tsx tests/unit/translation.test.ts",
     "test:availability": "tsx tests/unit/booking-availability.test.ts",
     "test:inspection": "tsx tests/unit/inspection-assessment.test.ts"
@@ -32,9 +33,10 @@
     "helmet": "^8.3.0",
     "jpeg-js": "^0.4.4",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^10.6.0",
+    "pdfkit": "^0.17.2",
     "stripe": "^17.7.0",
-    "zod": "^3.24.2"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.8",
@@ -43,6 +45,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.10",
     "@types/nodemailer": "^6.4.24",
+    "@types/pdfkit": "^0.17.7",
     "prisma": "^6.4.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"

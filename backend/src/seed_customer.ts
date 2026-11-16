@@ -2,6 +2,10 @@ import { prisma } from './infrastructure/prisma/prisma.client';
 import { PasswordService } from './security/password/password.service';
 
 async function seedCustomer() {
+  // Demo account with a public password: development and testing only
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('The demo customer account is for development only and is never created in production');
+  }
   console.log('Seeding customer account for car rental booking...');
 
   // 1. Ensure CUSTOMER role exists

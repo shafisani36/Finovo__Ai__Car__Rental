@@ -7,6 +7,12 @@ import { Modal } from '../../components/common/Modal';
 import { TextTranslator } from '../../components/common/TextTranslator';
 import { useAuth } from '../../features/auth/context';
 import { BrandLogo } from '../../components/common/BrandLogo';
+import { useAdminTheme } from '../theme/useAdminTheme';
+import { StaffNotificationBell } from './components/StaffNotificationBell';
+import { AdminHelpMenu } from './components/AdminHelpMenu';
+import { AdminGlobalSearch } from './components/AdminGlobalSearch';
+import '../../styles/admin-dark.css';
+import '../../styles/admin-dark-components.css';
 import {
   LayoutDashboard,
   Car,
@@ -17,9 +23,6 @@ import {
   Briefcase,
   Building2,
   ShieldCheck,
-  Search,
-  Bell,
-  HelpCircle,
   Sun,
   Moon,
   LogOut,
@@ -32,6 +35,8 @@ import {
   UserCog,
   Users,
   Languages,
+  TicketPercent,
+  MessageSquareWarning,
 } from 'lucide-react';
 
 export function AdminLayout() {
@@ -39,7 +44,7 @@ export function AdminLayout() {
   const [translatorOpen, setTranslatorOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isDark: isDarkMode, toggleTheme } = useAdminTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
 
@@ -157,6 +162,8 @@ export function AdminLayout() {
               { to: '/admin/calendar', icon: Calendar, label: t('nav.schedule') },
               { to: '/admin/rentals', icon: KeyRound, label: t('nav.rentals') },
               { to: '/admin/inspections', icon: ShieldAlert, label: t('nav.aiInspection') },
+              { to: '/admin/disputes', icon: MessageSquareWarning, label: t('adminPages.disputes.navLabel') },
+              { to: '/admin/promo-codes', icon: TicketPercent, label: t('adminPages.promoCodes.navLabel') },
               { to: '/admin/inquiries', icon: MessageSquare, label: t('nav.inquiries') },
               { to: '/admin/customers', icon: Users, label: t('nav.customers', 'Customers') },
               { to: '/admin/users', icon: UserCog, label: t('nav.manageUsers') },
@@ -234,20 +241,23 @@ export function AdminLayout() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sun size={17} />
-              <span>{t('adminPages.layout.lightMode')}</span>
+              {isDarkMode ? <Moon size={17} /> : <Sun size={17} />}
+              <span>{isDarkMode ? t('adminPages.layout.darkMode') : t('adminPages.layout.lightMode')}</span>
             </div>
 
             {/* Pill Toggle Switch */}
             <button
               type="button"
-              onClick={() => setIsDarkMode(!isDarkMode)}
+              onClick={toggleTheme}
+              role="switch"
+              aria-checked={isDarkMode}
               aria-label={t('adminPages.layout.toggleTheme')}
+              title={t('adminPages.layout.toggleTheme')}
               style={{
                 width: '42px',
                 height: '22px',
                 borderRadius: '12px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                backgroundColor: isDarkMode ? '#FAB826' : 'rgba(255, 255, 255, 0.2)',
                 border: 'none',
                 position: 'relative',
                 cursor: 'pointer',
@@ -311,7 +321,7 @@ export function AdminLayout() {
 
       {/* ================= RIGHT MAIN WRAPPER ================= */}
       <div
-        className="admin-main-wrapper"
+        className="admin-main-wrapper admin-theme-scope"
         style={{
           flex: 1,
           display: 'flex',
@@ -334,30 +344,8 @@ export function AdminLayout() {
               <Menu size={22} />
             </button>
 
-            {/* Global Search Bar */}
-            <div className="admin-header-search-wrap">
-              <Search
-                size={16}
-                color="#8A7090"
-                className="finovo-admin-search-icon"
-                style={{ position: 'absolute', insetInlineStart: '14px', pointerEvents: 'none' }}
-              />
-              <input
-                type="text"
-                placeholder={isMobile ? t('nav.adminSearchShort') : t('nav.adminSearchPlaceholder')}
-                className="admin-header-search-input finovo-admin-search-input"
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#6C1E84';
-                  e.currentTarget.style.backgroundColor = '#FFFFFF';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#EBE5ED';
-                  e.currentTarget.style.backgroundColor = '#F8F6F9';
-                }}
-              />
-              {/* Keyboard shortcut hint badge */}
-              <span className="admin-header-shortcut-badge">/</span>
-            </div>
+            {/* Global search across cars, bookings and customers */}
+            <AdminGlobalSearch placeholder={isMobile ? t('nav.adminSearchShort') : t('nav.adminSearchPlaceholder')} />
           </div>
 
           {/* Right Controls: Bell, Help, Avatar */}
@@ -376,24 +364,11 @@ export function AdminLayout() {
 
             {/* Language Selector */}
             <LanguageSelector variant="admin" />
-            {/* Notification Bell */}
-            <button
-              type="button"
-              className="admin-header-icon-btn"
-              aria-label={t('adminPages.layout.notifications')}
-            >
-              <Bell size={19} />
-              <span className="admin-header-badge-dot" />
-            </button>
+            {/* Live work list for staff */}
+            {user?.id && <StaffNotificationBell userId={user.id} />}
 
-            {/* Help Icon */}
-            <button
-              type="button"
-              className="admin-header-icon-btn admin-header-help-btn"
-              aria-label={t('adminPages.layout.help')}
-            >
-              <HelpCircle size={19} />
-            </button>
+            {/* Quick guides and support contact */}
+            <AdminHelpMenu />
 
             {/* User Avatar Circle */}
             <div

@@ -26,6 +26,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     note,
     closeOnBackdrop = true,
     closeOnEscape = true,
+    hideCancel = false,
   } = options;
   const resolvedConfirmText = confirmText ?? t('common.actions.confirm');
   const resolvedCancelText = cancelText ?? t('common.actions.cancel');
@@ -144,13 +145,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
           {/* Action Buttons */}
           <div className="confirm-actions">
-            <button
-              type="button"
-              className="confirm-btn confirm-btn-cancel"
-              onClick={onCancel}
-            >
-              {resolvedCancelText}
-            </button>
+            {!hideCancel && (
+              <button
+                type="button"
+                className="confirm-btn confirm-btn-cancel"
+                onClick={onCancel}
+              >
+                {resolvedCancelText}
+              </button>
+            )}
             <button
               ref={confirmBtnRef}
               type="button"

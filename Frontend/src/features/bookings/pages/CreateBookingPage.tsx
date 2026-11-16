@@ -18,6 +18,7 @@ import {
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader, Button } from '../../../components/common';
 import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
+import { useTranslation } from 'react-i18next';
 
 interface BranchOption {
   id: string;
@@ -37,6 +38,7 @@ interface CustomerOption {
 const DRIVER_FEE_PER_DAY = 150;
 
 export function CreateBookingPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -127,7 +129,7 @@ export function CreateBookingPage() {
         }
       } catch (err: unknown) {
         if (isMounted) {
-          const msg = err instanceof Error ? err.message : 'Availability error';
+          const msg = err instanceof Error ? err.message : t('adminPages.bookings.errAvailability');
           setAvailResult({ available: false, conflictReason: msg });
           setQuote(null);
         }
@@ -141,17 +143,17 @@ export function CreateBookingPage() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [selectedVehicleId, pickupDateTime, returnDateTime, estimatedKm, driverRequired]);
+  }, [selectedVehicleId, pickupDateTime, returnDateTime, estimatedKm, driverRequired, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVehicleId || !selectedCustomerId || !pickupBranchId || !returnBranchId) {
-      setError('Please fill in all required fields.');
+      setError(t('adminPages.bookings.errRequired'));
       return;
     }
 
     if (availResult && !availResult.available) {
-      setError(availResult.conflictReason || 'Vehicle is not available for requested interval.');
+      setError(availResult.conflictReason || t('adminPages.bookings.notAvailable'));
       return;
     }
 
@@ -173,7 +175,7 @@ export function CreateBookingPage() {
 
       navigate('/admin/bookings');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to create booking';
+      const msg = err instanceof Error ? err.message : t('adminPages.bookings.errCreate');
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -186,11 +188,11 @@ export function CreateBookingPage() {
     <PageContainer>
       <PageHeader
         breadcrumbs={[
-          { label: 'Bookings', href: '/admin/bookings' },
-          { label: 'New Booking' },
+          { label: t('adminPages.bookings.crumbBookings'), href: '/admin/bookings' },
+          { label: t('adminPages.bookings.newBooking') },
         ]}
-        title="Create New Booking Reservation"
-        subtitle="Reserve a fleet vehicle with real-time rate validation, calendar conflict detection, and contractual price snapshots."
+        title={t('adminPages.bookings.createTitle')}
+        subtitle={t('adminPages.bookings.createSubtitle')}
       />
 
       {error && (
@@ -221,18 +223,18 @@ export function CreateBookingPage() {
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <Car size={18} color="#6C1E84" />
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>1. Select Fleet Vehicle</h3>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>{t('adminPages.bookings.step1')}</h3>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4A315A', marginBottom: '8px' }}>
-                  Choose Vehicle *
+                  {t('adminPages.bookings.chooseVehicle')}
                 </label>
                 <CustomSelect
                   value={selectedVehicleId}
                   onChange={(val) => setSelectedVehicleId(val)}
                   searchable
-                  placeholder="Select a vehicle from fleet..."
+                  placeholder={t('adminPages.bookings.selectVehicle')}
                   options={vehicles.map((v) => ({
                     value: v.id,
                     label: `${v.brand} ${v.model} (${v.registrationNumber})`,
@@ -273,13 +275,13 @@ export function CreateBookingPage() {
                   }}
                 >
                   <div>
-                    <span style={{ fontWeight: 700, color: '#1E0426' }}>Enforced Pricing Method: </span>
+                    <span style={{ fontWeight: 700, color: '#1E0426' }}>{t('adminPages.bookings.pricingMethod')} </span>
                     <span style={{ textTransform: 'uppercase', fontWeight: 800, color: '#6C1E84' }}>
                       {selectedCar.pricingMethod || 'daily'}
                     </span>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: '#66566A' }}>
-                    Deposit: {selectedCar.currency || APP_CURRENCY} {Number(selectedCar.securityDeposit || 0).toLocaleString()} (Refundable)
+                    {t('adminPages.bookings._depositLine', { amount: formatMoney(Number(selectedCar.securityDeposit || 0), selectedCar.currency || APP_CURRENCY) })}
                   </span>
                 </div>
               )}
@@ -287,16 +289,16 @@ export function CreateBookingPage() {
               {/* Availability Alert */}
               <div style={{ marginTop: '14px' }}>
                 {isCheckingAvail ? (
-                  <div style={{ fontSize: '0.85rem', color: '#8A7090' }}>Checking vehicle calendar availability...</div>
+                  <div style={{ fontSize: '0.85rem', color: '#8A7090' }}>{t('adminPages.bookings.checking')}</div>
                 ) : availResult?.available ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#059669', fontWeight: 700 }}>
                     <CheckCircle2 size={16} />
-                    <span>Vehicle is available for selected duration</span>
+                    <span>{t('adminPages.bookings.available')}</span>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#DC2626', fontWeight: 700 }}>
                     <AlertTriangle size={16} />
-                    <span>{availResult?.conflictReason || 'Vehicle conflict detected'}</span>
+                    <span>{availResult?.conflictReason || t('adminPages.bookings.conflict')}</span>
                   </div>
                 )}
               </div>
@@ -306,18 +308,18 @@ export function CreateBookingPage() {
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <User size={18} color="#6C1E84" />
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>2. Customer Information</h3>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>{t('adminPages.bookings.step2')}</h3>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4A315A', marginBottom: '8px' }}>
-                  Select Customer *
+                  {t('adminPages.bookings.selectCustomerLabel')}
                 </label>
                 <CustomSelect
                   value={selectedCustomerId}
                   onChange={(val) => setSelectedCustomerId(val)}
                   searchable
-                  placeholder="Select customer account..."
+                  placeholder={t('adminPages.bookings.selectCustomer')}
                   options={customers.map((c) => ({
                     value: c.id,
                     label: c.fullName,
@@ -331,13 +333,13 @@ export function CreateBookingPage() {
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <Clock size={18} color="#6C1E84" />
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>3. Schedule, Route & Options</h3>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>{t('adminPages.bookings.step3')}</h3>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
-                    Pickup Date & Time *
+                    {t('adminPages.bookings.pickupDate')}
                   </label>
                   <input
                     type="datetime-local"
@@ -349,7 +351,7 @@ export function CreateBookingPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
-                    Return Date & Time *
+                    {t('adminPages.bookings.returnDate')}
                   </label>
                   <input
                     type="datetime-local"
@@ -364,13 +366,13 @@ export function CreateBookingPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
-                    Pickup Branch *
+                    {t('adminPages.bookings.pickupBranch')}
                   </label>
                   <CustomSelect
                     value={pickupBranchId}
                     onChange={(val) => setPickupBranchId(val)}
                     searchable={branches.length > 5}
-                    placeholder="Select pickup branch"
+                    placeholder={t('adminPages.bookings.selectPickup')}
                     options={branches.map((b) => ({
                       value: b.id,
                       label: `${b.name} (${b.city})`,
@@ -379,13 +381,13 @@ export function CreateBookingPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
-                    Return Branch *
+                    {t('adminPages.bookings.returnBranch')}
                   </label>
                   <CustomSelect
                     value={returnBranchId}
                     onChange={(val) => setReturnBranchId(val)}
                     searchable={branches.length > 5}
-                    placeholder="Select return branch"
+                    placeholder={t('adminPages.bookings.selectReturn')}
                     options={branches.map((b) => ({
                       value: b.id,
                       label: `${b.name} (${b.city})`,
@@ -399,7 +401,7 @@ export function CreateBookingPage() {
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
                     <Navigation size={14} style={{ display: 'inline', marginRight: '4px' }} />
-                    Estimated Trip Distance (KM) *
+                    {t('adminPages.bookings.distance')}
                   </label>
                   <input
                     type="number"
@@ -410,7 +412,7 @@ export function CreateBookingPage() {
                     required
                   />
                   <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '4px' }}>
-                    Used for initial quote estimate. Final settlement will compute billable charges based on verified odometer readings.
+                    {t('adminPages.bookings.distanceHelp')}
                   </div>
                 </div>
               )}
@@ -436,18 +438,18 @@ export function CreateBookingPage() {
                     style={{ width: '16px', height: '16px', accentColor: '#6C1E84' }}
                   />
                   <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E0426' }}>
-                    Add Professional Chauffeur / Driver (+{formatMoney(DRIVER_FEE_PER_DAY)}/day)
+                    {t('adminPages.bookings._driverOption', { amount: formatMoney(DRIVER_FEE_PER_DAY) })}
                   </span>
                 </label>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
-                  Reservation Notes (Optional)
+                  {t('adminPages.bookings.notes')}
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Special customer requests, accessories, flight numbers..."
+                  placeholder={t('adminPages.bookings.notesPlaceholder')}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   style={{ width: '100%', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '10px 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
@@ -471,7 +473,7 @@ export function CreateBookingPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <Banknote size={20} color="#059669" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Pricing Breakdown</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>{t('adminPages.bookings.breakdown')}</h3>
               </div>
 
               {selectedCar && (
@@ -480,11 +482,11 @@ export function CreateBookingPage() {
                     {selectedCar.brand} {selectedCar.model}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: '#66566A' }}>
-                    Registration: {selectedCar.registrationNumber} • {selectedCar.category?.name}
+                    {t('adminPages.bookings.registration')} {selectedCar.registrationNumber} • {selectedCar.category?.name}
                   </div>
                   <div style={{ marginTop: '4px', fontSize: '0.75rem', fontWeight: 700, color: '#6C1E84', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Sparkles size={12} />
-                    <span>Pricing Engine: {quote?.pricingMethod?.toUpperCase() || selectedCar.pricingMethod?.toUpperCase() || 'DAILY'}</span>
+                    <span>{t('adminPages.bookings._pricingEngine', { method: quote?.pricingMethod?.toUpperCase() || selectedCar.pricingMethod?.toUpperCase() || 'DAILY' })}</span>
                   </div>
                 </div>
               )}
@@ -508,19 +510,19 @@ export function CreateBookingPage() {
                   ) : (
                     <>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#4B5563' }}>Rental Duration</span>
-                        <strong>{quote.totalDays} Day{quote.totalDays > 1 ? 's' : ''}</strong>
+                        <span style={{ color: '#4B5563' }}>{t('adminPages.bookings.duration')}</span>
+                        <strong>{t('adminPages.bookings._dayCount', { count: quote.totalDays })}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#4B5563' }}>Daily Rate</span>
-                        <span>{quote.currency || APP_CURRENCY} {quote.dailyRate.toLocaleString()}/day</span>
+                        <span style={{ color: '#4B5563' }}>{t('adminPages.bookings.dailyRate')}</span>
+                        <span>{t('adminPages.bookings._perDay', { amount: formatMoney(quote.dailyRate, quote.currency || APP_CURRENCY) })}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#4B5563' }}>Base Subtotal</span>
+                        <span style={{ color: '#4B5563' }}>{t('adminPages.bookings.baseSubtotal')}</span>
                         <span>{quote.currency || APP_CURRENCY} {quote.subtotal.toLocaleString()}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#4B5563' }}>Taxes & Fees</span>
+                        <span style={{ color: '#4B5563' }}>{t('adminPages.bookings.taxes')}</span>
                         <span>{quote.currency || APP_CURRENCY} {quote.taxAmount.toLocaleString()}</span>
                       </div>
                     </>
@@ -542,10 +544,10 @@ export function CreateBookingPage() {
                     <div>
                       <div style={{ color: '#1E40AF', fontWeight: 700, fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <ShieldCheck size={14} />
-                        <span>Security Deposit (Refundable)</span>
+                        <span>{t('adminPages.bookings.deposit')}</span>
                       </div>
                       <div style={{ color: '#3B82F6', fontSize: '0.725rem' }}>
-                        Segregated from earned rental revenue
+                        {t('adminPages.bookings.depositNote')}
                       </div>
                     </div>
                     <span style={{ color: '#1E40AF', fontWeight: 800 }}>
@@ -555,19 +557,19 @@ export function CreateBookingPage() {
 
                   <div style={{ borderTop: '2px dashed #ECEAEF', paddingTop: '12px', marginTop: '6px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800 }}>
-                      <span>Estimated Grand Total</span>
+                      <span>{t('adminPages.bookings.grandTotal')}</span>
                       <span style={{ color: '#059669' }}>
                         {quote.currency || APP_CURRENCY} {(quote.grandTotal ?? quote.totalAmount).toLocaleString()}
                       </span>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>
-                      Includes rental subtotal, applicable taxes, and refundable security deposit.
+                      {t('adminPages.bookings.grandTotalNote')}
                     </div>
                   </div>
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', padding: '24px 0', color: '#6B7280', fontSize: '0.85rem' }}>
-                  Select dates to generate real-time quote calculation.
+                  {t('adminPages.bookings.selectDates')}
                 </div>
               )}
 
@@ -579,7 +581,7 @@ export function CreateBookingPage() {
                 disabled={Boolean(isSubmitting || (availResult && !availResult.available))}
                 style={{ marginTop: '24px' }}
               >
-                {isSubmitting ? 'Confirming Reservation...' : 'Confirm & Allocate Vehicle'}
+                {isSubmitting ? t('adminPages.bookings._confirming') : t('adminPages.bookings._confirm')}
               </Button>
             </div>
           </div>

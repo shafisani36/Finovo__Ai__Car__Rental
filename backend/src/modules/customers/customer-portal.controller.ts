@@ -30,11 +30,33 @@ export class CustomerPortalController {
     }
   }
 
+  static async downloadAgreement(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const file = await CustomerPortalService.getAgreementPdf(req.user!.userId, String(req.params.id));
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.send(file.content);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async cancellationPreview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params.id);
+      const preview = await CustomerPortalService.cancellationPreview(req.user!.userId, id);
+      res.status(200).json({ success: true, preview });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async cancelBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const booking = await CustomerPortalService.requestCancellation(req.user!.userId, id, req.body.reason);
-      res.status(200).json({ success: true, message: 'Booking cancelled successfully', booking });
+      const result = await CustomerPortalService.requestCancellation(req.user!.userId, id, req.body?.reason);
+      res.status(200).json({ success: true, message: 'Booking cancelled', ...result });
     } catch (err) {
       next(err);
     }

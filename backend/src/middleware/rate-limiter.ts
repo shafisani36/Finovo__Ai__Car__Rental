@@ -43,3 +43,18 @@ export const publicFormRateLimiter = rateLimit({
     },
   },
 });
+
+/** Invite code check on the signup form: enough for typing, far too few to guess codes. */
+export const referralCheckRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX_REFERRAL_CHECK || 30),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many invite code checks. Please try again in 15 minutes.',
+    },
+  },
+});

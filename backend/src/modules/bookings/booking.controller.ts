@@ -79,8 +79,25 @@ export class BookingController {
 
       const addonCodes = typeof addons === 'string' && addons.trim() ? addons.split(',') : [];
 
+      // Promo code limits and reward points depend on who the booking is for
+      let customerId: string | null = null;
+      if (req.user) {
+        if (isStaffUser(req.user)) {
+          customerId = typeof req.query.customerId === 'string' && req.query.customerId ? req.query.customerId : null;
+        } else {
+          const customer = await prisma.customer.findFirst({ where: { userId: req.user.userId }, select: { id: true } });
+          customerId = customer?.id ?? null;
+        }
+      }
+
       const [quote, availability] = await Promise.all([
-        BookingService.calculateQuote(String(vehicleId), pDate, rDate, estKm, driverReq, addonCodes),
+        BookingService.calculateQuote(String(vehicleId), pDate, rDate, estKm, driverReq, addonCodes, {
+          promoCode: req.query.promoCode,
+          pointsToRedeem: req.query.points,
+          deliveryAddress: req.query.deliveryAddress,
+          collectionAddress: req.query.collectionAddress,
+          customerId,
+        }),
         BookingService.checkAvailability(String(vehicleId), pDate, rDate),
       ]);
       res.status(200).json({
@@ -92,6 +109,12 @@ export class BookingController {
     } catch (err) {
       next(err);
     }
+  }
+
+  /** Delivery fee, reward point and cancellation rules, so the checkout can explain them. */
+  static options(_req: Request, res: Response): void {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.status(200).json({ success: true, options: BookingService.publicOptions() });
   }
 
   static async create(req: Request, res: Response, next: NextFunction): Promise<void> {

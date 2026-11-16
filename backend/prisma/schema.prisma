@@ -22,6 +22,9 @@ model User {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   preferredLanguage   String?              @default("en") @db.VarChar(10)
+  /// Wrong passwords in a row; the account is locked for a while after too many
+  failedLoginCount    Int                  @default(0)
+  lockedUntil         DateTime?
   customerProfile     Customer?
   inspections         Inspection[]
   passwordResetTokens PasswordResetToken[]
@@ -488,9 +491,20 @@ model Customer {
   driverLicenseNumber String?                @db.VarChar(64)
   licenseExpiryDate   DateTime?
   isLicenseVerified   Boolean                @default(false)
+  /// Customer opted in to booking alerts by SMS / WhatsApp
+  smsAlerts           Boolean                @default(false)
+  whatsappAlerts      Boolean                @default(false)
+  /// Personal invite code this customer shares with friends (created the first time it is needed)
+  referralCode        String?                @unique @db.VarChar(16)
+  /// Customer whose invite code was used at signup
+  referredById        String?
+  referredAt          DateTime?
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
   bookings            Booking[]
+  referredBy          Customer?              @relation("CustomerReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals           Customer[]             @relation("CustomerReferrals")
+  pointEntries        LoyaltyPointEntry[]
   user                User?                  @relation(fields: [userId], references: [id])
   documents           CustomerDocument[]
   notifications       CustomerNotification[]
@@ -499,7 +513,25 @@ model Customer {
 
   @@index([email])
   @@index([fullName])
+  @@index([referredById])
   @@map("customers")
+}
+
+/// Bonus points that do not come from a rental (for example a referral reward). Never edited, only added.
+model LoyaltyPointEntry {
+  id           String   @id @default(cuid())
+  customerId   String
+  points       Int
+  /// REFERRAL_BONUS
+  type         String   @db.VarChar(32)
+  description  String   @db.VarChar(255)
+  /// Makes each reward unique, for example REFERRAL:<referred customer id>
+  referenceKey String   @unique @db.VarChar(191)
+  createdAt    DateTime @default(now())
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("loyalty_point_entries")
 }
 
 model Booking {
@@ -525,6 +557,25 @@ model Booking {
   finalTotal         Decimal?                  @db.Decimal(10, 2)
   pricingMethod      PricingMethod             @default(daily)
   settlementStatus   String?                   @default("PENDING") @db.VarChar(32)
+  /// Promo code applied at booking time and the discount it gave
+  promoCodeId        String?
+  promoDiscount      Decimal                   @default(0.00) @db.Decimal(10, 2)
+  /// Reward points spent on this booking and their value
+  pointsRedeemed     Int                       @default(0)
+  pointsDiscount     Decimal                   @default(0.00) @db.Decimal(10, 2)
+  /// Optional delivery of the car to the customer and collection at the end
+  deliveryAddress    String?                   @db.VarChar(300)
+  collectionAddress  String?                   @db.VarChar(300)
+  deliveryFee        Decimal                   @default(0.00) @db.Decimal(10, 2)
+  /// Cancellation outcome under the cancellation policy
+  cancelledAt        DateTime?
+  cancellationFee    Decimal?                  @db.Decimal(10, 2)
+  refundAmount       Decimal?                  @db.Decimal(10, 2)
+  /// Set once the SMS / WhatsApp reminder has been sent, so it is never sent twice
+  pickupReminderSentAt DateTime?
+  returnReminderSentAt DateTime?
+  promoCode          PromoCode?                @relation(fields: [promoCodeId], references: [id])
+  agreement          RentalAgreement?
   breakdownItems     BookingPricingBreakdown[]
   pricingSnapshot    BookingPricingSnapshot?
   customer           Customer                  @relation(fields: [customerId], references: [id])
@@ -544,7 +595,72 @@ model Booking {
   @@index([pickupDateTime, returnDateTime])
   @@index([pickupBranchId], map: "bookings_pickupBranchId_fkey")
   @@index([returnBranchId], map: "bookings_returnBranchId_fkey")
+  @@index([promoCodeId])
   @@map("bookings")
+}
+
+/// Discount code created by staff and entered by customers at checkout
+model PromoCode {
+  id                        String    @id @default(cuid())
+  code                      String    @unique @db.VarChar(32)
+  description               String?   @db.VarChar(255)
+  /// PERCENT or FIXED
+  discountType              String    @default("PERCENT") @db.VarChar(16)
+  discountValue             Decimal   @db.Decimal(10, 2)
+  maxDiscountAmount         Decimal?  @db.Decimal(10, 2)
+  minRentalAmount           Decimal?  @db.Decimal(10, 2)
+  startsAt                  DateTime?
+  endsAt                    DateTime?
+  maxRedemptions            Int?
+  maxRedemptionsPerCustomer Int       @default(1)
+  isActive                  Boolean   @default(true)
+  createdById               String?   @db.VarChar(64)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  bookings                  Booking[]
+
+  @@index([isActive])
+  @@map("promo_codes")
+}
+
+/// Rental agreement signed by the customer at handover, kept as a PDF
+model RentalAgreement {
+  id              String    @id @default(cuid())
+  bookingId       String    @unique
+  agreementNumber String    @unique @db.VarChar(64)
+  signerName      String    @db.VarChar(128)
+  signaturePath   String    @db.VarChar(512)
+  pdfPath         String    @db.VarChar(512)
+  sha256Hash      String    @db.VarChar(64)
+  termsVersion    String    @db.VarChar(16)
+  signedAt        DateTime  @default(now())
+  signedIp        String?   @db.VarChar(64)
+  signedUserAgent String?   @db.VarChar(255)
+  witnessedById   String?   @db.VarChar(64)
+  emailedAt       DateTime?
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("rental_agreements")
+}
+
+/// Every SMS / WhatsApp message the system tried to send
+model MessageLog {
+  id                String   @id @default(cuid())
+  customerId        String?
+  bookingId         String?
+  /// SMS or WHATSAPP
+  channel           String   @db.VarChar(16)
+  template          String   @db.VarChar(48)
+  toNumber          String   @db.VarChar(32)
+  /// SENT, FAILED or SKIPPED
+  status            String   @db.VarChar(16)
+  providerMessageId String?  @db.VarChar(64)
+  errorMessage      String?  @db.VarChar(255)
+  createdAt         DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@map("message_logs")
 }
 
 model BookingPricingSnapshot {
@@ -753,6 +869,8 @@ model damage_charges {
   disputeNotes       String?               @db.Text
   disputeOpenedAt    DateTime?
   disputeResolvedAt  DateTime?
+  /// Staff answer to the customer's dispute
+  disputeResponse    String?               @db.Text
   createdAt          DateTime              @default(now())
   updatedAt          DateTime
   bookings           Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)

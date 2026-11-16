@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { CheckCircle2, AlertTriangle, Ban, RotateCcw } from 'lucide-react';
+import { Fragment, useState } from 'react';
+import { CheckCircle2, AlertTriangle, Ban, RotateCcw, MessageSquareWarning } from 'lucide-react';
 import {
   INSPECTION_VIEWS,
   inspectionApi,
+  type DamageCharge,
   type DamageComparison,
   type InspectionFinding,
 } from '../api/inspectionApi';
@@ -17,13 +18,34 @@ interface DamageComparisonViewProps {
   onChange?: (next: DamageComparison) => void;
   /** Staff can waive / restore proposed fines before the return is completed. */
   editable?: boolean;
+  /** Customer view: lets the customer dispute a fine they disagree with. */
+  canDispute?: boolean;
+  /** Staff view: lets staff accept or reject a customer's dispute. */
+  canResolveDisputes?: boolean;
 }
 
+/** Charges a customer may still dispute (the server checks this again). */
+const DISPUTABLE_STATUSES: DamageCharge['status'][] = ['PROPOSED', 'EVIDENCE_REVIEW', 'APPROVED', 'CUSTOMER_NOTIFIED', 'SETTLED'];
+const MIN_DISPUTE_TEXT = 10;
+const MIN_RESPONSE_TEXT = 5;
+
 /** Pickup vs return, angle by angle, with the resulting fines. */
-export function DamageComparisonView({ comparison, onChange, editable }: DamageComparisonViewProps) {
+export function DamageComparisonView({
+  comparison,
+  onChange,
+  editable,
+  canDispute,
+  canResolveDisputes,
+}: DamageComparisonViewProps) {
   const { t } = useTranslation();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Inline form under a charge: the customer's dispute reason or the staff answer
+  const [openForm, setOpenForm] = useState<{ chargeId: string; mode: 'dispute' | 'resolve' } | null>(null);
+  const [formText, setFormText] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
+  // Time the view was opened, used to hide the dispute button once the dispute window has closed
+  const [openedAt] = useState(() => Date.now());
   const pickup = comparison.pickupInspection;
   const ret = comparison.returnInspection;
   const currency = comparison.currency;
@@ -44,6 +66,64 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
       setBusyId(null);
     }
   };
+
+  const refresh = async () => {
+    const res = await inspectionApi.getComparisonById(comparison.id);
+    if (res.comparison) onChange?.(res.comparison);
+  };
+
+  const canOpenDispute = (c: DamageCharge) =>
+    Boolean(canDispute) &&
+    DISPUTABLE_STATUSES.includes(c.status) &&
+    !c.disputeResolvedAt &&
+    (!c.disputeWindowEndsAt || new Date(c.disputeWindowEndsAt).getTime() > openedAt);
+
+  const startForm = (chargeId: string, mode: 'dispute' | 'resolve') => {
+    setOpenForm({ chargeId, mode });
+    setFormText('');
+    setError(null);
+    setNotice(null);
+  };
+
+  const submitDispute = async (chargeId: string) => {
+    setBusyId(chargeId);
+    setError(null);
+    try {
+      await inspectionApi.openDispute(chargeId, formText.trim());
+      setOpenForm(null);
+      setNotice(t('inspectionReport.disputeSent'));
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('inspectionReport.errDispute'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const submitResolution = async (chargeId: string, decision: 'ACCEPT' | 'REJECT') => {
+    setBusyId(chargeId);
+    setError(null);
+    try {
+      await inspectionApi.resolveDispute(chargeId, decision, formText.trim());
+      setOpenForm(null);
+      setNotice(decision === 'ACCEPT' ? t('inspectionReport.disputeAccepted') : t('inspectionReport.disputeRejected'));
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('inspectionReport.errDispute'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const statusLabel = (c: DamageCharge) => {
+    if (c.status === 'DISPUTED') return t('inspectionReport.disputed');
+    if (c.status === 'REJECTED') return t('inspectionReport.waived');
+    if (c.status === 'SETTLED') return t('inspectionReport.charged');
+    return t('inspectionReport.toBeCharged');
+  };
+
+  const showActions = Boolean(editable || canDispute || canResolveDisputes);
+  const columnCount = showActions ? 4 : 3;
 
   return (
     <section className="insp-report printable-document">
@@ -174,45 +254,115 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
                   <th>{t('inspectionReport.item')}</th>
                   <th>{t('inspectionReport.amount')}</th>
                   <th>{t('inspectionReport.status')}</th>
-                  {editable && <th className="no-print">{t('inspectionReport.action')}</th>}
+                  {showActions && <th className="no-print">{t('inspectionReport.action')}</th>}
                 </tr>
               </thead>
               <tbody>
                 {comparison.charges.map((c) => (
-                  <tr key={c.id} className={c.status === 'REJECTED' ? 'insp-row-waived' : ''}>
-                    <td>{c.description}</td>
-                    <td>{formatMoney(c.proposedAmount, c.currency)}</td>
-                    <td>
-                      {c.status === 'REJECTED'
-                        ? t('inspectionReport.waived')
-                        : c.status === 'SETTLED'
-                          ? t('inspectionReport.charged')
-                          : t('inspectionReport.toBeCharged')}
-                    </td>
-                    {editable && (
-                      <td className="no-print">
-                        {c.status === 'REJECTED' ? (
-                          <button
-                            type="button"
-                            className="insp-btn-link"
-                            disabled={busyId === c.id}
-                            onClick={() => review(c.id, 'APPROVED')}
-                          >
-                            <RotateCcw size={14} /> {t('inspectionReport.restore')}
-                          </button>
-                        ) : c.status !== 'SETTLED' ? (
-                          <button
-                            type="button"
-                            className="insp-btn-link"
-                            disabled={busyId === c.id}
-                            onClick={() => review(c.id, 'REJECTED')}
-                          >
-                            <Ban size={14} /> {t('inspectionReport.waive')}
-                          </button>
-                        ) : null}
-                      </td>
+                  <Fragment key={c.id}>
+                    <tr className={c.status === 'REJECTED' ? 'insp-row-waived' : ''}>
+                      <td>{c.description}</td>
+                      <td>{formatMoney(c.proposedAmount, c.currency)}</td>
+                      <td>{statusLabel(c)}</td>
+                      {showActions && (
+                        <td className="no-print">
+                          {canResolveDisputes && c.status === 'DISPUTED' ? (
+                            <button type="button" className="insp-btn-link" disabled={busyId === c.id} onClick={() => startForm(c.id, 'resolve')}>
+                              <MessageSquareWarning size={14} /> {t('inspectionReport.reviewDispute')}
+                            </button>
+                          ) : editable && c.status === 'REJECTED' && !c.disputeResolvedAt ? (
+                            <button type="button" className="insp-btn-link" disabled={busyId === c.id} onClick={() => review(c.id, 'APPROVED')}>
+                              <RotateCcw size={14} /> {t('inspectionReport.restore')}
+                            </button>
+                          ) : editable && c.status !== 'SETTLED' && c.status !== 'REJECTED' && c.status !== 'DISPUTED' ? (
+                            <button type="button" className="insp-btn-link" disabled={busyId === c.id} onClick={() => review(c.id, 'REJECTED')}>
+                              <Ban size={14} /> {t('inspectionReport.waive')}
+                            </button>
+                          ) : canOpenDispute(c) ? (
+                            <button type="button" className="insp-btn-link" disabled={busyId === c.id} onClick={() => startForm(c.id, 'dispute')}>
+                              <MessageSquareWarning size={14} /> {t('inspectionReport.dispute')}
+                            </button>
+                          ) : null}
+                        </td>
+                      )}
+                    </tr>
+                    {(c.disputeReason || c.disputeResponse) && (
+                      <tr>
+                        <td colSpan={columnCount}>
+                          {c.disputeReason && (
+                            <div className="insp-small">
+                              <strong>{t('inspectionReport.disputeReason')}:</strong> {c.disputeReason}
+                            </div>
+                          )}
+                          {c.disputeResponse && (
+                            <div className="insp-small">
+                              <strong>{t('inspectionReport.disputeAnswer')}:</strong> {c.disputeResponse}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
                     )}
-                  </tr>
+                    {openForm?.chargeId === c.id && (
+                      <tr className="no-print">
+                        <td colSpan={columnCount}>
+                          <label
+                            className="insp-small"
+                            htmlFor={`charge-form-${c.id}`}
+                            style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}
+                          >
+                            {openForm.mode === 'dispute' ? t('inspectionReport.disputeLabel') : t('inspectionReport.answerLabel')}
+                          </label>
+                          <textarea
+                            id={`charge-form-${c.id}`}
+                            rows={3}
+                            maxLength={1000}
+                            value={formText}
+                            onChange={(e) => setFormText(e.target.value)}
+                            style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d6d0dc', font: 'inherit' }}
+                          />
+                          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8, flexWrap: 'wrap' }}>
+                            <button type="button" className="insp-btn-link" onClick={() => setOpenForm(null)}>
+                              {t('inspectionReport.cancel')}
+                            </button>
+                            {openForm.mode === 'dispute' ? (
+                              <button
+                                type="button"
+                                className="insp-btn-link"
+                                disabled={busyId === c.id || formText.trim().length < MIN_DISPUTE_TEXT}
+                                onClick={() => submitDispute(c.id)}
+                              >
+                                {t('inspectionReport.sendDispute')}
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  className="insp-btn-link"
+                                  disabled={busyId === c.id || formText.trim().length < MIN_RESPONSE_TEXT}
+                                  onClick={() => submitResolution(c.id, 'REJECT')}
+                                >
+                                  {t('inspectionReport.keepCharge')}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="insp-btn-link"
+                                  disabled={busyId === c.id || formText.trim().length < MIN_RESPONSE_TEXT}
+                                  onClick={() => submitResolution(c.id, 'ACCEPT')}
+                                >
+                                  {t('inspectionReport.removeCharge')}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          {openForm.mode === 'dispute' && (
+                            <p className="insp-muted insp-small" style={{ margin: '6px 0 0' }}>
+                              {t('inspectionReport.disputeHint', { count: MIN_DISPUTE_TEXT })}
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
               <tfoot>
@@ -220,7 +370,7 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
                   <td>
                     <strong>{t('inspectionReport.totalFine')}</strong>
                   </td>
-                  <td colSpan={editable ? 3 : 2}>
+                  <td colSpan={columnCount - 1}>
                     <strong>{formatMoney(comparison.totalActiveCharges, currency)}</strong>
                     {comparison.depositAmount > 0 && (
                       <span className="insp-muted insp-small">
@@ -234,6 +384,7 @@ export function DamageComparisonView({ comparison, onChange, editable }: DamageC
             </table>
           </div>
         )}
+        {notice && <p className="insp-muted" role="status">{notice}</p>}
         {error && <p className="insp-capture-error">{error}</p>}
       </section>
     </section>

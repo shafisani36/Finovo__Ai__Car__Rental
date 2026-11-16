@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { BookingController } from '../../modules/bookings/booking.controller';
-import { authenticate } from '../../middleware/authenticate';
+import { authenticate, optionalAuthenticate } from '../../middleware/authenticate';
 import { requireRole } from '../../middleware/authorize';
 
 export const bookingRouter = Router();
 
 // Availability check & quote (public or customer/staff)
 bookingRouter.get('/availability', BookingController.checkAvailability);
-bookingRouter.get('/quote', BookingController.quote);
+bookingRouter.get('/quote', optionalAuthenticate, BookingController.quote);
+bookingRouter.get('/options', BookingController.options);
 bookingRouter.get(
   '/calendar',
   authenticate,

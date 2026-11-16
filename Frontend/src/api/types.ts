@@ -35,6 +35,8 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   timeoutMs?: number;
   skipAuth?: boolean;
   correlationId?: string;
+  /** 'blob' returns the raw file body (for PDF and other downloads) instead of parsed JSON */
+  responseType?: 'json' | 'blob';
 }
 
 export interface ApiErrorDetail {

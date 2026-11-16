@@ -10,6 +10,34 @@ export interface CustomerProfile {
   isLicenseVerified: boolean;
   licenseExpiryDate?: string | null;
   preferredLanguage?: string;
+  /** Booking alerts by SMS and WhatsApp (need a phone number in international format) */
+  smsAlerts?: boolean;
+  whatsappAlerts?: boolean;
+}
+
+/** What the customer gets back if the booking is cancelled now. */
+export interface CancellationPreview {
+  cancellable: boolean;
+  currency: string;
+  isFree: boolean;
+  freeUntil: string;
+  fee: number;
+  paid: number;
+  refund: number;
+}
+
+export interface RefundOutcome {
+  refundedOnline: number;
+  pendingManual: number;
+  failed: number;
+}
+
+export interface BookingAgreementSummary {
+  agreementNumber: string;
+  signerName: string;
+  signedAt: string;
+  termsVersion: string;
+  emailedAt?: string | null;
 }
 
 export interface CustomerPortalStats {
@@ -77,6 +105,16 @@ export interface CustomerBookingItem {
 
 export interface CustomerBookingDetail extends CustomerBookingItem {
   notes?: string | null;
+  promoDiscount?: number;
+  pointsRedeemed?: number;
+  pointsDiscount?: number;
+  deliveryAddress?: string | null;
+  collectionAddress?: string | null;
+  deliveryFee?: number;
+  cancelledAt?: string | null;
+  cancellationFee?: number | null;
+  refundAmount?: number | null;
+  agreement?: BookingAgreementSummary | null;
   breakdownItems: Array<{
     id: string;
     lineType: string;
@@ -94,6 +132,7 @@ export interface CustomerBookingDetail extends CustomerBookingItem {
     provider: string;
     receiptUrl?: string | null;
     createdAt: string;
+    refunds?: Array<{ id: string; amount: number; status: string; createdAt: string }>;
   }>;
   inspections: Array<{
     id: string;
@@ -245,6 +284,31 @@ export interface RewardsSummary {
   completedRentals: number;
   pointsPerHundred: number;
   pointsToNextTier: number;
+  /** Points earned from completed rentals and points already spent on bookings */
+  pointsEarned?: number;
+  pointsRedeemed?: number;
+  /** Value of one point in the booking currency */
+  pointValue?: number;
+  minRedeemPoints?: number;
+  maxPointsSharePercent?: number;
+  /** Bonus points that did not come from rentals, such as invite rewards */
+  bonusPoints?: number;
+  referral?: ReferralSummary;
+}
+
+/** The customer's invite code and the friends who signed up with it. */
+export interface ReferralSummary {
+  code: string;
+  rewardPoints: number;
+  rewardValue: number;
+  pointsEarned: number;
+  friends: Array<{
+    name: string;
+    joinedAt: string;
+    /** JOINED: signed up, COMPLETED: first rental finished, REWARDED: points given */
+    status: 'JOINED' | 'COMPLETED' | 'REWARDED';
+    points: number;
+  }>;
 }
 
 export interface RentalHistoryItem {
@@ -328,7 +392,19 @@ export const customerPortalApi = {
     return authClient.request(`/customers/portal/bookings/${id}`);
   },
 
-  async cancelBooking(id: string, reason?: string): Promise<{ success: boolean; message: string }> {
+  async getCancellationPreview(id: string): Promise<{ success: boolean; preview: CancellationPreview }> {
+    return authClient.request(`/customers/portal/bookings/${id}/cancellation`);
+  },
+
+  /** Endpoint of the signed rental agreement PDF (download it with downloadProtectedFile). */
+  agreementPdfEndpoint(id: string): string {
+    return `/customers/portal/bookings/${id}/agreement`;
+  },
+
+  async cancelBooking(
+    id: string,
+    reason?: string
+  ): Promise<{ success: boolean; message: string; terms?: CancellationPreview; refund?: RefundOutcome | null }> {
     return withNotificationRefresh(
       authClient.request(`/customers/portal/bookings/${id}/cancel`, {
         method: 'POST',
@@ -404,6 +480,8 @@ export const customerPortalApi = {
     licenseExpiryDate?: string;
     preferredLanguage?: string;
     avatarUrl?: string;
+    smsAlerts?: boolean;
+    whatsappAlerts?: boolean;
   }): Promise<{ success: boolean; user: unknown; customer: CustomerProfile }> {
     return authClient.request('/customers/portal/profile', {
       method: 'PATCH',

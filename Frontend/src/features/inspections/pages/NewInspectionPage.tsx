@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Loader2, ScanLine } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../../components/common';
@@ -19,6 +20,7 @@ interface VehicleOption {
  * Pickup and return inspections are done from the handover and return screens.
  */
 export function NewInspectionPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
@@ -43,11 +45,13 @@ export function NewInspectionPage() {
         );
       })
       .catch((err) => {
-        if (active) setError(err instanceof Error ? err.message : 'Failed to load vehicles');
+        if (active) setError(err instanceof Error ? err.message : t('adminPages.inspections.errVehicles'));
       });
     return () => {
       active = false;
     };
+    // Loads once per record; the language is only used for error text, so a language change must not reload the form
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const photoCount = Object.keys(photos).length;
@@ -65,7 +69,7 @@ export function NewInspectionPage() {
       });
       navigate(`/admin/inspections/${res.inspection.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The AI inspection failed. Please try again.');
+      setError(err instanceof Error ? err.message : t('adminPages.inspections.errScan'));
     } finally {
       setScanning(false);
     }
@@ -74,9 +78,9 @@ export function NewInspectionPage() {
   return (
     <PageContainer>
       <PageHeader
-        breadcrumbs={[{ label: 'Inspections', href: '/admin/inspections' }, { label: 'New routine inspection' }]}
-        title="New routine inspection"
-        subtitle="Check any car's condition with AI, for example after a garage repair. Pickup and return inspections are done from the handover and return screens."
+        breadcrumbs={[{ label: t('adminPages.inspections.crumb'), href: '/admin/inspections' }, { label: t('adminPages.inspections.newTitle') }]}
+        title={t('adminPages.inspections.newTitle')}
+        subtitle={t('adminPages.inspections.newSubtitle')}
       />
 
       {error && (
@@ -110,12 +114,12 @@ export function NewInspectionPage() {
         }}
       >
         <div style={{ maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
-          Vehicle
+          {t('adminPages.inspections.vehicle')}
           <CustomSelect
             value={vehicleId}
             onChange={(v) => setVehicleId(String(v))}
             options={vehicles}
-            placeholder="Select a vehicle"
+            placeholder={t('adminPages.inspections.selectVehicle')}
             searchable
             size="md"
           />
@@ -126,7 +130,7 @@ export function NewInspectionPage() {
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Inspector notes (optional)"
+          placeholder={t('adminPages.inspections.notes')}
           rows={2}
           disabled={scanning}
           style={{ width: '100%', borderRadius: '10px', border: '1px solid #ECEAEF', padding: '10px', boxSizing: 'border-box', fontFamily: 'inherit' }}
@@ -135,7 +139,7 @@ export function NewInspectionPage() {
         {scanning ? (
           <div className="insp-progress" role="status">
             <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-            AI is inspecting the photos. This usually takes 10-60 seconds…
+            {t('adminPages.inspections.scanning')}
           </div>
         ) : (
           <button
@@ -157,7 +161,7 @@ export function NewInspectionPage() {
               opacity: vehicleId && photoCount > 0 ? 1 : 0.5,
             }}
           >
-            <ScanLine size={18} /> Run AI inspection
+            <ScanLine size={18} /> {t('adminPages.inspections.runScan')}
           </button>
         )}
       </section>

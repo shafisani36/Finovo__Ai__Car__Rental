@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { bookingApi, type CalendarEvent } from '../api/bookingApi';
 import {
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 
 export function BookingCalendarPage() {
+  const { t, i18n } = useTranslation();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -52,7 +54,11 @@ export function BookingCalendarPage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay(); // 0 is Sunday
 
-  const monthName = currentDate.toLocaleString('default', { month: 'long' });
+  const monthName = new Intl.DateTimeFormat(i18n.language, { month: 'long' }).format(currentDate);
+  // Short weekday names in the reader's language, starting on Sunday (2023-01-01 was a Sunday)
+  const weekdayNames = Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(new Date(2023, 0, 1 + i))
+  );
 
   // Get events that overlap with a specific calendar day
   const getEventsForDay = (dayNum: number) => {
@@ -94,7 +100,7 @@ export function BookingCalendarPage() {
             }}
           >
             <ArrowLeft size={16} />
-            <span>Back to Table View</span>
+            <span>{t('adminPages.calendar.backToTable')}</span>
           </Link>
           <h1
             style={{
@@ -106,10 +112,10 @@ export function BookingCalendarPage() {
               letterSpacing: '-0.02em',
             }}
           >
-            Fleet Availability Calendar
+            {t('adminPages.calendar.title')}
           </h1>
           <p style={{ margin: 0, fontSize: '0.925rem', color: '#66566A' }}>
-            Visual dispatch schedule and multi-day vehicle reservation timeline
+            {t('adminPages.calendar.subtitle')}
           </p>
         </div>
 
@@ -150,7 +156,7 @@ export function BookingCalendarPage() {
             }}
           >
             <Plus size={16} strokeWidth={2.5} />
-            <span>New Booking</span>
+            <span>{t('adminPages.calendar.newBooking')}</span>
           </Link>
         </div>
       </div>
@@ -181,7 +187,7 @@ export function BookingCalendarPage() {
             padding: '12px 0',
           }}
         >
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+          {weekdayNames.map((d) => (
             <div key={d}>{d}</div>
           ))}
         </div>
@@ -233,7 +239,7 @@ export function BookingCalendarPage() {
                   </span>
                   {dayEvents.length > 0 && (
                     <span style={{ fontSize: '0.725rem', color: '#6B7280', fontWeight: 600 }}>
-                      {dayEvents.length} car{dayEvents.length > 1 ? 's' : ''}
+                      {t('adminPages.calendar._cars', { count: dayEvents.length })}
                     </span>
                   )}
                 </div>
@@ -266,7 +272,7 @@ export function BookingCalendarPage() {
                   })}
                   {dayEvents.length > 3 && (
                     <div style={{ fontSize: '0.7rem', color: '#6B7280', paddingLeft: '4px' }}>
-                      +{dayEvents.length - 3} more
+                      {t('adminPages.calendar._more', { count: dayEvents.length - 3 })}
                     </div>
                   )}
                 </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { customerApi } from '../api/customerApi';
 import type { Customer, CreateCustomerPayload, UpdateCustomerPayload } from '../api/customerApi';
 import {
@@ -24,16 +25,21 @@ import {
   StatCard,
   StatGrid,
   Modal,
+  alertDialog,
 } from '../../../components/common';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import { formatMoney } from '../../../utils/carImageHelper';
+import { useTranslation } from 'react-i18next';
 
 export function CustomersListPage() {
+  const { t, i18n } = useTranslation();
   const { confirm } = useConfirm();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  // A link (for example from the header search) can open the list already filtered
+  const [searchQuery, setSearchQuery] = useState(() => (searchParams.get('search') || '').slice(0, 100));
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'VERIFIED' | 'PENDING'>('ALL');
 
   // Modals state
@@ -68,7 +74,7 @@ export function CustomersListPage() {
       }
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setError(e.message || 'Failed to load customers list');
+      setError(e.message || t('adminPages.customers.errLoad'));
     } finally {
       setLoading(false);
     }
@@ -108,7 +114,7 @@ export function CustomersListPage() {
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName.trim() || !formData.email.trim()) {
-      setFormError('Customer Full Name and Email are required.');
+      setFormError(t('adminPages.customers.errRequired'));
       return;
     }
 
@@ -122,7 +128,7 @@ export function CustomersListPage() {
       }
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setFormError(e.message || 'Failed to create customer profile.');
+      setFormError(e.message || t('adminPages.customers.errCreate'));
     } finally {
       setIsSubmitting(false);
     }
@@ -132,7 +138,7 @@ export function CustomersListPage() {
     e.preventDefault();
     if (!editingCustomer) return;
     if (!formData.fullName.trim() || !formData.email.trim()) {
-      setFormError('Customer Full Name and Email are required.');
+      setFormError(t('adminPages.customers.errRequired'));
       return;
     }
 
@@ -154,7 +160,7 @@ export function CustomersListPage() {
       }
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setFormError(e.message || 'Failed to update customer details.');
+      setFormError(e.message || t('adminPages.customers.errUpdate'));
     } finally {
       setIsSubmitting(false);
     }
@@ -162,10 +168,10 @@ export function CustomersListPage() {
 
   const handleDeleteCustomer = async (c: Customer) => {
     const confirmed = await confirm({
-      title: `Delete Customer ${c.fullName}?`,
-      message: `Are you sure you want to delete customer account (${c.email})? This action cannot be undone.`,
-      confirmText: 'Delete Customer',
-      cancelText: 'Cancel',
+      title: t('adminPages.customers._deleteTitle', { name: c.fullName }),
+      message: t('adminPages.customers._deleteMessage', { email: c.email }),
+      confirmText: t('adminPages.customers.deleteCustomer'),
+      cancelText: t('adminPages.customers.cancel'),
       variant: 'danger',
     });
 
@@ -181,7 +187,7 @@ export function CustomersListPage() {
       }
     } catch (err: unknown) {
       const e = err as { message?: string };
-      alert(e.message || 'Failed to delete customer record.');
+      void alertDialog({ title: t('common.errorTitle'), message: e.message || t('adminPages.customers.errDelete'), variant: 'danger', confirmText: t('common.actions.close') });
     }
   };
 
@@ -200,7 +206,7 @@ export function CustomersListPage() {
       }
     } catch (err: unknown) {
       const e = err as { message?: string };
-      alert(e.message || 'Failed to update driver license verification status');
+      void alertDialog({ title: t('common.errorTitle'), message: e.message || t('adminPages.customers.errVerify'), variant: 'danger', confirmText: t('common.actions.close') });
     } finally {
       setUpdatingId(null);
     }
@@ -220,11 +226,11 @@ export function CustomersListPage() {
     <PageContainer>
       {/* Header */}
       <PageHeader
-        title="Customer Directory & CRM Management"
-        subtitle="Manage renter accounts, verify driver licenses, add or edit customer records, and inspect rental history."
+        title={t('adminPages.customers.title')}
+        subtitle={t('adminPages.customers.subtitle')}
         breadcrumbs={[
-          { label: 'Admin', to: '/admin/dashboard' },
-          { label: 'Customers' },
+          { label: t('adminPages.customers.crumbAdmin'), to: '/admin/dashboard' },
+          { label: t('adminPages.customers.crumb') },
         ]}
         actions={
           <button
@@ -246,7 +252,7 @@ export function CustomersListPage() {
             }}
           >
             <Plus size={16} strokeWidth={2.5} />
-            <span>Add Customer</span>
+            <span>{t('adminPages.customers.add')}</span>
           </button>
         }
       />
@@ -255,24 +261,24 @@ export function CustomersListPage() {
       <StatGrid columns={3}>
         <StatCard
           icon={Users}
-          label="Total Registered Renters"
+          label={t('adminPages.customers.statTotal')}
           value={totalCustomers}
           variant="purple"
-          subtext="Active accounts in database"
+          subtext={t('adminPages.customers.statTotalSub')}
         />
         <StatCard
           icon={ShieldCheck}
-          label="Verified Driver Licenses"
+          label={t('adminPages.customers.statVerified')}
           value={verifiedCount}
           variant="green"
-          subtext="Approved for instant car handover"
+          subtext={t('adminPages.customers.statVerifiedSub')}
         />
         <StatCard
           icon={ShieldAlert}
-          label="Pending Review"
+          label={t('adminPages.customers.pending')}
           value={pendingCount}
           variant={pendingCount > 0 ? 'amber' : 'green'}
-          subtext="Awaiting administrative verification"
+          subtext={t('adminPages.customers.statPendingSub')}
         />
       </StatGrid>
 
@@ -307,7 +313,7 @@ export function CustomersListPage() {
           <Search size={18} color="#685D73" />
           <input
             type="text"
-            placeholder="Search by name, email, phone, or license..."
+            placeholder={t('adminPages.customers.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -334,7 +340,7 @@ export function CustomersListPage() {
                 fontSize: '0.8rem',
               }}
             >
-              Clear
+              {t('adminPages.customers.clear')}
             </button>
           )}
           <button
@@ -350,7 +356,7 @@ export function CustomersListPage() {
               cursor: 'pointer',
             }}
           >
-            Search
+            {t('adminPages.customers.searchBtn')}
           </button>
         </form>
 
@@ -372,7 +378,7 @@ export function CustomersListPage() {
                 transition: 'all 0.15s ease',
               }}
             >
-              {mode === 'ALL' ? 'All Customers' : mode === 'VERIFIED' ? 'Verified' : 'Pending Review'}
+              {mode === 'ALL' ? t('adminPages.customers._all') : mode === 'VERIFIED' ? t('adminPages.customers.verified') : t('adminPages.customers.pending')}
             </button>
           ))}
         </div>
@@ -391,13 +397,13 @@ export function CustomersListPage() {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <RotateCcw size={26} className="spin-icon" style={{ animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '12px', fontWeight: 600 }}>Loading customer records...</div>
+            <div style={{ marginTop: '12px', fontWeight: 600 }}>{t('adminPages.customers.loading')}</div>
           </div>
         ) : error ? (
           <div style={{ padding: '40px', textAlign: 'center' }}>
             <AlertCircle size={40} color="#DC2626" style={{ marginBottom: '12px' }} />
             <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>
-              Error loading customers
+              {t('adminPages.customers.loadError')}
             </div>
             <p style={{ color: '#685D73', fontSize: '0.875rem', marginBottom: '16px' }}>{error}</p>
             <button
@@ -412,15 +418,15 @@ export function CustomersListPage() {
                 cursor: 'pointer',
               }}
             >
-              Try Again
+              {t('adminPages.customers.retry')}
             </button>
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: '#685D73' }}>
             <Users size={40} color="#D1D5DB" style={{ marginBottom: '12px' }} />
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>No customers found</div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1E0426' }}>{t('adminPages.customers.empty')}</div>
             <p style={{ fontSize: '0.875rem', color: '#685D73', marginTop: '4px' }}>
-              Try adjusting your search criteria or register a new customer profile.
+              {t('adminPages.customers.emptyDesc')}
             </p>
           </div>
         ) : (
@@ -428,12 +434,12 @@ export function CustomersListPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FAF9FB', borderBottom: '1px solid #ECEAEF', color: '#685D73' }}>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Customer Name</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Contact Details</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Driver License</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>Bookings</th>
-                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.customers.colName')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.customers.colContact')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.customers.license')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.customers.colStatus')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600 }}>{t('adminPages.customers.colBookings')}</th>
+                  <th style={{ padding: '14px 20px', fontWeight: 600, textAlign: 'right' }}>{t('adminPages.customers.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -467,7 +473,7 @@ export function CustomersListPage() {
                         <div>
                           <div style={{ fontWeight: 700, color: '#1E0426' }}>{c.fullName}</div>
                           <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
-                            Member since {new Date(c.createdAt).toLocaleDateString()}
+                            {t('adminPages.customers._memberSince', { date: new Date(c.createdAt).toLocaleDateString(i18n.language) })}
                           </div>
                         </div>
                       </div>
@@ -481,18 +487,18 @@ export function CustomersListPage() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#685D73', marginTop: '4px' }}>
                         <Phone size={12} color="#685D73" />
-                        <span>{c.phone || 'No phone'}</span>
+                        <span>{c.phone || t('adminPages.customers._noPhone')}</span>
                       </div>
                     </td>
 
                     {/* License */}
                     <td style={{ padding: '16px 20px' }}>
                       <div style={{ fontWeight: 600, color: '#1E0426' }}>
-                        {c.driverLicenseNumber || 'Not submitted'}
+                        {c.driverLicenseNumber || t('adminPages.customers._notSubmitted')}
                       </div>
                       {c.licenseExpiryDate && (
                         <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '2px' }}>
-                          Exp: {new Date(c.licenseExpiryDate).toLocaleDateString()}
+                          {t('adminPages.customers._expires', { date: new Date(c.licenseExpiryDate).toLocaleDateString(i18n.language) })}
                         </div>
                       )}
                     </td>
@@ -514,7 +520,7 @@ export function CustomersListPage() {
                           }}
                         >
                           <CheckCircle2 size={12} />
-                          VERIFIED
+                          {t('adminPages.customers.verifiedCaps')}
                         </span>
                       ) : (
                         <span
@@ -531,7 +537,7 @@ export function CustomersListPage() {
                           }}
                         >
                           <Clock size={12} />
-                          PENDING
+                          {t('adminPages.customers.pendingCaps')}
                         </span>
                       )}
                     </td>
@@ -548,7 +554,7 @@ export function CustomersListPage() {
                           fontSize: '0.8rem',
                         }}
                       >
-                        {c.totalBookings} rentals
+                        {t('adminPages.customers._rentals', { count: c.totalBookings })}
                       </span>
                     </td>
 
@@ -558,7 +564,7 @@ export function CustomersListPage() {
                         {/* View Details */}
                         <button
                           onClick={() => setSelectedCustomer(c)}
-                          title="View Details & History"
+                          title={t('adminPages.customers.viewDetails')}
                           style={{
                             padding: '6px 10px',
                             backgroundColor: '#F7F5F8',
@@ -574,13 +580,13 @@ export function CustomersListPage() {
                           }}
                         >
                           <Eye size={13} />
-                          <span>View</span>
+                          <span>{t('adminPages.customers.view')}</span>
                         </button>
 
                         {/* Edit */}
                         <button
                           onClick={() => handleOpenEditModal(c)}
-                          title="Edit Customer"
+                          title={t('adminPages.customers.editCustomer')}
                           style={{
                             padding: '6px 10px',
                             backgroundColor: '#F7F5F8',
@@ -596,14 +602,14 @@ export function CustomersListPage() {
                           }}
                         >
                           <Pencil size={13} />
-                          <span>Edit</span>
+                          <span>{t('adminPages.customers.edit')}</span>
                         </button>
 
                         {/* Toggle Verify */}
                         <button
                           onClick={() => handleToggleVerification(c)}
                           disabled={updatingId === c.id}
-                          title={c.isLicenseVerified ? 'Revoke license' : 'Verify license'}
+                          title={c.isLicenseVerified ? t('adminPages.customers._revokeLicense') : t('adminPages.customers._verifyLicense')}
                           style={{
                             padding: '6px 10px',
                             backgroundColor: c.isLicenseVerified ? '#FFFFFF' : '#1E0426',
@@ -615,13 +621,13 @@ export function CustomersListPage() {
                             cursor: 'pointer',
                           }}
                         >
-                          {c.isLicenseVerified ? 'Revoke' : 'Verify'}
+                          {c.isLicenseVerified ? t('adminPages.customers._revoke') : t('adminPages.customers._verify')}
                         </button>
 
                         {/* Delete */}
                         <button
                           onClick={() => handleDeleteCustomer(c)}
-                          title="Delete Customer Profile"
+                          title={t('adminPages.customers.deleteProfile')}
                           style={{
                             padding: '6px 8px',
                             backgroundColor: '#FEF2F2',
@@ -649,7 +655,7 @@ export function CustomersListPage() {
           isOpen={!!selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
           title={selectedCustomer.fullName}
-          subtitle={`${selectedCustomer.email} • ${selectedCustomer.phone || 'No phone provided'}`}
+          subtitle={`${selectedCustomer.email} • ${selectedCustomer.phone || t('adminPages.customers._noPhoneProvided')}`}
           maxWidth="680px"
         >
           {/* Key details summary card */}
@@ -666,26 +672,26 @@ export function CustomersListPage() {
             }}
           >
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#685D73', display: 'block' }}>Driver License</span>
+              <span style={{ fontSize: '0.75rem', color: '#685D73', display: 'block' }}>{t('adminPages.customers.license')}</span>
               <strong style={{ fontSize: '0.9rem', color: '#1E0426' }}>
-                {selectedCustomer.driverLicenseNumber || 'Not submitted'}
+                {selectedCustomer.driverLicenseNumber || t('adminPages.customers._notSubmitted')}
               </strong>
             </div>
 
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#685D73', display: 'block' }}>License Status</span>
+              <span style={{ fontSize: '0.75rem', color: '#685D73', display: 'block' }}>{t('adminPages.customers.licenseStatus')}</span>
               <strong
                 style={{
                   fontSize: '0.85rem',
                   color: selectedCustomer.isLicenseVerified ? '#059669' : '#B45309',
                 }}
               >
-                {selectedCustomer.isLicenseVerified ? 'Verified Driver' : 'Pending Verification'}
+                {selectedCustomer.isLicenseVerified ? t('adminPages.customers._verifiedDriver') : t('adminPages.customers._pendingVerification')}
               </strong>
             </div>
 
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#685D73', display: 'block' }}>Expiry Date</span>
+              <span style={{ fontSize: '0.75rem', color: '#685D73', display: 'block' }}>{t('adminPages.customers.expiry')}</span>
               <strong style={{ fontSize: '0.9rem', color: '#1E0426' }}>
                 {selectedCustomer.licenseExpiryDate
                   ? new Date(selectedCustomer.licenseExpiryDate).toLocaleDateString()
@@ -696,7 +702,7 @@ export function CustomersListPage() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <div style={{ fontWeight: 700, color: '#1E0426', fontSize: '0.95rem' }}>
-              Reservation History ({selectedCustomer.recentBookings?.length || 0})
+              {t('adminPages.customers._history', { count: selectedCustomer.recentBookings?.length || 0 })}
             </div>
           </div>
 
@@ -745,7 +751,7 @@ export function CustomersListPage() {
               ))
             ) : (
               <div style={{ padding: '30px', textAlign: 'center', color: '#685D73', background: '#F9F8FA', borderRadius: '10px' }}>
-                No reservation history recorded for this customer yet.
+                {t('adminPages.customers.noHistory')}
               </div>
             )}
           </div>
@@ -765,7 +771,7 @@ export function CustomersListPage() {
                 cursor: 'pointer',
               }}
             >
-              Close
+              {t('adminPages.customers.close')}
             </button>
           </div>
         </Modal>
@@ -776,8 +782,8 @@ export function CustomersListPage() {
         <Modal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          title="Add New Customer Profile"
-          subtitle="Register a new renter with driver license details for immediate fleet reservation access."
+          title={t('adminPages.customers.addTitle')}
+          subtitle={t('adminPages.customers.addSubtitle')}
           maxWidth="560px"
         >
           <form onSubmit={handleCreateCustomer}>
@@ -800,12 +806,12 @@ export function CustomersListPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  Full Legal Name *
+                  {t('adminPages.customers.fullNameReq')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Johnathan Smith"
+                  placeholder={t('adminPages.customers.namePlaceholder')}
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   style={{
@@ -822,12 +828,12 @@ export function CustomersListPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  Email Address *
+                  {t('adminPages.customers.emailReq')}
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="e.g. john@example.com"
+                  placeholder={t('adminPages.customers.emailPlaceholder')}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   style={{
@@ -844,7 +850,7 @@ export function CustomersListPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  Phone Number
+                  {t('adminPages.customers.phone')}
                 </label>
                 <input
                   type="tel"
@@ -866,7 +872,7 @@ export function CustomersListPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                    Driver License #
+                    {t('adminPages.customers.licenseNumber')}
                   </label>
                   <input
                     type="text"
@@ -887,7 +893,7 @@ export function CustomersListPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                    License Expiry Date
+                    {t('adminPages.customers.licenseExpiry')}
                   </label>
                   <input
                     type="date"
@@ -914,7 +920,7 @@ export function CustomersListPage() {
                     onChange={(e) => setFormData({ ...formData, isLicenseVerified: e.target.checked })}
                     style={{ width: '16px', height: '16px', accentColor: '#1E0426' }}
                   />
-                  <span>Mark driver license as verified immediately</span>
+                  <span>{t('adminPages.customers.markVerified')}</span>
                 </label>
               </div>
             </div>
@@ -934,7 +940,7 @@ export function CustomersListPage() {
                   cursor: 'pointer',
                 }}
               >
-                Cancel
+                {t('adminPages.customers.cancel')}
               </button>
               <button
                 type="submit"
@@ -950,7 +956,7 @@ export function CustomersListPage() {
                   cursor: isSubmitting ? 'wait' : 'pointer',
                 }}
               >
-                {isSubmitting ? 'Creating...' : 'Create Customer'}
+                {isSubmitting ? t('adminPages.customers._creating') : t('adminPages.customers._createCustomer')}
               </button>
             </div>
           </form>
@@ -962,8 +968,8 @@ export function CustomersListPage() {
         <Modal
           isOpen={!!editingCustomer}
           onClose={() => setEditingCustomer(null)}
-          title={`Edit Customer: ${editingCustomer.fullName}`}
-          subtitle="Update customer profile information, contact numbers, or license verification."
+          title={t('adminPages.customers._editTitle', { name: editingCustomer.fullName })}
+          subtitle={t('adminPages.customers.editSubtitle')}
           maxWidth="560px"
         >
           <form onSubmit={handleUpdateCustomer}>
@@ -986,7 +992,7 @@ export function CustomersListPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  Full Legal Name *
+                  {t('adminPages.customers.fullNameReq')}
                 </label>
                 <input
                   type="text"
@@ -1007,7 +1013,7 @@ export function CustomersListPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  Email Address *
+                  {t('adminPages.customers.emailReq')}
                 </label>
                 <input
                   type="email"
@@ -1028,7 +1034,7 @@ export function CustomersListPage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  Phone Number
+                  {t('adminPages.customers.phone')}
                 </label>
                 <input
                   type="tel"
@@ -1049,7 +1055,7 @@ export function CustomersListPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                    Driver License #
+                    {t('adminPages.customers.licenseNumber')}
                   </label>
                   <input
                     type="text"
@@ -1069,7 +1075,7 @@ export function CustomersListPage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                    License Expiry Date
+                    {t('adminPages.customers.licenseExpiry')}
                   </label>
                   <input
                     type="date"
@@ -1096,7 +1102,7 @@ export function CustomersListPage() {
                     onChange={(e) => setFormData({ ...formData, isLicenseVerified: e.target.checked })}
                     style={{ width: '16px', height: '16px', accentColor: '#1E0426' }}
                   />
-                  <span>Driver license is verified</span>
+                  <span>{t('adminPages.customers.licenseVerified')}</span>
                 </label>
               </div>
             </div>
@@ -1116,7 +1122,7 @@ export function CustomersListPage() {
                   cursor: 'pointer',
                 }}
               >
-                Cancel
+                {t('adminPages.customers.cancel')}
               </button>
               <button
                 type="submit"
@@ -1132,7 +1138,7 @@ export function CustomersListPage() {
                   cursor: isSubmitting ? 'wait' : 'pointer',
                 }}
               >
-                {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
+                {isSubmitting ? t('adminPages.customers._savingChanges') : t('adminPages.customers._save')}
               </button>
             </div>
           </form>

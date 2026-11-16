@@ -11,3 +11,10 @@ dashboardRouter.get(
   requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'),
   DashboardController.getOverview
 );
+
+dashboardRouter.get(
+  '/notifications',
+  authenticate,
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'),
+  DashboardController.getNotifications
+);

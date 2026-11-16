@@ -2,6 +2,7 @@ import { initMonitoring, captureError, flushMonitoring } from './infrastructure/
 import { createApp } from './bootstrap/app';
 import { env, validateEnv } from './config/env.config';
 import { prisma } from './infrastructure/prisma/prisma.client';
+import { MessagingService } from './modules/notifications/messaging.service';
 import { normalizeStoredCurrency } from './infrastructure/prisma/currency-normalizer';
 
 async function bootstrap() {
@@ -30,6 +31,9 @@ async function bootstrap() {
     console.log(` Finovo API listening on port ${env.PORT} (${env.NODE_ENV})`);
     console.log(` Health check: http://localhost:${env.PORT}/api/health`);
   });
+
+  // SMS / WhatsApp pickup and return reminders
+  MessagingService.startReminderScheduler();
 
   const shutdown = async (signal: string) => {
     console.log(`\nReceived ${signal}. Gracefully shutting down...`);

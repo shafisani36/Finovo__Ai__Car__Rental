@@ -17,6 +17,7 @@ import { inspectionRouter } from '../api/routes/inspection.routes';
 import { customerRouter } from '../api/routes/customer.routes';
 import { branchRouter } from '../api/routes/branch.routes';
 import { inquiryRouter } from '../api/routes/inquiry.routes';
+import { promoCodeRouter } from '../api/routes/promo-code.routes';
 import { translationRouter } from '../modules/translations/translation.routes';
 import { paymentRouter } from '../api/routes/payment.routes';
 import { publicSiteRouter } from '../modules/public/public-site.routes';
@@ -167,6 +168,7 @@ export function createApp(): Application {
   app.use('/api/v1/customers', customerRouter);
   app.use('/api/v1/branches', branchRouter);
   app.use('/api/v1/inquiries', inquiryRouter);
+  app.use('/api/v1/promo-codes', promoCodeRouter);
   app.use('/api/v1/translations', translationRouter);
   app.use('/api/v1/payments', paymentRouter);
   app.use('/api/v1/public', publicSiteRouter);

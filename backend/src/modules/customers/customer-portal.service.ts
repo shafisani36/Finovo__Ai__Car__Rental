@@ -1,4 +1,15 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { BookingCancellationService } from '../bookings/booking-cancellation.service';
+import { RentalAgreementService } from '../agreements/rental-agreement.service';
+import { ReferralService } from '../loyalty/referral.service';
+import { normalizePhone } from '../notifications/messaging.service';
+import {
+  LoyaltyService,
+  MAX_POINTS_SHARE_PERCENT,
+  MIN_REDEEM_POINTS,
+  POINTS_PER_HUNDRED,
+  POINT_VALUE,
+} from '../loyalty/loyalty.service';
 import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import { BookingService } from '../bookings/booking.service';
@@ -53,6 +64,8 @@ export interface CustomerProfileUpdateDTO {
   licenseExpiryDate?: string;
   preferredLanguage?: string;
   avatarUrl?: string;
+  smsAlerts?: boolean;
+  whatsappAlerts?: boolean;
 }
 
 export interface UploadDocumentDTO {
@@ -244,12 +257,9 @@ export class CustomerPortalService {
       where: { customerId: customer.id, isRead: false },
     });
 
-    // 8. Rewards points (1 point per 100 PKR spent on completed rentals)
-    const completedTotal = completedBookings.reduce(
-      (sum, b) => sum + (Number(b.totalAmount) || 0),
-      0
-    );
-    const rewardPoints = Math.floor(completedTotal / 100);
+    // 8. Reward points the customer can spend now
+    // Same balance the rewards page and checkout use
+    const rewardPoints = (await LoyaltyService.getBalance(customer.id)).available;
 
     return {
       customer: {
@@ -262,6 +272,8 @@ export class CustomerPortalService {
         isLicenseVerified,
         licenseExpiryDate: customer.licenseExpiryDate,
         preferredLanguage: user?.preferredLanguage || 'en',
+        smsAlerts: customer.smsAlerts,
+        whatsappAlerts: customer.whatsappAlerts,
       },
       stats: {
         totalBookings: totalBookingsCount,
@@ -453,14 +465,9 @@ export class CustomerPortalService {
       include: { refunds: true },
     });
 
-    // Load inspections for this vehicle or rental
+    // Only this booking's own inspections (never other customers' rentals of the same car)
     const inspections = await prisma.inspection.findMany({
-      where: {
-        OR: [
-          { rental: { bookingId: booking.id } },
-          { vehicleId: booking.vehicleId },
-        ],
-      },
+      where: { rental: { bookingId: booking.id } },
       include: { photos: true, findings: true },
       orderBy: { createdAt: 'desc' },
       take: 2,
@@ -474,6 +481,12 @@ export class CustomerPortalService {
         taxAmount: Number(booking.taxAmount),
         depositAmount: Number(booking.depositAmount),
         totalAmount: Number(booking.totalAmount),
+        promoDiscount: Number(booking.promoDiscount),
+        pointsDiscount: Number(booking.pointsDiscount),
+        deliveryFee: Number(booking.deliveryFee),
+        cancellationFee: booking.cancellationFee === null ? null : Number(booking.cancellationFee),
+        refundAmount: booking.refundAmount === null ? null : Number(booking.refundAmount),
+        agreement: await RentalAgreementService.getForBooking(booking.id),
         breakdownItems: booking.breakdownItems.map((item) => ({
           ...item,
           quantity: Number(item.quantity),
@@ -489,6 +502,7 @@ export class CustomerPortalService {
           provider: p.provider,
           receiptUrl: p.receiptUrl,
           createdAt: p.createdAt,
+          refunds: p.refunds.map((r) => ({ id: r.id, amount: Number(r.amount), status: r.status, createdAt: r.createdAt })),
         })),
         inspections: inspections.map((ins) => ({
           id: ins.id,
@@ -508,51 +522,35 @@ export class CustomerPortalService {
   }
 
   /**
-   * Request booking cancellation with status guard and audit log
+   * Cancels the customer's own booking under the cancellation policy and refunds what is due.
    */
   static async requestCancellation(userId: string, bookingId: string, reason?: string) {
     const customer = await this.getOrCreateCustomer(userId);
-
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-    });
-
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId }, select: { customerId: true } });
     if (!booking) {
       throw AppError.notFound('Booking not found');
     }
-
     if (booking.customerId !== customer.id) {
       throw AppError.forbidden('Unauthorized access to this booking');
     }
+    return BookingCancellationService.cancel(bookingId, { reason, actorUserId: userId, by: 'CUSTOMER' });
+  }
 
-    if (['ACTIVE', 'COMPLETED', 'CANCELLED'].includes(booking.status)) {
-      throw AppError.badRequest(
-        `Cannot cancel booking in ${booking.status} status. Please contact support.`
-      );
-    }
+  /** The signed rental agreement PDF of the customer's own booking. */
+  static async getAgreementPdf(userId: string, bookingId: string) {
+    const customer = await this.getOrCreateCustomer(userId);
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId }, select: { customerId: true } });
+    if (!booking || booking.customerId !== customer.id) throw AppError.notFound('Booking not found');
+    return RentalAgreementService.readPdf(bookingId);
+  }
 
-    const updated = await prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        status: 'CANCELLED',
-        notes: booking.notes
-          ? `${booking.notes}\n[Customer Cancellation]: ${reason || 'Customer cancelled via portal'}`
-          : `[Customer Cancellation]: ${reason || 'Customer cancelled via portal'}`,
-      },
-    });
-
-    // Notify customer
-    await prisma.customerNotification.create({
-      data: {
-        customerId: customer.id,
-        category: 'BOOKING',
-        title: 'Booking Cancelled',
-        message: `Your reservation #${booking.bookingNumber} has been successfully cancelled.`,
-        actionUrl: `/customer/bookings/${booking.id}`,
-      },
-    });
-
-    return updated;
+  /** What the customer would get back if they cancelled now. */
+  static async cancellationPreview(userId: string, bookingId: string) {
+    const customer = await this.getOrCreateCustomer(userId);
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId }, select: { customerId: true } });
+    if (!booking) throw AppError.notFound('Booking not found');
+    if (booking.customerId !== customer.id) throw AppError.forbidden('Unauthorized access to this booking');
+    return BookingCancellationService.preview(bookingId);
   }
 
   /**
@@ -911,6 +909,16 @@ export class CustomerPortalService {
   static async updateProfile(userId: string, payload: CustomerProfileUpdateDTO) {
     const customer = await this.getOrCreateCustomer(userId);
 
+    // SMS / WhatsApp alerts need a phone number in international format
+    const smsAlerts = typeof payload.smsAlerts === 'boolean' ? payload.smsAlerts : undefined;
+    const whatsappAlerts = typeof payload.whatsappAlerts === 'boolean' ? payload.whatsappAlerts : undefined;
+    const phoneAfter = payload.phone !== undefined && payload.phone !== '' ? payload.phone : customer.phone;
+    if ((smsAlerts ?? customer.smsAlerts) || (whatsappAlerts ?? customer.whatsappAlerts)) {
+      if (!normalizePhone(phoneAfter)) {
+        throw AppError.badRequest('Enter your phone number with the country code (for example +966501234567) to get SMS or WhatsApp alerts');
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -928,6 +936,8 @@ export class CustomerPortalService {
         phone: payload.phone || undefined,
         driverLicenseNumber: payload.driverLicenseNumber || undefined,
         licenseExpiryDate: payload.licenseExpiryDate ? new Date(payload.licenseExpiryDate) : undefined,
+        smsAlerts,
+        whatsappAlerts,
       },
     });
 
@@ -1187,45 +1197,24 @@ export class CustomerPortalService {
    */
   static async getRewardsSummary(userId: string) {
     const customer = await this.getOrCreateCustomer(userId);
-
-    const completedBookings = await prisma.booking.findMany({
-      where: { customerId: customer.id, status: 'COMPLETED' },
-    });
-
-    const totalSpent = completedBookings.reduce(
-      (sum, b) => sum + (Number(b.totalAmount) || 0),
-      0
-    );
-
-    const pointsBalance = Math.floor(totalSpent / 100);
-
-    // Determine tier
-    let tier = 'Silver';
-    let nextTier: string | null = 'Gold';
-    let progressPercent = 0;
-    if (pointsBalance >= 2000) {
-      tier = 'Platinum';
-      nextTier = null;
-      progressPercent = 100;
-    } else if (pointsBalance >= 500) {
-      tier = 'Gold';
-      nextTier = 'Platinum';
-      progressPercent = Math.min(100, Math.round((pointsBalance / 2000) * 100));
-    } else {
-      progressPercent = Math.min(100, Math.round((pointsBalance / 500) * 100));
-    }
+    const balance = await LoyaltyService.getBalance(customer.id);
+    const tier = LoyaltyService.tierFor(balance.earned);
 
     return {
-      tier,
-      nextTier,
-      progressPercent,
-      pointsBalance,
-      totalSpent,
-      currency: completedBookings[0]?.currency || (await this.resolveCurrency(customer.id)),
-      completedRentals: completedBookings.length,
-      // Points are earned at 1 point per 100 currency units on completed rentals
-      pointsPerHundred: 1,
-      pointsToNextTier: tier === 'Platinum' ? 0 : (tier === 'Gold' ? 2000 : 500) - pointsBalance,
+      ...tier,
+      // Points the customer can spend now (earned minus points used on bookings that went ahead)
+      pointsBalance: balance.available,
+      pointsEarned: balance.earned,
+      pointsRedeemed: balance.redeemed,
+      totalSpent: balance.totalSpent,
+      currency: balance.currency || (await this.resolveCurrency(customer.id)),
+      completedRentals: balance.completedRentals,
+      pointsPerHundred: POINTS_PER_HUNDRED,
+      pointValue: POINT_VALUE,
+      minRedeemPoints: MIN_REDEEM_POINTS,
+      maxPointsSharePercent: MAX_POINTS_SHARE_PERCENT,
+      bonusPoints: balance.bonus,
+      referral: await ReferralService.summary(customer.id),
     };
   }
 

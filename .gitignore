@@ -63,3 +63,6 @@ ENV/
 
 # Customer inspection photos are runtime uploads, never committed
 backend/uploads/inspections/
+
+# Signed rental agreements (signatures and personal data), never committed
+backend/storage/

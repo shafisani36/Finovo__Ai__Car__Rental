@@ -1,5 +1,25 @@
 import { z } from 'zod';
 
+/**
+ * Update (PATCH) version of a create schema: every field becomes optional and loses its default.
+ * Zod 4 fills defaults even for missing optional fields, which would silently reset values
+ * the request never mentioned (for example a status going back to its starting value).
+ */
+function partialWithoutDefaults<Shape extends z.ZodRawShape>(schema: z.ZodObject<Shape>) {
+  // Removes a default wherever it sits, also inside .optional() or .nullable()
+  const stripDefault = (field: z.ZodType): z.ZodType => {
+    if (field instanceof z.ZodDefault) return stripDefault(field.unwrap() as z.ZodType);
+    if (field instanceof z.ZodOptional) return stripDefault(field.unwrap() as z.ZodType).optional();
+    if (field instanceof z.ZodNullable) return stripDefault(field.unwrap() as z.ZodType).nullable();
+    return field;
+  };
+  const shape: Record<string, z.ZodType> = {};
+  for (const [key, field] of Object.entries(schema.shape)) {
+    shape[key] = stripDefault(field as z.ZodType).optional();
+  }
+  return z.object(shape) as unknown as z.ZodObject<{ [K in keyof Shape]: z.ZodOptional<Shape[K]> }>;
+}
+
 export const vehicleFilterSchema = z.object({
   search: z.string().optional(),
   category: z.string().optional(),
@@ -260,7 +280,7 @@ export const createMaintenanceSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-export const updateMaintenanceSchema = createMaintenanceSchema.partial();
+export const updateMaintenanceSchema = partialWithoutDefaults(createMaintenanceSchema);
 
 // ---------------- Damage Report Validation ----------------
 export const createDamageReportSchema = z.object({
@@ -278,7 +298,7 @@ export const createDamageReportSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-export const updateDamageReportSchema = createDamageReportSchema.partial();
+export const updateDamageReportSchema = partialWithoutDefaults(createDamageReportSchema);
 
 // ---------------- Odometer Log Validation ----------------
 export const createOdometerLogSchema = z.object({
@@ -332,7 +352,7 @@ export const createPricingTierSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-export const updatePricingTierSchema = createPricingTierSchema.partial();
+export const updatePricingTierSchema = partialWithoutDefaults(createPricingTierSchema);
 
 // ---------------- Archive & Availability ----------------
 export const archiveVehicleSchema = z.object({

@@ -13,6 +13,8 @@ export interface ConfirmOptions {
   closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
   dangerConfirm?: boolean;
+  /** Message only: show a single button and no cancel button */
+  hideCancel?: boolean;
 }
 
 export interface ConfirmContextValue {

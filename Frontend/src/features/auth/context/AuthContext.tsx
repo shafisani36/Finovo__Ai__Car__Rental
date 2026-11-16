@@ -68,10 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data;
   };
 
-  const register = async (fullName: string, email: string, password: string): Promise<AuthResponse> => {
+  const register = async (fullName: string, email: string, password: string, referralCode?: string): Promise<AuthResponse> => {
     const data = await authClient.request<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ fullName, email, password }),
+      body: JSON.stringify({ fullName, email, password, ...(referralCode ? { referralCode } : {}) }),
     });
     return data;
   };
