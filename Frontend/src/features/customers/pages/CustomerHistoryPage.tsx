@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -15,6 +16,8 @@ import {
 import { getCarImage, formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 import { useTranslation } from 'react-i18next';
+
+const INFO_ROW_STYLE: CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' };
 
 export function CustomerHistoryPage() {
   const { t, i18n } = useTranslation();
@@ -99,7 +102,7 @@ export function CustomerHistoryPage() {
       {/* Aggregate Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
         <div className="cp-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' }}>
+          <div style={INFO_ROW_STYLE}>
             <CheckCircle2 size={18} color="#10B981" />
             {t('portalPages.history.completed')}
           </div>
@@ -109,7 +112,7 @@ export function CustomerHistoryPage() {
         </div>
 
         <div className="cp-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' }}>
+          <div style={INFO_ROW_STYLE}>
             <Gauge size={18} color="#FAB826" />
             {t('portalPages.history.distance')}
           </div>
@@ -119,7 +122,7 @@ export function CustomerHistoryPage() {
         </div>
 
         <div className="cp-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '6px' }}>
+          <div style={INFO_ROW_STYLE}>
             <Banknote size={18} color="var(--cp-primary)" />
             {t('portalPages.history.spent')}
           </div>

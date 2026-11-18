@@ -292,6 +292,7 @@ model Vehicle {
   reviews                 VehicleReview[]
   branch                  Branch?               @relation(fields: [branchId], references: [id])
   category                VehicleCategory       @relation(fields: [categoryId], references: [id])
+  trafficFines            TrafficFine[]
 
   @@index([brand, model])
   @@index([status])
@@ -510,6 +511,7 @@ model Customer {
   notifications       CustomerNotification[]
   supportTickets      SupportTicket[]
   reviews             VehicleReview[]
+  trafficFines        TrafficFine[]
 
   @@index([email])
   @@index([fullName])
@@ -586,7 +588,12 @@ model Booking {
   damage_comparisons damage_comparisons[]
   payments           payments[]
   rental             Rental?
+  customerScans      Inspection[]         @relation("CustomerScans")
+  /// Online check-in done by the customer before pickup (documents confirmed and a selfie for the counter)
+  checkedInAt        DateTime?
+  checkInSelfieUrl   String?              @db.VarChar(512)
   report_documents   report_documents[]
+  trafficFines       TrafficFine[]
 
   @@index([bookingNumber])
   @@index([customerId])
@@ -751,7 +758,8 @@ model Rental {
 model Inspection {
   id                                                                    String               @id @default(cuid())
   rentalId                                                              String?
-  vehicleId                                                             String
+  /// Empty for a walk-in car that is not in the fleet
+  vehicleId                                                             String?
   type                                                                  InspectionType
   performedById                                                         String?
   overallScore                                                          Float?
@@ -762,17 +770,37 @@ model Inspection {
   coverageScore                                                         Float?               @default(100)
   status                                                                inspections_status   @default(FINALIZED)
   updatedAt                                                             DateTime             @default(now())
+  /// The vehicle as the AI read it from the photos, independent of the fleet record
+  detectedMake                                                          String?              @db.VarChar(60)
+  detectedModel                                                         String?              @db.VarChar(80)
+  detectedYear                                                          String?              @db.VarChar(20)
+  detectedBodyType                                                      String?              @db.VarChar(40)
+  detectedColor                                                         String?              @db.VarChar(60)
+  detectedColorHex                                                      String?              @db.VarChar(9)
+  detectedPlate                                                         String?              @db.VarChar(20)
+  /// Odometer total in km and chassis number, read from their close-up photos
+  detectedMileageKm                                                     Int?
+  detectedChassisNumber                                                 String?              @db.VarChar(20)
+  /// Set when the customer photographed the car themselves (their own evidence, never a staff baseline)
+  bookingId                                                             String?
+  customerStage                                                         InspectionType?
+  booking                                                               Booking?             @relation("CustomerScans", fields: [bookingId], references: [id])
+  /// The AI could not check the photos (quota, outage): staff record the damage by hand before the car moves
+  manualReview                                                          Boolean              @default(false)
+  /// Why the AI check was skipped, shown to staff
+  aiUnavailableReason                                                   String?              @db.VarChar(255)
   damage_comparisons_damage_comparisons_pickupInspectionIdToinspections damage_comparisons[] @relation("damage_comparisons_pickupInspectionIdToinspections")
   damage_comparisons_damage_comparisons_returnInspectionIdToinspections damage_comparisons[] @relation("damage_comparisons_returnInspectionIdToinspections")
   findings                                                              DamageFinding[]
   photos                                                                InspectionPhoto[]
   performedBy                                                           User?                @relation(fields: [performedById], references: [id])
   rental                                                                Rental?              @relation(fields: [rentalId], references: [id])
-  vehicle                                                               Vehicle              @relation(fields: [vehicleId], references: [id])
+  vehicle                                                               Vehicle?             @relation(fields: [vehicleId], references: [id])
   report_documents                                                      report_documents[]
 
   @@index([vehicleId])
   @@index([rentalId])
+  @@index([bookingId])
   @@index([type])
   @@index([performedById], map: "inspections_performedById_fkey")
   @@index([status])
@@ -1321,4 +1349,68 @@ model VehicleFeature {
   @@id([vehicleId, featureId])
   @@index([featureId])
   @@map("vehicle_features")
+}
+
+/// A traffic fine (challan) issued for a fleet car. It is matched to the renter who had the car at the
+/// time of the offence and passed on to them, or kept by the company when nobody was renting the car.
+model TrafficFine {
+  id              String            @id @default(cuid())
+  /// Fine number printed on the challan by the issuing authority
+  reference       String            @unique @db.VarChar(64)
+  vehicleId       String
+  bookingId       String?
+  customerId      String?
+  offenceType     TrafficFineType
+  offenceAt       DateTime
+  location        String?           @db.VarChar(200)
+  authority       String?           @db.VarChar(120)
+  fineAmount      Decimal           @db.Decimal(10, 2)
+  /// Handling fee the company adds when it passes the fine on to the renter
+  adminFee        Decimal           @default(0.00) @db.Decimal(10, 2)
+  currency        String            @default("SAR") @db.VarChar(8)
+  status          TrafficFineStatus @default(UNMATCHED)
+  notes           String?           @db.Text
+  /// Photo or PDF of the challan
+  evidenceUrl     String?           @db.VarChar(512)
+  dueAt           DateTime?
+  disputeReason   String?           @db.Text
+  disputedAt      DateTime?
+  /// Staff answer to a dispute, or the reason a fine was waived
+  resolution      String?           @db.Text
+  resolvedAt      DateTime?
+  paidAt          DateTime?
+  /// CARD, CASH, BANK_TRANSFER, DEPOSIT or COMPANY
+  paymentMethod   String?           @db.VarChar(32)
+  paymentIntentId String?           @unique @db.VarChar(128)
+  createdById     String?           @db.VarChar(64)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  vehicle         Vehicle           @relation(fields: [vehicleId], references: [id])
+  booking         Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  customer        Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId])
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([status])
+  @@index([offenceAt])
+  @@map("traffic_fines")
+}
+
+enum TrafficFineType {
+  SPEEDING
+  RED_LIGHT
+  PARKING
+  SEATBELT
+  MOBILE_PHONE
+  LANE_VIOLATION
+  OTHER
+}
+
+enum TrafficFineStatus {
+  UNMATCHED
+  CHARGED
+  DISPUTED
+  PAID
+  WAIVED
 }

@@ -41,7 +41,7 @@ function detectDocumentType(buffer: Buffer): 'jpg' | 'png' | 'webp' | 'pdf' | nu
 }
 
 /** Saves an identity document under a random, unguessable name inside uploads/documents only. */
-function storeCustomerDocument(dataUrl: string): { url: string; size: number } {
+export function storeCustomerDocument(dataUrl: string): { url: string; size: number } {
   const match = /^data:[\w.+/-]+;base64,(.+)$/s.exec(String(dataUrl));
   if (!match) throw AppError.badRequest('The document must be sent as a base64 data URL');
   const buffer = Buffer.from(match[1], 'base64');

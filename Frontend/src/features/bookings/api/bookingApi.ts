@@ -48,7 +48,12 @@ export interface Booking {
     phone?: string;
     driverLicenseNumber?: string;
     isLicenseVerified?: boolean;
+    /** Licence and ID on file (staff view of a single booking) */
+    documents?: Array<{ id: string; documentType: string; fileUrl: string; verificationStatus: string; expiresAt: string | null }>;
   };
+  /** Online check-in by the customer before pickup */
+  checkedInAt?: string | null;
+  checkInSelfieUrl?: string | null;
   vehicle: {
     id: string;
     brand: string;

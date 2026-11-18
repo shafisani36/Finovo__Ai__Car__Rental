@@ -22,7 +22,6 @@ const storageMap = new Map<string, string>();
 
 // Import centralized API modules
 import { ApiClient } from '../src/api/client';
-import { QueryCache } from '../src/api/cache';
 import {
   ApiError,
   ValidationError,
@@ -169,53 +168,7 @@ describe('2. Error Classification & Normalization Hierarchy', () => {
   });
 });
 
-describe('3. QueryCache & Reactive Invalidation Engine', () => {
-  test('Should cache data and retrieve within staleTime window', () => {
-    const cache = new QueryCache();
-    cache.set('vehicles:list:1', { items: ['car1', 'car2'] }, 1000);
-
-    const cached = cache.get<{ items: string[] }>('vehicles:list:1');
-    assert.deepEqual(cached?.items, ['car1', 'car2']);
-  });
-
-  test('Should return undefined for expired cache keys', async () => {
-    const cache = new QueryCache();
-    // Cache with ultra-short 10ms TTL
-    cache.set('short-lived', { active: true }, 10);
-
-    await new Promise((r) => setTimeout(r, 25));
-
-    const result = cache.get('short-lived');
-    assert.equal(result, undefined);
-  });
-
-  test('Should invalidate queries matching prefix and notify active subscribers', () => {
-    const cache = new QueryCache();
-    cache.set('vehicles:list:1', { data: 1 });
-    cache.set('vehicles:list:2', { data: 2 });
-    cache.set('vehicles:metrics', { total: 40 });
-    cache.set('bookings:list:1', { bookings: [] });
-
-    let invalidatedNotified = '';
-    const unsubscribe = cache.subscribe((key) => {
-      invalidatedNotified = key;
-    });
-
-    // Invalidate vehicles
-    cache.invalidateQueries('vehicles');
-
-    assert.equal(cache.get('vehicles:list:1'), undefined);
-    assert.equal(cache.get('vehicles:list:2'), undefined);
-    assert.equal(cache.get('vehicles:metrics'), undefined);
-    // Unrelated booking cache must remain intact
-    assert.ok(cache.get('bookings:list:1') !== undefined);
-    assert.equal(invalidatedNotified, 'vehicles');
-
-    unsubscribe();
-  });
-});
-
-describe('4. Centralized Endpoint Registry Integrity', () => {
+describe('3. Centralized Endpoint Registry Integrity', () => {
   test('All critical backend routes should match standard v1 paths', () => {
     assert.equal(API_ENDPOINTS.AUTH.LOGIN, '/auth/login');
     assert.equal(API_ENDPOINTS.AUTH.REGISTER, '/auth/register');

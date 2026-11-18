@@ -47,6 +47,8 @@ const CustomerCheckoutPage = lazy(() => import('../../features/customers/pages/C
 const CustomerBookingsPage = lazy(() => import('../../features/customers/pages/CustomerBookingsPage').then((module) => ({ default: module.CustomerBookingsPage })));
 const CustomerBookingDetailPage = lazy(() => import('../../features/customers/pages/CustomerBookingDetailPage').then((module) => ({ default: module.CustomerBookingDetailPage })));
 const CustomerInspectionPage = lazy(() => import('../../features/customers/pages/CustomerInspectionPage').then((module) => ({ default: module.CustomerInspectionPage })));
+const CustomerSelfCheckPage = lazy(() => import('../../features/customers/pages/CustomerSelfCheckPage').then((module) => ({ default: module.CustomerSelfCheckPage })));
+const CustomerCheckInPage = lazy(() => import('../../features/customers/pages/CustomerCheckInPage').then((module) => ({ default: module.CustomerCheckInPage })));
 const CustomerPaymentsPage = lazy(() => import('../../features/customers/pages/CustomerPaymentsPage').then((module) => ({ default: module.CustomerPaymentsPage })));
 const CustomerProfilePage = lazy(() => import('../../features/customers/pages/CustomerProfilePage').then((module) => ({ default: module.CustomerProfilePage })));
 const CustomerDocumentsPage = lazy(() => import('../../features/customers/pages/CustomerDocumentsPage').then((module) => ({ default: module.CustomerDocumentsPage })));
@@ -79,6 +81,8 @@ const EmployeesListPage = lazy(() => import('../../features/employees/pages/Empl
 const BranchesListPage = lazy(() => import('../../features/branches/pages/BranchesListPage').then((module) => ({ default: module.BranchesListPage })));
 const PromoCodesPage = lazy(() => import('../../features/promotions/pages/PromoCodesPage').then((module) => ({ default: module.PromoCodesPage })));
 const DisputesPage = lazy(() => import('../../features/inspections/pages/DisputesPage').then((module) => ({ default: module.DisputesPage })));
+const TrafficFinesPage = lazy(() => import('../../features/traffic-fines/pages/TrafficFinesPage').then((module) => ({ default: module.TrafficFinesPage })));
+const CustomerFinesPage = lazy(() => import('../../features/traffic-fines/pages/CustomerFinesPage').then((module) => ({ default: module.CustomerFinesPage })));
 const AuditLogsPage = lazy(() => import('../../features/audit-logs/pages/AuditLogsPage').then((module) => ({ default: module.AuditLogsPage })));
 const InquiriesListPage = lazy(() => import('../../features/inquiries/pages/InquiriesListPage').then((module) => ({ default: module.InquiriesListPage })));
 const UsersManagementPage = lazy(() => import('../../features/users/pages/UsersManagementPage').then((module) => ({ default: module.UsersManagementPage })));
@@ -171,6 +175,9 @@ export function AppRouter() {
             <Route path="bookings/new" element={<CustomerCheckoutPage />} />
             <Route path="bookings/:bookingId" element={<CustomerBookingDetailPage />} />
             <Route path="bookings/:bookingId/inspection" element={<CustomerInspectionPage />} />
+            <Route path="bookings/:bookingId/self-check" element={<CustomerSelfCheckPage />} />
+            <Route path="bookings/:bookingId/check-in" element={<CustomerCheckInPage />} />
+            <Route path="fines" element={<CustomerFinesPage />} />
             <Route path="payments" element={<CustomerPaymentsPage />} />
             <Route path="profile" element={<CustomerProfilePage />} />
             <Route path="settings" element={<CustomerProfilePage />} />
@@ -219,6 +226,7 @@ export function AppRouter() {
             <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/:id" element={<InspectionDetailPage />} />
             <Route path="disputes" element={<DisputesPage />} />
+            <Route path="traffic-fines" element={<TrafficFinesPage />} />
 
             {/* Promotions */}
             <Route path="promo-codes" element={<PromoCodesPage />} />

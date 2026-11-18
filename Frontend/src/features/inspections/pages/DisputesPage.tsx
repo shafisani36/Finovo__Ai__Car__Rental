@@ -164,6 +164,16 @@ export function DisputesPage() {
                         <Link to={`/admin/bookings?search=${encodeURIComponent(d.bookingNumber)}`} style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6C1E84' }}>
                           {t('adminPages.disputes.openBooking')}
                         </Link>
+                        {d.customerScans.map((scan) => (
+                          <Link key={scan.id} to={`/admin/inspections/${scan.id}`} style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6C1E84' }}>
+                            {scan.scoreOutOf10 === null
+                              ? t('adminPages.disputes.customerScanPhotos', { stage: t(`portalPages.selfCheck.stage${scan.stage}`) })
+                              : t('adminPages.disputes.customerScan', {
+                                  stage: t(`portalPages.selfCheck.stage${scan.stage}`),
+                                  score: scan.scoreOutOf10,
+                                })}
+                          </Link>
+                        ))}
                         {d.status === 'DISPUTED' && (
                           <button
                             type="button"

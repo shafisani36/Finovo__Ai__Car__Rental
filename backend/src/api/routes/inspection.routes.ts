@@ -13,6 +13,8 @@ inspectionRouter.use(authenticate);
 inspectionRouter.get('/booking/:bookingId', InspectionController.listForBooking);
 // Customers dispute their own damage charges (ownership is checked in the service)
 inspectionRouter.post('/charges/:chargeId/dispute', InspectionController.openDispute);
+// Customers photograph their own rental car at pickup or before return (ownership is checked in the service)
+inspectionRouter.post('/booking/:bookingId/customer-scan', InspectionController.customerScan);
 
 // Staff operations
 inspectionRouter.get('/', requireRole(...STAFF), InspectionController.list);
@@ -23,3 +25,5 @@ inspectionRouter.get('/:id', requireRole(...STAFF), InspectionController.getById
 // Large body: up to 6 compressed photos as data URLs
 inspectionRouter.post('/analyze', requireRole(...STAFF), InspectionController.analyze);
 inspectionRouter.patch('/charges/:chargeId/review', requireRole(...STAFF), InspectionController.reviewCharge);
+// The AI could not check the photos: staff record the damage themselves
+inspectionRouter.post('/:id/manual-review', requireRole(...STAFF), InspectionController.completeManualReview);

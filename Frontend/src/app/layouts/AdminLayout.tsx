@@ -37,6 +37,7 @@ import {
   Languages,
   TicketPercent,
   MessageSquareWarning,
+  FileWarning,
 } from 'lucide-react';
 
 export function AdminLayout() {
@@ -163,6 +164,7 @@ export function AdminLayout() {
               { to: '/admin/rentals', icon: KeyRound, label: t('nav.rentals') },
               { to: '/admin/inspections', icon: ShieldAlert, label: t('nav.aiInspection') },
               { to: '/admin/disputes', icon: MessageSquareWarning, label: t('adminPages.disputes.navLabel') },
+              { to: '/admin/traffic-fines', icon: FileWarning, label: t('adminPages.trafficFines.navLabel') },
               { to: '/admin/promo-codes', icon: TicketPercent, label: t('adminPages.promoCodes.navLabel') },
               { to: '/admin/inquiries', icon: MessageSquare, label: t('nav.inquiries') },
               { to: '/admin/customers', icon: Users, label: t('nav.customers', 'Customers') },
@@ -553,8 +555,8 @@ export function AdminLayout() {
           position: fixed;
           inset: 0;
           background-color: rgba(18, 2, 24, 0.6);
-          backdrop-filter: blur(4px);
           -webkit-backdrop-filter: blur(4px);
+          backdrop-filter: blur(4px);
           z-index: 48;
         }
 

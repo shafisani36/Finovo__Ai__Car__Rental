@@ -776,7 +776,15 @@ export class BookingService {
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: {
-        customer: true,
+        customer: {
+          include: {
+            // Licence and ID on file, shown next to the online check-in selfie at handover
+            documents: {
+              where: { documentType: { in: ['DRIVER_LICENSE_FRONT', 'DRIVER_LICENSE_BACK', 'NATIONAL_ID', 'PASSPORT'] } },
+              select: { id: true, documentType: true, fileUrl: true, verificationStatus: true, expiresAt: true },
+            },
+          },
+        },
         vehicle: {
           include: {
             category: true,

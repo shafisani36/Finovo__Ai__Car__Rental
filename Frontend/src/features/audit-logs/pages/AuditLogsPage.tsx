@@ -228,7 +228,7 @@ export function AuditLogsPage() {
 
                       {/* IP */}
                       <td style={{ padding: '16px 20px', color: '#685D73', fontFamily: 'monospace', fontSize: '0.8125rem' }}>
-                        {log.ipAddress || '127.0.0.1'}
+                        {log.ipAddress || '—'}
                       </td>
 
                       {/* Actions */}

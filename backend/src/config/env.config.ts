@@ -19,6 +19,12 @@ export const env = {
   TAX_RATE_PERCENT: Number(process.env.TAX_RATE_PERCENT ?? 8),
   /** Name of the tax on quotes, invoices and agreements, for example VAT */
   TAX_LABEL: (process.env.TAX_LABEL || 'VAT').trim().slice(0, 30),
+  TRAFFIC_FINES: {
+    /** Handling fee added when a traffic fine is passed on to the renter (app currency). */
+    ADMIN_FEE: Math.max(0, Number(process.env.TRAFFIC_FINE_ADMIN_FEE ?? 0) || 0),
+    /** Days the renter has to pay a traffic fine before it is overdue. */
+    PAYMENT_DAYS: Math.max(1, parseInt(process.env.TRAFFIC_FINE_PAYMENT_DAYS || '14', 10) || 14),
+  },
   DATABASE_URL: process.env.DATABASE_URL || 'mysql://root:@localhost:3306/finovo_car_rental',
   
   JWT: {
@@ -71,6 +77,11 @@ export const env = {
     SMTP_SECURE: process.env.SMTP_SECURE === 'true',
     SMTP_USER: process.env.SMTP_USER || '',
     SMTP_PASS: process.env.SMTP_PASS || '',
+    /** Who gets the staff alerts (new booking, payment, delivery due, return). Empty = every active admin. */
+    STAFF_ALERT_EMAILS: (process.env.STAFF_ALERT_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean),
   },
 
   /** Booking alerts by SMS and WhatsApp through Twilio. MESSAGING_PROVIDER: twilio | mock (print in development) | off */
@@ -92,6 +103,11 @@ export const env = {
   VISION: {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
     GEMINI_MODEL: process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash',
+    // Tried in order when the main model's request quota is used up (each Gemini model has its own quota)
+    GEMINI_FALLBACK_MODELS: (process.env.GEMINI_FALLBACK_MODELS || '')
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean),
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
     OPENAI_MODEL: process.env.OPENAI_VISION_MODEL || 'gpt-4o',
   },

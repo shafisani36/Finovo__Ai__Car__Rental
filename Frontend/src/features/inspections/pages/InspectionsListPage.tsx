@@ -19,6 +19,9 @@ import {
   StatGrid,
 } from '../../../components/common';
 
+/** Booking of a staff inspection (through its rental) or of a customer's own check. */
+const bookingOf = (ins: InspectionRecord) => ins.rental?.booking ?? ins.booking ?? null;
+
 export function InspectionsListPage() {
   const { t } = useTranslation();
   const [inspections, setInspections] = useState<InspectionRecord[]>([]);
@@ -54,14 +57,19 @@ export function InspectionsListPage() {
       Boolean(ins.vehicle?.brand.toLowerCase().includes(q)) ||
       Boolean(ins.vehicle?.model.toLowerCase().includes(q)) ||
       Boolean(ins.vehicle?.registrationNumber.toLowerCase().includes(q)) ||
-      Boolean(ins.rental?.booking?.bookingNumber.toLowerCase().includes(q))
+      [ins.detectedVehicle?.make, ins.detectedVehicle?.model, ins.detectedVehicle?.color, ins.detectedVehicle?.plate].some((v) =>
+        Boolean(v?.toLowerCase().includes(q))
+      ) ||
+      Boolean(bookingOf(ins)?.bookingNumber.toLowerCase().includes(q))
     );
   });
 
   const totalInspections = inspections.length;
   const damageFlaggedCount = inspections.filter((i) => i.hasDamageDetected).length;
-  const averageScore = totalInspections
-    ? Math.round((inspections.reduce((acc, curr) => acc + curr.overallScore, 0) / totalInspections) * 10) / 10
+  // Inspections nobody has checked yet (AI unavailable) have no score
+  const scored = inspections.filter((i) => i.scoreOutOf10 !== null);
+  const averageScore = scored.length
+    ? Math.round((scored.reduce((acc, curr) => acc + curr.overallScore, 0) / scored.length) * 10) / 10
     : 100;
 
   return (
@@ -281,6 +289,16 @@ export function InspectionsListPage() {
                           >
                             {ins.type} {t('adminPages.inspections.scanTag')}
                           </span>
+                          {ins.customerStage && (
+                            <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: 'rgba(245, 158, 11, 0.14)', color: '#B45309' }}>
+                              {t('adminPages.inspections.customerScanTag', { stage: t(`portalPages.selfCheck.stage${ins.customerStage}`) })}
+                            </span>
+                          )}
+                          {ins.needsStaffReview && (
+                            <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: 'rgba(220, 38, 38, 0.12)', color: '#B91C1C' }}>
+                              {t('inspectionReport.manual.listTag')}
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '4px' }}>
                           {new Date(ins.createdAt).toLocaleDateString('en-US', {
@@ -309,10 +327,15 @@ export function InspectionsListPage() {
                           />
                           <div>
                             <div style={{ fontWeight: 700, color: '#1E0426' }}>
-                              {ins.vehicle?.brand} {ins.vehicle?.model}
+                              {ins.vehicle
+                                ? `${ins.vehicle.brand} ${ins.vehicle.model}`
+                                : [ins.detectedVehicle?.make, ins.detectedVehicle?.model].filter(Boolean).join(' ') ||
+                                  t('inspectionReport.unknownVehicle')}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
-                              {ins.vehicle?.registrationNumber}
+                              {[ins.vehicle?.registrationNumber || ins.detectedVehicle?.plate, ins.detectedVehicle?.color]
+                                .filter(Boolean)
+                                .join(' · ')}
                             </div>
                           </div>
                         </div>
@@ -320,13 +343,13 @@ export function InspectionsListPage() {
 
                       {/* Rental / Customer */}
                       <td style={{ padding: '16px 20px' }}>
-                        {ins.rental?.booking ? (
+                        {bookingOf(ins) ? (
                           <>
                             <div style={{ fontWeight: 600, color: '#1E0426' }}>
-                              {ins.rental.booking.bookingNumber}
+                              {bookingOf(ins)!.bookingNumber}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#685D73' }}>
-                              {ins.rental.booking.customer?.fullName}
+                              {bookingOf(ins)!.customer?.fullName}
                             </div>
                           </>
                         ) : (
@@ -346,7 +369,7 @@ export function InspectionsListPage() {
                               color: hasDamage ? '#DC2626' : '#059669',
                             }}
                           >
-                            {ins.overallScore}%
+                            {ins.scoreOutOf10 === null ? '—' : `${ins.overallScore}%`}
                           </div>
                         </div>
                         <div
@@ -361,7 +384,7 @@ export function InspectionsListPage() {
                         >
                           <div
                             style={{
-                              width: `${ins.overallScore}%`,
+                              width: `${ins.scoreOutOf10 === null ? 0 : ins.overallScore}%`,
                               height: '100%',
                               backgroundColor: hasDamage ? '#EF4444' : '#10B981',
                               borderRadius: '3px',

@@ -16,7 +16,8 @@ interface VehicleOption {
 }
 
 /**
- * Routine (fleet) inspection of any car outside a rental, e.g. after a garage repair.
+ * Routine inspection of any car outside a rental: a fleet car (e.g. after a garage repair) or a car that is
+ * not registered. The AI reads make, model, colour and number plate from the photos either way.
  * Pickup and return inspections are done from the handover and return screens.
  */
 export function NewInspectionPage() {
@@ -57,13 +58,13 @@ export function NewInspectionPage() {
   const photoCount = Object.keys(photos).length;
 
   const runScan = async () => {
-    if (!vehicleId || photoCount === 0) return;
+    if (photoCount === 0) return;
     setScanning(true);
     setError(null);
     try {
       const res = await inspectionApi.analyze({
         type: 'ROUTINE',
-        vehicleId,
+        vehicleId: vehicleId || undefined,
         notes: notes || undefined,
         photos: toAnalyzePhotos(photos),
       });
@@ -114,15 +115,18 @@ export function NewInspectionPage() {
         }}
       >
         <div style={{ maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
-          {t('adminPages.inspections.vehicle')}
+          {t('adminPages.inspections.vehicleOptional')}
           <CustomSelect
             value={vehicleId}
             onChange={(v) => setVehicleId(String(v))}
-            options={vehicles}
-            placeholder={t('adminPages.inspections.selectVehicle')}
+            options={[{ value: '', label: t('adminPages.inspections.anyCarOption') }, ...vehicles]}
+            placeholder={t('adminPages.inspections.anyCarOption')}
             searchable
             size="md"
           />
+          <span style={{ fontWeight: 400, fontSize: '0.85rem', color: '#685D73' }}>
+            {vehicleId ? t('adminPages.inspections.fleetPhotosHint') : t('adminPages.inspections.anyCarHint')}
+          </span>
         </div>
 
         <VehiclePhotoCapture value={photos} onChange={setPhotos} disabled={scanning} />
@@ -145,7 +149,7 @@ export function NewInspectionPage() {
           <button
             type="button"
             onClick={runScan}
-            disabled={!vehicleId || photoCount === 0}
+            disabled={photoCount === 0}
             style={{
               alignSelf: 'flex-start',
               display: 'inline-flex',
@@ -158,7 +162,7 @@ export function NewInspectionPage() {
               color: '#FFFFFF',
               fontWeight: 700,
               cursor: 'pointer',
-              opacity: vehicleId && photoCount > 0 ? 1 : 0.5,
+              opacity: photoCount > 0 ? 1 : 0.5,
             }}
           >
             <ScanLine size={18} /> {t('adminPages.inspections.runScan')}

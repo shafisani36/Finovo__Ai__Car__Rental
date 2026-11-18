@@ -1,6 +1,7 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { env } from '../../config/env.config';
 import { renderMessage, type MessageTemplate } from './message-templates';
+import { BookingEmails } from './booking-emails';
 
 /** International phone number format required by SMS and WhatsApp providers, e.g. +966501234567 */
 export const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
@@ -45,10 +46,12 @@ async function sendWithTwilio(channel: Channel, to: string, body: string): Promi
 
 export class MessagingService {
   /**
-   * Sends a booking alert to the customer on every channel they opted in to.
-   * Never throws: a failed text message must not break a booking, a payment or a handover.
+   * Sends a booking alert: always by email (to the customer, and to staff where they need to act), and by
+   * SMS / WhatsApp on the channels the customer opted in to.
+   * Never throws: a failed message must not break a booking, a payment or a handover.
    */
   static async notifyBooking(bookingId: string, template: MessageTemplate, extra: { refund?: number } = {}): Promise<void> {
+    void BookingEmails.notify(bookingId, template);
     try {
       if (env.MESSAGING.PROVIDER === 'off') return;
       const booking = await prisma.booking.findUnique({
@@ -135,7 +138,7 @@ export class MessagingService {
   }
 
   /**
-   * Sends pickup reminders (24 hours before) and return reminders (3 hours before).
+   * Sends pickup reminders (24 hours before, also telling staff a delivery or pickup is due) and return reminders (3 hours before).
    * Each booking is claimed with a guarded update first, so several servers never send the same reminder twice.
    */
   static async runReminderSweep(now: Date = new Date()): Promise<{ pickup: number; return: number }> {
@@ -176,9 +179,8 @@ export class MessagingService {
     return counts;
   }
 
-  /** Starts the reminder job; it does not keep the process alive on shutdown. */
+  /** Starts the reminder job (emails always, SMS / WhatsApp when enabled); it does not keep the process alive on shutdown. */
   static startReminderScheduler(): void {
-    if (env.MESSAGING.PROVIDER === 'off') return;
     const run = () =>
       this.runReminderSweep().catch((err) => console.error('[messaging] reminder sweep failed:', err instanceof Error ? err.message : err));
     setTimeout(run, 30 * 1000).unref();

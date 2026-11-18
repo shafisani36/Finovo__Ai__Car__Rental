@@ -20,27 +20,3 @@ export function requireRole(...allowedRoles: string[]) {
     next();
   };
 }
-
-export function requirePermission(...requiredPermissions: string[]) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      return next(AppError.unauthorized());
-    }
-
-    if (req.user.roles.includes('SUPER_ADMIN')) {
-      return next();
-    }
-
-    const hasAllPermissions = requiredPermissions.every((perm) =>
-      req.user?.permissions.includes(perm)
-    );
-
-    if (!hasAllPermissions) {
-      return next(
-        AppError.forbidden(`Access requires permissions: [${requiredPermissions.join(', ')}]`)
-      );
-    }
-
-    next();
-  };
-}

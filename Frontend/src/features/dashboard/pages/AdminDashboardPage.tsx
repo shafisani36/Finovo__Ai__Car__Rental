@@ -426,9 +426,11 @@ export function AdminDashboardPage() {
                         <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1F2937' }}>
                           {finding.vehicle.name}
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: '#6B7280', backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>
-                          {finding.vehicle.registration}
-                        </span>
+                        {finding.vehicle.registration && (
+                          <span style={{ fontSize: '0.75rem', color: '#6B7280', backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>
+                            {finding.vehicle.registration}
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#B45309', fontWeight: 600 }}>
                         {finding.damageType} — {finding.location}
@@ -439,7 +441,7 @@ export function AdminDashboardPage() {
                     </div>
 
                     <Link
-                      to={`/admin/cars/${finding.vehicle.id}`}
+                      to={`/admin/inspections/${finding.inspectionId}`}
                       style={{
                         backgroundColor: '#FAB826',
                         color: '#1C0324',

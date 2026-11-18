@@ -2426,7 +2426,7 @@ export function CarDetailPage() {
                     <td style={{ color: '#1A0322', fontWeight: 500 }}>{log.details || '—'}</td>
                     <td>{log.userEmail || log.userId || t('adminPages.carDetail.system')}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#8A7090' }}>
-                      {log.ipAddress || '127.0.0.1'}
+                      {log.ipAddress || '—'}
                     </td>
                   </tr>
                 ))}

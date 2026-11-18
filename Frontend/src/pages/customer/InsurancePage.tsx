@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,6 +9,8 @@ import {
   FileCheck,
   PhoneCall,
 } from 'lucide-react';
+
+const ICON_BOX_STYLE: CSSProperties = { width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1E0426', color: '#FAB826', display: 'grid', placeItems: 'center', margin: '0 auto 16px' };
 
 export function InsurancePage() {
   const { t } = useTranslation();
@@ -216,7 +219,7 @@ export function InsurancePage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '30px' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1E0426', color: '#FAB826', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+              <div style={ICON_BOX_STYLE}>
                 <PhoneCall size={26} />
               </div>
               <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>{t('insurance.step1Title')}</h3>
@@ -226,7 +229,7 @@ export function InsurancePage() {
             </div>
 
             <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1E0426', color: '#FAB826', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+              <div style={ICON_BOX_STYLE}>
                 <ShieldCheck size={26} />
               </div>
               <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>{t('insurance.step2Title')}</h3>
@@ -236,7 +239,7 @@ export function InsurancePage() {
             </div>
 
             <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1E0426', color: '#FAB826', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+              <div style={ICON_BOX_STYLE}>
                 <FileCheck size={26} />
               </div>
               <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1E0426', margin: '0 0 8px' }}>{t('insurance.step3Title')}</h3>

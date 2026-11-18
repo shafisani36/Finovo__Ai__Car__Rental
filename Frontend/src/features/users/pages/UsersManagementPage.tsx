@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import {
   Users,
@@ -20,6 +21,9 @@ import {
 import { adminApi, type AdminUser } from '../../../api/services/admin.api';
 import { useAuth } from '../../../features/auth/context';
 import { useTranslation } from 'react-i18next';
+
+const LABEL_STYLE: CSSProperties = { display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' };
+const INPUT_STYLE: CSSProperties = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #ECEAEF', backgroundColor: '#FAF9FB', fontSize: '0.875rem', color: '#1E0426', outline: 'none', boxSizing: 'border-box' };
 
 export function UsersManagementPage() {
   const { t } = useTranslation();
@@ -583,7 +587,7 @@ export function UsersManagementPage() {
         >
           <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.fullNameReq')}
               </label>
               <input
@@ -592,22 +596,12 @@ export function UsersManagementPage() {
                 placeholder={t('adminPages.users.namePlaceholder')}
                 value={createForm.fullName}
                 onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.emailReq')}
               </label>
               <input
@@ -616,22 +610,12 @@ export function UsersManagementPage() {
                 placeholder="sarah.jenkins@company.com"
                 value={createForm.email}
                 onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.phoneOptional')}
               </label>
               <input
@@ -639,22 +623,12 @@ export function UsersManagementPage() {
                 placeholder="+92 300 1234567"
                 value={createForm.phone}
                 onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.tempPassword')}
               </label>
               <input
@@ -664,22 +638,12 @@ export function UsersManagementPage() {
                 placeholder="••••••••"
                 value={createForm.password}
                 onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.roleReq')}
               </label>
               <CustomSelect
@@ -744,51 +708,31 @@ export function UsersManagementPage() {
         >
           <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.fullName')}
               </label>
               <input
                 type="text"
                 value={editForm.fullName}
                 onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.phoneNumber')}
               </label>
               <input
                 type="text"
                 value={editForm.phone}
                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.accountStatus')}
               </label>
               <CustomSelect<AdminUser['status']>
@@ -805,7 +749,7 @@ export function UsersManagementPage() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.accessRole')}
               </label>
               <CustomSelect
@@ -822,7 +766,7 @@ export function UsersManagementPage() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.users.resetPassword')}
               </label>
               <input
@@ -830,17 +774,7 @@ export function UsersManagementPage() {
                 placeholder={t('adminPages.users.newPassword')}
                 value={editForm.password}
                 onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FAF9FB',
-                  fontSize: '0.875rem',
-                  color: '#1E0426',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 

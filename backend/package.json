@@ -14,6 +14,7 @@
     "prisma:seed": "tsx src/seed_categories.ts && tsx src/seed_admin.ts && tsx src/seed_vehicles.ts",
     "prisma:seed:production": "tsx src/seed_categories.ts && tsx src/seed_admin.ts",
     "seed:customer": "tsx src/seed_customer.ts",
+    "evaluate:ai": "tsx scripts/diagnostics/evaluate-ai-inspection.ts",
     "test:auth": "tsx tests/unit/auth.test.ts",
     "test:pricing": "tsx tests/unit/pricing.test.ts",
     "test": "tsx tests/unit/auth.test.ts && tsx tests/unit/pricing.test.ts && tsx tests/unit/translation.test.ts && tsx tests/unit/booking-availability.test.ts && tsx tests/unit/inspection-assessment.test.ts && tsx tests/unit/inspection-consistency.test.ts && tsx tests/unit/offers.test.ts",
@@ -35,6 +36,7 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^10.6.0",
     "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4",
     "stripe": "^17.7.0",
     "zod": "^4.6.7"
   },
@@ -46,6 +48,7 @@
     "@types/node": "^22.13.10",
     "@types/nodemailer": "^6.4.24",
     "@types/pdfkit": "^0.17.7",
+    "@types/qrcode": "^1.5.6",
     "prisma": "^6.4.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"

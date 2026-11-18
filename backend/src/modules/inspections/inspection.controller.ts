@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { InspectionService } from './inspection.service';
 import { DamageDisputeService } from './damage-dispute.service';
+import { ManualReviewService } from './manual-review.service';
 
 function param(req: Request, name: string): string {
   const value = req.params[name];
@@ -39,6 +40,15 @@ export class InspectionController {
     }
   }
 
+  static async customerScan(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const inspection = await InspectionService.customerScan(param(req, 'bookingId'), req.user!.userId, req.body);
+      res.status(201).json({ success: true, inspection });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async analyze(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const inspection = await InspectionService.analyze(req.body, req.user?.userId);
@@ -61,6 +71,16 @@ export class InspectionController {
     try {
       const comparison = await InspectionService.reviewCharge(param(req, 'chargeId'), req.body, req.user?.userId);
       res.status(200).json({ success: true, comparison });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /** Staff record the damage of an inspection the AI could not check. */
+  static async completeManualReview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const inspection = await ManualReviewService.complete(param(req, 'id'), req.user?.userId, req.body || {});
+      res.status(200).json({ success: true, inspection });
     } catch (err) {
       next(err);
     }

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fleetApi } from '../api/fleetApi';
@@ -25,6 +26,10 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { alertDialog } from '../../../components/common';
+
+const CARD_STYLE: CSSProperties = { backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '20px 24px', border: '1.5px solid #EFEAEF', boxShadow: '0 4px 20px rgba(30, 4, 38, 0.03)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+const CAPTION_STYLE: CSSProperties = { fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A7090', letterSpacing: '0.04em' };
+const TABLE_HEADER_STYLE: CSSProperties = { padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' };
 
 function BrandLogoThumbnail({
   url,
@@ -444,19 +449,10 @@ export function BrandsManagementPage() {
         }}
       >
         <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            border: '1.5px solid #EFEAEF',
-            boxShadow: '0 4px 20px rgba(30, 4, 38, 0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+          style={CARD_STYLE}
         >
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A7090', letterSpacing: '0.04em' }}>
+            <div style={CAPTION_STYLE}>
               {t('adminPages.fleet.totalBrands')}
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1E0432', marginTop: '4px' }}>
@@ -481,16 +477,7 @@ export function BrandsManagementPage() {
         </div>
 
         <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            border: '1.5px solid #EFEAEF',
-            boxShadow: '0 4px 20px rgba(30, 4, 38, 0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+          style={CARD_STYLE}
         >
           <div>
             <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#10B981', letterSpacing: '0.04em' }}>
@@ -518,19 +505,10 @@ export function BrandsManagementPage() {
         </div>
 
         <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            border: '1.5px solid #EFEAEF',
-            boxShadow: '0 4px 20px rgba(30, 4, 38, 0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+          style={CARD_STYLE}
         >
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A7090', letterSpacing: '0.04em' }}>
+            <div style={CAPTION_STYLE}>
               {t('adminPages.fleet.linkedModels')}
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1E0432', marginTop: '4px' }}>
@@ -555,19 +533,10 @@ export function BrandsManagementPage() {
         </div>
 
         <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            border: '1.5px solid #EFEAEF',
-            boxShadow: '0 4px 20px rgba(30, 4, 38, 0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+          style={CARD_STYLE}
         >
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A7090', letterSpacing: '0.04em' }}>
+            <div style={CAPTION_STYLE}>
               {t('adminPages.fleet.origins')}
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1E0432', marginTop: '4px' }}>
@@ -763,19 +732,19 @@ export function BrandsManagementPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#FBF9FB', borderBottom: '1.5px solid #EFEAEF' }}>
-                  <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={TABLE_HEADER_STYLE}>
                     {t('adminPages.fleet.manufacturer')}
                   </th>
-                  <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={TABLE_HEADER_STYLE}>
                     {t('adminPages.fleet.country')}
                   </th>
-                  <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={TABLE_HEADER_STYLE}>
                     {t('adminPages.fleet.slugId')}
                   </th>
-                  <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={TABLE_HEADER_STYLE}>
                     {t('adminPages.fleet.models')}
                   </th>
-                  <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={TABLE_HEADER_STYLE}>
                     {t('adminPages.fleet.status')}
                   </th>
                   <th style={{ padding: '14px 20px', fontSize: '0.78rem', fontWeight: 800, color: '#8A7090', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>

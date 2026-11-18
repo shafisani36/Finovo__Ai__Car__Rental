@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -23,6 +24,8 @@ import heroImg from '../../assets/contact/hero-car.webp';
 import officeImg from '../../assets/contact/office-car.jpg';
 import show1Img from '../../assets/contact/showroom-1.jpg';
 import show2Img from '../../assets/contact/showroom-2.webp';
+
+const INPUT_STYLE: CSSProperties = { width: '100%', paddingBlock: '12px', paddingInlineStart: '36px', paddingInlineEnd: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' };
 
 const contactLinkStyle: React.CSSProperties = { color: 'inherit', textDecoration: 'none', overflowWrap: 'anywhere' };
 
@@ -303,17 +306,7 @@ export function ContactUsPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
-                      style={{
-                        width: '100%',
-                        paddingBlock: '12px',
-                        paddingInlineStart: '36px',
-                        paddingInlineEnd: '14px',
-                        borderRadius: '10px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
+                      style={INPUT_STYLE}
                     />
                   </div>
                 </div>
@@ -330,17 +323,7 @@ export function ContactUsPage() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
-                      style={{
-                        width: '100%',
-                        paddingBlock: '12px',
-                        paddingInlineStart: '36px',
-                        paddingInlineEnd: '14px',
-                        borderRadius: '10px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
+                      style={INPUT_STYLE}
                     />
                   </div>
                 </div>
@@ -358,17 +341,7 @@ export function ContactUsPage() {
                       placeholder={t('contact.phonePlaceholder')}
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      style={{
-                        width: '100%',
-                        paddingBlock: '12px',
-                        paddingInlineStart: '36px',
-                        paddingInlineEnd: '14px',
-                        borderRadius: '10px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
+                      style={INPUT_STYLE}
                     />
                   </div>
                 </div>
@@ -385,17 +358,7 @@ export function ContactUsPage() {
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       required
-                      style={{
-                        width: '100%',
-                        paddingBlock: '12px',
-                        paddingInlineStart: '36px',
-                        paddingInlineEnd: '14px',
-                        borderRadius: '10px',
-                        border: '1px solid #D1D5DB',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
+                      style={INPUT_STYLE}
                     />
                   </div>
                 </div>

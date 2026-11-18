@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
@@ -17,6 +18,8 @@ import { vehiclesApi } from '../../../api/services/vehicles.api';
 import { getCarImage, getCarGallery, getCarGalleryEntries, isFullBleedCarPhoto, resolveVehiclePricing, formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 import { useBookingOptions } from '../../../hooks/useBookingOptions';
+
+const INFO_ROW_STYLE: CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' };
 
 export function CustomerVehicleDetailPage() {
   const { t } = useTranslation();
@@ -266,7 +269,7 @@ export function CustomerVehicleDetailPage() {
             <h2 className="cp-card-title" style={{ marginBottom: '16px' }}>{t('portalPages.vehicle.specsTitle')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
+                <div style={INFO_ROW_STYLE}>
                   <Users size={16} color="var(--cp-primary)" />
                   {t('cars.specs.seats')}
                 </div>
@@ -276,7 +279,7 @@ export function CustomerVehicleDetailPage() {
               </div>
 
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
+                <div style={INFO_ROW_STYLE}>
                   <Gauge size={16} color="var(--cp-primary)" />
                   {t('cars.specs.transmission')}
                 </div>
@@ -286,7 +289,7 @@ export function CustomerVehicleDetailPage() {
               </div>
 
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
+                <div style={INFO_ROW_STYLE}>
                   <Fuel size={16} color="var(--cp-primary)" />
                   {t('cars.specs.fuel')}
                 </div>
@@ -296,7 +299,7 @@ export function CustomerVehicleDetailPage() {
               </div>
 
               <div style={{ padding: '16px', background: '#F8F6F9', borderRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--cp-text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>
+                <div style={INFO_ROW_STYLE}>
                   <Sparkles size={16} color="var(--cp-accent)" />
                   {t('portalPages.vehicle.power')}
                 </div>

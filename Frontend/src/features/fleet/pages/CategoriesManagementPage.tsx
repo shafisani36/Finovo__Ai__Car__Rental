@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { fleetApi } from '../api/fleetApi';
@@ -24,6 +25,8 @@ import {
 import './CategoriesManagementPage.css';
 import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
 import { useTranslation } from 'react-i18next';
+
+const LABEL_STYLE: CSSProperties = { display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#1E0432', marginBottom: '6px' };
 
 export type CategoryWithCount = VehicleCategory & {
   _count?: { vehicles: number };
@@ -823,13 +826,7 @@ export function CategoriesManagementPage() {
                 {/* Name */}
                 <div>
                   <label
-                    style={{
-                      display: 'block',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      color: '#1E0432',
-                      marginBottom: '6px',
-                    }}
+                    style={LABEL_STYLE}
                   >
                     {t('adminPages.fleet.categoryNameReq')}
                   </label>
@@ -857,13 +854,7 @@ export function CategoriesManagementPage() {
                 {/* Slug */}
                 <div>
                   <label
-                    style={{
-                      display: 'block',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      color: '#1E0432',
-                      marginBottom: '6px',
-                    }}
+                    style={LABEL_STYLE}
                   >
                     {t('adminPages.fleet.slugLabel')}
                   </label>
@@ -898,13 +889,7 @@ export function CategoriesManagementPage() {
                 {/* Base Rate */}
                 <div>
                   <label
-                    style={{
-                      display: 'block',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      color: '#1E0432',
-                      marginBottom: '6px',
-                    }}
+                    style={LABEL_STYLE}
                   >
                     {t('adminPages.fleet._rateLabel', { currency: APP_CURRENCY })}
                   </label>
@@ -962,13 +947,7 @@ export function CategoriesManagementPage() {
                 {/* Description */}
                 <div>
                   <label
-                    style={{
-                      display: 'block',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      color: '#1E0432',
-                      marginBottom: '6px',
-                    }}
+                    style={LABEL_STYLE}
                   >
                     {t('adminPages.fleet.descriptionLabel')}
                   </label>

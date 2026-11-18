@@ -195,6 +195,9 @@ export class RentalAgreementService {
         where: { id: String(input.pickupInspectionId) },
         include: { _count: { select: { findings: true } } },
       });
+      if (inspection?.manualReview && inspection.status === 'CAPTURE_COMPLETE') {
+        throw AppError.badRequest('Record the damage of the pickup inspection before the customer signs the agreement');
+      }
       if (inspection && inspection.vehicleId === booking.vehicleId && inspection.type === 'PICKUP') {
         pickupInspection = { overallScore: inspection.overallScore, findings: inspection._count.findings };
       }

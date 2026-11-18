@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fleetApi } from '../api/fleetApi';
@@ -43,6 +44,8 @@ import greenCar from '../../../assets/cars/finovo-green-car.webp';
 import bmwLogo from '../../../assets/cars/finovo-bmw-logo.webp';
 import lamboLogo from '../../../assets/cars/finovo-lamborghini-logo.webp';
 import { useTranslation } from 'react-i18next';
+
+const INFO_ROW_STYLE: CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: '#4A315A', backgroundColor: '#FAF8FB', padding: '6px 8px', borderRadius: '8px', border: '1px solid #EDE8EF' };
 
 function getFleetCarAssets(v: Vehicle) {
   const resolved = getCarImage(v);
@@ -938,34 +941,14 @@ export function CarsDirectoryPage() {
                       }}
                     >
                       <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '0.76rem',
-                          color: '#4A315A',
-                          backgroundColor: '#FAF8FB',
-                          padding: '6px 8px',
-                          borderRadius: '8px',
-                          border: '1px solid #EDE8EF',
-                        }}
+                        style={INFO_ROW_STYLE}
                       >
                         <Users size={13} color="#6C1E84" />
                         <span style={{ fontWeight: 600 }}>{v.seats || 5} {t('adminPages.fleet.seats')}</span>
                       </div>
 
                       <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '0.76rem',
-                          color: '#4A315A',
-                          backgroundColor: '#FAF8FB',
-                          padding: '6px 8px',
-                          borderRadius: '8px',
-                          border: '1px solid #EDE8EF',
-                        }}
+                        style={INFO_ROW_STYLE}
                       >
                         <Fuel size={13} color="#6C1E84" />
                         <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>
@@ -974,17 +957,7 @@ export function CarsDirectoryPage() {
                       </div>
 
                       <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '0.76rem',
-                          color: '#4A315A',
-                          backgroundColor: '#FAF8FB',
-                          padding: '6px 8px',
-                          borderRadius: '8px',
-                          border: '1px solid #EDE8EF',
-                        }}
+                        style={INFO_ROW_STYLE}
                       >
                         <DoorOpen size={13} color="#6C1E84" />
                         <span style={{ fontWeight: 600 }}>{v.doors || 4} {t('adminPages.fleet.doors')}</span>

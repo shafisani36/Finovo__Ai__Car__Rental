@@ -55,15 +55,22 @@ test('IoU of identical boxes is 1 and of separate boxes is 0', () => {
 test('Clean car scores 100%', () => {
   assert.strictEqual(conditionScore([]), 100);
 });
-test('Condition score is deterministic: 1 low scratch + 1 medium dent = 100 - 2 - 8 = 90%', () => {
+test('Condition score is deterministic: 1 low scratch + 1 medium dent (13 points) = 87.8%', () => {
   assert.strictEqual(
     conditionScore([finding(), finding({ category: 'DENT', severity: 'MEDIUM' })]),
-    90
+    87.8
   );
 });
-test('Condition score never goes below 0', () => {
+test('A long scrape across two panels is not a near-perfect car: 2 high scratches = 78.7%', () => {
+  assert.strictEqual(
+    conditionScore([finding({ severity: 'HIGH' }), finding({ severity: 'HIGH', part: 'Driver front door' })]),
+    78.7
+  );
+});
+test('A wrecked car scores close to 0 but never below it', () => {
   const many = Array.from({ length: 10 }, () => finding({ category: 'BROKEN_PART', severity: 'HIGH' }));
-  assert.strictEqual(conditionScore(many), 0);
+  const score = conditionScore(many);
+  assert.ok(score >= 0 && score < 5, `expected a score between 0 and 5, got ${score}`);
 });
 test('Duplicate detections of the same damage are merged (most confident kept)', () => {
   const kept = dedupeFindings([finding({ confidence: 0.7 }), finding({ confidence: 0.95 })]);

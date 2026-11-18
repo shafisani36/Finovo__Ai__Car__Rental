@@ -9,11 +9,21 @@ export type CapturedPhotos = Partial<Record<InspectionView, string>>;
 
 export const VIEW_LABELS: Record<InspectionView, string> = {
   FRONT: 'Front',
+  FRONT_LEFT: 'Front left corner',
   DRIVER_SIDE: 'Driver side (left)',
-  PASSENGER_SIDE: 'Passenger side (right)',
+  REAR_LEFT: 'Rear left corner',
   REAR: 'Rear',
+  REAR_RIGHT: 'Rear right corner',
+  PASSENGER_SIDE: 'Passenger side (right)',
+  FRONT_RIGHT: 'Front right corner',
   ROOF: 'Roof',
   INTERIOR: 'Interior',
+  WHEEL_FRONT_LEFT: 'Front left wheel',
+  WHEEL_FRONT_RIGHT: 'Front right wheel',
+  WHEEL_REAR_LEFT: 'Rear left wheel',
+  WHEEL_REAR_RIGHT: 'Rear right wheel',
+  ODOMETER: 'Odometer',
+  CHASSIS_NUMBER: 'Chassis number',
 };
 
 export const CLASSIFICATION_LABEL: Record<ComparisonClassification, string> = {

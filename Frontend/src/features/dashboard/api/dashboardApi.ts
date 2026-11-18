@@ -40,8 +40,10 @@ export interface DashboardOverviewResponse {
       isHumanVerified: boolean;
       humanDecision: string;
       createdAt: string;
+      inspectionId: string;
+      /** id is null for a car that is not in the fleet */
       vehicle: {
-        id: string;
+        id: string | null;
         name: string;
         registration: string;
         image: string | null;

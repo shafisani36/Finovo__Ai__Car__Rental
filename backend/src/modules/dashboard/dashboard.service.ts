@@ -209,12 +209,21 @@ export class DashboardService {
           isHumanVerified: f.isHumanVerified,
           humanDecision: f.humanDecision,
           createdAt: f.createdAt,
-          vehicle: {
-            id: f.inspection.vehicle.id,
-            name: `${f.inspection.vehicle.brand} ${f.inspection.vehicle.model}`,
-            registration: f.inspection.vehicle.registrationNumber,
-            image: f.inspection.vehicle.primaryImageUrl,
-          },
+          inspectionId: f.inspectionId,
+          // A car that is not in the fleet is described by what the AI read from the photos
+          vehicle: f.inspection.vehicle
+            ? {
+                id: f.inspection.vehicle.id,
+                name: `${f.inspection.vehicle.brand} ${f.inspection.vehicle.model}`,
+                registration: f.inspection.vehicle.registrationNumber,
+                image: f.inspection.vehicle.primaryImageUrl,
+              }
+            : {
+                id: null,
+                name: [f.inspection.detectedMake, f.inspection.detectedModel].filter(Boolean).join(' ') || 'Unidentified vehicle',
+                registration: f.inspection.detectedPlate || '',
+                image: null,
+              },
         })),
       },
       categories: categoryStats,

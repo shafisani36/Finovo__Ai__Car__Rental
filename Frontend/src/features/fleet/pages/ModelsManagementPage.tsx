@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -23,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { alertDialog } from '../../../components/common';
+
+const LABEL_STYLE: CSSProperties = { display: 'block', fontSize: '.85rem', fontWeight: 750, color: '#1E0432', marginBottom: 7 };
 
 const BODY_TYPES = [
   'Sedan', 'SUV', 'Coupe', 'Convertible', 'Hatchback',
@@ -1365,7 +1368,7 @@ export function ModelsManagementPage() {
 
             <form onSubmit={handleSaveModel} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 750, color: '#1E0432', marginBottom: 7 }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.fleet.manufacturerBrand')} <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <CustomSelect
@@ -1380,7 +1383,7 @@ export function ModelsManagementPage() {
               </div>
 
               <div>
-                <label htmlFor="model-name" style={{ display: 'block', fontSize: '.85rem', fontWeight: 750, color: '#1E0432', marginBottom: 7 }}>
+                <label htmlFor="model-name" style={LABEL_STYLE}>
                   {t('adminPages.fleet.modelName')} <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <input
@@ -1401,7 +1404,7 @@ export function ModelsManagementPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '.85rem', fontWeight: 750, color: '#1E0432', marginBottom: 7 }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.fleet.bodyStyle')}
                 </label>
                 <CustomSelect

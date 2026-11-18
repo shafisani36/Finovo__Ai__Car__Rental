@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, FileSignature, KeyRound, Loader2, RotateCcw, ScanLine, ShieldCheck, Truck } from 'lucide-react';
@@ -15,10 +16,13 @@ import {
   type CapturedPhotos,
 } from '../../inspections/components/inspectionHelpers';
 import { InspectionReportView } from '../../inspections/components/InspectionReportView';
+import { ManualReviewPanel } from '../../inspections/components/ManualReviewPanel';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader } from '../../../components/common';
 import { getCarImage } from '../../../utils/carImageHelper';
 import '../../inspections/components/inspection.css';
+
+const INFO_ROW_STYLE: CSSProperties = { margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' };
 
 const FUEL_LEVELS = ['100%', '75%', '50%', '25%', '10%'].map((v) => ({ value: v, label: v }));
 const HANDOVER_STATUSES = ['CONFIRMED', 'READY_FOR_PICKUP'];
@@ -120,6 +124,8 @@ export function HandoverVehiclePage() {
   }, [bookingId]);
 
   const checksDone = idVerified && licenseVerified && paymentVerified;
+  // A pickup the AI could not check needs the staff review before the agreement and the keys
+  const scanReady = Boolean(report) && !report?.needsStaffReview;
   const missingViews = missingRequiredViews(photos);
 
   const runScan = async () => {
@@ -138,6 +144,9 @@ export function HandoverVehiclePage() {
         photos: toAnalyzePhotos(photos),
       });
       setReport(res.inspection);
+      // The odometer read from its photo fills the mileage; staff can still correct it
+      const readMileage = res.inspection.detectedVehicle?.mileageKm;
+      if (typeof readMileage === 'number' && readMileage > 0) setStartMileage(String(readMileage));
     } catch (err) {
       setError(errorMessage(err, t('adminPages.rentals.errScan')));
     } finally {
@@ -146,7 +155,7 @@ export function HandoverVehiclePage() {
   };
 
   const signAgreement = async () => {
-    if (!booking || !report || !signature) return;
+    if (!booking || !report || !scanReady || !signature) return;
     setSigning(true);
     setError(null);
     try {
@@ -177,7 +186,7 @@ export function HandoverVehiclePage() {
   const canSign = Boolean(report) && !agreement && Boolean(signature) && termsAccepted && signerName.trim().length >= 3;
 
   const handover = async () => {
-    if (!booking || !report || !agreement) return;
+    if (!booking || !report || !scanReady || !agreement) return;
     const mileage = Number(startMileage);
     if (!Number.isFinite(mileage) || mileage < 0 || startMileage.trim() === '') {
       setError(t('adminPages.rentals.errOdometer'));
@@ -306,9 +315,29 @@ export function HandoverVehiclePage() {
         <>
           {/* Step 1 */}
           <section style={card}>
-            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
+            <h3 style={INFO_ROW_STYLE}>
               <ShieldCheck size={20} /> {t('adminPages.rentals.step1')}
             </h3>
+            {booking.checkedInAt && (
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', padding: '12px', marginBottom: '12px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.08)' }}>
+                {booking.checkInSelfieUrl && (
+                  <img src={booking.checkInSelfieUrl} alt={t('adminPages.rentals.checkInSelfie')} width={88} height={88} style={{ objectFit: 'cover', borderRadius: '10px' }} />
+                )}
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <div style={{ fontWeight: 700, color: '#047857' }}>
+                    {t('adminPages.rentals.checkedInOnline', { date: new Date(booking.checkedInAt).toLocaleString() })}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#685D73' }}>{t('adminPages.rentals.checkedInHelp')}</div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
+                    {booking.customer.documents?.map((doc) => (
+                      <a key={doc.id} href={doc.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6C1E84' }}>
+                        {t(`adminPages.rentals.doc${doc.documentType}`)}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             {[
               { checked: idVerified, set: setIdVerified, label: t('adminPages.rentals.checkId') },
               { checked: licenseVerified, set: setLicenseVerified, label: t('adminPages.rentals.checkLicense') },
@@ -329,7 +358,7 @@ export function HandoverVehiclePage() {
 
           {/* Step 2 */}
           <section style={{ ...card, opacity: checksDone ? 1 : 0.55 }} aria-disabled={!checksDone}>
-            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
+            <h3 style={INFO_ROW_STYLE}>
               <ScanLine size={20} /> {t('adminPages.rentals.step2')}
             </h3>
             <p style={{ margin: 0, color: '#685D73', fontSize: '0.875rem' }}>
@@ -366,6 +395,9 @@ export function HandoverVehiclePage() {
             ) : (
               <>
                 <InspectionReportView report={report} currency={booking.currency} />
+                {report.needsStaffReview && (
+                  <ManualReviewPanel report={report} currency={booking.currency} onDone={setReport} onRetryAi={runScan} retrying={scanning} />
+                )}
                 <button
                   type="button"
                   className="insp-btn-secondary"
@@ -382,8 +414,8 @@ export function HandoverVehiclePage() {
           </section>
 
           {/* Step 3: digital rental agreement */}
-          <section style={{ ...card, opacity: report ? 1 : 0.55 }} aria-disabled={!report}>
-            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
+          <section style={{ ...card, opacity: scanReady ? 1 : 0.55 }} aria-disabled={!scanReady}>
+            <h3 style={INFO_ROW_STYLE}>
               <FileSignature size={20} /> {t('adminPages.handover.agreementStep')}
             </h3>
             {agreement ? (
@@ -431,20 +463,20 @@ export function HandoverVehiclePage() {
                     type="text"
                     value={signerName}
                     maxLength={128}
-                    disabled={!report}
+                    disabled={!scanReady}
                     onChange={(e) => setSignerName(e.target.value)}
                     style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #ECEAEF' }}
                   />
                 </label>
                 <div>
                   <div style={{ fontWeight: 600, color: '#1E0426', marginBottom: '6px' }}>{t('adminPages.handover.signatureLabel')}</div>
-                  <SignaturePad onChange={setSignature} disabled={!report || signing} />
+                  <SignaturePad onChange={setSignature} disabled={!scanReady || signing} />
                 </div>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '0.88rem', color: '#1E0426' }}>
                   <input
                     type="checkbox"
                     checked={termsAccepted}
-                    disabled={!report}
+                    disabled={!scanReady}
                     onChange={(e) => setTermsAccepted(e.target.checked)}
                     style={{ marginTop: '3px' }}
                   />
@@ -463,8 +495,8 @@ export function HandoverVehiclePage() {
           </section>
 
           {/* Step 4 */}
-          <section style={{ ...card, opacity: report && agreement ? 1 : 0.55 }} aria-disabled={!report || !agreement}>
-            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#1E0426' }}>
+          <section style={{ ...card, opacity: scanReady && agreement ? 1 : 0.55 }} aria-disabled={!scanReady || !agreement}>
+            <h3 style={INFO_ROW_STYLE}>
               <KeyRound size={20} /> {t('adminPages.handover.keysStep')}
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '14px' }}>
@@ -475,7 +507,7 @@ export function HandoverVehiclePage() {
                   min={0}
                   inputMode="numeric"
                   value={startMileage}
-                  disabled={!report}
+                  disabled={!scanReady}
                   onChange={(e) => setStartMileage(e.target.value)}
                   style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #ECEAEF' }}
                 />
@@ -486,7 +518,7 @@ export function HandoverVehiclePage() {
                   value={startFuelLevel}
                   onChange={(v) => setStartFuelLevel(String(v))}
                   options={FUEL_LEVELS}
-                  disabled={!report}
+                  disabled={!scanReady}
                   size="md"
                 />
               </div>
@@ -496,13 +528,13 @@ export function HandoverVehiclePage() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('adminPages.rentals.handoverNotes')}
               rows={2}
-              disabled={!report}
+              disabled={!scanReady}
               style={{ width: '100%', borderRadius: '10px', border: '1px solid #ECEAEF', padding: '10px', boxSizing: 'border-box', fontFamily: 'inherit' }}
             />
             <button
               type="button"
-              style={{ ...primaryButton, opacity: report && agreement && !submitting ? 1 : 0.5, alignSelf: 'flex-start' }}
-              disabled={!report || !agreement || submitting}
+              style={{ ...primaryButton, opacity: scanReady && agreement && !submitting ? 1 : 0.5, alignSelf: 'flex-start' }}
+              disabled={!scanReady || !agreement || submitting}
               onClick={handover}
             >
               <KeyRound size={18} /> {submitting ? t('adminPages.rentals._handingOver') : t('adminPages.rentals._confirmHandover')}

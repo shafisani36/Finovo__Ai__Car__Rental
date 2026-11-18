@@ -1,9 +1,15 @@
+import type { CSSProperties } from 'react';
 import { Banknote, Clock, Navigation, Calendar, Info, Check, Sparkles } from 'lucide-react';
 import type { PricingMethod } from '../types/fleet.types';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { APP_CURRENCY } from '../../../utils/carImageHelper';
 import { useTranslation } from 'react-i18next';
 import { useBookingOptions } from '../../../hooks/useBookingOptions';
+
+const LABEL_STYLE: CSSProperties = { display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' };
+const PRICE_INPUT_STYLE: CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #DED7E2', backgroundColor: '#FFFFFF', fontSize: '0.95rem', fontWeight: 800, color: '#1A0322' };
+const INPUT_STYLE: CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #DED7E2', backgroundColor: '#FFFFFF', fontSize: '0.9rem', color: '#1A0322' };
+const BOLD_INPUT_STYLE: CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #DED7E2', backgroundColor: '#FFFFFF', fontSize: '0.9rem', fontWeight: 700, color: '#1A0322' };
 
 export interface VehiclePricingState {
   pricingMethod: PricingMethod;
@@ -359,7 +365,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         {pricingMethod === 'daily' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblDaily', { currency })}
               </label>
               <div style={{ position: 'relative' }}>
@@ -370,22 +376,13 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                   placeholder="e.g. 8000"
                   value={dailyRate}
                   onChange={(e) => onChange('dailyRate', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: '1px solid #DED7E2',
-                    backgroundColor: '#FFFFFF',
-                    fontSize: '0.95rem',
-                    fontWeight: 800,
-                    color: '#1A0322',
-                  }}
+                  style={PRICE_INPUT_STYLE}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblWeekly', { currency })}
               </label>
               <input
@@ -395,20 +392,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder={t('adminPages.pricing.weeklyPlaceholder')}
                 value={weeklyRate}
                 onChange={(e) => onChange('weeklyRate', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing.grace')}
               </label>
               <input
@@ -418,21 +407,13 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder={t('adminPages.pricing.gracePlaceholder')}
                 value={gracePeriodMinutes}
                 onChange={(e) => onChange('gracePeriodMinutes', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
               <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.graceHelp')}</span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
@@ -442,15 +423,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 20000"
                 value={securityDeposit}
                 onChange={(e) => onChange('securityDeposit', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
               <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.depositHelp')}</span>
             </div>
@@ -461,7 +434,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         {pricingMethod === 'per_km' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblPerKm', { currency })}
               </label>
               <input
@@ -471,21 +444,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 60"
                 value={perKmRate}
                 onChange={(e) => onChange('perKmRate', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.95rem',
-                  fontWeight: 800,
-                  color: '#1A0322',
-                }}
+                style={PRICE_INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblMinTrip', { currency })}
               </label>
               <input
@@ -495,22 +459,13 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 5000"
                 value={minimumTripCharge}
                 onChange={(e) => onChange('minimumTripCharge', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
-                  color: '#1A0322',
-                }}
+                style={BOLD_INPUT_STYLE}
               />
               <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.minTripHelp')}</span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
@@ -520,15 +475,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 15000"
                 value={securityDeposit}
                 onChange={(e) => onChange('securityDeposit', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
           </div>
@@ -538,7 +485,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         {pricingMethod === 'daily_extra_km' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblBaseDaily', { currency })}
               </label>
               <input
@@ -548,21 +495,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 8000"
                 value={dailyRate}
                 onChange={(e) => onChange('dailyRate', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.95rem',
-                  fontWeight: 800,
-                  color: '#1A0322',
-                }}
+                style={PRICE_INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing.includedKm')}
               </label>
               <input
@@ -572,22 +510,13 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 200"
                 value={mileageLimitPerDay}
                 onChange={(e) => onChange('mileageLimitPerDay', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
-                  color: '#1A0322',
-                }}
+                style={BOLD_INPUT_STYLE}
               />
               <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.includedKmHelp')}</span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblExcess', { currency })}
               </label>
               <input
@@ -597,22 +526,13 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 50"
                 value={excessMileageFee}
                 onChange={(e) => onChange('excessMileageFee', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
-                  color: '#1A0322',
-                }}
+                style={BOLD_INPUT_STYLE}
               />
               <span style={{ fontSize: '0.72rem', color: '#8A7090' }}>{t('adminPages.pricing.excessHelp')}</span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
@@ -622,15 +542,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 20000"
                 value={securityDeposit}
                 onChange={(e) => onChange('securityDeposit', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
           </div>
@@ -640,7 +552,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         {pricingMethod === 'hourly' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblHourly', { currency })}
               </label>
               <input
@@ -650,21 +562,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 1500"
                 value={hourlyRate}
                 onChange={(e) => onChange('hourlyRate', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.95rem',
-                  fontWeight: 800,
-                  color: '#1A0322',
-                }}
+                style={PRICE_INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing.minHours')}
               </label>
               <input
@@ -673,20 +576,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 2"
                 value={minimumBillableHours}
                 onChange={(e) => onChange('minimumBillableHours', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing.increment')}
               </label>
               <CustomSelect
@@ -700,7 +595,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
@@ -710,15 +605,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 10000"
                 value={securityDeposit}
                 onChange={(e) => onChange('securityDeposit', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
           </div>
@@ -728,7 +615,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
         {pricingMethod === 'monthly' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblMonthly', { currency })}
               </label>
               <input
@@ -738,21 +625,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 150000"
                 value={monthlyRate}
                 onChange={(e) => onChange('monthlyRate', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.95rem',
-                  fontWeight: 800,
-                  color: '#1A0322',
-                }}
+                style={PRICE_INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing.partialPolicy')}
               </label>
               <CustomSelect
@@ -766,7 +644,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing.monthlyCap')}
               </label>
               <input
@@ -775,20 +653,12 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 3000"
                 value={mileageLimitPerDay ? Number(mileageLimitPerDay) * 30 : 3000}
                 onChange={(e) => onChange('mileageLimitPerDay', Math.round(Number(e.target.value) / 30).toString())}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.pricing._lblDeposit', { currency })}
               </label>
               <input
@@ -798,15 +668,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
                 placeholder="e.g. 50000"
                 value={securityDeposit}
                 onChange={(e) => onChange('securityDeposit', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid #DED7E2',
-                  backgroundColor: '#FFFFFF',
-                  fontSize: '0.9rem',
-                  color: '#1A0322',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
           </div>
@@ -867,7 +729,7 @@ export const VehiclePricingSection: React.FC<VehiclePricingSectionProps> = ({
       {/* Fleet Status & Catalog Visibility */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '18px', paddingTop: '16px', borderTop: '1px solid #ECE7ED' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B3654', marginBottom: '6px' }}>
+          <label style={LABEL_STYLE}>
             {t('adminPages.pricing.fleetStatus')}
           </label>
           <CustomSelect

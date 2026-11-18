@@ -1,9 +1,14 @@
+import type { CSSProperties } from 'react';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BrandLogo } from '../../../components/common/BrandLogo';
 import { LanguageSelector } from '../../../components/common/LanguageSelector';
 import { Car, Zap, Headphones } from 'lucide-react';
+
+/** Feature icon above its text (register page) and beside it (login page). */
+const COLUMN_ICON_STYLE: CSSProperties = { width: '38px', height: '38px', borderRadius: '10px', backgroundColor: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', marginBottom: '10px', flexShrink: 0 };
+const LIST_ICON_STYLE: CSSProperties = { width: '38px', height: '38px', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', flexShrink: 0 };
 
 interface AuthSplitLayoutProps {
   children: React.ReactNode;
@@ -194,20 +199,7 @@ export function AuthSplitLayout({
                 }}
               >
                 <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    marginBottom: '10px',
-                    flexShrink: 0,
-                  }}
+                  style={COLUMN_ICON_STYLE}
                 >
                   <Car size={18} />
                 </div>
@@ -254,20 +246,7 @@ export function AuthSplitLayout({
                 }}
               >
                 <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    marginBottom: '10px',
-                    flexShrink: 0,
-                  }}
+                  style={COLUMN_ICON_STYLE}
                 >
                   <Zap size={18} />
                 </div>
@@ -313,20 +292,7 @@ export function AuthSplitLayout({
                 }}
               >
                 <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    marginBottom: '10px',
-                    flexShrink: 0,
-                  }}
+                  style={COLUMN_ICON_STYLE}
                 >
                   <Headphones size={18} />
                 </div>
@@ -356,19 +322,7 @@ export function AuthSplitLayout({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    flexShrink: 0,
-                  }}
+                  style={LIST_ICON_STYLE}
                 >
                   <Car size={18} />
                 </div>
@@ -384,19 +338,7 @@ export function AuthSplitLayout({
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    flexShrink: 0,
-                  }}
+                  style={LIST_ICON_STYLE}
                 >
                   <Zap size={18} />
                 </div>
@@ -412,19 +354,7 @@ export function AuthSplitLayout({
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    flexShrink: 0,
-                  }}
+                  style={LIST_ICON_STYLE}
                 >
                   <Headphones size={18} />
                 </div>

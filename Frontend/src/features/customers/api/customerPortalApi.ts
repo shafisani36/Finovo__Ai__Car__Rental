@@ -358,6 +358,25 @@ async function withNotificationRefresh<T>(
   return res;
 }
 
+export interface CheckInStatus {
+  bookingId: string;
+  bookingNumber: string;
+  vehicle: string;
+  pickupDateTime: string;
+  deliveryAddress: string | null;
+  checkedInAt: string | null;
+  selfieUrl: string | null;
+  opensAt: string;
+  /** Check-in can be done (or redone) now */
+  open: boolean;
+  statusAllows: boolean;
+  requirements: Array<{
+    key: 'DRIVER_LICENSE' | 'IDENTITY';
+    ok: boolean;
+    problem: 'MISSING' | 'REJECTED' | 'EXPIRES_BEFORE_RETURN' | null;
+  }>;
+}
+
 export const customerPortalApi = {
   // 1. Overview
   async getOverview(): Promise<PortalOverviewResponse> {
@@ -390,6 +409,22 @@ export const customerPortalApi = {
 
   async getBookingById(id: string): Promise<{ success: boolean; booking: CustomerBookingDetail }> {
     return authClient.request(`/customers/portal/bookings/${id}`);
+  },
+
+  async getCheckIn(id: string): Promise<{ success: boolean; checkIn: CheckInStatus }> {
+    return authClient.request(`/customers/portal/bookings/${id}/check-in`);
+  },
+
+  /** Completes online check-in with a selfie (JPEG data URL). */
+  async completeCheckIn(id: string, selfie: string): Promise<{ success: boolean; checkIn: CheckInStatus }> {
+    return withNotificationRefresh(
+      authClient.request(`/customers/portal/bookings/${id}/check-in`, { method: 'POST', body: JSON.stringify({ selfie }) })
+    );
+  },
+
+  /** Endpoint of the check-in QR code PNG (fetch it with the session, e.g. apiClient blob). */
+  checkInQrEndpoint(id: string): string {
+    return `/customers/portal/bookings/${id}/check-in/qr`;
   },
 
   async getCancellationPreview(id: string): Promise<{ success: boolean; preview: CancellationPreview }> {

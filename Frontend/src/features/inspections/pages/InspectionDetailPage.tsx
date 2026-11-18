@@ -5,6 +5,8 @@ import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../../components/common';
 import { inspectionApi, type DamageComparison, type InspectionReport } from '../api/inspectionApi';
 import { InspectionReportView } from '../components/InspectionReportView';
+import { ManualReviewPanel } from '../components/ManualReviewPanel';
+import { APP_CURRENCY } from '../../../utils/carImageHelper';
 import { DamageComparisonView } from '../components/DamageComparisonView';
 
 export function InspectionDetailPage() {
@@ -66,10 +68,29 @@ export function InspectionDetailPage() {
         subtitle={
           inspection.vehicle
             ? `${inspection.vehicle.brand} ${inspection.vehicle.model} · ${inspection.vehicle.registrationNumber}`
-            : undefined
+            : inspection.detectedVehicle
+              ? [
+                  [inspection.detectedVehicle.make, inspection.detectedVehicle.model].filter(Boolean).join(' '),
+                  inspection.detectedVehicle.plate,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : undefined
         }
       />
-      {comparison ? (
+      {inspection.needsStaffReview ? (
+        <>
+          <InspectionReportView report={inspection} />
+          <ManualReviewPanel
+            report={inspection}
+            currency={inspection.rental?.booking?.currency || APP_CURRENCY}
+            onDone={(reviewed) => {
+              setInspection(reviewed);
+              setComparison(reviewed.comparison || null);
+            }}
+          />
+        </>
+      ) : comparison ? (
         <DamageComparisonView comparison={comparison} onChange={setComparison} editable={editable} canResolveDisputes={editable} />
       ) : (
         <InspectionReportView report={inspection} />

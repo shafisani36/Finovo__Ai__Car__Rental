@@ -9,6 +9,14 @@ import {
   INSPECTION_VIEWS,
   MIN_REPORTABLE_CONFIDENCE,
   REQUIRED_VIEWS,
+  LEGACY_REQUIRED_VIEWS,
+  SEVERITY_RANK,
+  isDocumentView,
+  normalizePanel,
+  findingCode,
+  AI_RULES_VERSION,
+  sectionScores,
+  type VehiclePanel,
   boxFromYxyx1000,
   classifyNewDamage,
   clamp,
@@ -20,6 +28,8 @@ import {
   unionPasses,
   comparePlate,
   compareMake,
+  compareColor,
+  normalizePlate,
   isChargeable,
   isInspectionView,
   normalizeCategory,
@@ -33,6 +43,7 @@ import {
 } from './damage-assessment';
 import {
   VisionProvider,
+  type RawDocumentReading,
   type RawFinding,
   type RawPhotoCheck,
   type VisionImage,
@@ -55,27 +66,60 @@ export interface AnalyzeInspectionDTO {
   photos: InspectionPhotoInput[];
 }
 
+/** A check the customer runs on their own rental car, kept as their evidence. */
+export interface CustomerScanContext {
+  bookingId: string;
+  stage: CustomerScanStage;
+}
+
+export type CustomerScanStage = 'PICKUP' | 'RETURN';
+
+export interface CustomerScanDTO {
+  stage: CustomerScanStage;
+  photos: InspectionPhotoInput[];
+}
+
 export interface ReviewChargeDTO {
   decision: 'APPROVED' | 'REJECTED';
   notes?: string;
 }
 
+const FLEET_VEHICLE_SELECT = { id: true, brand: true, model: true, year: true, color: true, registrationNumber: true, vin: true } as const;
+type FleetVehicleRef = {
+  id: string;
+  brand: string;
+  model: string;
+  year: number;
+  color: string | null;
+  registrationNumber: string;
+  vin: string | null;
+};
+type DetectedVehicleInfo = ReturnType<typeof InspectionService['cleanDetectedVehicle']>;
+
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const DATA_URL_PATTERN = /^data:(image\/(?:jpeg|jpg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
 const STAFF_PICKUP_BOOKING_STATUSES = ['CONFIRMED', 'READY_FOR_PICKUP'];
+/** The customer can check the car for this long after the handover, and until the car is returned. */
+const CUSTOMER_PICKUP_SCAN_WINDOW_MS = 24 * 3600 * 1000;
+/** AI scans a customer may run per stage of one booking (each one costs AI requests). */
+const CUSTOMER_SCANS_PER_STAGE = 3;
+const STAFF_ROLES = ['ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'];
 /** A pickup scan must be fresh: the car must not change between the scan and the key handover. */
 export const PICKUP_SCAN_VALID_HOURS = 12;
 
-const CATEGORY_LABEL: Record<string, string> = {
+export const CATEGORY_LABEL: Record<string, string> = {
   SCRATCH: 'Scratch',
   DENT: 'Dent',
   PAINT_CHIP: 'Paint chip',
   CRACK: 'Crack',
   BROKEN_PART: 'Broken part',
+  PAINT_MARKED: 'Paint marked',
+  RUST: 'Rust',
 };
 
 interface StoredFindingMeta {
   view: InspectionView;
+  panel?: VehiclePanel;
   category: AssessedFinding['category'];
   description: string;
   box: NormalizedBox;
@@ -89,9 +133,22 @@ function consensusPasses(): number {
   return Number.isInteger(raw) ? Math.min(3, Math.max(1, raw)) : 2;
 }
 
-function costMultiplier(): number {
+export function costMultiplier(): number {
   const raw = Number(process.env.DAMAGE_COST_MULTIPLIER || 1);
   return Number.isFinite(raw) && raw > 0 ? raw : 1;
+}
+
+/** Errors that mean the AI could not look at the photos at all; the inspection then falls back to a staff review. */
+const AI_UNAVAILABLE_CODES = [
+  'AI_QUOTA_EXCEEDED',
+  'AI_SERVICE_UNAVAILABLE',
+  'AI_EMPTY_RESPONSE',
+  'AI_BAD_RESPONSE',
+  'AI_INSPECTION_NOT_CONFIGURED',
+];
+
+function isAiUnavailable(err: unknown): err is AppError {
+  return err instanceof AppError && AI_UNAVAILABLE_CODES.includes(err.code);
 }
 
 export class InspectionService {
@@ -99,10 +156,11 @@ export class InspectionService {
   // Read
   // ------------------------------------------------------------------
 
-  static async listInspections(filters: { vehicleId?: string; type?: string; rentalId?: string } = {}) {
+  static async listInspections(filters: { vehicleId?: string; type?: string; rentalId?: string; bookingId?: string } = {}) {
     const where: Prisma.InspectionWhereInput = {};
     if (filters.vehicleId) where.vehicleId = filters.vehicleId;
     if (filters.rentalId) where.rentalId = filters.rentalId;
+    if (filters.bookingId) where.bookingId = filters.bookingId;
     if (filters.type && ['PICKUP', 'RETURN', 'ROUTINE'].includes(filters.type)) {
       where.type = filters.type as 'PICKUP' | 'RETURN' | 'ROUTINE';
     }
@@ -114,6 +172,7 @@ export class InspectionService {
       include: {
         vehicle: { select: { id: true, brand: true, model: true, year: true, registrationNumber: true, color: true } },
         rental: { include: { booking: { select: { id: true, bookingNumber: true, customer: { select: { fullName: true } } } } } },
+        booking: { select: { id: true, bookingNumber: true, customer: { select: { fullName: true } } } },
         findings: true,
         photos: true,
         performedBy: { select: { id: true, fullName: true } },
@@ -159,27 +218,93 @@ export class InspectionService {
   static async listForBooking(bookingId: string, user: { userId: string; roles?: string[] }) {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      select: { id: true, bookingNumber: true, customer: { select: { userId: true } }, rental: { select: { id: true } } },
+      select: {
+        id: true,
+        bookingNumber: true,
+        customer: { select: { userId: true } },
+        rental: { select: { id: true, status: true, pickedUpAt: true } },
+      },
     });
     if (!booking) throw AppError.notFound('Booking not found');
 
-    const isStaff = (user.roles || []).some((r) => ['ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER', 'OPERATOR'].includes(r));
+    const isStaff = (user.roles || []).some((r) => STAFF_ROLES.includes(r));
     if (!isStaff && booking.customer.userId !== user.userId) {
       throw AppError.forbidden('You can only view inspections of your own bookings');
     }
 
-    const inspections = booking.rental ? await this.listInspections({ rentalId: booking.rental.id }) : [];
-    const comparison = await prisma.damage_comparisons.findFirst({
-      where: { bookingId },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true },
-    });
+    const [inspections, customerScans, comparison] = await Promise.all([
+      booking.rental ? this.listInspections({ rentalId: booking.rental.id }) : Promise.resolve([]),
+      this.listInspections({ bookingId }),
+      prisma.damage_comparisons.findFirst({ where: { bookingId }, orderBy: { createdAt: 'desc' }, select: { id: true } }),
+    ]);
 
     return {
       bookingNumber: booking.bookingNumber,
       inspections,
+      customerScans,
+      selfScan: this.customerScanStages(booking.rental, this.countCustomerScans(customerScans)),
       comparison: comparison ? await this.getComparisonById(comparison.id) : null,
     };
+  }
+
+  /**
+   * Which own checks the customer may run now: at pickup (first 24 hours of the trip) and before returning,
+   * each up to CUSTOMER_SCANS_PER_STAGE times.
+   */
+  private static customerScanStages(
+    rental: { status: string; pickedUpAt: Date } | null,
+    done: Record<CustomerScanStage, number>
+  ): Record<CustomerScanStage, boolean> {
+    const active = rental?.status === 'ACTIVE';
+    return {
+      PICKUP:
+        Boolean(active && Date.now() - rental!.pickedUpAt.getTime() <= CUSTOMER_PICKUP_SCAN_WINDOW_MS) &&
+        done.PICKUP < CUSTOMER_SCANS_PER_STAGE,
+      RETURN: Boolean(active) && done.RETURN < CUSTOMER_SCANS_PER_STAGE,
+    };
+  }
+
+  private static countCustomerScans(scans: Array<{ customerStage?: string | null }>): Record<CustomerScanStage, number> {
+    return {
+      PICKUP: scans.filter((s) => s.customerStage === 'PICKUP').length,
+      RETURN: scans.filter((s) => s.customerStage === 'RETURN').length,
+    };
+  }
+
+  /**
+   * The customer photographs their rental car with their own phone and the same AI checks it. The report is
+   * their evidence for a dispute; it never changes the staff pickup baseline or creates a charge.
+   */
+  static async customerScan(bookingId: string, userId: string, dto: CustomerScanDTO) {
+    const stage = dto?.stage;
+    if (stage !== 'PICKUP' && stage !== 'RETURN') throw AppError.badRequest('Stage must be PICKUP or RETURN');
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        vehicleId: true,
+        customer: { select: { userId: true } },
+        rental: { select: { status: true, pickedUpAt: true } },
+      },
+    });
+    if (!booking) throw AppError.notFound('Booking not found');
+    if (booking.customer.userId !== userId) throw AppError.forbidden('You can only check the car of your own booking');
+    const done = this.countCustomerScans(
+      await prisma.inspection.findMany({ where: { bookingId }, select: { customerStage: true } })
+    );
+    if (done[stage] >= CUSTOMER_SCANS_PER_STAGE) {
+      throw AppError.badRequest(`You have already checked the car ${CUSTOMER_SCANS_PER_STAGE} times at this stage`);
+    }
+    if (!this.customerScanStages(booking.rental, done)[stage]) {
+      throw AppError.badRequest(
+        stage === 'PICKUP'
+          ? 'The pickup check is available during the first 24 hours after you receive the car'
+          : 'The return check is available while the car is with you'
+      );
+    }
+    // All 8 outside angles, like the staff pickup check, so every panel is on record
+    this.parsePhotos(dto.photos, REQUIRED_VIEWS);
+    return this.analyze({ type: 'ROUTINE', vehicleId: booking.vehicleId, photos: dto.photos }, userId, { bookingId, stage });
   }
 
   static async getComparisonById(id: string) {
@@ -255,13 +380,25 @@ export class InspectionService {
    * PICKUP: done before the keys are handed over; it becomes the baseline of the rental.
    * RETURN: compared side by side with the pickup baseline; NEW damage becomes proposed fines.
    */
-  static async analyze(dto: AnalyzeInspectionDTO, staffUserId?: string) {
+  static async analyze(dto: AnalyzeInspectionDTO, staffUserId?: string, customerScan?: CustomerScanContext) {
     const type = dto?.type;
     if (!type || !['PICKUP', 'RETURN', 'ROUTINE'].includes(type)) {
       throw AppError.badRequest('Inspection type must be PICKUP, RETURN or ROUTINE');
     }
 
-    const images = this.parsePhotos(dto.photos, type !== 'ROUTINE');
+    // Damage is detected on the car photos; the odometer and chassis photos are only read for their numbers
+    const allImages = this.parsePhotos(dto.photos, type === 'PICKUP' ? REQUIRED_VIEWS : []);
+    const images = allImages.filter((img) => !isDocumentView(img.view));
+    const documentImages = allImages.filter((img) => isDocumentView(img.view));
+    if (images.length === 0) throw AppError.badRequest('At least one photo of the car itself is required');
+    // Exactly the same photos as an earlier pickup or routine scan give exactly the same result: the earlier
+    // AI answer is reused instead of asking the model again (same score every time, no extra AI cost)
+    const reused = type !== 'RETURN' ? await this.findIdenticalScan(allImages) : null;
+    const documentsReading: Promise<RawDocumentReading> = reused
+      ? Promise.resolve(reused.documents)
+      : documentImages.length
+        ? VisionProvider.readDocuments({ images: documentImages }).catch(() => ({}))
+        : Promise.resolve({});
 
     // Resolve the vehicle and its rental context server-side (never trust client ids blindly)
     let vehicleId = dto.vehicleId;
@@ -292,21 +429,26 @@ export class InspectionService {
       rentalId = rental.id;
       bookingForReturn = rental.booking;
       baseline = await this.loadBaseline(rental.id);
+      // A return repeats every exterior angle photographed at pickup (older pickups had 4 angles, newer 8)
+      const pickupViews = baseline.images.map((b) => b.view);
+      const required = REQUIRED_VIEWS.filter((v) => pickupViews.includes(v));
+      this.assertRequiredViews(allImages, required.length > 0 ? required : LEGACY_REQUIRED_VIEWS);
     }
 
-    if (!vehicleId) throw AppError.badRequest('vehicleId is required');
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      select: { id: true, brand: true, model: true, year: true, color: true, registrationNumber: true },
-    });
-    if (!vehicle) throw AppError.notFound('Vehicle not found');
-    const vehicleLabel = `${vehicle.year} ${vehicle.brand} ${vehicle.model}${vehicle.color ? `, ${vehicle.color}` : ''}`;
+    // A routine inspection may be of a walk-in car that is not in the fleet: everything is read from the photos
+    let vehicle: FleetVehicleRef | null = null;
+    if (vehicleId) {
+      vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId }, select: FLEET_VEHICLE_SELECT });
+      if (!vehicle) throw AppError.notFound('Vehicle not found');
+    } else if (type !== 'ROUTINE') {
+      throw AppError.badRequest('vehicleId is required');
+    }
 
     // 1. Ask the vision model
     const passes = consensusPasses();
     let photoChecks: RawPhotoCheck[] = [];
     let detectedVehicle: VisionVehicle = {};
-    let findings: AssessedFinding[];
+    let findings: AssessedFinding[] = [];
     let comparisonItems: Array<{
       finding: AssessedFinding;
       classification: ComparisonClassification;
@@ -315,179 +457,272 @@ export class InspectionService {
     }> = [];
     let unchangedViews: InspectionView[] = [];
 
-    if (type === 'RETURN' && baseline) {
-      // a) Angles whose return photo is the very same picture as at pickup: nothing can have changed
-      const baselinePrints = new Map(
-        baseline.images.map((b) => [b.view, fingerprint(Buffer.from(b.base64, 'base64'), b.mimeType)])
-      );
-      unchangedViews = images
-        .filter((img) => {
-          const base = baselinePrints.get(img.view);
-          return base ? isSamePicture(base, fingerprint(Buffer.from(img.base64, 'base64'), img.mimeType)) : false;
-        })
-        .map((img) => img.view);
-      const changedImages = images.filter((img) => !unchangedViews.includes(img.view));
+    // Set when the AI could not answer: the photos are kept and staff record the damage by hand
+    let manualReason: string | null = null;
 
-      const carried: typeof comparisonItems = baseline.findings
-        .filter((base) => unchangedViews.includes(base.view))
-        .map((base) => ({
-          finding: this.withoutId(base),
-          classification: 'PRE_EXISTING_UNCHANGED' as const,
-          baselineFindingId: base.id,
-          chargeAmount: 0,
-        }));
-      let fresh: typeof comparisonItems = [];
-
-      // b) Re-taken angles: side-by-side AI comparison, run several times; only consistent results count
-      if (changedImages.length > 0) {
-        const comparedBaseline = baseline.findings.filter((f) => !unchangedViews.includes(f.view));
-        const results = await Promise.all(
-          Array.from({ length: passes }, () =>
-            VisionProvider.compareWithBaseline({
-              vehicleLabel,
-              baselineImages: baseline!.images.filter((b) => changedImages.some((c) => c.view === b.view)),
-              returnImages: changedImages,
-              baselineFindings: comparedBaseline.map((f) => ({
-                id: f.id,
-                view: f.view,
-                category: f.category,
-                severity: f.severity,
-                part: f.part,
-                description: f.description,
-              })),
-            })
-          )
+    try {
+      if (type === 'RETURN' && baseline) {
+        // a) Angles whose return photo is the very same picture as at pickup: nothing can have changed
+        const baselinePrints = new Map(
+          baseline.images.map((b) => [b.view, fingerprint(Buffer.from(b.base64, 'base64'), b.mimeType)])
         );
-        photoChecks = results[0].photos;
-        detectedVehicle = results[0].vehicle;
-        if (results.every((r) => !r.sameVehicle)) {
-          const reason = results.find((r) => r.sameVehicleReason)?.sameVehicleReason;
+        unchangedViews = images
+          .filter((img) => {
+            const base = baselinePrints.get(img.view);
+            return base ? isSamePicture(base, fingerprint(Buffer.from(img.base64, 'base64'), img.mimeType)) : false;
+          })
+          .map((img) => img.view);
+        const changedImages = images.filter((img) => !unchangedViews.includes(img.view));
+
+        const carried: typeof comparisonItems = baseline.findings
+          .filter((base) => unchangedViews.includes(base.view))
+          .map((base) => ({
+            finding: this.withoutId(base),
+            classification: 'PRE_EXISTING_UNCHANGED' as const,
+            baselineFindingId: base.id,
+            chargeAmount: 0,
+          }));
+        let fresh: typeof comparisonItems = [];
+
+        // b) Re-taken angles: side-by-side AI comparison, run several times; only consistent results count
+        if (changedImages.length > 0) {
+          const comparedBaseline = baseline.findings.filter((f) => !unchangedViews.includes(f.view));
+          const results = await Promise.all(
+            Array.from({ length: passes }, () =>
+              VisionProvider.compareWithBaseline({
+                baselineImages: baseline!.images.filter((b) => changedImages.some((c) => c.view === b.view)),
+                returnImages: changedImages,
+                baselineFindings: comparedBaseline.map((f) => ({
+                  id: f.id,
+                  view: f.view,
+                  category: f.category,
+                  severity: f.severity,
+                  part: f.part,
+                  description: f.description,
+                })),
+              })
+            )
+          );
+          photoChecks = results[0].photos;
+          detectedVehicle = results[0].vehicle;
+          if (results.every((r) => !r.sameVehicle)) {
+            const reason = results.find((r) => r.sameVehicleReason)?.sameVehicleReason;
+            throw new AppError(
+              `The return photos do not appear to show the same vehicle as the pickup photos${
+                reason ? ` (${reason})` : ''
+              }. Please photograph the rented vehicle.`,
+              422,
+              'INSPECTION_VEHICLE_MISMATCH'
+            );
+          }
+          this.assertPhotoQuality(changedImages, photoChecks);
+
+          // Pickup damage stays on the car; it is "worsened" only when every pass agrees, "repaired" likewise
+          for (const base of comparedBaseline) {
+            const statuses = results.map((r) => r.baselineStatus.find((st) => st.baselineId === base.id));
+            if (statuses.every((st) => st?.status === 'REPAIRED')) continue;
+            const worsened = statuses.every((st) => st?.status === 'WORSENED');
+            const severity = worsened
+              ? statuses
+                  .map((st) => normalizeSeverity(st?.currentSeverity || base.severity))
+                  .reduce((lowest, sev) => (SEVERITY_RANK[sev] < SEVERITY_RANK[lowest] ? sev : lowest))
+              : base.severity;
+            const box = statuses.map((st) => boxFromYxyx1000(st?.box_2d)).find(Boolean) || base.box;
+            const finding: AssessedFinding = {
+              ...this.withoutId(base),
+              severity,
+              box,
+              estimatedRepairCost: repairCost(base.category, severity, costMultiplier()),
+            };
+            const chargeable = worsened && finding.estimatedRepairCost > base.estimatedRepairCost;
+            carried.push({
+              finding,
+              classification: chargeable ? 'PRE_EXISTING_WORSENED' : 'PRE_EXISTING_UNCHANGED',
+              baselineFindingId: base.id,
+              // Only the extra repair cost of the worsening is charged
+              chargeAmount: chargeable ? roundMoney(finding.estimatedRepairCost - base.estimatedRepairCost) : 0,
+            });
+          }
+
+          // New damage must be seen in every pass, then pass the geometric check against the pickup record
+          const agreedNew = intersectPasses(results.map((r) => this.normalizeFindings(r.newDamages)));
+          const pickupViews = baseline.images.map((b) => b.view);
+          fresh = agreedNew.map((finding) => {
+            let classification = classifyNewDamage(finding, baseline!.findings);
+            // No pickup photo of this angle to compare with: staff decide, the customer is never charged automatically
+            if (classification === 'CONFIRMED_NEW_DAMAGE' && !pickupViews.includes(finding.view)) {
+              classification = 'POSSIBLY_NEW_DAMAGE';
+            }
+            const overlapped =
+              classification === 'PRE_EXISTING_UNCHANGED' || classification === 'PRE_EXISTING_WORSENED'
+                ? findOverlappingBaseline(finding, baseline!.findings)
+                : undefined;
+            const chargeAmount =
+              classification === 'CONFIRMED_NEW_DAMAGE'
+                ? finding.estimatedRepairCost
+                : classification === 'PRE_EXISTING_WORSENED' && overlapped
+                  ? Math.max(0, roundMoney(finding.estimatedRepairCost - overlapped.estimatedRepairCost))
+                  : 0;
+            return { finding, classification, baselineFindingId: overlapped?.id, chargeAmount };
+          });
+        }
+
+        // A pickup damage reported again as "new" at the same spot is counted once
+        comparisonItems = [...carried];
+        for (const item of fresh) {
+          const duplicate = carried.some((c) => c.baselineFindingId && c.baselineFindingId === item.baselineFindingId);
+          if (!duplicate) comparisonItems.push(item);
+        }
+        findings = comparisonItems.map((c) => c.finding);
+      } else {
+        if (reused) {
+          findings = reused.findings;
+          detectedVehicle = reused.vehicle;
+        } else {
+          // Pickup / routine: every mark seen in any pass is recorded, so it is never charged later
+          const results = await Promise.all(
+            Array.from({ length: passes }, () => VisionProvider.detectDamage({ images }))
+          );
+          photoChecks = results[0].photos;
+          detectedVehicle = results[0].vehicle;
+          this.assertPhotoQuality(images, photoChecks);
+          const multiplier = costMultiplier();
+          findings = unionPasses(
+            results.map((r) => this.normalizeFindings(r.findings)),
+            (category, severity) => repairCost(category, severity, multiplier)
+          );
+        }
+      }
+    } catch (err) {
+      if (!isAiUnavailable(err)) throw err;
+      manualReason = err.message.slice(0, 255);
+      photoChecks = [];
+      detectedVehicle = {};
+      findings = [];
+      comparisonItems = [];
+      unchangedViews = [];
+      console.warn(`[Inspection] AI unavailable (${err.code}); ${type} inspection saved for a staff review`);
+    }
+    const manual = manualReason !== null;
+
+    // 2. Identity. The report itself is built only from the photos; the fleet record is used only to know
+    //    WHICH car was inspected, never to fill in its condition, colour or details.
+    const detected = this.cleanDetectedVehicle(detectedVehicle, await documentsReading);
+    const hasReading = Object.keys(detectedVehicle).length > 0;
+
+    if (vehicle && hasReading) {
+      // A matching number plate or chassis number proves it is this car
+      const plateVerified =
+        comparePlate(detected.plate, vehicle.registrationNumber) === 'MATCH' ||
+        this.chassisCheck(detected.chassisNumber, vehicle.vin) === 'MATCH';
+      if (type === 'ROUTINE') {
+        // Another car than the one selected (same model and colour included): the report belongs to the
+        // photographed car, not to the selected fleet record
+        if (!plateVerified && (this.differentCarReason(vehicle, detected) || !(await this.looksLikeSameCar(vehicle.id, images, 0.75)))) {
+          // The customer's own check must show the car they rented
+          if (customerScan) {
+            throw new AppError(
+              `The photos do not appear to show your rented ${vehicle.brand} ${vehicle.model} (${vehicle.registrationNumber}). Please photograph that car, with its number plate visible.`,
+              422,
+              'INSPECTION_VEHICLE_MISMATCH'
+            );
+          }
+          vehicle = null;
+        }
+      } else if (type === 'PICKUP') {
+        // The car handed over must be the booked car: make, plate, colour, then its individual details
+        this.assertVehicleIdentity(vehicle, detectedVehicle, 'booked vehicle');
+        if (!plateVerified && compareColor(detected.color, vehicle.color) === 'MISMATCH') {
           throw new AppError(
-            `The return photos do not appear to show the same vehicle as the pickup photos${
-              reason ? ` (${reason})` : ''
-            }. Please photograph the rented vehicle.`,
+            `The car in the photos is ${detected.color!.toLowerCase()}, but the booked vehicle ${vehicle.brand} ${vehicle.model} (${vehicle.registrationNumber}) is ${vehicle.color}. Please photograph the booked vehicle, with its number plate visible.`,
             422,
             'INSPECTION_VEHICLE_MISMATCH'
           );
         }
-        this.assertPhotoQuality(changedImages, photoChecks);
-
-        // Pickup damage stays on the car; it is "worsened" only when every pass agrees, "repaired" likewise
-        const severityRank = { LOW: 1, MEDIUM: 2, HIGH: 3 } as const;
-        for (const base of comparedBaseline) {
-          const statuses = results.map((r) => r.baselineStatus.find((st) => st.baselineId === base.id));
-          if (statuses.every((st) => st?.status === 'REPAIRED')) continue;
-          const worsened = statuses.every((st) => st?.status === 'WORSENED');
-          const severity = worsened
-            ? statuses
-                .map((st) => normalizeSeverity(st?.currentSeverity || base.severity))
-                .reduce((lowest, sev) => (severityRank[sev] < severityRank[lowest] ? sev : lowest))
-            : base.severity;
-          const box = statuses.map((st) => boxFromYxyx1000(st?.box_2d)).find(Boolean) || base.box;
-          const finding: AssessedFinding = {
-            ...this.withoutId(base),
-            severity,
-            box,
-            estimatedRepairCost: repairCost(base.category, severity, costMultiplier()),
-          };
-          const chargeable = worsened && finding.estimatedRepairCost > base.estimatedRepairCost;
-          carried.push({
-            finding,
-            classification: chargeable ? 'PRE_EXISTING_WORSENED' : 'PRE_EXISTING_UNCHANGED',
-            baselineFindingId: base.id,
-            // Only the extra repair cost of the worsening is charged
-            chargeAmount: chargeable ? roundMoney(finding.estimatedRepairCost - base.estimatedRepairCost) : 0,
-          });
+        if (!plateVerified && !(await this.looksLikeSameCar(vehicle.id, images, 0.85))) {
+          throw new AppError(
+            `The photos do not appear to show the booked vehicle ${vehicle.brand} ${vehicle.model} (${vehicle.registrationNumber}). Please photograph the booked vehicle, with its number plate visible.`,
+            422,
+            'INSPECTION_VEHICLE_MISMATCH'
+          );
         }
-
-        // New damage must be seen in every pass, then pass the geometric check against the pickup record
-        const agreedNew = intersectPasses(results.map((r) => this.normalizeFindings(r.newDamages)));
-        fresh = agreedNew.map((finding) => {
-          const classification = classifyNewDamage(finding, baseline!.findings);
-          const overlapped =
-            classification === 'PRE_EXISTING_UNCHANGED' || classification === 'PRE_EXISTING_WORSENED'
-              ? findOverlappingBaseline(finding, baseline!.findings)
-              : undefined;
-          const chargeAmount =
-            classification === 'CONFIRMED_NEW_DAMAGE'
-              ? finding.estimatedRepairCost
-              : classification === 'PRE_EXISTING_WORSENED' && overlapped
-                ? Math.max(0, roundMoney(finding.estimatedRepairCost - overlapped.estimatedRepairCost))
-                : 0;
-          return { finding, classification, baselineFindingId: overlapped?.id, chargeAmount };
-        });
+      } else {
+        // Return: the AI already compared the car with its pickup photos above
+        this.assertVehicleIdentity(vehicle, detectedVehicle, 'rented vehicle');
       }
-
-      // A pickup damage reported again as "new" at the same spot is counted once
-      comparisonItems = [...carried];
-      for (const item of fresh) {
-        const duplicate = carried.some((c) => c.baselineFindingId && c.baselineFindingId === item.baselineFindingId);
-        if (!duplicate) comparisonItems.push(item);
-      }
-      findings = comparisonItems.map((c) => c.finding);
-    } else {
-      // Pickup / routine: every mark seen in any pass is recorded, so it is never charged later
-      const results = await Promise.all(
-        Array.from({ length: passes }, () => VisionProvider.detectDamage({ vehicleLabel, images }))
-      );
-      photoChecks = results[0].photos;
-      detectedVehicle = results[0].vehicle;
-      this.assertPhotoQuality(images, photoChecks);
-      findings = unionPasses(results.map((r) => this.normalizeFindings(r.findings)));
     }
 
-    // 2. The photos must show the booked vehicle (make and, when readable, the number plate)
-    const identityNote =
-      Object.keys(detectedVehicle).length > 0 ? this.assertVehicleIdentity(vehicle, detectedVehicle) : '';
-    const detectedColor = detectedVehicle.colorName;
+    // A car that is not (or no longer) linked joins its fleet record only through a registered number plate
+    if (!vehicle && (detected.plate || detected.chassisNumber)) {
+      vehicle = await this.findFleetVehicleByIdentity(detected.plate, detected.chassisNumber);
+    }
+    const detectedColor = detected.color;
+    const vehicleLabel = this.vehicleLabel(detected);
 
     const score = conditionScore(findings);
     const newDamage = comparisonItems.filter((c) => c.classification === 'CONFIRMED_NEW_DAMAGE');
     const worsened = comparisonItems.filter((c) => c.classification === 'PRE_EXISTING_WORSENED');
     const inconclusive = comparisonItems.filter((c) => c.classification === 'POSSIBLY_NEW_DAMAGE');
     const preExisting = comparisonItems.filter((c) => c.classification === 'PRE_EXISTING_UNCHANGED');
-    const summary = [
-      this.buildSummary(type, vehicleLabel, findings, score, {
-        newCount: newDamage.length,
-        worsenedCount: worsened.length,
-        inconclusiveCount: inconclusive.length,
-      }),
-      identityNote,
-      unchangedViews.length > 0
-        ? `Identical to pickup photo: ${unchangedViews.map((v) => v.toLowerCase().replace('_', ' ')).join(', ')}.`
-        : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
+    const summary = manual
+      ? customerScan
+        ? 'Your photos are saved as evidence. The automatic damage check is not available right now.'
+        : 'The AI could not check these photos. Staff must review the photos and record any damage before the car moves.'
+      : [
+          this.buildSummary(type, vehicleLabel, findings, score, {
+            newCount: newDamage.length,
+            worsenedCount: worsened.length,
+            inconclusiveCount: inconclusive.length,
+          }),
+          unchangedViews.length > 0
+            ? `Identical to pickup photo: ${unchangedViews.map((v) => v.toLowerCase().replace('_', ' ')).join(', ')}.`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
 
     // 2. Store the photos, inspection, findings and (for returns) the comparison + proposed fines
-    const storedPhotoUrls = images.map((img) =>
-      this.storePhoto(img, `${type.toLowerCase()}-${vehicle.id}-${img.view.toLowerCase()}`)
+    const storedPhotoUrls = allImages.map((img) =>
+      this.storePhoto(img, `${type.toLowerCase()}-${vehicle?.id || 'walkin'}-${img.view.toLowerCase()}`)
     );
 
     try {
       const created = await prisma.$transaction(async (tx) => {
         const inspection = await tx.inspection.create({
           data: {
-            vehicleId: vehicle.id,
+            vehicleId: vehicle?.id || null,
+            detectedMake: detected.make,
+            detectedModel: detected.model,
+            detectedYear: detected.year,
+            detectedBodyType: detected.bodyType,
+            detectedColor: detected.color,
+            detectedColorHex: detected.colorHex,
+            detectedPlate: detected.plate,
             rentalId,
             type,
+            bookingId: customerScan?.bookingId ?? null,
+            customerStage: customerScan?.stage ?? null,
             performedById: staffUserId || null,
-            overallScore: score,
+            // No score until staff have recorded the damage of a manual review
+            overallScore: manual ? null : score,
             summary: dto.notes ? `${summary}\nInspector notes: ${String(dto.notes).slice(0, 1000)}` : summary,
             hasDamageDetected: findings.length > 0,
             coverageScore: this.coverage(images),
-            status: 'AI_ANALYZED',
-            capturePlanVersion: 'v2.0',
+            detectedMileageKm: detected.mileageKm,
+            detectedChassisNumber: detected.chassisNumber,
+            status: manual ? 'CAPTURE_COMPLETE' : 'AI_ANALYZED',
+            manualReview: manual,
+            aiUnavailableReason: manualReason,
+            capturePlanVersion: AI_RULES_VERSION,
           },
         });
 
-        for (let i = 0; i < images.length; i++) {
-          const check = photoChecks.find((c) => c.view === images[i].view);
+        for (let i = 0; i < allImages.length; i++) {
+          const check = photoChecks.find((c) => c.view === allImages[i].view);
           await tx.inspectionPhoto.create({
             data: {
               inspectionId: inspection.id,
-              view: images[i].view,
+              view: allImages[i].view,
               imageUrl: storedPhotoUrls[i].url,
               qualityScore: check ? (check.usable && check.viewMatches ? 100 : 50) : null,
               qualityDetails: check?.issue ? String(check.issue).slice(0, 500) : null,
@@ -503,6 +738,7 @@ export class InspectionService {
           const item = comparisonItems[i];
           const meta: StoredFindingMeta = {
             view: f.view,
+            panel: f.panel,
             category: f.category,
             description: f.description,
             box: f.box,
@@ -526,7 +762,7 @@ export class InspectionService {
         }
 
         let comparisonId: string | null = null;
-        if (type === 'RETURN' && baseline && bookingForReturn) {
+        if (type === 'RETURN' && baseline && bookingForReturn && vehicle) {
           comparisonId = crypto.randomUUID();
           const chargeable = comparisonItems.filter((c) => isChargeable(c.classification) && c.chargeAmount > 0);
           const totalProposed = roundMoney(chargeable.reduce((s, c) => s + c.chargeAmount, 0));
@@ -588,11 +824,12 @@ export class InspectionService {
         await tx.securityAuditLog.create({
           data: {
             userId: staffUserId || null,
-            event: 'AI_INSPECTION_COMPLETED',
+            event: manual ? 'AI_INSPECTION_MANUAL_FALLBACK' : 'AI_INSPECTION_COMPLETED',
             metadata: JSON.stringify({
               inspectionId: inspection.id,
               type,
-              vehicleId: vehicle.id,
+              ...(manual ? { reason: manualReason } : {}),
+              vehicleId: vehicle?.id || null,
               conditionScore: score,
               findings: findings.length,
               newDamage: newDamage.length,
@@ -648,7 +885,7 @@ export class InspectionService {
   // Helpers
   // ------------------------------------------------------------------
 
-  private static parsePhotos(photos: InspectionPhotoInput[] | undefined, requireFullSet: boolean): VisionImage[] {
+  private static parsePhotos(photos: InspectionPhotoInput[] | undefined, requiredViews: InspectionView[]): VisionImage[] {
     if (!Array.isArray(photos) || photos.length === 0) {
       throw AppError.badRequest('At least one inspection photo is required');
     }
@@ -669,13 +906,15 @@ export class InspectionService {
       return { view: p.view, mimeType: match[1] === 'image/jpg' ? 'image/jpeg' : match[1], base64: match[2] };
     });
 
-    if (requireFullSet) {
-      const missing = REQUIRED_VIEWS.filter((v) => !seen.has(v));
-      if (missing.length > 0) {
-        throw AppError.badRequest(`Missing required photos: ${missing.join(', ')}`);
-      }
-    }
+    this.assertRequiredViews(images, requiredViews);
     return images;
+  }
+
+  private static assertRequiredViews(images: VisionImage[], requiredViews: InspectionView[]) {
+    const missing = requiredViews.filter((v) => !images.some((img) => img.view === v));
+    if (missing.length > 0) {
+      throw AppError.badRequest(`Missing required photos: ${missing.join(', ')}`);
+    }
   }
 
   private static withoutId(f: AssessedFinding & { id?: string }): AssessedFinding {
@@ -684,17 +923,178 @@ export class InspectionService {
   }
 
   /**
+   * The latest pickup or routine inspection made from exactly the same photos (same angles, same files),
+   * returned as the AI answer it produced, or null.
+   */
+  private static async findIdenticalScan(images: VisionImage[]) {
+    const hashes = images.map((img) => ({
+      view: img.view,
+      sha256: crypto.createHash('sha256').update(Buffer.from(img.base64, 'base64')).digest('hex'),
+    }));
+    const candidates = await prisma.inspection.findMany({
+      where: {
+        type: { in: ['PICKUP', 'ROUTINE'] },
+        // Only scans made with the current AI rules: after a rule change the photos are judged again
+        capturePlanVersion: AI_RULES_VERSION,
+        // Only answers the AI itself gave: a scan saved without AI has no findings to reuse
+        manualReview: false,
+        photos: { some: { sha256Hash: hashes[0].sha256 } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      include: { photos: true, findings: true },
+    });
+    const match = candidates.find(
+      (ins) =>
+        ins.photos.length === hashes.length &&
+        hashes.every((h) => ins.photos.some((p) => p.view === h.view && p.sha256Hash === h.sha256))
+    );
+    if (!match) return null;
+    const vehicle: VisionVehicle = Object.fromEntries(Object.entries({
+      make: match.detectedMake || undefined,
+      model: match.detectedModel || undefined,
+      colorName: match.detectedColor || undefined,
+      colorHex: match.detectedColorHex || undefined,
+      plateText: match.detectedPlate || undefined,
+      bodyType: match.detectedBodyType || undefined,
+      year: match.detectedYear || undefined,
+    }).filter(([, value]) => value !== undefined));
+    return {
+      findings: match.findings.map((f) => this.withoutId(this.toAssessedFinding(f))),
+      vehicle,
+      documents: {
+        odometerKm: match.detectedMileageKm,
+        odometerUnit: 'KM',
+        chassisNumber: match.detectedChassisNumber,
+      } as RawDocumentReading,
+    };
+  }
+
+  /** Trims the AI's vehicle answer to the column sizes; "unknown" and empty values become null. */
+  private static cleanDetectedVehicle(raw: VisionVehicle, documents: RawDocumentReading = {}) {
+    const text = (value: unknown, max: number) => {
+      const v = String(value ?? '').replace(/\s+/g, ' ').trim();
+      return v && !/^(unknown|n\/?a|none|not visible|unreadable)$/i.test(v) ? v.slice(0, max) : null;
+    };
+    const hex = text(raw.colorHex, 9);
+    return {
+      make: text(raw.make, 60),
+      model: text(raw.model, 80),
+      year: text(raw.year, 20),
+      bodyType: text(raw.bodyType, 40),
+      color: text(raw.colorName, 60),
+      colorHex: hex && /^#?[0-9a-f]{6}$/i.test(hex) ? `#${hex.replace('#', '').toUpperCase()}` : null,
+      plate: text(raw.plateText, 20)?.toUpperCase() || null,
+      mileageKm: this.cleanMileage(documents.odometerKm, documents.odometerUnit),
+      chassisNumber: this.cleanChassis(documents.chassisNumber),
+    };
+  }
+
+  /** Odometer total in whole km; miles are converted; impossible readings are dropped. */
+  private static cleanMileage(value: unknown, unit: unknown): number | null {
+    const reading = Number(value);
+    if (!Number.isFinite(reading) || reading <= 0) return null;
+    const km = String(unit || '').toUpperCase() === 'MILES' ? reading * 1.609344 : reading;
+    return km < 2_000_000 ? Math.round(km) : null;
+  }
+
+  /** Chassis / VIN in capitals without spaces or dashes; too short or too long readings are dropped. */
+  private static cleanChassis(value: unknown): string | null {
+    const chassis = String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return chassis.length >= 6 && chassis.length <= 20 ? chassis : null;
+  }
+
+  /** MATCH / MISMATCH between a chassis number read from a photo and the fleet record; UNKNOWN if either is missing. */
+  private static chassisCheck(read: string | null, registered: string | null): 'MATCH' | 'MISMATCH' | 'UNKNOWN' {
+    const recorded = this.cleanChassis(registered);
+    if (!read || !recorded) return 'UNKNOWN';
+    return read === recorded ? 'MATCH' : 'MISMATCH';
+  }
+
+  /**
+   * Why the photographed car is not the selected fleet car, or null when it may be the same car.
+   * A plate that matches always means the same car; otherwise a different make, a different plate, or a
+   * clearly different colour (black vs white, not shades that look alike in photos) means another car.
+   */
+  private static differentCarReason(vehicle: FleetVehicleRef, detected: DetectedVehicleInfo): string | null {
+    const chassis = this.chassisCheck(detected.chassisNumber, vehicle.vin);
+    if (chassis === 'MATCH') return null;
+    if (chassis === 'MISMATCH') return `The chassis number in the photos is ${detected.chassisNumber}, not ${vehicle.vin}.`;
+    const plate = comparePlate(detected.plate, vehicle.registrationNumber);
+    if (plate === 'MATCH') return null;
+    if (compareMake(detected.make, vehicle.brand) === 'MISMATCH') {
+      return `The photos show a ${[detected.make, detected.model].filter(Boolean).join(' ')}, not a ${vehicle.brand} ${vehicle.model}.`;
+    }
+    if (plate === 'MISMATCH') {
+      return `The number plate in the photos reads ${detected.plate}, not ${vehicle.registrationNumber}.`;
+    }
+    if (compareColor(detected.color, vehicle.color) === 'MISMATCH') {
+      return `The car in the photos is ${detected.color!.toLowerCase()}, while ${vehicle.brand} ${vehicle.model} (${vehicle.registrationNumber}) is ${vehicle.color}, so it is a different car.`;
+    }
+    return null;
+  }
+
+  /** The fleet car whose chassis number or registration number matches what was read from the photos, if any. */
+  private static async findFleetVehicleByIdentity(plate: string | null, chassis: string | null): Promise<FleetVehicleRef | null> {
+    const fleet = await prisma.vehicle.findMany({ select: FLEET_VEHICLE_SELECT });
+    if (chassis) {
+      const byChassis = fleet.filter((v) => this.chassisCheck(chassis, v.vin) === 'MATCH');
+      if (byChassis.length === 1) return byChassis[0];
+    }
+    if (!plate) return null;
+    // An exact plate wins; a near match (one misread character) only counts when no other car is that close,
+    // so a similar plate never links the report to the wrong car
+    const exact = fleet.filter((v) => normalizePlate(v.registrationNumber) === normalizePlate(plate));
+    if (exact.length === 1) return exact[0];
+    if (exact.length > 1) return null;
+    const near = fleet.filter((v) => comparePlate(plate, v.registrationNumber) === 'MATCH');
+    return near.length === 1 ? near[0] : null;
+  }
+
+  /** "Toyota Raize, navy blue": only what the photos show. */
+  private static vehicleLabel(detected: DetectedVehicleInfo) {
+    const name = [detected.make, detected.model].filter(Boolean).join(' ') || 'the vehicle';
+    return detected.color ? `${name}, ${detected.color.toLowerCase()}` : name;
+  }
+
+  /**
+   * Compares the new photos with the latest earlier inspection photos of the fleet car, to tell two cars of the
+   * same model and colour apart when the plate cannot be read. True when they look like the same car, or when
+   * there is nothing to compare with; false only when the AI is at least minConfidence sure it is another car.
+   */
+  private static async looksLikeSameCar(vehicleId: string, images: VisionImage[], minConfidence: number): Promise<boolean> {
+    const exteriorViews: InspectionView[] = ['FRONT', 'DRIVER_SIDE', 'PASSENGER_SIDE', 'REAR'];
+    const previous = await prisma.inspection.findFirst({
+      where: { vehicleId, photos: { some: { view: { in: exteriorViews } } } },
+      orderBy: { createdAt: 'desc' },
+      include: { photos: true },
+    });
+    if (!previous) return true;
+    const referenceImages: VisionImage[] = [];
+    for (const photo of previous.photos) {
+      if (!exteriorViews.includes(photo.view as InspectionView)) continue;
+      const stored = this.readStoredPhoto(photo.imageUrl);
+      if (stored) referenceImages.push({ view: photo.view as InspectionView, ...stored });
+    }
+    const current = images.filter((img) => exteriorViews.includes(img.view));
+    if (referenceImages.length === 0 || current.length === 0) return true;
+    const result = await VisionProvider.isSameVehicle({ referenceImages, images: current });
+    return result.sameVehicle || result.confidence < minConfidence;
+  }
+
+  /**
    * The photographed car must be the booked car: a different make, or a clearly read plate that is not
    * the registered plate, rejects the scan. Returns a short note for the report.
    */
   private static assertVehicleIdentity(
-    vehicle: { brand: string; model: string; registrationNumber: string },
-    detected: VisionVehicle
-  ): string {
+    vehicle: FleetVehicleRef,
+    detected: VisionVehicle,
+    subject: string
+  ): void {
     const make = compareMake(detected.make, vehicle.brand);
     if (make === 'MISMATCH') {
       throw new AppError(
-        `The photos show a ${[detected.make, detected.model].filter(Boolean).join(' ')}, but this booking is for a ${vehicle.brand} ${vehicle.model} (${vehicle.registrationNumber}). Please photograph the booked vehicle.`,
+        `The photos show a ${[detected.make, detected.model].filter(Boolean).join(' ')}, but the ${subject} is a ${vehicle.brand} ${vehicle.model} (${vehicle.registrationNumber}). Please photograph the ${subject}.`,
         422,
         'INSPECTION_VEHICLE_MISMATCH'
       );
@@ -702,14 +1102,12 @@ export class InspectionService {
     const plate = comparePlate(detected.plateText, vehicle.registrationNumber);
     if (plate === 'MISMATCH') {
       throw new AppError(
-        `The number plate in the photos reads "${detected.plateText}", but the booked vehicle is registered as ${vehicle.registrationNumber}. Please photograph the booked vehicle.`,
+        `The number plate in the photos reads "${detected.plateText}", but the ${subject} is registered as ${vehicle.registrationNumber}. Please photograph the ${subject}.`,
         422,
         'INSPECTION_PLATE_MISMATCH'
       );
     }
-    return plate === 'MATCH'
-      ? `Number plate ${vehicle.registrationNumber} verified in the photos.`
-      : `Number plate ${vehicle.registrationNumber} was not readable in the photos.`;
+
   }
 
   /** Rejects the scan when a required photo is not a car, shows the wrong angle, or is too blurry/dark. */
@@ -735,18 +1133,20 @@ export class InspectionService {
     const multiplier = costMultiplier();
     const normalized: AssessedFinding[] = [];
     for (const f of raw || []) {
-      if (!isInspectionView(f.view)) continue;
+      if (!isInspectionView(f.view) || isDocumentView(f.view)) continue;
       const box = boxFromYxyx1000(f.box_2d);
       if (!box) continue;
       const confidence = clamp(Number(f.confidence), 0, 1);
       if (!Number.isFinite(confidence) || confidence < MIN_REPORTABLE_CONFIDENCE) continue;
       const category = normalizeCategory(f.category);
       const severity = normalizeSeverity(f.severity);
+      const part = String(f.part || 'Body panel').trim().slice(0, 64) || 'Body panel';
       normalized.push({
         view: f.view,
+        panel: normalizePanel(f.panel, part, f.view),
         category,
         severity,
-        part: String(f.part || 'Body panel').trim().slice(0, 64) || 'Body panel',
+        part,
         description: String(f.description || '').trim().slice(0, 400),
         confidence: Number(confidence.toFixed(2)),
         box,
@@ -796,9 +1196,11 @@ export class InspectionService {
     const meta = this.parseMeta(f.boundingBox);
     const category = meta?.category || normalizeCategory(f.damageType);
     const severity = normalizeSeverity(f.severity);
+    const view: InspectionView = meta?.view || (isInspectionView(f.region) ? f.region : 'FRONT');
     return {
       id: f.id,
-      view: meta?.view || (isInspectionView(f.region) ? f.region : 'FRONT'),
+      view,
+      panel: normalizePanel(meta?.panel, f.location, view),
       category,
       severity,
       part: f.location,
@@ -828,6 +1230,8 @@ export class InspectionService {
       return {
         id: f.id,
         view: assessed.view,
+        panel: assessed.panel,
+        code: findingCode(assessed.category, assessed.severity),
         category: assessed.category,
         damageType: f.damageType,
         severity: assessed.severity,
@@ -846,16 +1250,33 @@ export class InspectionService {
       id: ins.id,
       type: ins.type,
       status: ins.status,
+      /** True when the AI could not check the photos and staff recorded (or must record) the damage */
+      manualReview: Boolean(ins.manualReview),
+      /** A staff inspection waiting for staff to record the damage; the car must not move until then */
+      needsStaffReview: Boolean(ins.manualReview) && ins.status === 'CAPTURE_COMPLETE' && !ins.bookingId,
+      aiUnavailableReason: ins.aiUnavailableReason ?? null,
       vehicleId: ins.vehicleId,
       rentalId: ins.rentalId,
+      bookingId: ins.bookingId ?? null,
+      /** PICKUP or RETURN when the customer photographed the car themselves */
+      customerStage: ins.customerStage ?? null,
       createdAt: ins.createdAt,
       overallScore: score,
+      /** Out of 10, as on a used-car inspection report; null while nobody has checked the photos */
+      scoreOutOf10: ins.manualReview && ins.status === 'CAPTURE_COMPLETE' ? null : Math.round(score) / 10,
+      sectionScores: sectionScores(
+        findings,
+        (ins.photos || []).map((p: any) => p.view).filter((v: unknown) => isInspectionView(v))
+      ),
       conditionGrade: conditionGrade(score),
       summary: ins.summary,
       hasDamageDetected: ins.hasDamageDetected,
       coverageScore: ins.coverageScore,
-      vehicle: ins.vehicle,
+      vehicle: ins.vehicle || null,
+      detectedVehicle: this.formatDetected(ins),
       rental: ins.rental,
+      /** Booking of a customer's own check (staff inspections reach their booking through the rental) */
+      booking: ins.booking ?? null,
       performedBy: ins.performedBy,
       photos: (ins.photos || [])
         .map((p: any) => ({ id: p.id, view: p.view, imageUrl: p.imageUrl, qualityIssue: p.qualityDetails }))
@@ -867,6 +1288,31 @@ export class InspectionService {
         dents: findings.filter((f: any) => f.category === 'DENT').length,
         estimatedRepairCost: roundMoney(findings.reduce((s: number, f: any) => s + f.estimatedRepairCost, 0)),
       },
+    };
+  }
+
+  /** The vehicle as read from the photos. */
+  private static formatDetected(ins: any) {
+    if (
+      !ins.detectedMake &&
+      !ins.detectedModel &&
+      !ins.detectedColor &&
+      !ins.detectedPlate &&
+      ins.detectedMileageKm == null &&
+      !ins.detectedChassisNumber
+    ) {
+      return null;
+    }
+    return {
+      make: ins.detectedMake,
+      model: ins.detectedModel,
+      year: ins.detectedYear,
+      bodyType: ins.detectedBodyType,
+      color: ins.detectedColor,
+      colorHex: ins.detectedColorHex,
+      plate: ins.detectedPlate,
+      mileageKm: ins.detectedMileageKm ?? null,
+      chassisNumber: ins.detectedChassisNumber ?? null,
     };
   }
 

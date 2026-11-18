@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Loader2, RotateCcw, ScanLine, Wrench } from 'lucide-react';
@@ -16,11 +17,15 @@ import {
   type CapturedPhotos,
 } from '../../inspections/components/inspectionHelpers';
 import { DamageComparisonView } from '../../inspections/components/DamageComparisonView';
+import { InspectionReportView } from '../../inspections/components/InspectionReportView';
+import { ManualReviewPanel } from '../../inspections/components/ManualReviewPanel';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader } from '../../../components/common';
 import { formatMoney, getCarImage, APP_CURRENCY } from '../../../utils/carImageHelper';
 import '../../inspections/components/inspection.css';
 import { useTranslation } from 'react-i18next';
+
+const INFO_ROW_STYLE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' };
 
 const FUEL_LEVELS = ['100%', '75%', '50%', '25%', '10%'].map((v) => ({ value: v, label: v }));
 
@@ -126,8 +131,11 @@ export function ReturnVehiclePage() {
   const mileageNumber = Number(endMileage);
   const mileageValid = endMileage.trim() !== '' && Number.isFinite(mileageNumber) && rental !== null && mileageNumber >= rental.startMileage;
   const chargesKey = comparison ? comparison.charges.map((c) => `${c.id}:${c.status}`).join(',') : '';
+  // A return the AI could not check has an empty comparison until staff have recorded the damage
+  const needsReview = Boolean(returnInspection?.needsStaffReview);
+  const reviewedComparison = needsReview ? null : comparison;
   useEffect(() => {
-    if (!rental || !returnInspection || !mileageValid) {
+    if (!rental || !returnInspection || needsReview || !mileageValid) {
       setPreview(null);
       return;
     }
@@ -157,7 +165,7 @@ export function ReturnVehiclePage() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [rental, returnInspection, mileageValid, mileageNumber, endFuelLevel, fuelCharge, additionalAdjustment, chargesKey, t]);
+  }, [rental, returnInspection, needsReview, mileageValid, mileageNumber, endFuelLevel, fuelCharge, additionalAdjustment, chargesKey, t]);
 
   const runScan = async () => {
     if (!rental) return;
@@ -170,6 +178,9 @@ export function ReturnVehiclePage() {
     try {
       const res = await inspectionApi.analyze({ type: 'RETURN', rentalId: rental.id, photos: toAnalyzePhotos(photos) });
       setReturnInspection(res.inspection);
+      // The odometer read from its photo fills the return mileage; staff can still correct it
+      const readMileage = res.inspection.detectedVehicle?.mileageKm;
+      if (typeof readMileage === 'number' && readMileage > 0) setEndMileage(String(readMileage));
       setComparison(res.inspection.comparison || null);
       // New damage usually means the car needs repair before the next booking
       setSendToMaintenance(Boolean(res.inspection.comparison && res.inspection.comparison.newDamageCount > 0));
@@ -181,7 +192,7 @@ export function ReturnVehiclePage() {
   };
 
   const completeReturn = async () => {
-    if (!rental || !returnInspection) return;
+    if (!rental || !returnInspection || needsReview) return;
     if (!mileageValid) {
       setError(t('adminPages.rentals._errReturnOdometer', { km: rental.startMileage }));
       return;
@@ -330,6 +341,21 @@ export function ReturnVehiclePage() {
                   </button>
                 )}
               </>
+            ) : needsReview && returnInspection ? (
+              <>
+                <InspectionReportView report={returnInspection} currency={currency} />
+                <ManualReviewPanel
+                  report={returnInspection}
+                  currency={currency}
+                  onDone={(reviewed) => {
+                    setReturnInspection(reviewed);
+                    setComparison(reviewed.comparison || null);
+                    setSendToMaintenance(Boolean(reviewed.comparison && reviewed.comparison.newDamageCount > 0));
+                  }}
+                  onRetryAi={runScan}
+                  retrying={scanning}
+                />
+              </>
             ) : (
               <>
                 <div
@@ -357,48 +383,48 @@ export function ReturnVehiclePage() {
           </section>
 
           {/* Step 2 */}
-          <section style={{ ...card, opacity: comparison ? 1 : 0.55 }} aria-disabled={!comparison}>
+          <section style={{ ...card, opacity: reviewedComparison ? 1 : 0.55 }} aria-disabled={!reviewedComparison}>
             <h3 style={{ margin: 0, color: '#1E0426' }}>{t('adminPages.rentals.returnStep2')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '14px' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
+              <label style={INFO_ROW_STYLE}>
                 {t('adminPages.rentals.odometer')}
                 <input
                   type="number"
                   min={rental.startMileage}
                   inputMode="numeric"
                   value={endMileage}
-                  disabled={!comparison}
+                  disabled={!reviewedComparison}
                   onChange={(e) => setEndMileage(e.target.value)}
                   style={inputStyle}
                 />
               </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
+              <div style={INFO_ROW_STYLE}>
                 {t('adminPages.rentals.fuelLevel')}
                 <CustomSelect
                   value={endFuelLevel}
                   onChange={(v) => setEndFuelLevel(String(v))}
                   options={FUEL_LEVELS}
-                  disabled={!comparison}
+                  disabled={!reviewedComparison}
                   size="md"
                 />
               </div>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
+              <label style={INFO_ROW_STYLE}>
                 {t('adminPages.rentals._fuelChargeLabel', { currency })}
                 <input
                   type="number"
                   min={0}
                   value={fuelCharge}
-                  disabled={!comparison}
+                  disabled={!reviewedComparison}
                   onChange={(e) => setFuelCharge(e.target.value)}
                   style={inputStyle}
                 />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontWeight: 600, color: '#1E0426' }}>
+              <label style={INFO_ROW_STYLE}>
                 {t('adminPages.rentals._adjustmentLabel', { currency })}
                 <input
                   type="number"
                   value={additionalAdjustment}
-                  disabled={!comparison}
+                  disabled={!reviewedComparison}
                   onChange={(e) => setAdditionalAdjustment(e.target.value)}
                   style={inputStyle}
                 />
@@ -409,7 +435,7 @@ export function ReturnVehiclePage() {
               onChange={(e) => setConditionNotes(e.target.value)}
               placeholder={t('adminPages.rentals.returnNotes')}
               rows={2}
-              disabled={!comparison}
+              disabled={!reviewedComparison}
               style={{ width: '100%', borderRadius: '10px', border: '1px solid #ECEAEF', padding: '10px', boxSizing: 'border-box', fontFamily: 'inherit' }}
             />
 
@@ -473,13 +499,13 @@ export function ReturnVehiclePage() {
                 borderRadius: '12px',
                 border: `1px solid ${sendToMaintenance ? '#DC2626' : '#ECEAEF'}`,
                 backgroundColor: sendToMaintenance ? 'rgba(220,38,38,0.05)' : '#FFFFFF',
-                cursor: comparison ? 'pointer' : 'not-allowed',
+                cursor: reviewedComparison ? 'pointer' : 'not-allowed',
               }}
             >
               <input
                 type="checkbox"
                 checked={sendToMaintenance}
-                disabled={!comparison}
+                disabled={!reviewedComparison}
                 onChange={(e) => setSendToMaintenance(e.target.checked)}
                 style={{ width: '18px', height: '18px', accentColor: '#DC2626', marginTop: '2px' }}
               />
@@ -495,8 +521,8 @@ export function ReturnVehiclePage() {
 
             <button
               type="button"
-              style={{ ...primaryButton, opacity: comparison && mileageValid && !submitting ? 1 : 0.5, alignSelf: 'flex-start' }}
-              disabled={!comparison || !mileageValid || submitting}
+              style={{ ...primaryButton, opacity: reviewedComparison && mileageValid && !submitting ? 1 : 0.5, alignSelf: 'flex-start' }}
+              disabled={!reviewedComparison || !mileageValid || submitting}
               onClick={completeReturn}
             >
               <CheckCircle2 size={18} />

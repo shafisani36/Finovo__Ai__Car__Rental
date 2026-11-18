@@ -136,6 +136,11 @@ export class DamageDisputeService {
             bookingNumber: true,
             customer: { select: { fullName: true, email: true } },
             vehicle: { select: { brand: true, model: true, registrationNumber: true } },
+            // The customer's own photo checks, to weigh against the staff reports
+            customerScans: {
+              select: { id: true, customerStage: true, overallScore: true, createdAt: true },
+              orderBy: { createdAt: 'asc' },
+            },
           },
         },
       },
@@ -159,6 +164,13 @@ export class DamageDisputeService {
         response: c.disputeResponse,
         openedAt: c.disputeOpenedAt,
         resolvedAt: c.disputeResolvedAt,
+        customerScans: c.bookings.customerScans.map((scan) => ({
+          id: scan.id,
+          stage: scan.customerStage,
+          // No score when the AI could not check the customer's photos
+          scoreOutOf10: scan.overallScore == null ? null : Math.round(scan.overallScore) / 10,
+          createdAt: scan.createdAt,
+        })),
       }))
       .sort((a, b) => Number(a.status !== 'DISPUTED') - Number(b.status !== 'DISPUTED'));
   }

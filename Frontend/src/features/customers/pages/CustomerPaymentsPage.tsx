@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,6 +15,8 @@ import { CustomSelect } from '../../../components/common/CustomSelect';
 import { StripePaymentForm } from '../../payments/components/StripePaymentForm';
 import { formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
+
+const INFO_ROW_STYLE: CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '8px' };
 
 export function CustomerPaymentsPage() {
   const { t, i18n } = useTranslation();
@@ -112,7 +115,7 @@ export function CustomerPaymentsPage() {
       {/* KPI Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
         <div className="cp-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '8px' }}>
+          <div style={INFO_ROW_STYLE}>
             <CheckCircle2 size={18} color="#10B981" />
             {t('portalPages.payments.totalPaid')}
           </div>
@@ -125,7 +128,7 @@ export function CustomerPaymentsPage() {
         </div>
 
         <div className="cp-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '8px' }}>
+          <div style={INFO_ROW_STYLE}>
             <AlertCircle size={18} color={summary.totalOutstanding > 0 ? '#EF4444' : '#10B981'} />
             {t('portalPages.payments.outstanding')}
           </div>
@@ -144,7 +147,7 @@ export function CustomerPaymentsPage() {
         </div>
 
         <div className="cp-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--cp-text-muted)', fontSize: '0.88rem', marginBottom: '8px' }}>
+          <div style={INFO_ROW_STYLE}>
             <ShieldCheck size={18} color="#FAB826" />
             {t('portalPages.payments.depositsHeld')}
           </div>

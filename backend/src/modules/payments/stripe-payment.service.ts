@@ -5,7 +5,9 @@ import { prisma } from '../../infrastructure/prisma/prisma.client';
 import { AppError } from '../../shared/errors/app-error';
 import { env } from '../../config/env.config';
 import { AWAITING_PAYMENT_STATUS, BookingService } from '../bookings/booking.service';
+import { BookingEmails } from '../notifications/booking-emails';
 import { MessagingService } from '../notifications/messaging.service';
+import { TrafficFineService } from '../traffic-fines/traffic-fine.service';
 
 /** Currencies Stripe charges without minor units. */
 const ZERO_DECIMAL_CURRENCIES = new Set([
@@ -236,7 +238,9 @@ export class StripePaymentService {
       const intent = await stripe.paymentIntents.retrieve((event.data.object as Stripe.PaymentIntent).id, {
         expand: ['latest_charge'],
       });
-      if (intent.metadata?.bookingId) {
+      if (intent.metadata?.trafficFineId) {
+        await TrafficFineService.syncPayment(intent);
+      } else if (intent.metadata?.bookingId) {
         await this.syncPaymentIntent(intent);
       }
     }
@@ -337,6 +341,8 @@ export class StripePaymentService {
         where: { customerId: booking.customerId, category: 'PAYMENT', actionUrl: `/customer/payments?pi=${intent.id}` },
       });
       if (!alreadyNotified) {
+        // Checked once per payment, so the receipt is emailed once even when the webhook and the page both report it
+        void BookingEmails.paymentReceived(payment.id);
         await prisma.customerNotification.create({
           data: {
             customerId: booking.customerId,

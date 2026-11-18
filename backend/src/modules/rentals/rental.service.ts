@@ -165,6 +165,9 @@ export class RentalService {
     if (!inspection || inspection.type !== 'RETURN' || inspection.rentalId !== rentalId) {
       throw AppError.badRequest('The return inspection does not belong to this rental');
     }
+    if (inspection.manualReview && inspection.status === 'CAPTURE_COMPLETE') {
+      throw AppError.badRequest('The AI could not check the returned car. Review the photos and record any damage before completing the return.');
+    }
     const comparison = await prisma.damage_comparisons.findFirst({
       where: { returnInspectionId },
       include: { damage_charges: true },
@@ -269,6 +272,9 @@ export class RentalService {
       pickupInspection.rentalId !== null
     ) {
       throw AppError.badRequest('The pickup inspection does not belong to this vehicle or was already used');
+    }
+    if (pickupInspection.manualReview && pickupInspection.status === 'CAPTURE_COMPLETE') {
+      throw AppError.badRequest('The AI could not check this car. Review the photos and record any damage before handing over the keys.');
     }
     const ageHours = (Date.now() - pickupInspection.createdAt.getTime()) / 3_600_000;
     if (ageHours > PICKUP_SCAN_VALID_HOURS) {

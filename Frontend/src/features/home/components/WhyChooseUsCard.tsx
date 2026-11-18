@@ -1,7 +1,85 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { WhyChooseUsItem } from '../../../types';
 import { MapPin, ShieldCheck, Sparkles, Headphones } from 'lucide-react';
+
+/** White title and description used at the top of every card. */
+function CardText({ title, description }: { title: string; description: string }) {
+  return (
+    <>
+      <h3
+        style={{
+          fontFamily: 'var(--font-family-display)',
+          fontSize: 'clamp(1.22rem, 1.7vw, 1.4rem)',
+          fontWeight: 700,
+          color: '#FFFFFF',
+          lineHeight: 1.25,
+          letterSpacing: '-0.015em',
+          margin: '0 0 6px 0',
+        }}
+      >
+        {title}
+      </h3>
+      <p style={{ fontSize: 'clamp(0.82rem, 1vw, 0.88rem)', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.4, margin: 0 }}>
+        {description}
+      </p>
+    </>
+  );
+}
+
+/** Nearby drivers shown on the first card, positioned like the design. */
+const USER_PILLS: Array<{ name: string; avatar: string; distanceKey: string; position: CSSProperties }> = [
+  { name: 'Zion Lark', avatar: '/why-choose-us/avatar-zion.png', distanceKey: 'home.whyChooseUs.away5km', position: { top: '80px', insetInlineStart: '20px' } },
+  { name: 'Larkin', avatar: '/why-choose-us/avatar-larkin.png', distanceKey: 'home.whyChooseUs.away35m', position: { top: '118px', insetInlineStart: 'clamp(145px, 32%, 175px)' } },
+  { name: 'Remi', avatar: '/why-choose-us/avatar-remi.png', distanceKey: 'home.whyChooseUs.away55m', position: { bottom: '18px', insetInlineStart: '16px' } },
+];
+
+function UserPill({
+  index,
+  name,
+  avatar,
+  distance,
+  position,
+  lifted,
+}: {
+  index: number;
+  name: string;
+  avatar: string;
+  distance: string;
+  position: CSSProperties;
+  lifted: boolean;
+}) {
+  return (
+    <div
+      className={`user-pill user-pill-${index}`}
+      style={{
+        position: 'absolute',
+        ...position,
+        background: '#FFFFFF',
+        borderRadius: '9999px',
+        paddingBlock: '3px',
+        paddingInlineStart: '3px',
+        paddingInlineEnd: '12px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '7px',
+        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
+        zIndex: 8,
+        transition: 'transform 0.3s ease',
+        transform: lifted ? 'translateY(-2px)' : 'translateY(0)',
+      }}
+    >
+      <img src={avatar} alt={name} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>{name}</span>
+        <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
+          <span style={{ color: '#FF8A00', marginInlineEnd: '3px' }}>•</span>
+          {distance}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 interface WhyChooseUsCardProps {
   item: WhyChooseUsItem;
@@ -62,29 +140,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               textAlign: 'start',
             }}
           >
-            <h3
-              style={{
-                fontFamily: 'var(--font-family-display)',
-                fontSize: 'clamp(1.22rem, 1.7vw, 1.4rem)',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                lineHeight: 1.25,
-                letterSpacing: '-0.015em',
-                margin: '0 0 6px 0',
-              }}
-            >
-              {title}
-            </h3>
-            <p
-              style={{
-                fontSize: 'clamp(0.82rem, 1vw, 0.88rem)',
-                color: 'rgba(255, 255, 255, 0.85)',
-                lineHeight: 1.4,
-                margin: 0,
-              }}
-            >
-              {description}
-            </p>
+            <CardText title={title} description={description} />
           </div>
 
           <svg
@@ -127,107 +183,9 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
             </svg>
           </div>
 
-          <div
-            className="user-pill user-pill-1"
-            style={{
-              position: 'absolute',
-              top: '80px',
-              insetInlineStart: '20px',
-              background: '#FFFFFF',
-              borderRadius: '9999px',
-              paddingBlock: '3px',
-              paddingInlineStart: '3px',
-              paddingInlineEnd: '12px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
-              zIndex: 8,
-              transition: 'transform 0.3s ease',
-              transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-            }}
-          >
-            <img
-              src="/why-choose-us/avatar-zion.png"
-              alt="Zion Lark"
-              style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>Zion Lark</span>
-              <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
-                <span style={{ color: '#FF8A00', marginInlineEnd: '3px' }}>•</span>
-                {t('home.whyChooseUs.away5km')}
-              </span>
-            </div>
-          </div>
-
-          <div
-            className="user-pill user-pill-2"
-            style={{
-              position: 'absolute',
-              top: '118px',
-              insetInlineStart: 'clamp(145px, 32%, 175px)',
-              background: '#FFFFFF',
-              borderRadius: '9999px',
-              paddingBlock: '3px',
-              paddingInlineStart: '3px',
-              paddingInlineEnd: '12px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
-              zIndex: 8,
-              transition: 'transform 0.3s ease',
-              transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-            }}
-          >
-            <img
-              src="/why-choose-us/avatar-larkin.png"
-              alt="Larkin"
-              style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>Larkin</span>
-              <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
-                <span style={{ color: '#FF8A00', marginInlineEnd: '3px' }}>•</span>
-                {t('home.whyChooseUs.away35m')}
-              </span>
-            </div>
-          </div>
-
-          <div
-            className="user-pill user-pill-3"
-            style={{
-              position: 'absolute',
-              bottom: '18px',
-              insetInlineStart: '16px',
-              background: '#FFFFFF',
-              borderRadius: '9999px',
-              paddingBlock: '3px',
-              paddingInlineStart: '3px',
-              paddingInlineEnd: '12px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
-              zIndex: 8,
-              transition: 'transform 0.3s ease',
-              transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-            }}
-          >
-            <img
-              src="/why-choose-us/avatar-remi.png"
-              alt="Remi"
-              style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>Remi</span>
-              <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
-                <span style={{ color: '#FF8A00', marginInlineEnd: '3px' }}>•</span>
-                {t('home.whyChooseUs.away55m')}
-              </span>
-            </div>
-          </div>
+          {USER_PILLS.map((pill, i) => (
+            <UserPill key={pill.name} index={i + 1} {...pill} distance={t(pill.distanceKey)} lifted={isHovered} />
+          ))}
 
           <div
             className="why-us-car-wrap"
@@ -270,29 +228,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               textAlign: 'start',
             }}
           >
-            <h3
-              style={{
-                fontFamily: 'var(--font-family-display)',
-                fontSize: 'clamp(1.22rem, 1.7vw, 1.4rem)',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                lineHeight: 1.25,
-                letterSpacing: '-0.015em',
-                margin: '0 0 6px 0',
-              }}
-            >
-              {title}
-            </h3>
-            <p
-              style={{
-                fontSize: 'clamp(0.82rem, 1vw, 0.88rem)',
-                color: 'rgba(255, 255, 255, 0.85)',
-                lineHeight: 1.4,
-                margin: 0,
-              }}
-            >
-              {description}
-            </p>
+            <CardText title={title} description={description} />
           </div>
 
           {/* Card A: Transparent Pricing */}
@@ -422,29 +358,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               textAlign: 'start',
             }}
           >
-            <h3
-              style={{
-                fontFamily: 'var(--font-family-display)',
-                fontSize: 'clamp(1.22rem, 1.7vw, 1.4rem)',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                lineHeight: 1.25,
-                letterSpacing: '-0.015em',
-                margin: '0 0 6px 0',
-              }}
-            >
-              {title}
-            </h3>
-            <p
-              style={{
-                fontSize: 'clamp(0.82rem, 1vw, 0.88rem)',
-                color: 'rgba(255, 255, 255, 0.85)',
-                lineHeight: 1.4,
-                margin: 0,
-              }}
-            >
-              {description}
-            </p>
+            <CardText title={title} description={description} />
           </div>
 
           <div
@@ -558,29 +472,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               textAlign: 'start',
             }}
           >
-            <h3
-              style={{
-                fontFamily: 'var(--font-family-display)',
-                fontSize: 'clamp(1.22rem, 1.7vw, 1.4rem)',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                lineHeight: 1.25,
-                letterSpacing: '-0.015em',
-                margin: '0 0 6px 0',
-              }}
-            >
-              {title}
-            </h3>
-            <p
-              style={{
-                fontSize: 'clamp(0.82rem, 1vw, 0.88rem)',
-                color: 'rgba(255, 255, 255, 0.85)',
-                lineHeight: 1.4,
-                margin: 0,
-              }}
-            >
-              {description}
-            </p>
+            <CardText title={title} description={description} />
           </div>
 
           <div

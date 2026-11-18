@@ -11,6 +11,8 @@ import {
   Mail,
   FileText,
   Truck,
+  ScanLine,
+  QrCode,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -225,6 +227,22 @@ export function CustomerBookingDetailPage() {
               <Camera size={16} />
               {t('portalPages.bookingDetail.inspection')}
             </Link>
+            {booking.status === 'CONFIRMED' && (
+              <Link to={`/customer/bookings/${booking.id}/check-in`} className="cp-btn-primary">
+                <QrCode size={16} />
+                {t('portalPages.checkIn.cta')}
+              </Link>
+            )}
+            {booking.status === 'ACTIVE' && (
+              <Link
+                to={`/customer/bookings/${booking.id}/self-check`}
+                className="cp-btn-outline"
+                style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#FFFFFF', borderColor: 'rgba(255, 255, 255, 0.2)' }}
+              >
+                <ScanLine size={16} />
+                {t('portalPages.selfCheck.cta')}
+              </Link>
+            )}
           </div>
         </div>
       </div>

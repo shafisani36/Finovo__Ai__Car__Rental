@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { CustomerPortalService } from './customer-portal.service';
+import { CheckInService } from './check-in.service';
 
 export class CustomerPortalController {
   static async getOverview(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -37,6 +38,34 @@ export class CustomerPortalController {
       res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
       res.setHeader('Cache-Control', 'private, no-store');
       res.send(file.content);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async checkInStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.status(200).json({ success: true, checkIn: await CheckInService.status(req.user!.userId, String(req.params.id)) });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async completeCheckIn(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const checkIn = await CheckInService.complete(req.user!.userId, String(req.params.id), req.body);
+      res.status(200).json({ success: true, checkIn });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async checkInQr(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const png = await CheckInService.qrPng(req.user!.userId, String(req.params.id));
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.send(png);
     } catch (err) {
       next(err);
     }

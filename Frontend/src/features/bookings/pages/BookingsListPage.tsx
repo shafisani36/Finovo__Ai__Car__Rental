@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { bookingApi, type Booking } from '../api/bookingApi';
@@ -23,6 +24,8 @@ import { formatMoney } from '../../../utils/carImageHelper';
 import { useTranslation } from 'react-i18next';
 import { rentalApi, type RentalAgreementSummary } from '../../rentals/api/rentalApi';
 import { downloadProtectedFile } from '../../../utils/downloadFile';
+
+const CAPTION_STYLE: CSSProperties = { fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' };
 
 function VehicleThumbnail({ src, brand, model }: { src?: string; brand: string; model: string }) {
   const [hasError, setHasError] = useState(false);
@@ -487,7 +490,7 @@ export function BookingsListPage() {
                       <User size={18} color="#6B7280" />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <div style={CAPTION_STYLE}>
                         {t('adminPages.bookings.customer')}
                       </div>
                       <div
@@ -537,7 +540,7 @@ export function BookingsListPage() {
                       <Calendar size={18} color="#D97706" />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <div style={CAPTION_STYLE}>
                         {t('adminPages.bookings.period')}
                       </div>
                       <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.88rem' }}>
@@ -570,7 +573,7 @@ export function BookingsListPage() {
                       <Banknote size={18} color="#059669" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <div style={CAPTION_STYLE}>
                         {t('adminPages.bookings.totalAmount')}
                       </div>
                       <div style={{ fontWeight: 800, color: '#1E0426', fontSize: '1.25rem', lineHeight: '1.2' }}>

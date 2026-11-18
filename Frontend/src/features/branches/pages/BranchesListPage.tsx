@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { branchApi } from '../api/branchApi';
@@ -19,6 +20,9 @@ import {
   Modal,
   alertDialog,
 } from '../../../components/common';
+
+const LABEL_STYLE: CSSProperties = { display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' };
+const INPUT_STYLE: CSSProperties = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #ECEAEF', backgroundColor: '#F7F5F8', boxSizing: 'border-box' };
 
 export function BranchesListPage() {
   const { t } = useTranslation();
@@ -252,7 +256,7 @@ export function BranchesListPage() {
           <form onSubmit={handleCreateBranch} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.branches.fieldName')}
                 </label>
                 <input
@@ -261,19 +265,12 @@ export function BranchesListPage() {
                   placeholder={t('adminPages.branches.placeholderName')}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    backgroundColor: '#F7F5F8',
-                    boxSizing: 'border-box',
-                  }}
+                  style={INPUT_STYLE}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.branches.fieldCode')}
                 </label>
                 <input
@@ -282,21 +279,14 @@ export function BranchesListPage() {
                   placeholder={t('adminPages.branches.placeholderCode')}
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    backgroundColor: '#F7F5F8',
-                    boxSizing: 'border-box',
-                  }}
+                  style={INPUT_STYLE}
                 />
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.branches.fieldCity')}
                 </label>
                 <input
@@ -305,19 +295,12 @@ export function BranchesListPage() {
                   placeholder={t('adminPages.branches.placeholderCity')}
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    backgroundColor: '#F7F5F8',
-                    boxSizing: 'border-box',
-                  }}
+                  style={INPUT_STYLE}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.branches.fieldPhone')}
                 </label>
                 <input
@@ -325,20 +308,13 @@ export function BranchesListPage() {
                   placeholder="+1 (555) 019-2831"
                   value={formData.phone || ''}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    backgroundColor: '#F7F5F8',
-                    boxSizing: 'border-box',
-                  }}
+                  style={INPUT_STYLE}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.branches.fieldAddress')}
               </label>
               <input
@@ -346,33 +322,19 @@ export function BranchesListPage() {
                 placeholder={t('adminPages.branches.placeholderAddress')}
                 value={formData.address || ''}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#F7F5F8',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#685D73', marginBottom: '6px' }}>
+              <label style={LABEL_STYLE}>
                 {t('adminPages.branches.fieldHours')}
               </label>
               <input
                 type="text"
                 value={formData.openingHours || ''}
                 onChange={(e) => setFormData({ ...formData, openingHours: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#F7F5F8',
-                  boxSizing: 'border-box',
-                }}
+                style={INPUT_STYLE}
               />
             </div>
 

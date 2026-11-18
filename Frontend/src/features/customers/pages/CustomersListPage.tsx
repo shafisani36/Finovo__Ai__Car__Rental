@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { customerApi } from '../api/customerApi';
@@ -31,6 +32,9 @@ import { useConfirm } from '../../../components/common/ConfirmModal';
 import { formatMoney } from '../../../utils/carImageHelper';
 import { useTranslation } from 'react-i18next';
 
+const LABEL_STYLE: CSSProperties = { display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' };
+const INPUT_STYLE: CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ECEAEF', outline: 'none', fontSize: '0.9rem', boxSizing: 'border-box' };
+
 export function CustomersListPage() {
   const { t, i18n } = useTranslation();
   const { confirm } = useConfirm();
@@ -44,8 +48,9 @@ export function CustomersListPage() {
 
   // Modals state
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  // 'new' opens the form empty, a customer opens it for editing
+  const [formTarget, setFormTarget] = useState<'new' | Customer | null>(null);
+  const editingCustomer = formTarget && formTarget !== 'new' ? formTarget : null;
 
   // Form states
   const [formData, setFormData] = useState<CreateCustomerPayload>({
@@ -85,33 +90,20 @@ export function CustomersListPage() {
     loadCustomers(searchQuery);
   };
 
-  const handleOpenAddModal = () => {
+  const handleOpenForm = (c?: Customer) => {
     setFormData({
-      fullName: '',
-      email: '',
-      phone: '',
-      driverLicenseNumber: '',
-      licenseExpiryDate: '',
-      isLicenseVerified: false,
+      fullName: c?.fullName || '',
+      email: c?.email || '',
+      phone: c?.phone || '',
+      driverLicenseNumber: c?.driverLicenseNumber || '',
+      licenseExpiryDate: c?.licenseExpiryDate ? c.licenseExpiryDate.split('T')[0] : '',
+      isLicenseVerified: c?.isLicenseVerified ?? false,
     });
     setFormError(null);
-    setIsAddModalOpen(true);
+    setFormTarget(c || 'new');
   };
 
-  const handleOpenEditModal = (c: Customer) => {
-    setEditingCustomer(c);
-    setFormData({
-      fullName: c.fullName,
-      email: c.email,
-      phone: c.phone || '',
-      driverLicenseNumber: c.driverLicenseNumber || '',
-      licenseExpiryDate: c.licenseExpiryDate ? c.licenseExpiryDate.split('T')[0] : '',
-      isLicenseVerified: c.isLicenseVerified,
-    });
-    setFormError(null);
-  };
-
-  const handleCreateCustomer = async (e: React.FormEvent) => {
+  const handleSaveCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName.trim() || !formData.email.trim()) {
       setFormError(t('adminPages.customers.errRequired'));
@@ -121,46 +113,24 @@ export function CustomersListPage() {
     try {
       setIsSubmitting(true);
       setFormError(null);
-      const res = await customerApi.createCustomer(formData);
-      if (res.success && res.customer) {
-        setIsAddModalOpen(false);
-        await loadCustomers();
+      if (editingCustomer) {
+        const payload: UpdateCustomerPayload = {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone || undefined,
+          driverLicenseNumber: formData.driverLicenseNumber || undefined,
+          licenseExpiryDate: formData.licenseExpiryDate || undefined,
+          isLicenseVerified: formData.isLicenseVerified,
+        };
+        await customerApi.updateCustomer(editingCustomer.id, payload);
+      } else {
+        await customerApi.createCustomer(formData);
       }
+      setFormTarget(null);
+      await loadCustomers();
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setFormError(e.message || t('adminPages.customers.errCreate'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCustomer) return;
-    if (!formData.fullName.trim() || !formData.email.trim()) {
-      setFormError(t('adminPages.customers.errRequired'));
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setFormError(null);
-      const payload: UpdateCustomerPayload = {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone || undefined,
-        driverLicenseNumber: formData.driverLicenseNumber || undefined,
-        licenseExpiryDate: formData.licenseExpiryDate || undefined,
-        isLicenseVerified: formData.isLicenseVerified,
-      };
-      const res = await customerApi.updateCustomer(editingCustomer.id, payload);
-      if (res.success && res.customer) {
-        setEditingCustomer(null);
-        await loadCustomers();
-      }
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      setFormError(e.message || t('adminPages.customers.errUpdate'));
+      setFormError(e.message || t(editingCustomer ? 'adminPages.customers.errUpdate' : 'adminPages.customers.errCreate'));
     } finally {
       setIsSubmitting(false);
     }
@@ -234,7 +204,7 @@ export function CustomersListPage() {
         ]}
         actions={
           <button
-            onClick={handleOpenAddModal}
+            onClick={() => handleOpenForm()}
             style={{
               backgroundColor: '#FAB826',
               color: '#1A0322',
@@ -585,7 +555,7 @@ export function CustomersListPage() {
 
                         {/* Edit */}
                         <button
-                          onClick={() => handleOpenEditModal(c)}
+                          onClick={() => handleOpenForm(c)}
                           title={t('adminPages.customers.editCustomer')}
                           style={{
                             padding: '6px 10px',
@@ -777,16 +747,16 @@ export function CustomersListPage() {
         </Modal>
       )}
 
-      {/* Add Customer Modal */}
-      {isAddModalOpen && (
+      {/* Add / edit customer modal */}
+      {formTarget && (
         <Modal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          title={t('adminPages.customers.addTitle')}
-          subtitle={t('adminPages.customers.addSubtitle')}
+          isOpen
+          onClose={() => setFormTarget(null)}
+          title={editingCustomer ? t('adminPages.customers._editTitle', { name: editingCustomer.fullName }) : t('adminPages.customers.addTitle')}
+          subtitle={editingCustomer ? t('adminPages.customers.editSubtitle') : t('adminPages.customers.addSubtitle')}
           maxWidth="560px"
         >
-          <form onSubmit={handleCreateCustomer}>
+          <form onSubmit={handleSaveCustomer}>
             {formError && (
               <div
                 style={{
@@ -805,7 +775,7 @@ export function CustomersListPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.customers.fullNameReq')}
                 </label>
                 <input
@@ -814,20 +784,12 @@ export function CustomersListPage() {
                   placeholder={t('adminPages.customers.namePlaceholder')}
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    outline: 'none',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
+                  style={INPUT_STYLE}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.customers.emailReq')}
                 </label>
                 <input
@@ -836,20 +798,12 @@ export function CustomersListPage() {
                   placeholder={t('adminPages.customers.emailPlaceholder')}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    outline: 'none',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
+                  style={INPUT_STYLE}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.customers.phone')}
                 </label>
                 <input
@@ -857,21 +811,13 @@ export function CustomersListPage() {
                   placeholder="+1 555-0199"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    outline: 'none',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
+                  style={INPUT_STYLE}
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+                  <label style={LABEL_STYLE}>
                     {t('adminPages.customers.licenseNumber')}
                   </label>
                   <input
@@ -879,35 +825,19 @@ export function CustomersListPage() {
                     placeholder="DL-8837190"
                     value={formData.driverLicenseNumber}
                     onChange={(e) => setFormData({ ...formData, driverLicenseNumber: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid #ECEAEF',
-                      outline: 'none',
-                      fontSize: '0.9rem',
-                      boxSizing: 'border-box',
-                    }}
+                    style={INPUT_STYLE}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
+                  <label style={LABEL_STYLE}>
                     {t('adminPages.customers.licenseExpiry')}
                   </label>
                   <input
                     type="date"
                     value={formData.licenseExpiryDate}
                     onChange={(e) => setFormData({ ...formData, licenseExpiryDate: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid #ECEAEF',
-                      outline: 'none',
-                      fontSize: '0.9rem',
-                      boxSizing: 'border-box',
-                    }}
+                    style={INPUT_STYLE}
                   />
                 </div>
               </div>
@@ -920,7 +850,7 @@ export function CustomersListPage() {
                     onChange={(e) => setFormData({ ...formData, isLicenseVerified: e.target.checked })}
                     style={{ width: '16px', height: '16px', accentColor: '#1E0426' }}
                   />
-                  <span>{t('adminPages.customers.markVerified')}</span>
+                  <span>{editingCustomer ? t('adminPages.customers.licenseVerified') : t('adminPages.customers.markVerified')}</span>
                 </label>
               </div>
             </div>
@@ -928,7 +858,7 @@ export function CustomersListPage() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => setFormTarget(null)}
                 style={{
                   padding: '10px 18px',
                   borderRadius: '8px',
@@ -956,189 +886,13 @@ export function CustomersListPage() {
                   cursor: isSubmitting ? 'wait' : 'pointer',
                 }}
               >
-                {isSubmitting ? t('adminPages.customers._creating') : t('adminPages.customers._createCustomer')}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Edit Customer Modal */}
-      {editingCustomer && (
-        <Modal
-          isOpen={!!editingCustomer}
-          onClose={() => setEditingCustomer(null)}
-          title={t('adminPages.customers._editTitle', { name: editingCustomer.fullName })}
-          subtitle={t('adminPages.customers.editSubtitle')}
-          maxWidth="560px"
-        >
-          <form onSubmit={handleUpdateCustomer}>
-            {formError && (
-              <div
-                style={{
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #FEE2E2',
-                  color: '#DC2626',
-                  padding: '12px 14px',
-                  borderRadius: '10px',
-                  fontSize: '0.85rem',
-                  marginBottom: '16px',
-                }}
-              >
-                {formError}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  {t('adminPages.customers.fullNameReq')}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    outline: 'none',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  {t('adminPages.customers.emailReq')}
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    outline: 'none',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                  {t('adminPages.customers.phone')}
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #ECEAEF',
-                    outline: 'none',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                    {t('adminPages.customers.licenseNumber')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.driverLicenseNumber}
-                    onChange={(e) => setFormData({ ...formData, driverLicenseNumber: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid #ECEAEF',
-                      outline: 'none',
-                      fontSize: '0.9rem',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>
-                    {t('adminPages.customers.licenseExpiry')}
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.licenseExpiryDate}
-                    onChange={(e) => setFormData({ ...formData, licenseExpiryDate: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid #ECEAEF',
-                      outline: 'none',
-                      fontSize: '0.9rem',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginTop: '4px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.isLicenseVerified}
-                    onChange={(e) => setFormData({ ...formData, isLicenseVerified: e.target.checked })}
-                    style={{ width: '16px', height: '16px', accentColor: '#1E0426' }}
-                  />
-                  <span>{t('adminPages.customers.licenseVerified')}</span>
-                </label>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-              <button
-                type="button"
-                onClick={() => setEditingCustomer(null)}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: '8px',
-                  border: '1px solid #ECEAEF',
-                  backgroundColor: '#FFFFFF',
-                  color: '#685D73',
-                  fontWeight: 600,
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                }}
-              >
-                {t('adminPages.customers.cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
-                  padding: '10px 22px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: '#1E0426',
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  cursor: isSubmitting ? 'wait' : 'pointer',
-                }}
-              >
-                {isSubmitting ? t('adminPages.customers._savingChanges') : t('adminPages.customers._save')}
+                {isSubmitting
+                  ? editingCustomer
+                    ? t('adminPages.customers._savingChanges')
+                    : t('adminPages.customers._creating')
+                  : editingCustomer
+                    ? t('adminPages.customers._save')
+                    : t('adminPages.customers._createCustomer')}
               </button>
             </div>
           </form>

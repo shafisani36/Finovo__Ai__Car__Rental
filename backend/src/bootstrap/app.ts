@@ -20,6 +20,7 @@ import { inquiryRouter } from '../api/routes/inquiry.routes';
 import { promoCodeRouter } from '../api/routes/promo-code.routes';
 import { translationRouter } from '../modules/translations/translation.routes';
 import { paymentRouter } from '../api/routes/payment.routes';
+import { trafficFineRouter } from '../api/routes/traffic-fine.routes';
 import { publicSiteRouter } from '../modules/public/public-site.routes';
 import { StripePaymentController } from '../modules/payments/stripe-payment.controller';
 import { errorHandler } from '../middleware/error-handler';
@@ -101,6 +102,7 @@ export function createApp(): Application {
   app.use('/api/v1/vehicles', largeBody);
   app.use('/api/v1/inspections', largeBody);
   app.use('/api/v1/customers', largeBody);
+  app.use('/api/v1/traffic-fines', largeBody);
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
@@ -171,6 +173,7 @@ export function createApp(): Application {
   app.use('/api/v1/promo-codes', promoCodeRouter);
   app.use('/api/v1/translations', translationRouter);
   app.use('/api/v1/payments', paymentRouter);
+  app.use('/api/v1/traffic-fines', trafficFineRouter);
   app.use('/api/v1/public', publicSiteRouter);
 
   // Unknown API route: JSON 404 instead of an HTML page

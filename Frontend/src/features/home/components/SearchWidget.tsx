@@ -140,8 +140,8 @@ export function SearchWidget() {
         .finovo-search-bar {
           width: 100%;
           background-color: rgba(24, 3, 38, 0.84);
-          backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
+          backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.16);
           border-radius: 22px;
           padding: 16px 18px;

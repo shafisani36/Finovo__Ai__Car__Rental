@@ -459,8 +459,8 @@ export function HeroSection() {
           background: linear-gradient(160deg, rgba(28, 4, 46, 0.86) 0%, rgba(18, 2, 30, 0.92) 100%);
           border: 1px solid rgba(255, 255, 255, 0.16);
           box-shadow: 0 32px 68px rgba(10, 1, 18, 0.52);
-          backdrop-filter: blur(22px);
           -webkit-backdrop-filter: blur(22px);
+          backdrop-filter: blur(22px);
           padding: 20px;
           display: flex;
           flex-direction: column;

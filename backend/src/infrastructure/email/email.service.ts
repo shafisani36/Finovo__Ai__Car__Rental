@@ -1,16 +1,20 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import { env } from '../../config/env.config';
 
-interface OutgoingEmail {
-  to: string;
+export interface OutgoingEmail {
+  to: string | string[];
   subject: string;
-  /** Plain-text version (always sent, used by clients without HTML). */
-  text: string;
+  /** Plain-text version for clients without HTML; built from the paragraphs and details when left out. */
+  text?: string;
   /** Main body paragraphs for the HTML version. */
   paragraphs: string[];
+  /** Label / value rows shown as a table (booking details, receipt lines); bold rows are totals. */
+  details?: { label: string; value: string; bold?: boolean }[];
   /** Optional highlighted block (a code) and a button link. */
   highlight?: string;
   action?: { label: string; url: string };
+  /** Small print at the bottom; defaults to the notice for emails the reader asked for. */
+  footer?: string;
   attachments?: { filename: string; content: Buffer; contentType: string }[];
 }
 
@@ -39,6 +43,14 @@ function renderHtml(email: OutgoingEmail): string {
   const highlight = email.highlight
     ? `<p style="margin:18px 0;font-size:28px;font-weight:700;letter-spacing:6px;text-align:center">${escapeHtml(email.highlight)}</p>`
     : '';
+  const details = email.details?.length
+    ? `<table role="presentation" width="100%" style="margin:6px 0 18px;border-collapse:collapse;font-size:14px">${email.details
+        .map(
+          (d) =>
+            `<tr><td style="padding:8px 0;border-bottom:1px solid #ece9f0;color:#6b6475${d.bold ? ';font-weight:700;color:#1E0426' : ''}">${escapeHtml(d.label)}</td><td style="padding:8px 0;border-bottom:1px solid #ece9f0;text-align:right${d.bold ? ';font-weight:700' : ''}">${escapeHtml(d.value)}</td></tr>`
+        )
+        .join('')}</table>`
+    : '';
   const action = email.action
     ? `<p style="margin:22px 0"><a href="${escapeHtml(email.action.url)}" style="display:inline-block;padding:12px 22px;background:#1E0426;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600">${escapeHtml(email.action.label)}</a></p>`
     : '';
@@ -46,8 +58,8 @@ function renderHtml(email: OutgoingEmail): string {
 <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px">
 <tr><td>
 <p style="margin:0 0 20px;font-size:18px;font-weight:700">Finovo Car Rental</p>
-${paragraphs}${highlight}${action}
-<p style="margin:24px 0 0;font-size:12px;color:#6b6475">If you did not request this, you can ignore this email.</p>
+${paragraphs}${details}${highlight}${action}
+<p style="margin:24px 0 0;font-size:12px;color:#6b6475">${escapeHtml(email.footer || 'If you did not request this, you can ignore this email.')}</p>
 </td></tr></table></body></html>`;
 }
 
@@ -56,13 +68,21 @@ ${paragraphs}${highlight}${action}
  * Microsoft 365, Zoho, Brevo or Amazon SES SMTP. In development (EMAIL_PROVIDER=mock) the email
  * is printed to the console instead.
  */
+function renderText(email: OutgoingEmail): string {
+  if (email.text) return email.text;
+  const details = (email.details || []).map((d) => `${d.label}: ${d.value}`);
+  const action = email.action ? [`${email.action.label}: ${email.action.url}`] : [];
+  return [...email.paragraphs, ...(details.length ? ['', ...details] : []), ...(action.length ? ['', ...action] : []), '', 'Finovo Car Rental'].join('\n');
+}
+
 async function deliver(email: OutgoingEmail): Promise<void> {
+  const to = Array.isArray(email.to) ? email.to.join(', ') : email.to;
   if (env.EMAIL.PROVIDER === 'smtp') {
     await getTransporter().sendMail({
       from: env.EMAIL.FROM,
-      to: email.to,
+      to,
       subject: email.subject,
-      text: email.text,
+      text: renderText(email),
       html: renderHtml(email),
       attachments: email.attachments,
     });
@@ -71,18 +91,23 @@ async function deliver(email: OutgoingEmail): Promise<void> {
 
   if (env.IS_PRODUCTION) {
     // Never print codes or links to production logs
-    console.warn(`[email] NOT SENT (EMAIL_PROVIDER=${env.EMAIL.PROVIDER}): "${email.subject}" to ${email.to}`);
+    console.warn(`[email] NOT SENT (EMAIL_PROVIDER=${env.EMAIL.PROVIDER}): "${email.subject}" to ${to}`);
     return;
   }
 
   console.log(`\n=================== [EMAIL (dev mock)] ${email.subject} ===================`);
-  console.log(`To: ${email.to}`);
-  console.log(email.text);
+  console.log(`To: ${to}`);
+  console.log(renderText(email));
   for (const a of email.attachments || []) console.log(`Attachment: ${a.filename} (${a.content.length} bytes)`);
   console.log('===========================================================================\n');
 }
 
 export class EmailService {
+  /** Sends any transactional email (booking, payment and staff alerts are built in the notifications module). */
+  static async send(email: OutgoingEmail): Promise<void> {
+    await deliver(email);
+  }
+
   /** Sends an account verification email. */
   static async sendVerificationEmail(email: string, token: string, fullName: string): Promise<void> {
     const url = `${env.CORS.ORIGIN}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
@@ -141,7 +166,6 @@ export class EmailService {
     });
   }
 
-  /** Sends a staff reply to a customer inquiry. */
   /** Sends the signed rental agreement as a PDF attachment. */
   static async sendRentalAgreement(email: string, fullName: string, bookingNumber: string, pdf: Buffer, filename: string): Promise<void> {
     await deliver({
@@ -157,6 +181,7 @@ export class EmailService {
     });
   }
 
+  /** Sends a staff reply to a customer inquiry. */
   static async sendInquiryReply(email: string, fullName: string, subject: string, replyMessage: string): Promise<void> {
     await deliver({
       to: email,

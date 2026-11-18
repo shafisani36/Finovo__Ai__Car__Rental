@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { bookingApi, type QuoteResult } from '../api/bookingApi';
@@ -19,6 +20,10 @@ import { CustomSelect } from '../../../components/common/CustomSelect';
 import { PageContainer, PageHeader, Button } from '../../../components/common';
 import { APP_CURRENCY, formatMoney } from '../../../utils/carImageHelper';
 import { useTranslation } from 'react-i18next';
+
+const CARD_STYLE: CSSProperties = { backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' };
+const LABEL_STYLE: CSSProperties = { display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' };
+const INPUT_STYLE: CSSProperties = { width: '100%', height: '44px', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '0 12px', fontSize: '0.85rem', boxSizing: 'border-box' };
 
 interface BranchOption {
   id: string;
@@ -220,7 +225,7 @@ export function CreateBookingPage() {
           {/* Left Column: Form Fields */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Step 1: Vehicle Selection */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+            <div style={CARD_STYLE}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <Car size={18} color="#6C1E84" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>{t('adminPages.bookings.step1')}</h3>
@@ -305,7 +310,7 @@ export function CreateBookingPage() {
             </div>
 
             {/* Step 2: Customer Selection */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+            <div style={CARD_STYLE}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <User size={18} color="#6C1E84" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>{t('adminPages.bookings.step2')}</h3>
@@ -330,7 +335,7 @@ export function CreateBookingPage() {
             </div>
 
             {/* Step 3: Dates & Branches */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #ECEAEF', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+            <div style={CARD_STYLE}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <Clock size={18} color="#6C1E84" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>{t('adminPages.bookings.step3')}</h3>
@@ -338,26 +343,26 @@ export function CreateBookingPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
+                  <label style={LABEL_STYLE}>
                     {t('adminPages.bookings.pickupDate')}
                   </label>
                   <input
                     type="datetime-local"
                     value={pickupDateTime}
                     onChange={(e) => setPickupDateTime(e.target.value)}
-                    style={{ width: '100%', height: '44px', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '0 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    style={INPUT_STYLE}
                     required
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
+                  <label style={LABEL_STYLE}>
                     {t('adminPages.bookings.returnDate')}
                   </label>
                   <input
                     type="datetime-local"
                     value={returnDateTime}
                     onChange={(e) => setReturnDateTime(e.target.value)}
-                    style={{ width: '100%', height: '44px', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '0 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    style={INPUT_STYLE}
                     required
                   />
                 </div>
@@ -365,7 +370,7 @@ export function CreateBookingPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '14px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
+                  <label style={LABEL_STYLE}>
                     {t('adminPages.bookings.pickupBranch')}
                   </label>
                   <CustomSelect
@@ -380,7 +385,7 @@ export function CreateBookingPage() {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
+                  <label style={LABEL_STYLE}>
                     {t('adminPages.bookings.returnBranch')}
                   </label>
                   <CustomSelect
@@ -399,7 +404,7 @@ export function CreateBookingPage() {
               {/* Method-Specific Estimated Distance */}
               {(selectedCar?.pricingMethod === 'per_km' || selectedCar?.pricingMethod === 'daily_extra_km') && (
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
+                  <label style={LABEL_STYLE}>
                     <Navigation size={14} style={{ display: 'inline', marginRight: '4px' }} />
                     {t('adminPages.bookings.distance')}
                   </label>
@@ -408,7 +413,7 @@ export function CreateBookingPage() {
                     min={1}
                     value={estimatedKm}
                     onChange={(e) => setEstimatedKm(Number(e.target.value))}
-                    style={{ width: '100%', height: '44px', borderRadius: '10px', border: '1.5px solid #DED7E2', backgroundColor: '#FAF9FB', color: '#1E0432', padding: '0 12px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    style={INPUT_STYLE}
                     required
                   />
                   <div style={{ fontSize: '0.75rem', color: '#685D73', marginTop: '4px' }}>
@@ -444,7 +449,7 @@ export function CreateBookingPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: '#4A315A', marginBottom: '6px' }}>
+                <label style={LABEL_STYLE}>
                   {t('adminPages.bookings.notes')}
                 </label>
                 <textarea

@@ -16,6 +16,7 @@ import {
   Car,
   CalendarCheck,
   CreditCard,
+  FileWarning,
   FileCheck,
   Bell,
   MessageSquare,
@@ -104,6 +105,7 @@ export function CustomerLayout() {
     { to: '/customer/cars', label: t('nav.browseFleet'), icon: Car },
     { to: '/customer/bookings', label: t('nav.myBookings'), icon: CalendarCheck },
     { to: '/customer/payments', label: t('nav.paymentsInvoices'), icon: CreditCard },
+    { to: '/customer/fines', label: t('portalPages.fines.navLabel'), icon: FileWarning },
     { to: '/customer/documents', label: t('nav.driverDocuments'), icon: FileCheck },
     {
       to: '/customer/notifications',

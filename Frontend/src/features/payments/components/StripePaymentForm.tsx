@@ -4,6 +4,7 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { useTranslation } from 'react-i18next';
 import { Lock } from 'lucide-react';
 import { paymentsApi, type StripeConfirmResponse } from '../../../api/services/payments.api';
+import { trafficFineApi, type TrafficFinePaymentResult } from '../../traffic-fines/api/trafficFineApi';
 import { formatMoney } from '../../../utils/carImageHelper';
 
 // One Stripe.js instance per publishable key for the whole app
@@ -30,19 +31,24 @@ function stripeLocale(): (typeof STRIPE_LOCALES)[number] | 'auto' {
   return (STRIPE_LOCALES as readonly string[]).includes(lang) ? (lang as (typeof STRIPE_LOCALES)[number]) : 'auto';
 }
 
-export interface StripePaymentFormProps {
-  bookingId: string;
-  /** Optional partial amount; the server caps it at the outstanding balance. */
+/** Pays either a booking balance or a traffic fine; the server always sets the amount. */
+export type StripePaymentFormProps = {
+  /** Optional partial amount for a booking; the server caps it at the outstanding balance. */
   amount?: number;
-  onSuccess: (result: StripeConfirmResponse) => void;
   onCancel?: () => void;
-}
+} & (
+  | { bookingId: string; trafficFineId?: never; onSuccess: (result: StripeConfirmResponse) => void }
+  | { trafficFineId: string; bookingId?: never; onSuccess: (result: TrafficFinePaymentResult) => void }
+);
+
+type ConfirmOutcome = { paymentStatus: StripeConfirmResponse['paymentStatus']; message: string | null };
 
 /**
  * Secure card payment backed by Stripe PaymentIntents.
  * The server creates the intent, Stripe collects the card, and the server re-verifies the result with Stripe.
  */
-export function StripePaymentForm({ bookingId, amount, onSuccess, onCancel }: StripePaymentFormProps) {
+export function StripePaymentForm(props: StripePaymentFormProps) {
+  const { bookingId, trafficFineId, amount, onCancel } = props;
   const { t } = useTranslation();
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -60,7 +66,9 @@ export function StripePaymentForm({ bookingId, amount, onSuccess, onCancel }: St
         if (!key) {
           throw new Error(t('payments.notConfigured'));
         }
-        const intent = await paymentsApi.createStripeIntent(bookingId, amount);
+        const intent = trafficFineId
+          ? await trafficFineApi.createPaymentIntent(trafficFineId)
+          : await paymentsApi.createStripeIntent(bookingId!, amount);
         if (!active) return;
         setPublishableKey(key);
         setClientSecret(intent.clientSecret);
@@ -73,7 +81,7 @@ export function StripePaymentForm({ bookingId, amount, onSuccess, onCancel }: St
     return () => {
       active = false;
     };
-  }, [bookingId, amount, t]);
+  }, [bookingId, trafficFineId, amount, t]);
 
   const stripePromise = useMemo(() => (publishableKey ? getStripePromise(publishableKey) : null), [publishableKey]);
   const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
@@ -110,7 +118,17 @@ export function StripePaymentForm({ bookingId, amount, onSuccess, onCancel }: St
       <StripeCheckoutInner
         amount={intentInfo.amount}
         currency={intentInfo.currency}
-        onSuccess={onSuccess}
+        confirm={async (paymentIntentId) => {
+          if (props.trafficFineId) {
+            const result = await trafficFineApi.confirmPayment(paymentIntentId);
+            if (result.paymentStatus === 'SUCCEEDED') (props.onSuccess as (r: TrafficFinePaymentResult) => void)(result);
+            return result;
+          }
+          const result = await paymentsApi.confirmStripePayment(paymentIntentId);
+          // Without a trafficFineId the props are the booking variant
+          if (result.paymentStatus === 'SUCCEEDED') (props.onSuccess as (r: StripeConfirmResponse) => void)(result);
+          return result;
+        }}
         onCancel={onCancel}
       />
     </Elements>
@@ -120,12 +138,13 @@ export function StripePaymentForm({ bookingId, amount, onSuccess, onCancel }: St
 function StripeCheckoutInner({
   amount,
   currency,
-  onSuccess,
+  confirm,
   onCancel,
 }: {
   amount: number;
   currency: string;
-  onSuccess: (result: StripeConfirmResponse) => void;
+  /** Verifies the PaymentIntent on the server and reports success to the caller. */
+  confirm: (paymentIntentId: string) => Promise<ConfirmOutcome>;
   onCancel?: () => void;
 }) {
   const { t } = useTranslation();
@@ -157,9 +176,9 @@ function StripeCheckoutInner({
       }
 
       // Server re-reads the PaymentIntent from Stripe before marking anything as paid
-      const result = await paymentsApi.confirmStripePayment(paymentIntent.id);
+      const result = await confirm(paymentIntent.id);
       if (result.paymentStatus === 'SUCCEEDED') {
-        onSuccess(result);
+        return;
       } else if (result.paymentStatus === 'PENDING') {
         setError(t('payments.processing'));
       } else {

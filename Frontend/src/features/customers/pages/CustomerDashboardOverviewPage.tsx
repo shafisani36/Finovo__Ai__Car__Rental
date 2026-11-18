@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +25,8 @@ import {
   Phone,
 } from 'lucide-react';
 import './CustomerPortal.css';
+
+const INFO_ROW_STYLE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', borderRadius: 'var(--cp-radius-md)', backgroundColor: '#FAF8FB', border: '1px solid var(--cp-border)', textDecoration: 'none', color: 'var(--cp-primary)', transition: 'var(--cp-transition)' };
 
 export function CustomerDashboardOverviewPage() {
   const site = useSiteInfo();
@@ -558,18 +561,7 @@ export function CustomerDashboardOverviewPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 145px), 1fr))', gap: '12px' }}>
               <Link
                 to="/customer/documents"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  padding: '16px',
-                  borderRadius: 'var(--cp-radius-md)',
-                  backgroundColor: '#FAF8FB',
-                  border: '1px solid var(--cp-border)',
-                  textDecoration: 'none',
-                  color: 'var(--cp-primary)',
-                  transition: 'var(--cp-transition)',
-                }}
+                style={INFO_ROW_STYLE}
               >
                 <FileCheck size={20} color="var(--cp-primary)" />
                 <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.driverDocuments')}</span>
@@ -578,18 +570,7 @@ export function CustomerDashboardOverviewPage() {
 
               <Link
                 to="/customer/payments"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  padding: '16px',
-                  borderRadius: 'var(--cp-radius-md)',
-                  backgroundColor: '#FAF8FB',
-                  border: '1px solid var(--cp-border)',
-                  textDecoration: 'none',
-                  color: 'var(--cp-primary)',
-                  transition: 'var(--cp-transition)',
-                }}
+                style={INFO_ROW_STYLE}
               >
                 <CreditCard size={20} color="var(--cp-primary)" />
                 <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.paymentsInvoices')}</span>
@@ -598,18 +579,7 @@ export function CustomerDashboardOverviewPage() {
 
               <Link
                 to="/customer/support"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  padding: '16px',
-                  borderRadius: 'var(--cp-radius-md)',
-                  backgroundColor: '#FAF8FB',
-                  border: '1px solid var(--cp-border)',
-                  textDecoration: 'none',
-                  color: 'var(--cp-primary)',
-                  transition: 'var(--cp-transition)',
-                }}
+                style={INFO_ROW_STYLE}
               >
                 <Clock size={20} color="var(--cp-primary)" />
                 <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.supportTickets')}</span>
@@ -618,18 +588,7 @@ export function CustomerDashboardOverviewPage() {
 
               <Link
                 to="/customer/rewards"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  padding: '16px',
-                  borderRadius: 'var(--cp-radius-md)',
-                  backgroundColor: '#FAF8FB',
-                  border: '1px solid var(--cp-border)',
-                  textDecoration: 'none',
-                  color: 'var(--cp-primary)',
-                  transition: 'var(--cp-transition)',
-                }}
+                style={INFO_ROW_STYLE}
               >
                 <Gift size={20} color="#D97706" />
                 <span style={{ fontWeight: 800, fontSize: '0.875rem' }}>{t('nav.rewardsReferrals')}</span>
