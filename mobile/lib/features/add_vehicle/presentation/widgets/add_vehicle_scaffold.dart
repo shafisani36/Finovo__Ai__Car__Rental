@@ -13,6 +13,7 @@ class AddVehicleScaffold extends StatelessWidget {
     required this.child,
     required this.primaryLabel,
     required this.onPrimary,
+    this.isSubmitting = false,
     this.secondaryLabel,
     this.onSecondary,
   });
@@ -22,6 +23,7 @@ class AddVehicleScaffold extends StatelessWidget {
   final Widget child;
   final String primaryLabel;
   final VoidCallback onPrimary;
+  final bool isSubmitting;
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
 
@@ -73,7 +75,7 @@ class AddVehicleScaffold extends StatelessWidget {
                     if (secondaryLabel != null) ...[
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: onSecondary,
+                          onPressed: isSubmitting ? null : onSecondary,
                           child: Text(secondaryLabel!),
                         ),
                       ),
@@ -82,7 +84,8 @@ class AddVehicleScaffold extends StatelessWidget {
                     Expanded(
                       child: CustomButton(
                         label: primaryLabel,
-                        onPressed: onPrimary,
+                        onPressed: isSubmitting ? null : onPrimary,
+                        isLoading: isSubmitting,
                       ),
                     ),
                   ],
@@ -152,15 +155,32 @@ class FieldLabel extends StatelessWidget {
 }
 
 class FormInput extends StatelessWidget {
-  const FormInput({super.key, this.hint, this.icon, this.suffix});
+  const FormInput({
+    super.key,
+    this.hint,
+    this.icon,
+    this.suffix,
+    this.controller,
+    this.validator,
+    this.keyboardType,
+    this.maxLines = 1,
+  });
 
   final String? hint;
   final IconData? icon;
   final Widget? suffix;
+  final TextEditingController? controller;
+  final String? Function(String?)? validator;
+  final TextInputType? keyboardType;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
       decoration: InputDecoration(
         hintText: hint,
         suffixIcon: suffix,

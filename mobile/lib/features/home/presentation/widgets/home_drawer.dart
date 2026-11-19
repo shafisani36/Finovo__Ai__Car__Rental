@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rental_car/core/network/api_client.dart';
+
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_theme.dart';
 
@@ -43,7 +45,22 @@ class _HomeDrawerState extends State<HomeDrawer> {
               _DrawerItem(
                 icon: Icons.logout,
                 label: 'Log out',
-                onTap: () => Navigator.pop(context),
+                onTap: () async {
+                  Navigator.pop(context);
+                  if (!apiClient.hasSession) return;
+                  try {
+                    await apiClient.logout();
+                  } on ApiException catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(error.message),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
               ),
               const SizedBox(height: 18),
             ],

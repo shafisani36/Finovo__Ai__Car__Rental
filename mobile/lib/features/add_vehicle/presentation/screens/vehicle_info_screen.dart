@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rental_car/features/add_vehicle/data/add_vehicle_repository.dart';
+import 'package:rental_car/features/add_vehicle/models/add_vehicle_draft.dart';
 import 'package:rental_car/core/widgets/app_dropdown_field.dart';
 import 'package:rental_car/core/widgets/app_text_field.dart';
 import 'package:rental_car/features/add_vehicle/presentation/widgets/form_card.dart';
@@ -7,7 +9,9 @@ import '../widgets/add_vehicle_scaffold.dart';
 import 'specifications_screen.dart';
 
 class VehicleInfoScreen extends StatefulWidget {
-  const VehicleInfoScreen({super.key});
+  const VehicleInfoScreen({super.key, required this.draft});
+
+  final AddVehicleDraft draft;
 
   @override
   State<VehicleInfoScreen> createState() => _VehicleInfoScreenState();
@@ -17,17 +21,25 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
   final _formKey = GlobalKey<FormState>();
   final _modelController = TextEditingController();
   final _registrationController = TextEditingController();
+  final _repository = AddVehicleRepository();
 
   static const _brands = ['Toyota', 'Honda', 'Suzuki', 'Hyundai', 'Kia'];
-  static const _categories = ['Sedan', 'SUV', 'Hatchback', 'Van', 'Truck'];
   late final List<int> _years = List.generate(
-    DateTime.now().year - 1989,
-    (i) => DateTime.now().year - i,
+    DateTime.now().year + 2 - 1970,
+    (i) => DateTime.now().year + 1 - i,
   );
 
-  String? _brand;
-  String? _category;
-  late int _year = DateTime.now().year;
+  late String? _brand = widget.draft.brand;
+  late int _year = widget.draft.year;
+  late Future<List<VehicleCategory>> _categories;
+
+  @override
+  void initState() {
+    super.initState();
+    _modelController.text = widget.draft.model;
+    _registrationController.text = widget.draft.registrationNumber;
+    _categories = _repository.getCategories();
+  }
 
   @override
   void dispose() {
@@ -38,9 +50,16 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
 
   void _onContinue() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    widget.draft
+      ..brand = _brand
+      ..model = _modelController.text.trim()
+      ..year = _year
+      ..registrationNumber = _registrationController.text.trim();
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const SpecificationsScreen()),
+      MaterialPageRoute(
+        builder: (_) => SpecificationsScreen(draft: widget.draft),
+      ),
     );
   }
 
@@ -69,13 +88,46 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
                 onChanged: (v) => setState(() => _brand = v),
               ),
               const SizedBox(height: 12),
-              AppDropdownField<String>(
-                label: 'Category',
-                required: true,
-                hint: 'Select category',
-                items: _categories,
-                value: _category,
-                onChanged: (v) => setState(() => _category = v),
+              FutureBuilder<List<VehicleCategory>>(
+                future: _categories,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Could not load vehicle categories.',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(
+                            () => _categories = _repository.getCategories(),
+                          ),
+                          child: const Text('Try again'),
+                        ),
+                      ],
+                    );
+                  }
+                  final categories = snapshot.data ?? const <VehicleCategory>[];
+                  final selected = categories
+                      .where(
+                        (category) => category.id == widget.draft.category?.id,
+                      )
+                      .firstOrNull;
+                  return AppDropdownField<VehicleCategory>(
+                    label: 'Category',
+                    required: true,
+                    hint: snapshot.connectionState == ConnectionState.waiting
+                        ? 'Loading categories...'
+                        : 'Select category',
+                    items: categories,
+                    value: selected,
+                    itemLabel: (category) => category.name,
+                    enabled: snapshot.connectionState == ConnectionState.done,
+                    onChanged: (value) =>
+                        setState(() => widget.draft.category = value),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               AppTextField(
@@ -86,6 +138,14 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
                 controller: _modelController,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
+                validator: (value) {
+                  final model = value?.trim() ?? '';
+                  if (model.isEmpty) return 'Model is required';
+                  if (model.length > 64) {
+                    return 'Model must be 64 characters or fewer';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               AppDropdownField<int>(
@@ -104,6 +164,16 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
                 controller: _registrationController,
                 textCapitalization: TextCapitalization.characters,
                 textInputAction: TextInputAction.done,
+                validator: (value) {
+                  final registration = value?.trim() ?? '';
+                  if (registration.isEmpty) {
+                    return 'Registration number is required';
+                  }
+                  if (registration.length > 32) {
+                    return 'Registration number must be 32 characters or fewer';
+                  }
+                  return null;
+                },
               ),
             ],
           ),

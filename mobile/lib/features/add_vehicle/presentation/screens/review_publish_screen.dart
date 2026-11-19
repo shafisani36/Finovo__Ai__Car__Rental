@@ -1,45 +1,176 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:rental_car/app/theme/app_colors.dart';
+import 'package:rental_car/app/theme/app_text_theme.dart';
+import 'package:rental_car/core/network/api_client.dart';
+import 'package:rental_car/features/add_vehicle/data/add_vehicle_repository.dart';
+import 'package:rental_car/features/add_vehicle/models/add_vehicle_draft.dart';
 import 'package:rental_car/features/add_vehicle/presentation/widgets/form_card.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_text_theme.dart';
 import '../widgets/add_vehicle_scaffold.dart';
 
-class ReviewPublishScreen extends StatelessWidget {
-  const ReviewPublishScreen({super.key});
+class ReviewPublishScreen extends StatefulWidget {
+  const ReviewPublishScreen({super.key, required this.draft});
+
+  final AddVehicleDraft draft;
+
+  @override
+  State<ReviewPublishScreen> createState() => _ReviewPublishScreenState();
+}
+
+class _ReviewPublishScreenState extends State<ReviewPublishScreen> {
+  final _repository = AddVehicleRepository();
+  bool _isSubmitting = false;
+
+  Future<void> _publish() async {
+    if (_isSubmitting) return;
+    if (!apiClient.hasSession) {
+      _showMessage('Your staff session has ended. Sign in again to publish.');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final draft = widget.draft;
+      final category = draft.category;
+      if (category == null) {
+        throw const ApiException(
+          'Select a vehicle category before publishing.',
+        );
+      }
+      final brand = draft.brand;
+      if (brand == null || brand.isEmpty) {
+        throw const ApiException('Select a vehicle brand before publishing.');
+      }
+      final uploadedPhotos = draft.uploadedPhotos ??= await _repository
+          .uploadPhotos(draft.photos);
+
+      final response = await _repository.createVehicle(
+        brand: brand,
+        model: draft.model,
+        year: draft.year,
+        registrationNumber: draft.registrationNumber,
+        categoryId: category.id,
+        transmission: draft.transmission,
+        fuelType: draft.fuelType,
+        seats: draft.seats,
+        doors: draft.doors,
+        mileage: int.parse(draft.mileage),
+        color: draft.color,
+        dailyRate: double.parse(draft.dailyRate),
+        weeklyRate: double.parse(draft.weeklyRate),
+        monthlyRate: double.parse(draft.monthlyRate),
+        pricingMethod: draft.availableFor == 'Monthly' ? 'monthly' : 'daily',
+        status: draft.status,
+        isPublicCatalog: draft.isPublicCatalog,
+        notes: draft.notes,
+        photos: uploadedPhotos,
+      );
+      if (response['success'] != true || response['vehicle'] is! Map) {
+        throw const ApiException(
+          'The server did not confirm vehicle creation.',
+        );
+      }
+
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Vehicle published successfully.'),
+          backgroundColor: Color(0xff198754),
+        ),
+      );
+    } on ApiException catch (error) {
+      if (mounted) _showMessage(error.message);
+    } on FormatException catch (error) {
+      if (mounted) _showMessage(error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+    );
+  }
+
+  String _rate(String value) => value.isEmpty ? '—' : value;
 
   @override
   Widget build(BuildContext context) {
-    return AddVehicleScaffold(
-      title: 'Review & Publish',
-      step: 5,
-      primaryLabel: 'Save & Publish Car',
-      onPrimary: () => Navigator.popUntil(context, (route) => route.isFirst),
-      secondaryLabel: 'Cancel',
-      onSecondary: () => Navigator.popUntil(context, (route) => route.isFirst),
-      child: Column(
-        children: [
-          _previewCard(),
-          const SizedBox(height: 14),
-          FormCard(
-            title: 'Vehicle Summary',
-            subtitle: 'Please verify all specifications',
-            icon: Icons.checklist_outlined,
-            child: Column(
-              children: [
-                _summaryRow('Vehicle', 'Toyota Corolla (2026)'),
-                _summaryRow('Specs', 'Automatic · Petrol · 5 seats'),
-                _summaryRow('Pricing', '\$45.00/day · \$280.00/wk'),
-                _summaryRow('Registration', 'ABC-1234'),
-              ],
+    final draft = widget.draft;
+    final photoBytes = draft.primaryPhotoBytes;
+    return PopScope(
+      canPop: !_isSubmitting,
+      child: AddVehicleScaffold(
+        title: 'Review & Publish',
+        step: 5,
+        primaryLabel: 'Save & Publish Car',
+        onPrimary: _publish,
+        isSubmitting: _isSubmitting,
+        secondaryLabel: 'Cancel',
+        onSecondary: () =>
+            Navigator.popUntil(context, (route) => route.isFirst),
+        child: Column(
+          children: [
+            _previewCard(photoBytes),
+            const SizedBox(height: 14),
+            FormCard(
+              title: 'Vehicle Summary',
+              subtitle: 'Please verify all specifications',
+              icon: Icons.checklist_outlined,
+              child: Column(
+                children: [
+                  _summaryRow(
+                    'Vehicle',
+                    '${draft.brand ?? ''} ${draft.model} (${draft.year})',
+                  ),
+                  _summaryRow(
+                    'Specs',
+                    '${_transmissionLabel(draft.transmission)} · '
+                        '${_fuelLabel(draft.fuelType)} · ${draft.seats} seats',
+                  ),
+                  _summaryRow(
+                    'Pricing',
+                    '${_rate(draft.dailyRate)}/day · '
+                        '${_rate(draft.weeklyRate)}/week · '
+                        '${_rate(draft.monthlyRate)}/month',
+                  ),
+                  _summaryRow('Registration', draft.registrationNumber),
+                  _summaryRow('Category', draft.category?.name ?? '—'),
+                  _summaryRow('Mileage', draft.mileage),
+                  _summaryRow('Photos', '${draft.photos.length}'),
+                  _summaryRow('Status', _statusLabel(draft.status)),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _previewCard() {
+  String _transmissionLabel(String value) =>
+      value == 'AUTOMATIC' ? 'Automatic' : 'Manual';
+
+  String _fuelLabel(String value) => switch (value) {
+    'DIESEL' => 'Diesel',
+    'HYBRID' => 'Hybrid',
+    'ELECTRIC' => 'Electric',
+    _ => 'Petrol',
+  };
+
+  String _statusLabel(String value) => switch (value) {
+    'RENTED' => 'Rented',
+    'MAINTENANCE' => 'Maintenance',
+    _ => 'Available',
+  };
+
+  Widget _previewCard(Uint8List? photoBytes) {
+    final draft = widget.draft;
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
@@ -47,16 +178,46 @@ class ReviewPublishScreen extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Container(width: 74, height: 70, decoration: BoxDecoration(color: AppColors.primary10, borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.directions_car, size: 38, color: AppColors.gray)),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: photoBytes == null
+                  ? Container(
+                      width: 74,
+                      height: 70,
+                      color: AppColors.primary10,
+                      child: const Icon(
+                        Icons.directions_car,
+                        size: 38,
+                        color: AppColors.gray,
+                      ),
+                    )
+                  : Image.memory(
+                      photoBytes,
+                      width: 74,
+                      height: 70,
+                      fit: BoxFit.cover,
+                    ),
+            ),
             const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Toyota Corolla', style: AppTextStyles.heading6),
-                Text('2026', style: TextStyle(fontSize: 12)),
-                SizedBox(height: 5),
-                Text('\$45.00 / day', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${draft.brand ?? ''} ${draft.model}',
+                    style: AppTextStyles.heading6,
+                  ),
+                  Text('${draft.year} · ${draft.category?.name ?? ''}'),
+                  const SizedBox(height: 5),
+                  Text(
+                    '${_rate(draft.dailyRate)} / day',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -69,8 +230,23 @@ class ReviewPublishScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          SizedBox(width: 85, child: Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary))),
-          Expanded(child: Text(value, textAlign: TextAlign.right, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+          SizedBox(
+            width: 85,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
