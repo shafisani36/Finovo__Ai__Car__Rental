@@ -89,6 +89,7 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                     required: true,
                     textInputAction: .next,
                     label: "Email",
+                    hint: "Enter email...",
                     validator: (value) {
                       final email = value?.trim() ?? '';
                       if (email.isEmpty || !email.contains('@')) {
@@ -103,6 +104,7 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                     obscureText: _obscurePassword,
                     required: true,
                     label: "Password",
+                    hint: "Enter password...",
                     keyboardType: .visiblePassword,
                     textInputAction: .done,
                     suffix: IconButton(
@@ -110,8 +112,8 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                       icon: Icon(
                         _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                       ),
                     ),
                     validator: (value) => value == null || value.isEmpty
