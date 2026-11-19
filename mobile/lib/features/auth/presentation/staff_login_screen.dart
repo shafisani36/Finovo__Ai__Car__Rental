@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rental_car/app/theme/app_colors.dart';
 import 'package:rental_car/app/theme/app_text_theme.dart';
 import 'package:rental_car/core/network/api_client.dart';
+import 'package:rental_car/core/widgets/app_text_field.dart';
 import 'package:rental_car/core/widgets/custom_button.dart';
 import 'package:rental_car/features/add_vehicle/models/add_vehicle_draft.dart';
 import 'package:rental_car/features/add_vehicle/presentation/screens/vehicle_info_screen.dart';
@@ -82,11 +83,12 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  TextFormField(
+                  AppTextField(
                     controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.username],
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    keyboardType: .emailAddress,
+                    required: true,
+                    textInputAction: .next,
+                    label: "Email",
                     validator: (value) {
                       final email = value?.trim() ?? '';
                       if (email.isEmpty || !email.contains('@')) {
@@ -96,31 +98,32 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
                     },
                   ),
                   const SizedBox(height: 14),
-                  TextFormField(
+                  AppTextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    autofillHints: const [AutofillHints.password],
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      suffixIcon: IconButton(
-                        onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
+                    required: true,
+                    label: "Password",
+                    keyboardType: .visiblePassword,
+                    textInputAction: .done,
+                    suffix: IconButton(
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
                     ),
                     validator: (value) => value == null || value.isEmpty
                         ? 'Password is required'
                         : null,
-                    onFieldSubmitted: (_) => _signIn(),
+                    onFieldSubmitted: (_) {
+                      _signIn();
+                    },
                   ),
                   const SizedBox(height: 22),
                   CustomButton(
-                    label: 'Sign in',
+                    label: _isSubmitting ? 'Signing in...' : 'Sign in',
                     isLoading: _isSubmitting,
                     onPressed: _signIn,
                   ),

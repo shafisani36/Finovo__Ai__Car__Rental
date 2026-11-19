@@ -108,7 +108,7 @@ class _ReviewPublishScreenState extends State<ReviewPublishScreen> {
       child: AddVehicleScaffold(
         title: 'Review & Publish',
         step: 5,
-        primaryLabel: 'Save & Publish Car',
+        primaryLabel: _isSubmitting ? 'Publishing...' : 'Save & Publish Car',
         onPrimary: _publish,
         isSubmitting: _isSubmitting,
         secondaryLabel: 'Cancel',

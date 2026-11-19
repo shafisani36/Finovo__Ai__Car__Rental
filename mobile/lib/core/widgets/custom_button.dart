@@ -89,29 +89,28 @@ class CustomButton extends StatelessWidget {
   }
 
   Widget _buildContent() {
-    if (isLoading) {
-      return SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(_foreground(const {})),
-        ),
-      );
-    }
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (leadingIcon != null) ...[
+        if (isLoading) ...[
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(_foreground(const {})),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ] else if (leadingIcon != null) ...[
           Icon(leadingIcon, size: iconSize),
           const SizedBox(width: 8),
         ],
         Flexible(
           child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
-        if (trailingIcon != null) ...[
+        if (!isLoading && trailingIcon != null) ...[
           const SizedBox(width: 8),
           Icon(trailingIcon, size: iconSize),
         ],

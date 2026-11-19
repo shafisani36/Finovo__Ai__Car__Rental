@@ -51,7 +51,7 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
         imageQuality: 85,
         maxWidth: 2048,
       );
-      if (selected.isEmpty || !mounted) return;
+      if (!mounted || selected.isEmpty) return;
       if (selected.length > remaining) {
         _showMessage('A maximum of 6 photos can be added.');
         return;
@@ -65,10 +65,12 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
       for (final image in selected) {
         final mimeType = _mimeType(image.name);
         if (mimeType == null) {
+          if (!mounted) return;
           _showMessage('Choose PNG, JPG, or WEBP images only.');
           return;
         }
         final bytes = await image.readAsBytes();
+        if (!mounted) return;
         if (bytes.length > _maxPhotoBytes) {
           _showMessage('${image.name} exceeds the 10 MB limit.');
           return;
@@ -87,6 +89,7 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
         );
       }
 
+      if (!mounted) return;
       setState(() {
         widget.draft.photos.addAll(additions);
         widget.draft.uploadedPhotos = null;

@@ -32,13 +32,28 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
   late String? _brand = widget.draft.brand;
   late int _year = widget.draft.year;
   late Future<List<VehicleCategory>> _categories;
+  bool _isLoadingCategories = true;
 
   @override
   void initState() {
     super.initState();
     _modelController.text = widget.draft.model;
     _registrationController.text = widget.draft.registrationNumber;
-    _categories = _repository.getCategories();
+    _categories = _requestCategories();
+  }
+
+  Future<List<VehicleCategory>> _requestCategories() {
+    return _repository.getCategories().whenComplete(() {
+      if (!mounted) return;
+      setState(() => _isLoadingCategories = false);
+    });
+  }
+
+  void _retryCategories() {
+    setState(() {
+      _isLoadingCategories = true;
+      _categories = _requestCategories();
+    });
   }
 
   @override
@@ -68,8 +83,11 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
     return AddVehicleScaffold(
       title: 'Vehicle Info',
       step: 1,
-      primaryLabel: 'Continue to Specifications',
+      primaryLabel: _isLoadingCategories
+          ? 'Loading categories...'
+          : 'Continue to Specifications',
       onPrimary: _onContinue,
+      isSubmitting: _isLoadingCategories,
       child: FormCard(
         title: 'Identification',
         subtitle: 'Basic information about the vehicle',
@@ -100,9 +118,7 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
                           style: TextStyle(color: Colors.red.shade700),
                         ),
                         TextButton(
-                          onPressed: () => setState(
-                            () => _categories = _repository.getCategories(),
-                          ),
+                          onPressed: _retryCategories,
                           child: const Text('Try again'),
                         ),
                       ],

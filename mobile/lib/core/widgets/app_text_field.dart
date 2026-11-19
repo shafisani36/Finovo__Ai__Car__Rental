@@ -21,6 +21,7 @@ class AppTextField extends StatelessWidget {
     this.initialValue,
     this.validator,
     this.onChanged,
+    this.onFieldSubmitted,
     this.keyboardType,
     this.textInputAction,
     this.textCapitalization = TextCapitalization.none,
@@ -44,6 +45,7 @@ class AppTextField extends StatelessWidget {
   final String? initialValue;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final TextCapitalization textCapitalization;
@@ -79,6 +81,7 @@ class AppTextField extends StatelessWidget {
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           onChanged: onChanged,
+          onFieldSubmitted: onFieldSubmitted,
           autovalidateMode: autovalidateMode,
           validator:
               validator ??
