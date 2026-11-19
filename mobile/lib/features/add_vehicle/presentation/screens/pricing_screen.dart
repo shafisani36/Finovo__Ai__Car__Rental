@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:rental_car/app/theme/app_text_theme.dart';
+import 'package:rental_car/core/widgets/app_text_field.dart';
+import 'package:rental_car/core/widgets/app_field_label.dart';
 import 'package:rental_car/features/add_vehicle/models/add_vehicle_draft.dart';
 import 'package:rental_car/features/add_vehicle/presentation/widgets/form_card.dart';
 
@@ -26,7 +29,14 @@ class _PricingScreenState extends State<PricingScreen> {
   late final _monthlyController = TextEditingController(
     text: widget.draft.monthlyRate,
   );
-  late String _availableFor = widget.draft.availableFor;
+
+  late final Set<String> _availableFor = {
+    'Daily',
+    ...widget.draft.availableFor
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e == 'Weekly' || e == 'Monthly'),
+  };
   late String _status = widget.draft.status;
 
   @override
@@ -60,9 +70,13 @@ class _PricingScreenState extends State<PricingScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     widget.draft
       ..dailyRate = _dailyController.text.trim()
-      ..weeklyRate = _weeklyController.text.trim()
-      ..monthlyRate = _monthlyController.text.trim()
-      ..availableFor = _availableFor
+      ..weeklyRate = _availableFor.contains('Weekly')
+          ? _weeklyController.text.trim()
+          : ''
+      ..monthlyRate = _availableFor.contains('Monthly')
+          ? _monthlyController.text.trim()
+          : ''
+      ..availableFor = _availableFor.join(',')
       ..status = _status;
     Navigator.push(
       context,
@@ -88,51 +102,94 @@ class _PricingScreenState extends State<PricingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const FieldLabel('Available For'),
-              _ChoiceRow(
-                labels: const ['Daily', 'Weekly', 'Monthly'],
-                selected: ['Daily', 'Weekly', 'Monthly'].indexOf(_availableFor),
-                onSelect: (index) => setState(
-                  () => _availableFor = ['Daily', 'Weekly', 'Monthly'][index],
-                ),
+              const AppFieldLabel('Available For'),
+              Row(
+                children: ['Daily', 'Weekly', 'Monthly'].map((label) {
+                  final on = _availableFor.contains(label);
+                  return Expanded(
+                    child: InkWell(
+                      onTap: label == 'Daily'
+                          ? null
+                          : () => setState(() {
+                              on
+                                  ? _availableFor.remove(label)
+                                  : _availableFor.add(label);
+                            }),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 5),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(
+                          color: on
+                              ? AppColors.primary
+                              : AppColors.gray.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (on)
+                              const Icon(
+                                Icons.check,
+                                size: 14,
+                                color: AppColors.white,
+                              ),
+                            const SizedBox(width: 4),
+                            Text(
+                              label,
+                              style: AppTextStyles.subtitle3.copyWith(
+                                color: on ? AppColors.white : AppColors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Rates use the currency configured by the Finovo server.',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 10),
-              const FieldLabel('Daily Rate', required: true),
-              FormInput(
+              const SizedBox(height: 12),
+              AppTextField(
                 hint: 'e.g. 45.00',
                 controller: _dailyController,
+                required: true,
+                label: 'Daily Rate',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                textInputAction: .next,
                 validator: (value) => _validateRate(value, required: true),
               ),
+              if (_availableFor.contains('Weekly')) ...[
+                const SizedBox(height: 12),
+                AppTextField(
+                  hint: 'e.g. 280.00',
+                  controller: _weeklyController,
+                  label: 'Weekly Rate',
+                  required: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: .next,
+                  validator: (value) => _validateRate(value, required: true),
+                ),
+              ],
+              if (_availableFor.contains('Monthly')) ...[
+                const SizedBox(height: 12),
+                AppTextField(
+                  hint: 'e.g. 1100.00',
+                  controller: _monthlyController,
+                  label: 'Monthly Rate',
+                  required: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: .done,
+                  validator: (value) => _validateRate(value, required: true),
+                ),
+              ],
               const SizedBox(height: 12),
-              const FieldLabel('Weekly Rate', required: true),
-              FormInput(
-                hint: 'e.g. 280.00',
-                controller: _weeklyController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                validator: (value) => _validateRate(value, required: true),
-              ),
-              const SizedBox(height: 12),
-              const FieldLabel('Monthly Rate', required: true),
-              FormInput(
-                hint: 'e.g. 1100.00',
-                controller: _monthlyController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                validator: (value) => _validateRate(value, required: true),
-              ),
-              const SizedBox(height: 14),
-              const FieldLabel('Status'),
+              const AppFieldLabel('Status'),
               _StatusRow(
                 selected: _status,
                 onSelect: (value) => setState(() => _status = value),
@@ -141,54 +198,6 @@ class _PricingScreenState extends State<PricingScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ChoiceRow extends StatelessWidget {
-  const _ChoiceRow({
-    required this.labels,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  final List<String> labels;
-  final int selected;
-  final ValueChanged<int> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: labels.asMap().entries.map((entry) {
-        final isSelected = entry.key == selected;
-        return Expanded(
-          child: InkWell(
-            onTap: () => onSelect(entry.key),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              margin: const EdgeInsets.only(right: 4),
-              padding: const EdgeInsets.symmetric(vertical: 9),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.background,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : const Color(0xffe1e1e5),
-                ),
-              ),
-              child: Text(
-                entry.value,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }
@@ -234,10 +243,9 @@ class _StatusRow extends StatelessWidget {
               child: Text(
                 entry.key,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
+                style: AppTextStyles.subtitle3.copyWith(
                   color: color,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: .w600,
                 ),
               ),
             ),

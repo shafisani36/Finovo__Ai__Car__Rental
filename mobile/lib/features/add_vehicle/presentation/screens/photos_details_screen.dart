@@ -266,14 +266,16 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
             title: 'Public Catalog',
             subtitle: 'Visibility settings for customers',
             icon: Icons.public,
-            child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                'Show in public catalog',
-                style: TextStyle(fontSize: 12),
+            child: Material(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Show in public catalog',
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: _isPublicCatalog,
+                onChanged: (value) => setState(() => _isPublicCatalog = value),
               ),
-              value: _isPublicCatalog,
-              onChanged: (value) => setState(() => _isPublicCatalog = value),
             ),
           ),
         ],

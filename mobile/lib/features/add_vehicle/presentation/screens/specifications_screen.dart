@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:rental_car/core/widgets/choice_row.dart';
+import 'package:rental_car/core/widgets/app_dropdown_field.dart';
+import 'package:rental_car/core/widgets/app_field_label.dart';
+import 'package:rental_car/core/widgets/app_text_field.dart';
 import 'package:rental_car/features/add_vehicle/models/add_vehicle_draft.dart';
 import 'package:rental_car/features/add_vehicle/presentation/widgets/form_card.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_text_theme.dart';
 import '../widgets/add_vehicle_scaffold.dart';
 import 'pricing_screen.dart';
 
@@ -65,17 +68,17 @@ class _SpecificationsScreenState extends State<SpecificationsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const FieldLabel('Transmission', required: true),
-              _ChoiceRow(
+              const AppFieldLabel('Transmission', required: true),
+              ChoiceRow(
                 labels: const ['Automatic', 'Manual'],
                 selected: _transmission == 'AUTOMATIC' ? 0 : 1,
                 onSelect: (index) => setState(
                   () => _transmission = index == 0 ? 'AUTOMATIC' : 'MANUAL',
                 ),
               ),
-              const SizedBox(height: 14),
-              const FieldLabel('Fuel Type', required: true),
-              _ChoiceRow(
+              const SizedBox(height: 12),
+              const AppFieldLabel('Fuel Type', required: true),
+              ChoiceRow(
                 labels: const ['Petrol', 'Diesel', 'Hybrid', 'Electric'],
                 selected: [
                   'PETROL',
@@ -92,7 +95,7 @@ class _SpecificationsScreenState extends State<SpecificationsScreen> {
                   ][index],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -116,27 +119,47 @@ class _SpecificationsScreenState extends State<SpecificationsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              const FieldLabel('Color'),
-              FormInput(
-                hint: 'Select color',
-                controller: _colorController,
-                suffix: const Icon(Icons.keyboard_arrow_down),
-                validator: (value) {
-                  if ((value?.trim().length ?? 0) > 32) {
-                    return 'Color must be 32 characters or fewer';
-                  }
-                  return null;
-                },
+              const SizedBox(height: 12),
+              AppDropdownField(
+                label: "Color",
+                required: false,
+                hint: "Select Color",
+                items: const [
+                  'Black',
+                  'White',
+                  'Silver',
+                  'Gray',
+                  'Red',
+                  'Blue',
+                  'Green',
+                  'Yellow',
+                  'Orange',
+                  'Brown',
+                  'Beige',
+                  'Gold',
+                  'Purple',
+                  'Other',
+                ],
+                value: _colorController.text.isEmpty
+                    ? null
+                    : _colorController.text,
+                onChanged: (value) => setState(() {
+                  _colorController.text = value ?? '';
+                }),
               ),
-              const SizedBox(height: 14),
-              const FieldLabel('Mileage', required: true),
-              FormInput(
-                hint: 'e.g. 15000',
+              const SizedBox(height: 12),
+              AppTextField(
+                hint: "e.g. 15000",
+                label: "Mileage",
+                helperText: "Max 50 chars",
+                required: true,
                 controller: _mileageController,
-                keyboardType: TextInputType.number,
+                keyboardType: .numberWithOptions(decimal: true),
+                textInputAction: .done,
+                maxLength: 50,
                 validator: (value) {
                   final mileage = int.tryParse(value?.trim() ?? '');
+
                   if (mileage == null || mileage < 0) {
                     return 'Enter a whole number greater than or equal to 0';
                   }
@@ -147,53 +170,6 @@ class _SpecificationsScreenState extends State<SpecificationsScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ChoiceRow extends StatelessWidget {
-  const _ChoiceRow({
-    required this.labels,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  final List<String> labels;
-  final int selected;
-  final ValueChanged<int> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: labels.asMap().entries.map((entry) {
-        final isSelected = entry.key == selected;
-        return Expanded(
-          child: InkWell(
-            onTap: () => onSelect(entry.key),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              margin: const EdgeInsets.only(right: 4),
-              padding: const EdgeInsets.symmetric(vertical: 9),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.background,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : const Color(0xffe1e1e5),
-                ),
-              ),
-              child: Text(
-                entry.value,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.subtitle3.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }
@@ -218,7 +194,7 @@ class _Counter extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FieldLabel(label, required: true),
+        AppFieldLabel(label, required: true),
         Container(
           height: 40,
           decoration: BoxDecoration(

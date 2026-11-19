@@ -16,7 +16,10 @@ class AppFieldLabel extends StatelessWidget {
       child: RichText(
         text: TextSpan(
           text: label,
-          style: AppTextStyles.subtitle3.copyWith(color: AppColors.textPrimary),
+          style: AppTextStyles.subtitle3.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: .w600,
+          ),
           children: required
               ? const [
                   TextSpan(
