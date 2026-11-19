@@ -7,6 +7,7 @@ import 'package:rental_car/core/network/api_client.dart';
 import 'package:rental_car/features/add_vehicle/data/add_vehicle_repository.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   test(
     'uploads photos before creating a vehicle with backend field names',
     () async {

@@ -11,7 +11,7 @@ class AuthRepository {
     final payload = await _client.post('/auth/login', {
       'email': email.trim(),
       'password': password,
-      'rememberMe': false,
+      'rememberMe': true,
     });
     final token = payload['accessToken'];
     final user = payload['user'];
@@ -33,5 +33,6 @@ class AuthRepository {
         statusCode: 403,
       );
     }
+    await _client.persistSession();
   }
 }

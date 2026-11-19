@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
@@ -39,6 +40,32 @@ class ApiClient {
   final Map<String, String> _cookies = {};
   String? _accessToken;
   Future<void>? _refreshFuture;
+  static const _storage = FlutterSecureStorage();
+  static const _cookiesKey = 'finovo_session_cookies';
+
+  Future<void> persistSession() async {
+    try {
+      await _storage.write(key: _cookiesKey, value: jsonEncode(_cookies));
+    } catch (_) {
+      // Storage is a convenience; a failed write must not break the request.
+    }
+  }
+
+  Future<bool> restoreSession() async {
+    final saved = await _storage.read(key: _cookiesKey);
+    if (saved == null || saved.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(saved);
+      if (decoded is! Map) return false;
+      _cookies
+        ..clear()
+        ..addAll(decoded.map((k, v) => MapEntry('$k', '$v')));
+      await _refreshAccessToken();
+      return hasSession;
+    } on ApiException {
+      return false;
+    }
+  }
 
   bool get hasSession => _accessToken != null;
 
@@ -182,6 +209,7 @@ class ApiClient {
         );
       }
       _accessToken = token;
+      await persistSession();
     } on ApiException catch (error) {
       if (error.statusCode == 401 || error.statusCode == 403) {
         clearSession();
@@ -212,6 +240,7 @@ class ApiClient {
   void clearSession() {
     _accessToken = null;
     _cookies.clear();
+    unawaited(_storage.delete(key: _cookiesKey));
   }
 }
 
