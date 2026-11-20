@@ -47,6 +47,7 @@ import { parseVehicleNotes } from '../../utils/vehicleNotesHelper';
 import { CustomSelect } from '../../components/common/CustomSelect';
 import { CompareTray } from '../../components/cars/CompareTray';
 import { AvailabilityCalendar } from '../../components/cars/AvailabilityCalendar';
+import { NotifyWhenFreeButton } from '../../components/cars/NotifyWhenFreeButton';
 import { MAX_COMPARE, useCompareCars, useRecentlyViewed, useSavedCars } from '../../hooks/useCarShortlists';
 
 const secondaryActionStyle = (active: boolean): React.CSSProperties => ({
@@ -679,6 +680,18 @@ export function CarDetailsPage() {
                 >
                   {t('cars.details.notAvailableForDates', { from: pickupDate, to: dropoffDate })}
                 </p>
+              )}
+              {isUnavailable && pickupIso && returnIso && (
+                <div style={{ margin: '0 0 16px' }}>
+                  <NotifyWhenFreeButton
+                    key={`${pickupIso}-${returnIso}`}
+                    vehicleId={vehicle.id}
+                    pickupDateTime={pickupIso}
+                    returnDateTime={returnIso}
+                    variant="dark"
+                    returnPath={`/cars/${vehicle.id}?pickupDate=${pickupDate}&returnDate=${dropoffDate}`}
+                  />
+                </div>
               )}
               {quoteError && !isUnavailable && (
                 <p role="alert" style={{ margin: '0 0 16px', color: '#FCA5A5', fontSize: '13px', fontWeight: 600 }}>

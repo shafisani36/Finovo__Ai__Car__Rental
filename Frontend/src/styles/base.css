@@ -207,3 +207,33 @@ svg {
   background: transparent !important;
 }
 
+
+/* Loading icons that turn while data loads (used as className="spin-icon" / "animate-spin" and animation: spin) */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin-icon,
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin-icon,
+  .animate-spin {
+    animation-duration: 2.5s;
+  }
+}
+
+/* Error box shown by payment and fine forms in the customer portal */
+.cp-alert {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+  border: 1px solid transparent;
+}
+.cp-alert-error {
+  background-color: var(--cp-danger-bg, #FEE2E2);
+  border-color: var(--cp-danger-border, #FECACA);
+  color: var(--cp-danger, #B91C1C);
+}

@@ -484,6 +484,25 @@
   line-height: 1.2;
 }
 
+.car-metric-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.car-metric-unit {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8A7090;
+  margin-inline-start: 3px;
+}
+
+.car-metric-sub {
+  font-size: 0.8rem;
+  color: #685D73;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
 /* ==========================================================================
    CAR SECTIONS (Card Wrapper, Header, Content)
    ========================================================================== */

@@ -30,10 +30,16 @@ import {
   ShieldCheck,
   ExternalLink,
   ChevronDown,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '../theme/useTheme';
+import '../../styles/admin-dark.css';
+import '../../styles/site-dark.css';
 import './CustomerLayout.css';
 
 export function CustomerLayout() {
+  const { isDark, toggleTheme } = useTheme();
   const site = useSiteInfo();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -130,7 +136,7 @@ export function CustomerLayout() {
     : 'CU';
 
   return (
-    <div className="customer-portal-root">
+    <div className="customer-portal-root app-theme-scope">
       {/* ================= LEFT SIDEBAR ================= */}
       <aside className={`customer-sidebar ${mobileSidebarOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-top-section">
@@ -236,6 +242,19 @@ export function CustomerLayout() {
               <Car size={16} />
               <span>{t('nav.reserveCar')}</span>
             </Link>
+
+            {/* Light / dark look */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="header-icon-btn"
+              role="switch"
+              aria-checked={isDark}
+              aria-label={t('adminPages.layout.toggleTheme')}
+              title={isDark ? t('adminPages.layout.darkMode') : t('adminPages.layout.lightMode')}
+            >
+              {isDark ? <Moon size={17} /> : <Sun size={17} />}
+            </button>
 
             {/* Notification Bell */}
             <Link

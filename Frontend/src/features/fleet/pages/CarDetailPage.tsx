@@ -104,6 +104,9 @@ export function CarDetailPage() {
   // Sub-resource Modal states
   const [isAddDocOpen, setIsAddDocOpen] = useState(false);
   const [isAddMaintOpen, setIsAddMaintOpen] = useState(false);
+  const [isFinishMaintOpen, setIsFinishMaintOpen] = useState(false);
+  const [maintActionError, setMaintActionError] = useState<string | null>(null);
+  const [completingMaintId, setCompletingMaintId] = useState<string | null>(null);
   const [isAddDamageOpen, setIsAddDamageOpen] = useState(false);
   const [isAddOdoOpen, setIsAddOdoOpen] = useState(false);
   const [isAddPricingOpen, setIsAddPricingOpen] = useState(false);
@@ -153,6 +156,42 @@ export function CarDetailPage() {
       setIsLoadingSubResources(false);
     }
   }, []);
+
+  /** Reloads the car (its status may have changed) and its records */
+  const refreshVehicle = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await fleetApi.getVehicleById(id);
+      if (res.vehicle) setVehicle(res.vehicle);
+    } catch (err) {
+      console.error('Failed to reload vehicle:', err);
+    }
+    await loadSubResources(id);
+  }, [id, loadSubResources]);
+
+  // Jobs that keep the car off the market now (future services do not)
+  const openMaintenance = maintenanceRecords.filter(
+    (m) =>
+      m.status === 'IN_PROGRESS' ||
+      (m.status === 'SCHEDULED' && new Date(m.scheduledDate ?? m.scheduledAt ?? 0).getTime() <= Date.now())
+  );
+
+  const completeMaintenance = async (maintId: string) => {
+    if (!vehicle) return;
+    setCompletingMaintId(maintId);
+    setMaintActionError(null);
+    try {
+      await fleetApi.updateMaintenance(vehicle.id, maintId, {
+        status: 'COMPLETED',
+        completedDate: new Date().toISOString(),
+      });
+      await refreshVehicle();
+    } catch (err) {
+      setMaintActionError(err instanceof Error ? err.message : t('adminPages.carDetail.errMaintAction'));
+    } finally {
+      setCompletingMaintId(null);
+    }
+  };
 
   // Fetch core vehicle data
   useEffect(() => {
@@ -517,6 +556,13 @@ export function CarDetailPage() {
           <div className="car-detail-actions">
             {renderStatusBadge(vehicle.status)}
 
+            {vehicle.status === 'MAINTENANCE' && (
+              <button type="button" onClick={() => setIsFinishMaintOpen(true)} className="car-btn-primary">
+                <CheckCircle2 size={16} />
+                <span>{t('adminPages.carDetail.finishMaint')}</span>
+              </button>
+            )}
+
             {/* Availability Checker Shortcut */}
             <button
               type="button"
@@ -554,6 +600,39 @@ export function CarDetailPage() {
           </div>
         </div>
       </div>
+
+      {vehicle.status === 'MAINTENANCE' && (
+        <div
+          role="status"
+          style={{
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            padding: '14px 18px',
+            marginBottom: '20px',
+            borderRadius: '14px',
+            backgroundColor: '#FFFBEB',
+            border: '1px solid #FDE68A',
+            color: '#92400E',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <Wrench size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <div style={{ fontWeight: 800 }}>{t('adminPages.carDetail.inMaintTitle')}</div>
+              <div style={{ fontSize: '0.875rem' }}>
+                {t('adminPages.carDetail.inMaintText', { count: openMaintenance.length })}
+              </div>
+            </div>
+          </div>
+          <button type="button" onClick={() => setIsFinishMaintOpen(true)} className="car-btn-primary">
+            <CheckCircle2 size={16} />
+            <span>{t('adminPages.carDetail.finishMaint')}</span>
+          </button>
+        </div>
+      )}
 
       {/* ================= TOP SECTION: PHOTO CAROUSEL + 3 METRIC CARDS ================= */}
       <div className="car-hero-grid">
@@ -630,7 +709,8 @@ export function CarDetailPage() {
 
             {/* Bottom Dots Indicator */}
             {photos.length > 1 && (
-              <div className="car-photo-dots">
+              <div className="car-photo-bottom-bar">
+                <div className="car-photo-dots-pill">
                 {photos.map((_, idx) => (
                   <button
                     key={idx}
@@ -643,13 +723,14 @@ export function CarDetailPage() {
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
+                </div>
               </div>
             )}
           </div>
 
           {/* Interactive Thumbnails Strip */}
           {photos.length > 1 && (
-            <div className="car-thumb-strip">
+            <div className="car-thumbs-strip">
               {photos.map((p, idx) => (
                 <button
                   key={idx}
@@ -675,13 +756,13 @@ export function CarDetailPage() {
         </div>
 
         {/* Right: 3 Metric & Telematics Cards */}
-        <div className="car-stats-column">
+        <div className="car-metrics-stack">
           {/* Card 1: Rental Pricing */}
-          <div className="car-stat-card">
-            <div className="car-stat-icon-wrap" style={{ backgroundColor: '#F3EEF6', color: '#6C1E84' }}>
+          <div className="car-metric-card">
+            <div className="car-metric-icon-wrap" style={{ backgroundColor: '#F3EEF6', color: '#6C1E84' }}>
               <CreditCard size={20} />
             </div>
-            <div className="car-stat-body">
+            <div className="car-metric-body">
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                 <span
                   style={{
@@ -708,7 +789,7 @@ export function CarDetailPage() {
                   {vehicle.currency || APP_CURRENCY}
                 </span>
               </div>
-              <div className="car-stat-value">
+              <div className="car-metric-value">
                 {vehicle.pricingMethod === 'per_km'
                   ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.perKmRate || 0).toLocaleString()}`
                   : vehicle.pricingMethod === 'hourly'
@@ -716,7 +797,7 @@ export function CarDetailPage() {
                   : vehicle.pricingMethod === 'monthly'
                   ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.monthlyRate || 0).toLocaleString()}`
                   : `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.dailyRate || 0).toLocaleString()}`}
-                <span className="car-stat-unit">
+                <span className="car-metric-unit">
                   {vehicle.pricingMethod === 'per_km'
                     ? '/km'
                     : vehicle.pricingMethod === 'hourly'
@@ -726,8 +807,8 @@ export function CarDetailPage() {
                     : '/day'}
                 </span>
               </div>
-              <div className="car-stat-label">{t('adminPages.carDetail.activeRate')}</div>
-              <div className="car-stat-sub">
+              <div className="car-metric-label">{t('adminPages.carDetail.activeRate')}</div>
+              <div className="car-metric-sub">
                 {vehicle.pricingMethod === 'per_km'
                   ? t('adminPages.carDetail._subPerKm', { min: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()}`, deposit: `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.securityDeposit || 0).toLocaleString()}` })
                   : vehicle.pricingMethod === 'hourly'
@@ -742,17 +823,17 @@ export function CarDetailPage() {
           </div>
 
           {/* Card 2: Current Mileage & Health */}
-          <div className="car-stat-card">
-            <div className="car-stat-icon-wrap" style={{ backgroundColor: '#DEF7EC', color: '#0E9F6E' }}>
+          <div className="car-metric-card">
+            <div className="car-metric-icon-wrap" style={{ backgroundColor: '#DEF7EC', color: '#0E9F6E' }}>
               <Gauge size={20} />
             </div>
-            <div className="car-stat-body">
-              <div className="car-stat-value">
+            <div className="car-metric-body">
+              <div className="car-metric-value">
                 {vehicle.mileage.toLocaleString()}
-                <span className="car-stat-unit">km</span>
+                <span className="car-metric-unit">km</span>
               </div>
-              <div className="car-stat-label">{t('adminPages.carDetail.odometer')}</div>
-              <div className="car-stat-sub">
+              <div className="car-metric-label">{t('adminPages.carDetail.odometer')}</div>
+              <div className="car-metric-sub">
                 {t('adminPages.carDetail.nextService')}{' '}
                 {vehicle.nextServiceMileage
                   ? `${vehicle.nextServiceMileage.toLocaleString()} km`
@@ -762,16 +843,16 @@ export function CarDetailPage() {
           </div>
 
           {/* Card 3: Assigned Branch & Parking Bay */}
-          <div className="car-stat-card">
-            <div className="car-stat-icon-wrap" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+          <div className="car-metric-card">
+            <div className="car-metric-icon-wrap" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
               <MapPin size={20} />
             </div>
-            <div className="car-stat-body">
-              <div className="car-stat-value" style={{ fontSize: '1.25rem' }}>
+            <div className="car-metric-body">
+              <div className="car-metric-value" style={{ fontSize: '1.25rem' }}>
                 {vehicle.branch?.name || t('adminPages.carDetail.centralHub')}
               </div>
-              <div className="car-stat-label">{t('adminPages.carDetail.location')}</div>
-              <div className="car-stat-sub">
+              <div className="car-metric-label">{t('adminPages.carDetail.location')}</div>
+              <div className="car-metric-sub">
                 {t('adminPages.carDetail._bayCode', { bay: vehicle.parkingSpot || 'A-12', code: vehicle.vehicleCode || 'FLEET-01' })}
               </div>
             </div>
@@ -1459,9 +1540,9 @@ export function CarDetailPage() {
             }}
           >
             {/* Primary Rate Card */}
-            <div className="car-stat-card">
-              <div className="car-stat-body">
-                <div className="car-stat-value">
+            <div className="car-metric-card">
+              <div className="car-metric-body">
+                <div className="car-metric-value">
                   {vehicle.currency || APP_CURRENCY}{' '}
                   {vehicle.pricingMethod === 'per_km'
                     ? Number(vehicle.perKmRate || 0).toLocaleString()
@@ -1470,7 +1551,7 @@ export function CarDetailPage() {
                     : vehicle.pricingMethod === 'monthly'
                     ? Number(vehicle.monthlyRate || 0).toLocaleString()
                     : Number(vehicle.dailyRate || 0).toLocaleString()}
-                  <span className="car-stat-unit">
+                  <span className="car-metric-unit">
                     {vehicle.pricingMethod === 'per_km'
                       ? '/km'
                       : vehicle.pricingMethod === 'hourly'
@@ -1480,7 +1561,7 @@ export function CarDetailPage() {
                       : '/day'}
                   </span>
                 </div>
-                <div className="car-stat-label">
+                <div className="car-metric-label">
                   {vehicle.pricingMethod === 'per_km'
                     ? t('adminPages.carDetail.rateKm')
                     : vehicle.pricingMethod === 'hourly'
@@ -1493,9 +1574,9 @@ export function CarDetailPage() {
             </div>
 
             {/* Condition/Threshold Card */}
-            <div className="car-stat-card">
-              <div className="car-stat-body">
-                <div className="car-stat-value" style={{ fontSize: '1.25rem' }}>
+            <div className="car-metric-card">
+              <div className="car-metric-body">
+                <div className="car-metric-value" style={{ fontSize: '1.25rem' }}>
                   {vehicle.pricingMethod === 'per_km'
                     ? `${vehicle.currency || APP_CURRENCY} ${Number(vehicle.minimumTripCharge || 0).toLocaleString()}`
                     : vehicle.pricingMethod === 'hourly'
@@ -1506,7 +1587,7 @@ export function CarDetailPage() {
                     ? t('adminPages.carDetail._kmPerDay', { km: vehicle.mileageLimitPerDay || 200 })
                     : vehicle.mileageLimitPerDay ? t('adminPages.carDetail._kmPerDay', { km: vehicle.mileageLimitPerDay }) : t('adminPages.carDetail.unlimited')}
                 </div>
-                <div className="car-stat-label">
+                <div className="car-metric-label">
                   {vehicle.pricingMethod === 'per_km'
                     ? t('adminPages.carDetail.minTrip')
                     : vehicle.pricingMethod === 'hourly'
@@ -1521,22 +1602,22 @@ export function CarDetailPage() {
             </div>
 
             {/* Security Deposit Card */}
-            <div className="car-stat-card">
-              <div className="car-stat-body">
-                <div className="car-stat-value">
+            <div className="car-metric-card">
+              <div className="car-metric-body">
+                <div className="car-metric-value">
                   {vehicle.currency || APP_CURRENCY} {Number(vehicle.securityDeposit || 0).toLocaleString()}
                 </div>
-                <div className="car-stat-label">{t('adminPages.carDetail.deposit')}</div>
+                <div className="car-metric-label">{t('adminPages.carDetail.deposit')}</div>
               </div>
             </div>
 
             {/* Grace Period & Timing Card */}
-            <div className="car-stat-card">
-              <div className="car-stat-body">
-                <div className="car-stat-value" style={{ fontSize: '1.25rem' }}>
+            <div className="car-metric-card">
+              <div className="car-metric-body">
+                <div className="car-metric-value" style={{ fontSize: '1.25rem' }}>
                   {vehicle.gracePeriodMinutes || 0} {t('adminPages.carDetail.min')}
                 </div>
-                <div className="car-stat-label">{t('adminPages.carDetail.grace')}</div>
+                <div className="car-metric-label">{t('adminPages.carDetail.grace')}</div>
               </div>
             </div>
           </div>
@@ -1669,6 +1750,9 @@ export function CarDetailPage() {
             </button>
           </div>
 
+          {maintActionError && (
+            <div role="alert" style={{ color: '#B91C1C', fontWeight: 600, marginBottom: '10px' }}>{maintActionError}</div>
+          )}
           <div className="car-table-responsive">
             <table className="car-data-table">
               <thead>
@@ -1819,6 +1903,7 @@ export function CarDetailPage() {
                   <th>{t('adminPages.carDetail.mileage')}</th>
                   <th>{t('adminPages.carDetail.cost')}</th>
                   <th>{t('adminPages.carDetail.status')}</th>
+                  <th aria-label={t('adminPages.carDetail.actionsCol')} />
                 </tr>
               </thead>
               <tbody>
@@ -1838,17 +1923,26 @@ export function CarDetailPage() {
                         {m.maintenanceType}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600, color: '#1A0322' }}>{m.description}</td>
+                    <td style={{ fontWeight: 600, color: '#1A0322' }}>
+                      {m.title || m.description}
+                      {m.title && m.description && m.description !== m.title && (
+                        <div style={{ fontWeight: 400, fontSize: '0.8rem', color: '#685D73' }}>{m.description}</div>
+                      )}
+                    </td>
                     <td>{m.serviceProvider || t('adminPages.carDetail.authorizedCenter')}</td>
+                    <td>{formatDay(m.scheduledDate ?? m.scheduledAt)}</td>
                     <td>
-                      {m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString() : 'N/A'}
+                      {m.completedDate || m.completedAt
+                        ? formatDay(m.completedDate ?? m.completedAt)
+                        : m.status === 'CANCELLED'
+                          ? '—'
+                          : t('adminPages.carDetail.inProgress')}
                     </td>
-                    <td>
-                      {m.completedAt ? new Date(m.completedAt).toLocaleDateString() : t('adminPages.carDetail.inProgress')}
-                    </td>
-                    <td>{m.odometerValue ? `${m.odometerValue.toLocaleString()} km` : '—'}</td>
+                    <td>{(m.odometerReading ?? m.odometerValue) ? `${Number(m.odometerReading ?? m.odometerValue).toLocaleString()} km` : '—'}</td>
                     <td style={{ fontWeight: 700, color: '#1A0322' }}>
-                      {m.costAmount ? `$${Number(m.costAmount).toFixed(2)}` : '—'}
+                      {(m.cost ?? m.costAmount) !== null && (m.cost ?? m.costAmount) !== undefined
+                        ? `${m.currency || APP_CURRENCY} ${Number(m.cost ?? m.costAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                        : '—'}
                     </td>
                     <td>
                       <span
@@ -1871,15 +1965,29 @@ export function CarDetailPage() {
                           borderRadius: '12px',
                         }}
                       >
-                        {m.status}
+                        {t(`adminPages.carDetail.maintStatus.${m.status}`, { defaultValue: m.status })}
                       </span>
+                    </td>
+                    <td>
+                      {(m.status === 'SCHEDULED' || m.status === 'IN_PROGRESS') && (
+                        <button
+                          type="button"
+                          className="car-btn-secondary"
+                          style={{ padding: '6px 10px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                          disabled={completingMaintId === m.id}
+                          onClick={() => void completeMaintenance(m.id)}
+                        >
+                          <CheckCircle2 size={14} />
+                          <span>{t('adminPages.carDetail.markDone')}</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
 
                 {maintenanceRecords.length === 0 && (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={9}>
                       <div className="car-empty-box">
                         <div className="car-empty-icon">
                           <Wrench size={24} />
@@ -1975,15 +2083,15 @@ export function CarDetailPage() {
                           fontSize: '0.75rem',
                           fontWeight: 700,
                           backgroundColor:
-                            d.status === 'REPAIRED'
+                            d.status === 'RESOLVED'
                               ? '#DEF7EC'
-                              : d.status === 'UNDER_REVIEW'
+                              : (d.status === 'ASSESSED' || d.status === 'REPAIR_SCHEDULED')
                               ? '#FEF3C7'
                               : '#F3F4F6',
                           color:
-                            d.status === 'REPAIRED'
+                            d.status === 'RESOLVED'
                               ? '#03543F'
-                              : d.status === 'UNDER_REVIEW'
+                              : (d.status === 'ASSESSED' || d.status === 'REPAIR_SCHEDULED')
                               ? '#92400E'
                               : '#374151',
                           padding: '3px 8px',
@@ -2474,7 +2582,21 @@ export function CarDetailPage() {
           onClose={() => setIsAddMaintOpen(false)}
           onSuccess={() => {
             setIsAddMaintOpen(false);
-            loadSubResources(vehicle.id);
+            void refreshVehicle();
+          }}
+        />
+      )}
+
+      {/* ================= MODAL: FINISH MAINTENANCE ================= */}
+      {isFinishMaintOpen && (
+        <FinishMaintenanceModal
+          vehicleId={vehicle.id}
+          currentMileage={vehicle.mileage}
+          openJobs={openMaintenance.length}
+          onClose={() => setIsFinishMaintOpen(false)}
+          onSuccess={() => {
+            setIsFinishMaintOpen(false);
+            void refreshVehicle();
           }}
         />
       )}
@@ -2791,10 +2913,12 @@ function AddMaintenanceModal({
   const [status, setStatus] = useState('SCHEDULED');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await fleetApi.createMaintenance(vehicleId, {
         maintenanceType: maintenanceType as any,
@@ -2804,13 +2928,12 @@ function AddMaintenanceModal({
         completedAt: completedAt ? new Date(completedAt).toISOString() : undefined,
         odometerValue: odometerValue ? Number(odometerValue) : undefined,
         costAmount: costAmount ? Number(costAmount) : undefined,
-        currency: 'USD',
         status: status as any,
         notes: notes || undefined,
       });
       onSuccess();
     } catch (err) {
-      console.error('Failed to log maintenance:', err);
+      setSubmitError(err instanceof Error ? err.message : t('adminPages.carDetail.errMaintAction'));
     } finally {
       setIsSubmitting(false);
     }
@@ -2836,12 +2959,11 @@ function AddMaintenanceModal({
                 options={[
                   { value: 'SCHEDULED_SERVICE', label: t('adminPages.carDetail.mtScheduled') },
                   { value: 'OIL_CHANGE', label: t('adminPages.carDetail.mtOil') },
-                  { value: 'TIRE_SERVICE', label: t('adminPages.carDetail.mtTire') },
+                  { value: 'TIRE_ROTATION_REPLACEMENT', label: t('adminPages.carDetail.mtTire') },
                   { value: 'BRAKE_SERVICE', label: t('adminPages.carDetail.mtBrake') },
-                  { value: 'MECHANICAL_REPAIR', label: t('adminPages.carDetail.mtMechanical') },
-                  { value: 'BODYWORK', label: t('adminPages.carDetail.mtBody') },
-                  { value: 'ELECTRICAL', label: t('adminPages.carDetail.mtElectrical') },
-                  { value: 'INSPECTION', label: t('adminPages.carDetail.mtInspection') },
+                  { value: 'REPAIR', label: t('adminPages.carDetail.mtMechanical') },
+                  { value: 'BODY_WORK', label: t('adminPages.carDetail.mtBody') },
+                  { value: 'BATTERY_CHECK', label: t('adminPages.carDetail.mtElectrical') },
                   { value: 'OTHER', label: t('adminPages.carDetail.mtOther') },
                 ]}
               />
@@ -2939,6 +3061,7 @@ function AddMaintenanceModal({
                 className="car-field-input"
               />
             </div>
+            {submitError && <div role="alert" style={{ color: '#B91C1C', fontWeight: 600, fontSize: '0.875rem' }}>{submitError}</div>}
           </div>
 
           <div className="car-modal-footer">
@@ -2947,6 +3070,159 @@ function AddMaintenanceModal({
             </button>
             <button type="submit" disabled={isSubmitting} className="car-btn-primary">
               {isSubmitting ? t('adminPages.carDetail.saving') : t('adminPages.carDetail.saveMaint')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/** Date only, or a dash when there is none */
+function formatDay(value?: string | null): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString();
+}
+
+/** Finishes the maintenance and puts the car back on the market. */
+function FinishMaintenanceModal({
+  vehicleId,
+  currentMileage,
+  openJobs,
+  onClose,
+  onSuccess,
+}: {
+  vehicleId: string;
+  currentMileage: number;
+  openJobs: number;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const { t } = useTranslation();
+  const [notes, setNotes] = useState('');
+  const [cost, setCost] = useState('');
+  const [odometer, setOdometer] = useState(String(currentMileage || ''));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await fleetApi.finishMaintenance(vehicleId, {
+        notes: notes.trim() || undefined,
+        cost: cost === '' ? null : Number(cost),
+        odometerReading: odometer === '' ? null : Number(odometer),
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('adminPages.carDetail.errMaintAction'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="car-modal-overlay" onClick={onClose}>
+      <div
+        className="car-modal-box"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('adminPages.carDetail.finishMaintTitle')}
+      >
+        <div className="car-modal-header">
+          <h3 className="car-modal-title">{t('adminPages.carDetail.finishMaintTitle')}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('adminPages.carDetail.cancel')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="car-modal-body">
+            <p style={{ margin: 0, color: '#4A315A', fontSize: '0.9rem' }}>
+              {t('adminPages.carDetail.finishMaintText', { count: openJobs })}
+            </p>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
+                gap: '12px',
+              }}
+            >
+              <div className="car-field-group">
+                <label className="car-field-label" htmlFor="finish-maint-odometer">
+                  {t('adminPages.carDetail.odometerAtService')}
+                </label>
+                <input
+                  id="finish-maint-odometer"
+                  type="number"
+                  min={currentMileage || 0}
+                  value={odometer}
+                  onChange={(e) => setOdometer(e.target.value)}
+                  className="car-field-input"
+                />
+              </div>
+              <div className="car-field-group">
+                <label className="car-field-label" htmlFor="finish-maint-cost">
+                  {t('adminPages.carDetail._costLabel', {
+                    currency: APP_CURRENCY,
+                  })}
+                </label>
+                <input
+                  id="finish-maint-cost"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={cost}
+                  placeholder="0.00"
+                  onChange={(e) => setCost(e.target.value)}
+                  className="car-field-input"
+                />
+              </div>
+            </div>
+            <div className="car-field-group">
+              <label className="car-field-label" htmlFor="finish-maint-notes">
+                {t('adminPages.carDetail.workNotes')}
+              </label>
+              <textarea
+                id="finish-maint-notes"
+                rows={3}
+                maxLength={2000}
+                placeholder={t('adminPages.carDetail.finishMaintNotesPlaceholder')}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="car-field-input"
+              />
+            </div>
+            {error && (
+              <div
+                role="alert"
+                style={{
+                  color: '#B91C1C',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                }}
+              >
+                {error}
+              </div>
+            )}
+          </div>
+          <div className="car-modal-footer">
+            <button type="button" onClick={onClose} className="car-btn-secondary">
+              {t('adminPages.carDetail.cancel')}
+            </button>
+            <button type="submit" disabled={isSubmitting} className="car-btn-primary">
+              <CheckCircle2 size={16} />
+              <span>
+                {isSubmitting ? t('adminPages.carDetail.saving') : t('adminPages.carDetail.finishMaintConfirm')}
+              </span>
             </button>
           </div>
         </form>
@@ -2972,23 +3248,24 @@ function AddDamageModal({
   const [status, setStatus] = useState('REPORTED');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await fleetApi.createDamageReport(vehicleId, {
         damageType,
         severity: severity as any,
         description,
         estimatedRepairCost: estimatedRepairCost ? Number(estimatedRepairCost) : undefined,
-        currency: 'USD',
         status: status as any,
         notes: notes || undefined,
       });
       onSuccess();
     } catch (err) {
-      console.error('Failed to report damage:', err);
+      setSubmitError(err instanceof Error ? err.message : t('adminPages.carDetail.errMaintAction'));
     } finally {
       setIsSubmitting(false);
     }
@@ -3070,8 +3347,9 @@ function AddDamageModal({
                   onChange={(val) => setStatus(val)}
                   options={[
                     { value: 'REPORTED', label: t('adminPages.carDetail.dsReported') },
-                    { value: 'UNDER_REVIEW', label: t('adminPages.carDetail.dsReview') },
-                    { value: 'IN_REPAIR', label: t('adminPages.carDetail.dsRepair') },
+                    { value: 'ASSESSED', label: t('adminPages.carDetail.dsReview') },
+                    { value: 'REPAIR_SCHEDULED', label: t('adminPages.carDetail.dsRepair') },
+                    { value: 'RESOLVED', label: t('adminPages.carDetail.dsResolved') },
                   ]}
                 />
               </div>
@@ -3089,6 +3367,9 @@ function AddDamageModal({
             </div>
           </div>
 
+          {submitError && (
+            <div role="alert" style={{ color: '#B91C1C', fontWeight: 600, fontSize: '0.875rem', padding: '0 24px 12px' }}>{submitError}</div>
+          )}
           <div className="car-modal-footer">
             <button type="button" onClick={onClose} className="car-btn-secondary">
               {t('adminPages.carDetail.cancel')}
@@ -3236,16 +3517,18 @@ function AddPricingTierModal({
   const { t } = useTranslation();
   const [rateName, setRateName] = useState('High Season Special');
   const [pricingMethod, setPricingMethod] = useState<'daily' | 'per_km' | 'daily_extra_km' | 'hourly' | 'monthly'>('daily');
-  const [currency, setCurrency] = useState('PKR');
+  const currency = APP_CURRENCY;
   const [baseRate, setBaseRate] = useState<number>(dailyRate || 8000);
   const [securityDeposit, setSecurityDeposit] = useState<number>(25000);
   const [includedKmPerDay, setIncludedKmPerDay] = useState<number>(200);
   const [extraKmRate, setExtraKmRate] = useState<number>(50);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await fleetApi.createPricingTier(vehicleId, {
         rateName,
@@ -3260,7 +3543,7 @@ function AddPricingTierModal({
       });
       onSuccess();
     } catch (err) {
-      console.error('Failed to create rate tier:', err);
+      setSubmitError(err instanceof Error ? err.message : t('adminPages.carDetail.errMaintAction'));
     } finally {
       setIsSubmitting(false);
     }
@@ -3308,16 +3591,7 @@ function AddPricingTierModal({
 
               <div className="car-field-group">
                 <label className="car-field-label">{t('adminPages.carDetail.currencyReq')}</label>
-                <CustomSelect
-                  value={currency}
-                  onChange={(val) => setCurrency(val)}
-                  options={[
-                    { value: 'PKR', label: 'PKR (Pakistani Rupee)' },
-                    { value: 'USD', label: 'USD (US Dollar)' },
-                    { value: 'EUR', label: 'EUR (Euro)' },
-                    { value: 'AED', label: 'AED (UAE Dirham)' },
-                  ]}
-                />
+                <input type="text" value={currency} readOnly className="car-field-input" aria-readonly="true" />
               </div>
             </div>
 
@@ -3372,6 +3646,9 @@ function AddPricingTierModal({
             )}
           </div>
 
+          {submitError && (
+            <div role="alert" style={{ color: '#B91C1C', fontWeight: 600, fontSize: '0.875rem', padding: '0 24px 12px' }}>{submitError}</div>
+          )}
           <div className="car-modal-footer">
             <button type="button" onClick={onClose} className="car-btn-secondary">
               {t('adminPages.carDetail.cancel')}

@@ -326,15 +326,20 @@ export class StripePaymentService {
 
       const { expected, paid } = this.amountDue(booking);
       const settled = paid >= expected;
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: {
-          status: booking.status === 'PENDING' ? 'CONFIRMED' : booking.status,
-          settlementStatus: settled ? 'SETTLED' : 'PARTIALLY_PAID',
-        },
-      });
-      if (booking.status === 'PENDING') {
-        void MessagingService.notifyBooking(booking.id, 'BOOKING_CONFIRMED');
+      const settlementStatus = settled ? 'SETTLED' : 'PARTIALLY_PAID';
+      // A paid online booking waits for staff to check the customer's documents before it is confirmed.
+      // Only the call that moves it out of PENDING sends the emails (the webhook and the page can both report it).
+      const sentForApproval =
+        booking.status === 'PENDING'
+          ? await prisma.booking.updateMany({
+              where: { id: booking.id, status: 'PENDING' },
+              data: { status: 'REQUIRES_REVIEW', settlementStatus },
+            })
+          : { count: 0 };
+      if (sentForApproval.count > 0) {
+        void MessagingService.notifyBooking(booking.id, 'BOOKING_AWAITING_APPROVAL');
+      } else {
+        await prisma.booking.update({ where: { id: booking.id }, data: { settlementStatus } });
       }
 
       const alreadyNotified = await prisma.customerNotification.findFirst({

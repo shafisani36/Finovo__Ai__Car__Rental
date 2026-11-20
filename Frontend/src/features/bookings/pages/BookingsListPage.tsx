@@ -11,7 +11,8 @@ import {
   User,
   MapPin,
   Clock,
-  Banknote
+  Banknote,
+  ShieldCheck
 } from 'lucide-react';
 import { useConfirm } from '../../../components/common/ConfirmModal';
 import {
@@ -24,6 +25,7 @@ import { formatMoney } from '../../../utils/carImageHelper';
 import { useTranslation } from 'react-i18next';
 import { rentalApi, type RentalAgreementSummary } from '../../rentals/api/rentalApi';
 import { downloadProtectedFile } from '../../../utils/downloadFile';
+import { BookingReviewModal } from '../components/BookingReviewModal';
 
 const CAPTION_STYLE: CSSProperties = { fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' };
 
@@ -86,7 +88,19 @@ export function BookingsListPage() {
   const { confirm } = useConfirm();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Staff email links open the document check directly: ?review=<bookingId>
+  const reviewId = searchParams.get('review');
+  const openReview = (id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('review', id);
+    setSearchParams(next);
+  };
+  const closeReview = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('review');
+    setSearchParams(next);
+  };
   // A link can open the list already filtered, for example ?search=FIN-2026-0001
   const [search, setSearch] = useState(() => (searchParams.get('search') || '').slice(0, 100));
   const [page, setPage] = useState(1);
@@ -257,7 +271,7 @@ export function BookingsListPage() {
       >
         {/* Status Filter Tabs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-          {['ALL', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'PENDING', 'CANCELLED'].map((st) => (
+          {['ALL', 'REQUIRES_REVIEW', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'PENDING', 'CANCELLED'].map((st) => (
             <button
               key={st}
               onClick={() => {
@@ -598,6 +612,28 @@ export function BookingsListPage() {
                     flexWrap: 'wrap',
                   }}
                 >
+                  {b.status === 'REQUIRES_REVIEW' && (
+                    <button
+                      onClick={() => openReview(b.id)}
+                      style={{
+                        backgroundColor: '#047857',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <ShieldCheck size={15} />
+                      <span>{t('adminPages.bookingReview.reviewButton')}</span>
+                    </button>
+                  )}
+
                   {b.status === 'CONFIRMED' && (
                     <button
                       onClick={() => navigate(`/admin/rentals/handover/${b.id}`)}
@@ -856,6 +892,27 @@ export function BookingsListPage() {
                 {t('adminPages.bookings.cancelBooking')}
               </button>
             )}
+            {selectedBooking.status === 'REQUIRES_REVIEW' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const id = selectedBooking.id;
+                  setSelectedBooking(null);
+                  openReview(id);
+                }}
+                style={{
+                  backgroundColor: '#047857',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('adminPages.bookingReview.reviewButton')}
+              </button>
+            )}
             {selectedBooking.status === 'CONFIRMED' && (
               <button
                 type="button"
@@ -892,6 +949,8 @@ export function BookingsListPage() {
           </div>
         </Modal>
       )}
+
+      {reviewId && <BookingReviewModal key={reviewId} bookingId={reviewId} onClose={closeReview} onDecided={() => void loadBookings()} />}
     </PageContainer>
   );
 }

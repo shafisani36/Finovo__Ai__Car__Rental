@@ -1,0 +1,382 @@
+/* Dark mode for the public website and the customer portal, on top of the shared rules in admin-dark.css.
+   Turned on by <html data-theme="dark"> (see app/theme/useTheme). Colours come from the --adm-* palette. */
+
+/* ---------- Customer portal: design tokens ---------- */
+
+html[data-theme='dark'] .customer-portal-root {
+  --cp-primary: var(--adm-text);
+  --cp-primary-light: var(--adm-surface-3);
+  --cp-primary-hover: var(--adm-text-purple);
+  --cp-bg: var(--adm-page);
+  --cp-card-bg: var(--adm-surface);
+  --cp-border: var(--adm-border);
+  --cp-border-hover: #4A3357;
+  --cp-text-main: var(--adm-text);
+  --cp-text-muted: var(--adm-text-muted);
+  --cp-text-subtle: #9C88A8;
+  --cp-accent-light: rgba(250, 184, 38, 0.16);
+
+  --cp-success: var(--adm-text-green);
+  --cp-success-bg: var(--adm-tint-green);
+  --cp-success-border: rgba(16, 185, 129, 0.35);
+  --cp-warning: var(--adm-text-amber);
+  --cp-warning-bg: var(--adm-tint-amber);
+  --cp-warning-border: rgba(250, 184, 38, 0.35);
+  --cp-danger: var(--adm-text-red);
+  --cp-danger-bg: var(--adm-tint-red);
+  --cp-danger-border: rgba(239, 68, 68, 0.35);
+  --cp-info: var(--adm-text-blue);
+  --cp-info-bg: var(--adm-tint-blue);
+  --cp-info-border: rgba(59, 130, 246, 0.35);
+
+  --cp-shadow-sm: none;
+  --cp-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --cp-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- Customer portal: header ---------- */
+
+html[data-theme='dark'] .customer-top-header {
+  background-color: var(--adm-surface) !important;
+  border-bottom-color: var(--adm-border) !important;
+}
+html[data-theme='dark'] .customer-top-header .portal-location-tag { color: var(--adm-text-muted) !important; }
+html[data-theme='dark'] .header-icon-btn,
+html[data-theme='dark'] .profile-pill-btn,
+html[data-theme='dark'] .customer-portal-root .finovo-language-trigger.admin-variant {
+  background-color: var(--adm-surface-2) !important;
+  border-color: var(--adm-border) !important;
+  color: var(--adm-text) !important;
+}
+html[data-theme='dark'] .header-icon-btn:hover,
+html[data-theme='dark'] .profile-pill-btn:hover { background-color: var(--adm-surface-3) !important; }
+html[data-theme='dark'] .header-browse-btn {
+  background-color: var(--adm-tint-amber) !important;
+  border-color: rgba(250, 184, 38, 0.35) !important;
+  color: var(--adm-text-amber) !important;
+}
+
+/* ---------- Customer portal: components ---------- */
+
+/* Yellow buttons keep dark text */
+html[data-theme='dark'] .customer-portal-root .cp-btn-primary { color: #1E0432 !important; }
+html[data-theme='dark'] .customer-portal-root .cp-btn-secondary,
+html[data-theme='dark'] .customer-portal-root [style*="background: var(--cp-primary)"] {
+  background: var(--adm-button) !important;
+  color: #FFFFFF !important;
+}
+html[data-theme='dark'] .customer-portal-root .cp-btn-secondary:hover:not(:disabled) { background: #8E33AB !important; }
+html[data-theme='dark'] .customer-portal-root .cp-btn-outline {
+  background: var(--adm-surface-2) !important;
+  border-color: var(--adm-border) !important;
+  color: var(--adm-text) !important;
+}
+html[data-theme='dark'] .customer-portal-root .cp-btn-outline:hover:not(:disabled) {
+  background: var(--adm-surface-3) !important;
+  border-color: #4A3357 !important;
+}
+html[data-theme='dark'] .customer-portal-root .cp-badge-primary {
+  background: var(--adm-tint-purple) !important;
+  color: var(--adm-text-purple) !important;
+}
+html[data-theme='dark'] .customer-portal-root .cp-input,
+html[data-theme='dark'] .customer-portal-root .cp-select,
+html[data-theme='dark'] .customer-portal-root .cp-textarea,
+html[data-theme='dark'] .customer-portal-root input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html[data-theme='dark'] .customer-portal-root select,
+html[data-theme='dark'] .customer-portal-root textarea {
+  background-color: var(--adm-surface-2) !important;
+  border-color: var(--adm-border) !important;
+  color: var(--adm-text) !important;
+}
+html[data-theme='dark'] .customer-portal-root input::placeholder,
+html[data-theme='dark'] .customer-portal-root textarea::placeholder { color: #8F7C9B !important; }
+html[data-theme='dark'] .customer-portal-root .cp-modal-box,
+html[data-theme='dark'] .customer-portal-root .cp-auto-card { background: var(--adm-surface) !important; }
+html[data-theme='dark'] .customer-portal-root .cp-stat-icon-wrap { background: var(--adm-surface-2) !important; }
+html[data-theme='dark'] .customer-portal-root .cp-welcome-banner {
+  background: linear-gradient(135deg, #2A0B38 0%, #1A0624 100%) !important;
+}
+html[data-theme='dark'] .customer-portal-root .cp-skeleton {
+  background: linear-gradient(90deg, var(--adm-surface-2) 25%, var(--adm-surface-3) 50%, var(--adm-surface-2) 75%) !important;
+  background-size: 200% 100% !important;
+}
+/* Light inline backgrounds used in the portal pages (photo placeholders, chat bubbles, info rows) */
+html[data-theme='dark'] .customer-portal-root [style*="background: rgb(241, 238, 244)"],
+html[data-theme='dark'] .customer-portal-root [style*="background-color: rgb(241, 238, 244)"],
+html[data-theme='dark'] .customer-portal-root [style*="background: rgb(248, 246, 249)"],
+html[data-theme='dark'] .customer-portal-root [style*="background-color: rgb(248, 246, 249)"],
+html[data-theme='dark'] .customer-portal-root [style*="background-color: rgb(250, 248, 251)"],
+html[data-theme='dark'] .customer-portal-root [style*="background: rgb(250, 248, 251)"],
+html[data-theme='dark'] .customer-portal-root [style*="background: rgb(250, 247, 250)"],
+html[data-theme='dark'] .customer-portal-root [style*="background: rgb(249, 248, 250)"] {
+  background-color: var(--adm-surface-2) !important;
+}
+
+/* ---------- Website: page backgrounds ---------- */
+
+html[data-theme='dark'] .available-cars-page,
+html[data-theme='dark'] .finovo-about-page,
+html[data-theme='dark'] .compare-page,
+html[data-theme='dark'] .legal-page {
+  background-color: var(--adm-page) !important;
+  color: var(--adm-text);
+}
+
+/* ---------- Website: cards and panels ---------- */
+
+html[data-theme='dark'] .cars-filter-card,
+html[data-theme='dark'] .finovo-car-card,
+html[data-theme='dark'] .finovo-car-card-info-bar,
+html[data-theme='dark'] .purpose-panel,
+html[data-theme='dark'] .benefit,
+html[data-theme='dark'] .polaroid,
+html[data-theme='dark'] .compare-empty,
+html[data-theme='dark'] .legal-toc,
+html[data-theme='dark'] .legal-section,
+html[data-theme='dark'] .avail-card {
+  background-color: var(--adm-surface) !important;
+  border-color: var(--adm-border) !important;
+  color: var(--adm-text);
+  box-shadow: none !important;
+}
+html[data-theme='dark'] .team-section,
+html[data-theme='dark'] .app-theme-scope section[style*="background-color: rgb(236, 229, 219)"] {
+  background-color: var(--adm-surface-2) !important;
+}
+
+/* ---------- Website: form controls on the cars page ---------- */
+
+html[data-theme='dark'] .cars-search-input,
+html[data-theme='dark'] .cars-date-picker-box,
+html[data-theme='dark'] .cars-dropdown-trigger,
+html[data-theme='dark'] .cars-frequency-pill-group,
+html[data-theme='dark'] .cars-view-toggle-group,
+html[data-theme='dark'] .finovo-car-card-action-btn {
+  background-color: var(--adm-surface-2) !important;
+  border-color: var(--adm-border) !important;
+  color: var(--adm-text) !important;
+}
+html[data-theme='dark'] .cars-search-input::placeholder { color: #8F7C9B !important; }
+html[data-theme='dark'] .cars-saved-toggle,
+html[data-theme='dark'] .cars-view-toggle-btn.active {
+  background-color: var(--adm-surface-3) !important;
+  border-color: var(--adm-border) !important;
+  color: var(--adm-text) !important;
+}
+html[data-theme='dark'] .finovo-car-card-status-pill {
+  background-color: var(--adm-tint-green) !important;
+  color: var(--adm-text-green) !important;
+}
+
+/* ---------- Website: section headings written in dark purple ---------- */
+
+html[data-theme='dark'] .app-theme-scope [style*="color: rgb(42, 8, 69)"],
+html[data-theme='dark'] .app-theme-scope [style*="color: rgb(37, 5, 45)"],
+html[data-theme='dark'] .app-theme-scope [style*="color: rgb(43, 7, 57)"],
+html[data-theme='dark'] .app-theme-scope [style*="color: rgb(56, 6, 61)"] {
+  color: var(--adm-text) !important;
+}
+html[data-theme='dark'] .app-theme-scope [style*="color: rgb(101, 66, 116)"],
+html[data-theme='dark'] .app-theme-scope [style*="color: rgb(62, 20, 70)"],
+html[data-theme='dark'] .app-theme-scope [style*="color: rgb(75, 42, 86)"] {
+  color: var(--adm-text-muted) !important;
+}
+
+/* Photo overlays (frosted cards on top of pictures) stay light, with dark text */
+html[data-theme='dark'] .app-theme-scope .frosted-plan-card,
+html[data-theme='dark'] .app-theme-scope .frosted-plan-card * { color: #1E0432 !important; }
+
+/* Light overlays drawn on top of photos keep dark text */
+html[data-theme='dark'] .app-theme-scope [style*="background: rgba(255, 255, 255, 0.9"],
+html[data-theme='dark'] .app-theme-scope [style*="background: rgba(255, 255, 255, 0.9"] *,
+html[data-theme='dark'] .app-theme-scope [style*="background-color: rgba(255, 255, 255, 0.9"],
+html[data-theme='dark'] .app-theme-scope [style*="background-color: rgba(255, 255, 255, 0.9"] * {
+  color: #1E0432 !important;
+}
+
+/* "How it works" section on the home page (sand colours) */
+html[data-theme='dark'] .app-theme-scope [style*="background-color: rgb(217, 193, 167)"] { background-color: var(--adm-surface-2) !important; }
+html[data-theme='dark'] .app-theme-scope [style*="background-color: rgb(230, 204, 177)"] { background-color: var(--adm-surface-3) !important; }
+
+/* ---------- Website: text inside the pages turned dark ---------- */
+
+html[data-theme='dark'] .available-cars-page h2,
+html[data-theme='dark'] .available-cars-page .cars-date-picker-value,
+html[data-theme='dark'] .available-cars-page .cars-dropdown-value,
+html[data-theme='dark'] .finovo-car-card-title,
+html[data-theme='dark'] .finovo-car-card-stat-value,
+html[data-theme='dark'] .finovo-about-page h2,
+html[data-theme='dark'] .finovo-about-page h3,
+html[data-theme='dark'] .finovo-about-page strong,
+html[data-theme='dark'] .legal-page h1,
+html[data-theme='dark'] .legal-page h2,
+html[data-theme='dark'] .legal-page h3,
+html[data-theme='dark'] .avail-card h3,
+html[data-theme='dark'] .avail-card h4 {
+  color: var(--adm-text) !important;
+}
+html[data-theme='dark'] .available-cars-page .cars-frequency-pill-group span,
+html[data-theme='dark'] .finovo-about-page p,
+html[data-theme='dark'] .finovo-about-page .eyebrow,
+html[data-theme='dark'] .legal-page p,
+html[data-theme='dark'] .legal-page li,
+html[data-theme='dark'] .legal-toc a,
+html[data-theme='dark'] .avail-card p,
+html[data-theme='dark'] .avail-card span:not([class*='status']) {
+  color: var(--adm-text-muted) !important;
+}
+html[data-theme='dark'] .legal-page a:not(.legal-toc a) { color: var(--adm-text-purple) !important; }
+html[data-theme='dark'] .available-cars-page .cars-frequency-pill-group [class*='active'],
+html[data-theme='dark'] .available-cars-page .cars-frequency-pill-group [class*='active'] span { color: #FFFFFF !important; }
+html[data-theme='dark'] .avail-card button[style*="background: rgb(255, 255, 255)"],
+html[data-theme='dark'] .avail-card button[style*="background-color: rgb(255, 255, 255)"] {
+  background-color: var(--adm-surface-2) !important;
+  color: var(--adm-text) !important;
+}
+
+/* ---------- Customer portal: details ---------- */
+
+html[data-theme='dark'] .customer-portal-root .user-name { color: var(--adm-text) !important; }
+html[data-theme='dark'] .customer-portal-root .user-email { color: var(--adm-text-muted) !important; }
+html[data-theme='dark'] .customer-portal-root .cp-tab-btn.active {
+  background: var(--adm-button) !important;
+  color: #FFFFFF !important;
+}
+
+/* Car cards: the white wave under the photo follows the card colour */
+html[data-theme='dark'] .finovo-car-card-wave-svg path { fill: var(--adm-surface) !important; }
+html[data-theme='dark'] .car-card-standard-wave-scoop { background: var(--adm-surface) !important; }
+
+/* Cars page: results bar and pagination */
+html[data-theme='dark'] .cars-bottom-bar {
+  background-color: var(--adm-surface) !important;
+  border-color: var(--adm-border) !important;
+}
+html[data-theme='dark'] .cars-page-btn { color: var(--adm-text-muted) !important; }
+html[data-theme='dark'] .cars-page-btn:hover:not(:disabled) { background: var(--adm-surface-3) !important; color: var(--adm-text) !important; }
+html[data-theme='dark'] .cars-page-btn.active { background: var(--adm-button) !important; color: #FFFFFF !important; }
+html[data-theme='dark'] .cars-footer-tagline h5,
+html[data-theme='dark'] .cars-bottom-bar strong { color: var(--adm-text) !important; }
+html[data-theme='dark'] .cars-footer-tagline p,
+html[data-theme='dark'] .cars-bottom-bar span { color: var(--adm-text-muted) !important; }
+
+/* About page: mission and vision block */
+html[data-theme='dark'] .finovo-about-page .mission-section {
+  background: linear-gradient(110deg, var(--adm-surface) 0%, var(--adm-surface-2) 80%) !important;
+}
+
+/* ---------- Large dark-purple areas ----------
+   In light mode headers, hero bands and highlight cards use the deep brand purple. The shared rule turns that
+   colour into the button purple, which is far too bright for whole sections, so large areas get a deep gradient. */
+
+html[data-theme='dark'] .app-theme-scope :is(header, section, nav, aside, article)[style*="background-color: rgb(30, 4, 38)"],
+html[data-theme='dark'] .app-theme-scope :is(header, section, nav, aside, article)[style*="background: rgb(30, 4, 38)"],
+html[data-theme='dark'] .public-site div[style*="background-color: rgb(30, 4, 38)"]:not(:empty),
+html[data-theme='dark'] .public-site div[style*="background: rgb(30, 4, 38)"]:not(:empty) {
+  background: var(--adm-brand-band) !important;
+}
+
+/* Website header: dark glass with a hairline, instead of a flat purple bar */
+html[data-theme='dark'] .public-site > header,
+html[data-theme='dark'] .public-site header.site-header {
+  background: rgba(17, 11, 23, 0.86) !important;
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Cards and panels on the website: hairline border and a soft lift instead of flat blocks */
+html[data-theme='dark'] .public-site .finovo-car-card,
+html[data-theme='dark'] .public-site .cars-filter-card,
+html[data-theme='dark'] .public-site .avail-card,
+html[data-theme='dark'] .public-site .legal-section,
+html[data-theme='dark'] .public-site .compare-empty {
+  border: 1px solid var(--adm-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28) !important;
+}
+html[data-theme='dark'] .public-site .finovo-car-card:hover {
+  border-color: #4A3D57 !important;
+}
+
+/* Compare page: empty state heading */
+html[data-theme='dark'] .compare-empty h2 { color: var(--adm-text) !important; }
+html[data-theme='dark'] .compare-empty { color: var(--adm-text-muted) !important; }
+
+/* ---------- Light border colours written in the pages (generated from the colours used in the code) ---------- */
+
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(236, 231, 242)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(236, 231, 242)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(236, 231, 242)"],
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(237, 231, 240)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(237, 231, 240)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(237, 231, 240)"] {
+  border-color: var(--adm-border) !important;
+}
+
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(132, 225, 188)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(132, 225, 188)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(132, 225, 188)"] {
+  border-color: rgba(16, 185, 129, 0.38) !important;
+}
+
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(247, 210, 122)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(247, 210, 122)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(247, 210, 122)"] {
+  border-color: rgba(250, 184, 38, 0.42) !important;
+}
+
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(196, 181, 253)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(196, 181, 253)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(196, 181, 253)"],
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(221, 214, 254)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(221, 214, 254)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(221, 214, 254)"],
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(233, 213, 255)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(233, 213, 255)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(233, 213, 255)"],
+html[data-theme='dark'] .app-theme-scope [style*="solid rgb(245, 208, 254)"],
+html[data-theme='dark'] .app-theme-scope [style*="dashed rgb(245, 208, 254)"],
+html[data-theme='dark'] .app-theme-scope [style*="border-color: rgb(245, 208, 254)"] {
+  border-color: rgba(168, 85, 247, 0.4) !important;
+}
+
+/* ---------- Form controls without their own colours ----------
+   Without these the browser draws them in its own grey, which does not match the page. */
+html[data-theme='dark'] .app-theme-scope input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+html[data-theme='dark'] .app-theme-scope textarea,
+html[data-theme='dark'] .app-theme-scope select {
+  background-color: var(--adm-surface-2);
+  color: var(--adm-text);
+  border-color: var(--adm-border);
+}
+html[data-theme='dark'] .app-theme-scope input::placeholder,
+html[data-theme='dark'] .app-theme-scope textarea::placeholder {
+  color: #8E8299;
+  opacity: 1;
+}
+html[data-theme='dark'] .app-theme-scope input:focus-visible,
+html[data-theme='dark'] .app-theme-scope textarea:focus-visible,
+html[data-theme='dark'] .app-theme-scope select:focus-visible {
+  border-color: #8E4FB0 !important;
+  outline: 2px solid rgba(168, 85, 247, 0.35);
+  outline-offset: 1px;
+}
+/* Search fields drawn inside a styled box keep the box colour */
+html[data-theme='dark'] .app-theme-scope input[style*='border-style: none'],
+html[data-theme='dark'] .app-theme-scope input[style*='border: none'] {
+  background-color: transparent;
+}
+
+/* ---------- Class-based light borders ---------- */
+html[data-theme='dark'] .legal-toc-links,
+html[data-theme='dark'] .customer-portal-root .cp-auto-card {
+  border-color: var(--adm-border) !important;
+}
+html[data-theme='dark'] .customer-portal-root .cp-badge-primary { border-color: rgba(168, 85, 247, 0.35) !important; }
+/* The red dot on the notification bell sits on the header colour */
+html[data-theme='dark'] .customer-portal-root .notif-badge { border-color: var(--adm-surface) !important; }
+
+/* Tells the browser to draw its own parts (date and time pickers, scrollbars, select menus) in dark colours */
+html[data-theme='dark'] { color-scheme: dark; }

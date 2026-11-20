@@ -260,7 +260,8 @@ export const createMaintenanceSchema = z.object({
     'OTHER',
   ]),
   status: z.enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).default('SCHEDULED'),
-  title: z.string().max(128).optional().default('Scheduled Service'),
+  // Left out: the description becomes the title
+  title: z.string().max(128).optional(),
   description: z.string().optional().nullable(),
   serviceProvider: z.string().max(128).optional().nullable(),
   scheduledDate: z.string().optional().nullable(),

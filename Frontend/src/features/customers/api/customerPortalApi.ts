@@ -103,6 +103,46 @@ export interface CustomerBookingItem {
   createdAt: string;
 }
 
+/** A car the customer is waiting for, for given dates */
+export interface AvailabilityAlert {
+  id: string;
+  vehicleId: string;
+  vehicleName: string;
+  imageUrl: string | null;
+  pickupDateTime: string;
+  returnDateTime: string;
+  /** ACTIVE while waiting, NOTIFIED once the car became free */
+  status: 'ACTIVE' | 'NOTIFIED';
+  notifiedAt: string | null;
+  createdAt: string;
+  /** Checkout link with the car and dates filled in */
+  bookUrl: string;
+}
+
+/** Second driver of a booking with the "Additional driver" add-on */
+export interface BookingDriver {
+  id: string;
+  fullName: string;
+  phone: string | null;
+  licenceNumber: string;
+  licenceExpiresAt: string;
+  licenceFrontUrl: string;
+  licenceBackUrl: string;
+  status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+  rejectionReason: string | null;
+  createdAt: string;
+}
+
+export interface AddDriverInput {
+  fullName: string;
+  phone?: string;
+  licenceNumber: string;
+  licenceExpiresAt: string;
+  /** JPEG data URLs of both sides of the licence */
+  licenceFront: string;
+  licenceBack: string;
+}
+
 export interface CustomerBookingDetail extends CustomerBookingItem {
   notes?: string | null;
   promoDiscount?: number;
@@ -114,6 +154,10 @@ export interface CustomerBookingDetail extends CustomerBookingItem {
   cancelledAt?: string | null;
   cancellationFee?: number | null;
   refundAmount?: number | null;
+  /** Staff approval after checking the documents */
+  approvedAt?: string | null;
+  rejectionReason?: string | null;
+  drivers?: BookingDriver[];
   agreement?: BookingAgreementSummary | null;
   breakdownItems: Array<{
     id: string;
@@ -371,7 +415,7 @@ export interface CheckInStatus {
   open: boolean;
   statusAllows: boolean;
   requirements: Array<{
-    key: 'DRIVER_LICENSE' | 'IDENTITY';
+    key: 'DRIVER_LICENSE' | 'IDENTITY' | 'ADDITIONAL_DRIVER';
     ok: boolean;
     problem: 'MISSING' | 'REJECTED' | 'EXPIRES_BEFORE_RETURN' | null;
   }>;
@@ -413,6 +457,37 @@ export const customerPortalApi = {
 
   async getCheckIn(id: string): Promise<{ success: boolean; checkIn: CheckInStatus }> {
     return authClient.request(`/customers/portal/bookings/${id}/check-in`);
+  },
+
+  /** Cars the customer is waiting for ("tell me when it is free") */
+  async getAvailabilityAlerts(): Promise<{ success: boolean; alerts: AvailabilityAlert[]; maxActive: number }> {
+    return authClient.request('/customers/portal/availability-alerts');
+  },
+
+  /** Sets an alert; when the car is already free nothing is saved and availableNow is true. */
+  async createAvailabilityAlert(input: {
+    vehicleId: string;
+    pickupDateTime: string;
+    returnDateTime: string;
+  }): Promise<{ success: boolean; availableNow: boolean; created: boolean; alert: AvailabilityAlert | null }> {
+    return authClient.request('/customers/portal/availability-alerts', { method: 'POST', body: JSON.stringify(input) });
+  },
+
+  async cancelAvailabilityAlert(alertId: string): Promise<{ success: boolean }> {
+    return authClient.request(`/customers/portal/availability-alerts/${alertId}`, { method: 'DELETE' });
+  },
+
+  /** Additional driver of a booking: how many are allowed and who is added. */
+  async getDrivers(bookingId: string): Promise<{ success: boolean; allowed: number; editable: boolean; drivers: BookingDriver[] }> {
+    return authClient.request(`/customers/portal/bookings/${bookingId}/drivers`);
+  },
+
+  async addDriver(bookingId: string, input: AddDriverInput): Promise<{ success: boolean; driver: BookingDriver }> {
+    return authClient.request(`/customers/portal/bookings/${bookingId}/drivers`, { method: 'POST', body: JSON.stringify(input) });
+  },
+
+  async removeDriver(bookingId: string, driverId: string): Promise<{ success: boolean }> {
+    return authClient.request(`/customers/portal/bookings/${bookingId}/drivers/${driverId}`, { method: 'DELETE' });
   },
 
   /** Completes online check-in with a selfie (JPEG data URL). */

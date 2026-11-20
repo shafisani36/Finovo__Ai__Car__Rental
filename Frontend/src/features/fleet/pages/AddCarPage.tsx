@@ -8,6 +8,7 @@ import { PRETRAINED_VEHICLE_DATABASE } from '../data/pretrainedVehicles';
 import { VehiclePricingSection, type VehiclePricingState } from '../components/VehiclePricingSection';
 import {
   Tag,
+  RefreshCw,
   Check,
   Minus,
   Plus,
@@ -1131,8 +1132,8 @@ features: carFeatures
   if (isLoading) {
     return (
       <div className="add-car-page-root">
-        <div className="loading-state">
-          <div className="loading-spinner" />
+        <div className="loading-state" role="status" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '80px 20px', gap: '10px' }}>
+          <RefreshCw size={28} className="spin-icon" color="#6C1E84" aria-hidden="true" />
           <h3 style={{ margin: '0 0 6px', color: '#1E0432', fontWeight: 800 }}>{t('adminPages.addCar.loading')}</h3>
           <p style={{ margin: 0, color: '#8A7090', fontSize: '0.88rem' }}>{t('adminPages.addCar.loadingSub')}</p>
         </div>
@@ -1672,7 +1673,7 @@ features: carFeatures
                     );
                   })
                 ) : (
-                  <span className="text-sm text-gray-500">
+                  <span style={{ fontSize: '0.875rem', color: '#6B7280' }}>
                     {t('adminPages.addCar.noBrands')}
                   </span>
                 )}

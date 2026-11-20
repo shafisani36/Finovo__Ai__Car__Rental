@@ -51,6 +51,17 @@ export interface Booking {
     /** Licence and ID on file (staff view of a single booking) */
     documents?: Array<{ id: string; documentType: string; fileUrl: string; verificationStatus: string; expiresAt: string | null }>;
   };
+  /** Additional driver(s) added by the customer, checked by staff before approval */
+  drivers?: Array<{
+    id: string;
+    fullName: string;
+    phone: string | null;
+    licenceNumber: string;
+    licenceExpiresAt: string;
+    licenceFrontUrl: string;
+    licenceBackUrl: string;
+    status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+  }>;
   /** Online check-in by the customer before pickup */
   checkedInAt?: string | null;
   checkInSelfieUrl?: string | null;
@@ -220,6 +231,76 @@ export interface CalendarEvent {
   totalAmount: number;
 }
 
+export type ApprovalProblem =
+  | 'LICENCE_MISSING'
+  | 'LICENCE_NOT_VERIFIED'
+  | 'LICENCE_EXPIRES_BEFORE_RETURN'
+  | 'ID_MISSING'
+  | 'ID_NOT_VERIFIED'
+  | 'DRIVER_MISSING'
+  | 'DRIVER_NOT_VERIFIED';
+
+export type VerificationStatus = 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+
+export interface BookingReview {
+  booking: {
+    id: string;
+    bookingNumber: string;
+    status: Booking['status'];
+    pickupDateTime: string;
+    returnDateTime: string;
+    totalAmount: number;
+    depositAmount: number;
+    currency: string;
+    deliveryAddress: string | null;
+    pickupBranch: string;
+    createdAt: string;
+    approvedAt: string | null;
+    rejectionReason: string | null;
+    additionalDriverBooked: boolean;
+    vehicle: { name: string; registrationNumber: string; imageUrl: string | null };
+  };
+  customer: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    licenseNumber: string | null;
+    licenseExpiry: string | null;
+    memberSince: string;
+    emailVerified: boolean;
+    completedRentals: number;
+    cancelledBookings: number;
+    rejectedBookings: number;
+    unpaidFines: { count: number; amount: number };
+  };
+  documents: Array<{
+    id: string;
+    documentType: string;
+    fileUrl: string;
+    verificationStatus: VerificationStatus;
+    rejectionReason: string | null;
+    expiresAt: string | null;
+    expiresBeforeReturn: boolean;
+    uploadedAt: string;
+    verifiedAt: string | null;
+  }>;
+  drivers: Array<{
+    id: string;
+    fullName: string;
+    phone: string | null;
+    licenceNumber: string;
+    licenceExpiresAt: string;
+    expiresBeforeReturn: boolean;
+    licenceFrontUrl: string;
+    licenceBackUrl: string;
+    status: VerificationStatus;
+    rejectionReason: string | null;
+  }>;
+  problems: ApprovalProblem[];
+  canDecide: boolean;
+}
+
 export const bookingApi = {
   list: async (params: { status?: string; search?: string; page?: number; limit?: number } = {}) => {
     const q = new URLSearchParams();
@@ -282,6 +363,43 @@ export const bookingApi = {
     return authClient.request<{ success: boolean; booking: Booking }>(`/bookings/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status, reason }),
+    });
+  },
+
+  // Staff approval of paid online bookings
+  getReview: async (id: string) => {
+    return authClient.request<{ success: boolean } & BookingReview>(`/bookings/${id}/review`);
+  },
+
+  approve: async (id: string) => {
+    return authClient.request<{ success: boolean } & BookingReview>(`/bookings/${id}/approve`, { method: 'POST' });
+  },
+
+  reject: async (id: string, reason: string) => {
+    return authClient.request<{ success: boolean } & BookingReview>(`/bookings/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  requestDocuments: async (id: string, note: string) => {
+    return authClient.request<{ success: boolean; requested: string[]; note: string | null }>(`/bookings/${id}/request-documents`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    });
+  },
+
+  verifyDocument: async (documentId: string, decision: 'VERIFIED' | 'REJECTED', reason?: string) => {
+    return authClient.request<{ success: boolean }>(`/bookings/documents/${documentId}/verification`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision, reason }),
+    });
+  },
+
+  verifyDriver: async (driverId: string, decision: 'VERIFIED' | 'REJECTED', reason?: string) => {
+    return authClient.request<{ success: boolean }>(`/bookings/drivers/${driverId}/verification`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision, reason }),
     });
   },
 

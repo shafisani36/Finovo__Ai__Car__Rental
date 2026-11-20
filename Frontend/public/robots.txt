@@ -1,0 +1,12 @@
+# Finovo Car Rental
+User-agent: *
+Allow: /
+# Signed-in areas and account pages are not for search engines
+Disallow: /admin
+Disallow: /customer
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /check-in

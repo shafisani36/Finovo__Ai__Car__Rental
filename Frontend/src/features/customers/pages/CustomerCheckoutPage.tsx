@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NotifyWhenFreeButton } from '../../../components/cars/NotifyWhenFreeButton';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -376,16 +377,36 @@ export function CustomerCheckoutPage() {
             className="cp-badge cp-badge-success"
             style={{ marginBottom: '12px', fontSize: '13px', padding: '6px 16px' }}
           >
-            ● {t('portalPages.checkout.confirmedPaid')}
+            ● {t('portalPages.checkout.paidAwaitingApproval')}
           </span>
 
           <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--cp-primary)', margin: '0 0 8px 0' }}>
-            {t('portalPages.checkout.confirmedTitle')}
+            {t('portalPages.checkout.receivedTitle')}
           </h2>
 
           <p style={{ color: 'var(--cp-text-muted)', fontSize: '1rem', margin: '0 0 24px 0' }}>
             {t('portalPages.checkout.bookingReference')} <strong>#{bookingSuccess.bookingNumber || bookingSuccess.id}</strong>
           </p>
+
+          {/* Online bookings are confirmed by staff after they check the customer's documents */}
+          <div
+            role="status"
+            style={{
+              background: 'rgba(250, 184, 38, 0.12)',
+              border: '1px solid rgba(250, 184, 38, 0.45)',
+              borderRadius: '12px',
+              padding: '14px 16px',
+              textAlign: 'start',
+              marginBottom: '20px',
+              color: 'var(--cp-primary)',
+              fontSize: '0.92rem',
+              lineHeight: 1.5,
+            }}
+          >
+            <strong>{t('portalPages.checkout.awaitingApprovalTitle')}</strong>
+            <div>{t('portalPages.checkout.awaitingApprovalText')}</div>
+            {addExtraDriver && <div style={{ marginTop: '6px', fontWeight: 700 }}>{t('portalPages.checkout.addDriverReminder')}</div>}
+          </div>
 
           {/* Certificate & Specs Summary Box */}
           <div
@@ -598,6 +619,11 @@ export function CustomerCheckoutPage() {
               {isUnavailable && (
                 <div role="alert" className="cp-alert-unavailable" style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '12px', background: 'var(--cp-danger-bg)', color: 'var(--cp-danger)', fontWeight: 600, fontSize: '0.9rem' }}>
                   {availability?.conflictReason || t('portalPages.checkout.unavailable', { from: formatSchedule(pickupDate), to: formatSchedule(returnDate) })}
+                </div>
+              )}
+              {isUnavailable && vehicle && pickupIso && returnIso && (
+                <div style={{ marginBottom: '16px', maxWidth: '420px' }}>
+                  <NotifyWhenFreeButton key={`${pickupIso}-${returnIso}`} vehicleId={vehicle.id} pickupDateTime={pickupIso} returnDateTime={returnIso} />
                 </div>
               )}
               {quoteError && !isUnavailable && (

@@ -286,6 +286,7 @@ model Vehicle {
   documents               VehicleDocument[]
   locationLogs            VehicleLocationLog[]
   maintenanceRecords      VehicleMaintenance[]
+  availabilityAlerts      AvailabilityAlert[]
   odometerLogs            VehicleOdometerLog[]
   photos                  VehiclePhoto[]
   pricingTiers            VehiclePricingTier[]
@@ -512,6 +513,7 @@ model Customer {
   supportTickets      SupportTicket[]
   reviews             VehicleReview[]
   trafficFines        TrafficFine[]
+  availabilityAlerts  AvailabilityAlert[]
 
   @@index([email])
   @@index([fullName])
@@ -592,8 +594,14 @@ model Booking {
   /// Online check-in done by the customer before pickup (documents confirmed and a selfie for the counter)
   checkedInAt        DateTime?
   checkInSelfieUrl   String?              @db.VarChar(512)
+  /// Staff approval of an online booking after checking the customer's documents
+  approvedAt         DateTime?
+  approvedById       String?              @db.VarChar(64)
+  /// Why staff turned the booking down (shown to the customer)
+  rejectionReason    String?              @db.VarChar(500)
   report_documents   report_documents[]
   trafficFines       TrafficFine[]
+  drivers            BookingDriver[]
 
   @@index([bookingNumber])
   @@index([customerId])
@@ -1413,4 +1421,50 @@ enum TrafficFineStatus {
   DISPUTED
   PAID
   WAIVED
+}
+
+/// A second driver of a booking that includes the "Additional driver" add-on, with their licence for staff to check
+model BookingDriver {
+  id               String    @id @default(cuid())
+  bookingId        String
+  fullName         String    @db.VarChar(128)
+  phone            String?   @db.VarChar(32)
+  licenceNumber    String    @db.VarChar(64)
+  licenceExpiresAt DateTime
+  licenceFrontUrl  String    @db.VarChar(512)
+  licenceBackUrl   String    @db.VarChar(512)
+  /// PENDING_VERIFICATION, VERIFIED or REJECTED
+  status           String    @default("PENDING_VERIFICATION") @db.VarChar(32)
+  rejectionReason  String?   @db.VarChar(255)
+  verifiedAt       DateTime?
+  verifiedBy       String?   @db.VarChar(128)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  booking          Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("booking_drivers")
+}
+
+/// "Tell me when this car is free": a customer waits for a car that is taken on the dates they want.
+/// The customer is emailed once the dates become free (a booking is cancelled or rejected, maintenance ends).
+model AvailabilityAlert {
+  id             String    @id @default(cuid())
+  customerId     String
+  vehicleId      String
+  pickupDateTime DateTime
+  returnDateTime DateTime
+  /// ACTIVE, NOTIFIED (customer was told the car is free), CANCELLED (by the customer) or EXPIRED (pickup time passed)
+  status         String    @default("ACTIVE") @db.VarChar(16)
+  notifiedAt     DateTime?
+  lastCheckedAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([status, pickupDateTime])
+  @@index([customerId, status])
+  @@index([vehicleId, status])
+  @@map("availability_alerts")
 }

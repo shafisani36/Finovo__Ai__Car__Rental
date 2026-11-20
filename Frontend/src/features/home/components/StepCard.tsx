@@ -18,15 +18,15 @@ export function StepCard({ step, index }: StepCardProps) {
   const isVisualTop = index === 1;
 
   const imageSrc = [
-    '/how-it-works/step-1-search.png',
-    '/how-it-works/step-2-choose.png',
-    '/how-it-works/step-3-composite.png',
+    '/how-it-works/step-1-search.webp',
+    '/how-it-works/step-2-choose.webp',
+    '/how-it-works/step-3-composite.webp',
   ][index] || step.image;
 
   const imageSrcSet = [
-    '/how-it-works/step-1-search.png 1x, /how-it-works/step-1-search@2x.png 2x',
-    '/how-it-works/step-2-choose.png 1x, /how-it-works/step-2-choose@2x.png 2x',
-    '/how-it-works/step-3-composite.png 1x, /how-it-works/step-3-composite@2x.png 2x',
+    '/how-it-works/step-1-search.webp 1x, /how-it-works/step-1-search@2x.webp 2x',
+    '/how-it-works/step-2-choose.webp 1x, /how-it-works/step-2-choose@2x.webp 2x',
+    '/how-it-works/step-3-composite.webp 1x, /how-it-works/step-3-composite@2x.webp 2x',
   ][index];
 
   return (
@@ -54,7 +54,7 @@ export function StepCard({ step, index }: StepCardProps) {
         {/* Visual at TOP for Card 2 */}
         {isVisualTop && (
           <div style={{ width: '100%', overflow: 'hidden', lineHeight: 0 }}>
-            <img
+            <img loading="lazy" decoding="async"
               src={imageSrc}
               srcSet={imageSrcSet}
               alt={stepTitle}
@@ -106,7 +106,7 @@ export function StepCard({ step, index }: StepCardProps) {
         {/* Visual at BOTTOM for Cards 1 & 3 */}
         {!isVisualTop && (
           <div style={{ width: '100%', overflow: 'hidden', lineHeight: 0, marginTop: 'auto' }}>
-            <img
+            <img loading="lazy" decoding="async"
               src={imageSrc}
               srcSet={imageSrcSet}
               alt={stepTitle}
@@ -125,7 +125,7 @@ export function StepCard({ step, index }: StepCardProps) {
       {/* Mobile Horizontal Layout */}
       <div className="step-card-mobile-layout">
         <div className="step-card-mobile-image-wrap">
-          <img
+          <img loading="lazy" decoding="async"
             src={imageSrc}
             alt={stepTitle}
             className="step-card-mobile-image"

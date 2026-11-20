@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { AvailabilityAlertService } from './availability-alert.service';
 import { AppError } from '../../shared/errors/app-error';
 import { RefundService } from '../payments/refund.service';
 import { cancellationTerms, CUSTOMER_CANCELLABLE_STATUSES } from './cancellation-policy';
@@ -90,6 +91,8 @@ export class BookingCancellationService {
     });
 
     void MessagingService.notifyBooking(booking.id, 'BOOKING_CANCELLED', { refund: terms.refund });
+    // Customers waiting for this car may now be able to book it
+    void AvailabilityAlertService.checkVehicle(booking.vehicleId);
 
     return {
       booking: await prisma.booking.findUnique({ where: { id: booking.id } }),

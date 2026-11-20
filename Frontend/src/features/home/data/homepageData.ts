@@ -71,7 +71,7 @@ export const WHY_CHOOSE_US_ITEMS: WhyChooseUsItem[] = [
     title: 'Drive verified, well-maintained cars.',
     description: 'Every vehicle is quality-checked, cleaned, and ready for your trip.',
     badges: ['Inspected', 'Cleaned', 'Road-ready'],
-    carImage: '/why-choose-us/card-3-bronze-car.png',
+    carImage: '/why-choose-us/card-3-bronze-car.webp',
     gridArea: 'verification',
   },
   {
@@ -91,7 +91,7 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     description: 'Enter your location and rental dates to find available cars.',
     badge: 'Step 01',
     iconType: 'choose',
-    image: '/how-it-works/step-1-search.png',
+    image: '/how-it-works/step-1-search.webp',
   },
   {
     id: 2,
@@ -99,7 +99,7 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     description: 'Enter your location and rental dates to find available cars.',
     badge: 'Step 02',
     iconType: 'scan',
-    image: '/how-it-works/step-2-choose.png',
+    image: '/how-it-works/step-2-choose.webp',
   },
   {
     id: 3,
@@ -107,7 +107,7 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     description: 'Confirm your booking, pick up your car, and hit the road.',
     badge: 'Step 03',
     iconType: 'drive',
-    image: '/how-it-works/step-3-composite.png',
+    image: '/how-it-works/step-3-composite.webp',
   },
 ];
 

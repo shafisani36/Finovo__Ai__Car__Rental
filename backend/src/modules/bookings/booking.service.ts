@@ -796,6 +796,7 @@ export class BookingService {
         promoCode: { select: { code: true } },
         pricingSnapshot: true,
         breakdownItems: true,
+        drivers: { orderBy: { createdAt: 'asc' } },
         rental: {
           include: {
             inspections: {

@@ -4,8 +4,10 @@ import { i18nReady } from './i18n/config';
 import './index.css';
 import App from './App.tsx';
 import { initMonitoring } from './utils/monitoring';
+import { initTheme } from './app/theme/useTheme';
 
 initMonitoring();
+initTheme();
 
 // Render once the visitor's language is loaded, so the first screen is already in their language
 void i18nReady.finally(() => {

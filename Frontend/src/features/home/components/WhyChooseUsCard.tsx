@@ -69,7 +69,7 @@ function UserPill({
         transform: lifted ? 'translateY(-2px)' : 'translateY(0)',
       }}
     >
-      <img src={avatar} alt={name} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
+      <img loading="lazy" decoding="async" src={avatar} alt={name} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
       <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'start' }}>
         <span style={{ fontSize: '11px', fontWeight: 700, color: '#26042E', lineHeight: 1.2 }}>{name}</span>
         <span style={{ fontSize: '9px', color: '#7A607C', lineHeight: 1.2 }}>
@@ -200,7 +200,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
             }}
           >
-            <img
+            <img loading="lazy" decoding="async"
               src="/cars/car-3-corolla-transparent.png"
               alt="Toyota Corolla"
               className="why-us-car-img"
@@ -445,9 +445,9 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               transform: isHovered ? 'scale(1.05) translateY(-4px)' : 'scale(1)',
             }}
           >
-            <img
-              src="/why-choose-us/car-top-view-figma.png"
-              srcSet="/why-choose-us/car-top-view-figma.png 1x, /why-choose-us/car-top-view-figma@2x.png 2x"
+            <img loading="lazy" decoding="async"
+              src="/why-choose-us/car-top-view-figma.webp"
+              srcSet="/why-choose-us/car-top-view-figma.webp 1x, /why-choose-us/car-top-view-figma@2x.webp 2x"
               alt={title}
               style={{
                 width: '100%',
@@ -628,7 +628,7 @@ export function WhyChooseUsCard({ item, index }: WhyChooseUsCardProps) {
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
             }}
           >
-            <img
+            <img loading="lazy" decoding="async"
               src="/cars/car-2-elantra-transparent.png"
               alt="Hyundai Elantra"
               className="why-us-car-img"

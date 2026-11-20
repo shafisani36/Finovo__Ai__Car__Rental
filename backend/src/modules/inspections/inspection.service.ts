@@ -381,6 +381,11 @@ export class InspectionService {
    * RETURN: compared side by side with the pickup baseline; NEW damage becomes proposed fines.
    */
   static async analyze(dto: AnalyzeInspectionDTO, staffUserId?: string, customerScan?: CustomerScanContext) {
+    // All AI requests of one scan share a time limit, so the screen always gets an answer
+    return VisionProvider.runWithinBudget(() => this.analyzeWithinBudget(dto, staffUserId, customerScan));
+  }
+
+  private static async analyzeWithinBudget(dto: AnalyzeInspectionDTO, staffUserId?: string, customerScan?: CustomerScanContext) {
     const type = dto?.type;
     if (!type || !['PICKUP', 'RETURN', 'ROUTINE'].includes(type)) {
       throw AppError.badRequest('Inspection type must be PICKUP, RETURN or ROUTINE');
@@ -1059,8 +1064,9 @@ export class InspectionService {
 
   /**
    * Compares the new photos with the latest earlier inspection photos of the fleet car, to tell two cars of the
-   * same model and colour apart when the plate cannot be read. True when they look like the same car, or when
-   * there is nothing to compare with; false only when the AI is at least minConfidence sure it is another car.
+   * same model and colour apart when the plate cannot be read. True when they look like the same car, when
+   * there is nothing to compare with or the AI cannot answer; false only when the AI is at least minConfidence
+   * sure it is another car.
    */
   private static async looksLikeSameCar(vehicleId: string, images: VisionImage[], minConfidence: number): Promise<boolean> {
     const exteriorViews: InspectionView[] = ['FRONT', 'DRIVER_SIDE', 'PASSENGER_SIDE', 'REAR'];
@@ -1078,8 +1084,14 @@ export class InspectionService {
     }
     const current = images.filter((img) => exteriorViews.includes(img.view));
     if (referenceImages.length === 0 || current.length === 0) return true;
-    const result = await VisionProvider.isSameVehicle({ referenceImages, images: current });
-    return result.sameVehicle || result.confidence < minConfidence;
+    try {
+      const result = await VisionProvider.isSameVehicle({ referenceImages, images: current });
+      return result.sameVehicle || result.confidence < minConfidence;
+    } catch (err) {
+      // Without the AI the photos cannot be compared, which counts like having nothing to compare with
+      if (isAiUnavailable(err)) return true;
+      throw err;
+    }
   }
 
   /**

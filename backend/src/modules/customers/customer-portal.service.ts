@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { SupportTicketService } from '../support/support-ticket.service';
 import { BookingCancellationService } from '../bookings/booking-cancellation.service';
 import { RentalAgreementService } from '../agreements/rental-agreement.service';
 import { ReferralService } from '../loyalty/referral.service';
@@ -439,6 +440,7 @@ export class CustomerPortalService {
         pickupBranch: true,
         returnBranch: true,
         breakdownItems: true,
+        drivers: { orderBy: { createdAt: 'asc' } },
         pricingSnapshot: true,
         rental: {
           include: {
@@ -1030,6 +1032,7 @@ export class CustomerPortalService {
       include: { messages: true },
     });
 
+    void SupportTicketService.notifyStaff(ticket.id, 'NEW');
     return ticket;
   }
 
@@ -1063,6 +1066,7 @@ export class CustomerPortalService {
       data: { status: 'OPEN', updatedAt: new Date() },
     });
 
+    void SupportTicketService.notifyStaff(ticket.id, 'REPLY');
     return createdMsg;
   }
 

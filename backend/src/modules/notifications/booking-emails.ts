@@ -71,6 +71,36 @@ function customerEmail(template: MessageTemplate, b: BookingForEmail): OutgoingE
   const view = { label: 'View booking', url: customerUrl(b) };
   const base = { to: b.customer.email, footer: CUSTOMER_FOOTER, action: view };
   switch (template) {
+    case 'BOOKING_AWAITING_APPROVAL':
+      return {
+        ...base,
+        subject: `Booking received, waiting for approval: ${vehicleName(b)} (#${b.bookingNumber})`,
+        paragraphs: [
+          hi,
+          'Thank you, we received your booking and your payment. Before we confirm it, our team checks your driving licence and ID, usually within a few hours.',
+          'You will get an email as soon as the booking is confirmed. If a document is missing or unclear, we will tell you what to upload.',
+          'If we cannot approve the booking, everything you paid is refunded.',
+        ],
+        details: bookingDetails(b),
+      };
+    case 'BOOKING_REJECTED':
+      return {
+        ...base,
+        subject: `Booking not approved: #${b.bookingNumber}`,
+        paragraphs: [
+          hi,
+          `Sorry, we could not approve your booking #${b.bookingNumber} for the ${vehicleName(b)}.`,
+          ...(b.rejectionReason ? [`Reason: ${b.rejectionReason}`] : []),
+          Number(b.refundAmount) > 0
+            ? `Everything you paid (${money(b.refundAmount, b.currency)}) is refunded to your original payment method. Banks usually show it within 5 to 10 working days.`
+            : 'Nothing was charged for this booking.',
+        ],
+        details: [
+          { label: 'Booking number', value: `#${b.bookingNumber}` },
+          { label: 'Car', value: vehicleName(b) },
+          { label: 'Refund', value: money(b.refundAmount, b.currency), bold: true },
+        ],
+      };
     case 'BOOKING_CONFIRMED':
       return {
         ...base,
@@ -152,10 +182,24 @@ function staffEmail(template: MessageTemplate, b: BookingForEmail): Omit<Outgoin
   const customer = `${b.customer.fullName} (${b.customer.email}${b.customer.phone ? `, ${b.customer.phone}` : ''})`;
   const details: Detail[] = [{ label: 'Customer', value: customer }, ...bookingDetails(b)];
   switch (template) {
+    case 'BOOKING_AWAITING_APPROVAL':
+      return {
+        subject: `Approval needed: booking #${b.bookingNumber} (${vehicleName(b)})`,
+        paragraphs: [
+          `${b.customer.fullName} booked and paid for the ${vehicleName(b)} for ${formatDateTime(b.pickupDateTime)}.`,
+          "Check the customer's driving licence and ID (and the additional driver's licence, if booked), then approve or reject the booking.",
+        ],
+        details,
+        action: { label: 'Review booking', url: `${env.CORS.ORIGIN}/admin/bookings?review=${b.id}` },
+        footer: STAFF_FOOTER,
+      };
     case 'BOOKING_CONFIRMED':
       return {
-        subject: `New booking #${b.bookingNumber}: ${vehicleName(b)}`,
-        paragraphs: [`${b.customer.fullName} booked the ${vehicleName(b)} for ${formatDateTime(b.pickupDateTime)}.`],
+        subject: `Booking confirmed #${b.bookingNumber}: ${vehicleName(b)}`,
+        paragraphs: [
+          `The booking of ${b.customer.fullName} for the ${vehicleName(b)} on ${formatDateTime(b.pickupDateTime)} is approved and confirmed.`,
+          b.deliveryAddress ? `Plan the delivery to ${b.deliveryAddress}.` : `Prepare the car at ${b.pickupBranch.name}.`,
+        ],
         details,
         action: { label: 'Open bookings', url: `${env.CORS.ORIGIN}/admin/bookings` },
         footer: STAFF_FOOTER,
@@ -202,7 +246,7 @@ function staffEmail(template: MessageTemplate, b: BookingForEmail): Omit<Outgoin
 }
 
 /** STAFF_ALERT_EMAILS when set, otherwise every active admin. */
-async function staffRecipients(): Promise<string[]> {
+export async function staffRecipients(): Promise<string[]> {
   if (env.EMAIL.STAFF_ALERT_EMAILS.length > 0) return env.EMAIL.STAFF_ALERT_EMAILS;
   const admins = await prisma.user.findMany({
     where: { status: 'ACTIVE', userRoles: { some: { role: { name: { in: STAFF_ROLES } } } } },

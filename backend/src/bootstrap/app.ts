@@ -21,6 +21,7 @@ import { promoCodeRouter } from '../api/routes/promo-code.routes';
 import { translationRouter } from '../modules/translations/translation.routes';
 import { paymentRouter } from '../api/routes/payment.routes';
 import { trafficFineRouter } from '../api/routes/traffic-fine.routes';
+import { supportTicketRouter } from '../api/routes/support-ticket.routes';
 import { publicSiteRouter } from '../modules/public/public-site.routes';
 import { StripePaymentController } from '../modules/payments/stripe-payment.controller';
 import { errorHandler } from '../middleware/error-handler';
@@ -174,6 +175,7 @@ export function createApp(): Application {
   app.use('/api/v1/translations', translationRouter);
   app.use('/api/v1/payments', paymentRouter);
   app.use('/api/v1/traffic-fines', trafficFineRouter);
+  app.use('/api/v1/support-tickets', supportTicketRouter);
   app.use('/api/v1/public', publicSiteRouter);
 
   // Unknown API route: JSON 404 instead of an HTML page

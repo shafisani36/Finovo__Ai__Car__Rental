@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Users,
   Search,
@@ -62,6 +62,18 @@ export function UsersManagementPage() {
   useEffect(() => {
     loadUsers();
   }, [roleFilter]);
+
+  // Search as staff type, a moment after they stop typing (the Search button still works)
+  const firstSearch = useRef(true);
+  useEffect(() => {
+    if (firstSearch.current) {
+      firstSearch.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => void loadUsers(searchQuery), 350);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const loadUsers = async (search?: string) => {
     try {

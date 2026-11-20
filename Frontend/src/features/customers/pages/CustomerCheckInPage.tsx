@@ -192,10 +192,17 @@ export function CustomerCheckInPage() {
                 </li>
               </ol>
               {!allDocumentsOk && (
-                <p style={{ marginTop: 12 }}>
-                  <Link to="/customer/documents" className="cp-btn-outline">
-                    {t('portalPages.checkIn.uploadDocuments')}
-                  </Link>
+                <p style={{ marginTop: 12, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {checkIn.requirements.some((r) => !r.ok && r.key !== 'ADDITIONAL_DRIVER') && (
+                    <Link to="/customer/documents" className="cp-btn-outline">
+                      {t('portalPages.checkIn.uploadDocuments')}
+                    </Link>
+                  )}
+                  {checkIn.requirements.some((r) => !r.ok && r.key === 'ADDITIONAL_DRIVER') && (
+                    <Link to={`/customer/bookings/${checkIn.bookingId}#additional-driver`} className="cp-btn-outline">
+                      {t('portalPages.checkIn.addDriver')}
+                    </Link>
+                  )}
                 </p>
               )}
               <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', margin: '16px 0' }}>

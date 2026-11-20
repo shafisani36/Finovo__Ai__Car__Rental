@@ -3,7 +3,9 @@
  * Placeholders: {name} {number} {vehicle} {date} {branch} {amount}
  */
 export type MessageTemplate =
+  | 'BOOKING_AWAITING_APPROVAL'
   | 'BOOKING_CONFIRMED'
+  | 'BOOKING_REJECTED'
   | 'PICKUP_REMINDER'
   | 'RETURN_REMINDER'
   | 'RENTAL_STARTED'
@@ -14,6 +16,22 @@ export const MESSAGE_LANGUAGES = ['en', 'ur', 'ar', 'fr', 'es', 'de'] as const;
 export type MessageLanguage = (typeof MESSAGE_LANGUAGES)[number];
 
 export const MESSAGE_TEMPLATES: Record<MessageTemplate, Record<MessageLanguage, string>> = {
+  BOOKING_AWAITING_APPROVAL: {
+    en: 'Finovo: Hi {name}, we received your booking #{number} for the {vehicle} and your payment. Our team is checking your documents; you will get a confirmation soon.',
+    ur: 'Finovo: {name}، آپ کی بکنگ #{number} ({vehicle}) اور ادائیگی موصول ہو گئی۔ ہماری ٹیم آپ کے کاغذات دیکھ رہی ہے، جلد تصدیق ملے گی۔',
+    ar: 'Finovo: مرحباً {name}، استلمنا حجزك #{number} للسيارة {vehicle} ودفعتك. يراجع فريقنا مستنداتك وسيصلك التأكيد قريباً.',
+    fr: 'Finovo : Bonjour {name}, nous avons reçu votre réservation n°{number} ({vehicle}) et votre paiement. Nous vérifions vos documents ; la confirmation suit bientôt.',
+    es: 'Finovo: Hola {name}, recibimos tu reserva n.º {number} ({vehicle}) y tu pago. Estamos revisando tus documentos; pronto recibirás la confirmación.',
+    de: 'Finovo: Hallo {name}, wir haben Ihre Buchung Nr. {number} ({vehicle}) und Ihre Zahlung erhalten. Wir prüfen Ihre Dokumente; die Bestätigung folgt bald.',
+  },
+  BOOKING_REJECTED: {
+    en: 'Finovo: Hi {name}, sorry, we could not approve booking #{number} for the {vehicle}. Refund: {amount}. The reason is in your email and your account.',
+    ur: 'Finovo: {name}، معذرت، ہم بکنگ #{number} ({vehicle}) منظور نہیں کر سکے۔ واپسی: {amount}۔ وجہ آپ کی ای میل اور اکاؤنٹ میں ہے۔',
+    ar: 'Finovo: مرحباً {name}، نعتذر، لم نتمكن من الموافقة على الحجز #{number} للسيارة {vehicle}. المبلغ المسترد: {amount}. السبب في بريدك وحسابك.',
+    fr: 'Finovo : Bonjour {name}, désolé, la réservation n°{number} ({vehicle}) n\'a pas pu être acceptée. Remboursement : {amount}. Le motif est dans votre e-mail et votre compte.',
+    es: 'Finovo: Hola {name}, lo sentimos, no pudimos aprobar la reserva n.º {number} ({vehicle}). Reembolso: {amount}. El motivo está en tu correo y tu cuenta.',
+    de: 'Finovo: Hallo {name}, leider konnten wir die Buchung Nr. {number} ({vehicle}) nicht annehmen. Erstattung: {amount}. Den Grund finden Sie in Ihrer E-Mail und Ihrem Konto.',
+  },
   BOOKING_CONFIRMED: {
     en: 'Finovo: Hi {name}, booking #{number} for the {vehicle} is confirmed. Pickup: {date} at {branch}.',
     ur: 'Finovo: {name}، بکنگ #{number} ({vehicle}) کنفرم ہو گئی۔ گاڑی لینا: {date}، {branch}۔',

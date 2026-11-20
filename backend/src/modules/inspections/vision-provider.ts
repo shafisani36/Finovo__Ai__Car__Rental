@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'async_hooks';
 import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import {
@@ -417,6 +418,11 @@ export class VisionProvider {
   // Provider plumbing
   // ------------------------------------------------------------------
 
+  /** Runs one inspection with a time limit shared by all of its AI requests (also those running in parallel). */
+  static runWithinBudget<T>(fn: () => Promise<T>, budgetMs = AI_SCAN_BUDGET_MS): Promise<T> {
+    return scanDeadline.run(Date.now() + budgetMs, fn);
+  }
+
   private static async generateJson<T>(parts: ContentPart[], schema: object): Promise<T> {
     const raw = await this.callAvailableModel(parts, schema);
 
@@ -430,7 +436,8 @@ export class VisionProvider {
   /**
    * Uses the main Gemini model, then the fallback models, then OpenAI, moving on when a model's request quota
    * is used up or the model is overloaded, unreachable or refuses the request. An unreadable answer is reported
-   * straight away.
+   * straight away. A model that failed is skipped until it can answer again, so later scans do not waste
+   * requests and time on it.
    */
   private static async callAvailableModel(parts: ContentPart[], schema: object): Promise<string> {
     const geminiModels = env.VISION.GEMINI_API_KEY ? [env.VISION.GEMINI_MODEL, ...env.VISION.GEMINI_FALLBACK_MODELS] : [];
@@ -440,15 +447,20 @@ export class VisionProvider {
     ];
     let unavailable: AppError | null = null;
     for (const { name, call } of attempts) {
+      if ((modelPausedUntil.get(name) ?? 0) > Date.now()) continue;
       try {
         return await call();
       } catch (err) {
         if (err instanceof QuotaExhaustedError) {
-          console.warn(`[VisionProvider] request quota of ${name} is used up; trying the next model`);
-        } else if (err instanceof AppError && err.code === 'AI_SERVICE_UNAVAILABLE') {
+          pauseModel(name, err.daily ? msUntilQuotaReset() : 60_000, err.daily ? 'its daily request quota is used up' : 'its per-minute request limit is reached');
+        } else if (err instanceof ModelUnavailableError) {
           unavailable = err;
-          console.warn(`[VisionProvider] ${name} is overloaded, unreachable or refused the request; trying the next model`);
+          // 404: the model was retired or renamed and will not come back; anything else is usually brief
+          pauseModel(name, err.status === 404 ? 24 * 3600_000 : 60_000, err.status === 404 ? 'it is no longer available (remove it from the settings)' : 'it is overloaded or unreachable');
         } else {
+          if (err instanceof AppError && err.code === 'AI_SERVICE_UNAVAILABLE' && err.statusCode === 503) {
+            console.warn(`[VisionProvider] ${name} was still answering when the scan time limit ran out`);
+          }
           throw err;
         }
       }
@@ -522,9 +534,13 @@ export class VisionProvider {
   private static async postWithRetry(url: string, body: unknown, headers: Record<string, string>) {
     const maxAttempts = 3;
     let lastError = '';
+    let lastStatus = 0;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const left = budgetLeftMs();
+      if (left < MIN_REQUEST_MS) throw budgetExceeded();
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 120_000);
+      const requestMs = Math.min(REQUEST_TIMEOUT_MS, left);
+      const timer = setTimeout(() => controller.abort(), requestMs);
       let waitMs = attempt * 1500;
       try {
         const resp = await fetch(url, {
@@ -536,12 +552,13 @@ export class VisionProvider {
         if (resp.ok) return (await resp.json()) as any;
 
         const errorText = await resp.text().catch(() => '');
+        lastStatus = resp.status;
         lastError = `${resp.status} ${errorText.slice(0, 300)}`;
         if (resp.status === 429) {
           // A daily quota does not come back within this request; a per-minute limit does after a short wait
           const retryAfterMs = rateLimitWaitMs(resp, errorText);
           if (/PerDay/i.test(errorText) || retryAfterMs === null || retryAfterMs > MAX_RATE_LIMIT_WAIT_MS || attempt === maxAttempts) {
-            throw new QuotaExhaustedError(lastError);
+            throw new QuotaExhaustedError(lastError, /PerDay/i.test(errorText) || retryAfterMs === null || retryAfterMs > MAX_RATE_LIMIT_WAIT_MS);
           }
           waitMs = retryAfterMs;
         } else if (resp.status < 500) {
@@ -550,28 +567,95 @@ export class VisionProvider {
         }
       } catch (err) {
         if (err instanceof QuotaExhaustedError) throw err;
+        if (controller.signal.aborted) {
+          // The scan ran out of time: stop here instead of trying the next model
+          if (requestMs < REQUEST_TIMEOUT_MS) throw budgetExceeded();
+          // This model is too slow right now: asking it again would only repeat the wait
+          lastError = `no answer within ${REQUEST_TIMEOUT_MS / 1000} s`;
+          lastStatus = 504;
+          break;
+        }
         lastError = err instanceof Error ? err.message : String(err);
       } finally {
         clearTimeout(timer);
       }
       if (attempt < maxAttempts) {
+        if (budgetLeftMs() - waitMs < MIN_REQUEST_MS) throw budgetExceeded();
         await new Promise((r) => setTimeout(r, waitMs));
       }
     }
     console.error('[VisionProvider] request failed:', lastError);
-    throw new AppError(
-      'The AI vision service is not reachable right now. Please try the scan again in a minute.',
-      502,
-      'AI_SERVICE_UNAVAILABLE'
-    );
+    throw new ModelUnavailableError(lastStatus);
   }
 }
 
 /** Longest wait for a per-minute rate limit, so a scan stays well inside the 180 s the screen waits. */
 const MAX_RATE_LIMIT_WAIT_MS = 30_000;
 
-/** A model's request quota is used up; the next model or provider can still answer. */
-class QuotaExhaustedError extends Error {}
+/**
+ * Longest time one inspection may spend waiting for the AI. The screen waits 180 s for the whole scan, so the
+ * AI gets 150 s and the rest is left for saving photos and the report. When the time is up the inspection is
+ * saved for a staff review instead of failing.
+ */
+export const AI_SCAN_BUDGET_MS = 150_000;
+/** A request that cannot get at least this long is not started. */
+const MIN_REQUEST_MS = 15_000;
+/**
+ * Longest wait for one model's answer. A model that is slow under heavy demand is left for the next one, so a
+ * single slow model cannot use up the whole scan time.
+ */
+const REQUEST_TIMEOUT_MS = 75_000;
+const scanDeadline = new AsyncLocalStorage<number>();
+
+/** Time left for the AI in the current scan (unlimited outside a scan). */
+function budgetLeftMs(): number {
+  const deadline = scanDeadline.getStore();
+  return deadline === undefined ? Number.POSITIVE_INFINITY : deadline - Date.now();
+}
+
+function budgetExceeded(): AppError {
+  return new AppError(
+    'The AI took too long to answer. The photos are saved for a staff review.',
+    503,
+    'AI_SERVICE_UNAVAILABLE'
+  );
+}
+
+/** A model's request quota is used up (for the day, or for this minute); the next model can still answer. */
+class QuotaExhaustedError extends Error {
+  constructor(message: string, readonly daily: boolean) {
+    super(message);
+  }
+}
+
+/** A model is overloaded, unreachable or refused the request (status 0 = no answer at all). */
+class ModelUnavailableError extends AppError {
+  constructor(readonly status: number) {
+    super('The AI vision service is not reachable right now. Please try the scan again in a minute.', 502, 'AI_SERVICE_UNAVAILABLE');
+  }
+}
+
+/** Models skipped until the given time (epoch ms), because they could not answer. Kept per server process. */
+const modelPausedUntil = new Map<string, number>();
+
+function pauseModel(name: string, durationMs: number, reason: string): void {
+  modelPausedUntil.set(name, Date.now() + durationMs);
+  console.warn(`[VisionProvider] ${name} skipped for ${Math.ceil(durationMs / 60_000)} min: ${reason}; using the next model`);
+}
+
+/** Gemini daily quotas reset at midnight Pacific time. */
+function msUntilQuotaReset(now = new Date()): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    hourCycle: 'h23',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  }).formatToParts(now);
+  const part = (type: string) => Number(parts.find((p) => p.type === type)?.value || 0);
+  const elapsedMs = (part('hour') * 3600 + part('minute') * 60 + part('second')) * 1000;
+  return 24 * 3600_000 - elapsedMs + 60_000;
+}
 
 /**
  * How long a 429 answer asks to wait: the Retry-After header (OpenAI) or the RetryInfo retryDelay in

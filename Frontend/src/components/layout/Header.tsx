@@ -7,6 +7,7 @@ import { LanguageSelector } from '../common/LanguageSelector';
 import { Modal } from '../common/Modal';
 import { TextTranslator } from '../common/TextTranslator';
 import { User, X, Sun, Moon, Languages } from 'lucide-react';
+import { useTheme } from '../../app/theme/useTheme';
 import { useAuth } from '../../features/auth/context';
 
 interface HeaderProps {
@@ -17,7 +18,7 @@ export function Header({ onSignInClick }: HeaderProps) {
   const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const { isDark: isDarkMode, toggleTheme } = useTheme();
   const [translatorOpen, setTranslatorOpen] = useState(false);
 
   // Lock body scroll when mobile menu is open
@@ -173,8 +174,11 @@ export function Header({ onSignInClick }: HeaderProps) {
           <button
             type="button"
             className="theme-toggle-btn"
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            aria-label="Toggle theme display"
+            onClick={toggleTheme}
+            role="switch"
+            aria-checked={isDarkMode}
+            aria-label={t('adminPages.layout.toggleTheme')}
+            title={isDarkMode ? t('adminPages.layout.darkMode') : t('adminPages.layout.lightMode')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -309,6 +313,39 @@ export function Header({ onSignInClick }: HeaderProps) {
                 <span>{t('nav.translator')}</span>
               </div>
               <span className="rtl-mirror-chevron" style={{ color: '#FAB826', fontSize: '1rem' }}>›</span>
+            </button>
+
+            {/* Light / dark look (the header button is hidden on small phones) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              role="switch"
+              aria-checked={isDarkMode}
+              style={{
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                color: '#FFFFFF',
+                padding: '14px 12px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                backgroundColor: 'transparent',
+                cursor: 'pointer',
+                textAlign: 'start',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {isDarkMode ? <Moon size={18} /> : <Sun size={18} />}
+                <span>{isDarkMode ? t('adminPages.layout.darkMode') : t('adminPages.layout.lightMode')}</span>
+              </div>
+              <span
+                aria-hidden="true"
+                style={{ width: '42px', height: '22px', borderRadius: '12px', padding: '2px', boxSizing: 'border-box', backgroundColor: isDarkMode ? '#FAB826' : 'rgba(255, 255, 255, 0.2)', display: 'flex', justifyContent: isDarkMode ? 'flex-end' : 'flex-start' }}
+              >
+                <span style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />
+              </span>
             </button>
           </div>
 

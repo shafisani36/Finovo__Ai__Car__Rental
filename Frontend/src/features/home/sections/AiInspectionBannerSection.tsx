@@ -134,8 +134,8 @@ export function AiInspectionBannerSection() {
           }}
         >
           {/* Mountain Highway Fog Atmosphere on Left */}
-          <img
-            src="/ai-inspection/mountain-fog-road.jpg"
+          <img loading="lazy" decoding="async"
+            src="/ai-inspection/mountain-fog-road.webp"
             alt=""
             aria-hidden="true"
             className="ai-mountain-bg"
@@ -248,7 +248,7 @@ export function AiInspectionBannerSection() {
               <div className="ai-card-item ai-card-side">
                 {/* Edge-to-edge top image */}
                 <img
-                  src="/ai-inspection/card-damage-scan@2x.png"
+                  src="/ai-inspection/card-damage-scan@2x.webp"
                   alt={t('home.aiInspection.card1Title')}
                   loading="lazy"
                   className="ai-card-top-image"
@@ -313,7 +313,7 @@ export function AiInspectionBannerSection() {
               <div className="ai-card-item ai-card-center">
                 {/* Edge-to-edge top image */}
                 <img
-                  src="/ai-inspection/card-fleet-health@2x.png"
+                  src="/ai-inspection/card-fleet-health@2x.webp"
                   alt={t('home.aiInspection.card2Title')}
                   loading="lazy"
                   className="ai-card-top-image ai-center-image"
@@ -409,7 +409,7 @@ export function AiInspectionBannerSection() {
               <div className="ai-card-item ai-card-side">
                 {/* Edge-to-edge top image */}
                 <img
-                  src="/ai-inspection/card-distributor-claimer@2x.png"
+                  src="/ai-inspection/card-distributor-claimer@2x.webp"
                   alt={t('home.aiInspection.card3Title')}
                   loading="lazy"
                   className="ai-card-top-image"

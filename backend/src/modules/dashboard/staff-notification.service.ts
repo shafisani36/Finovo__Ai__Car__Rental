@@ -3,6 +3,7 @@ import { prisma } from '../../infrastructure/prisma/prisma.client';
 /** Kinds of work that show up in the staff notification bell. */
 export type StaffNotificationType =
   | 'INQUIRY_NEW'
+  | 'TICKET_OPEN'
   | 'DISPUTE_OPEN'
   | 'BOOKING_REVIEW'
   | 'PICKUP_DUE'
@@ -37,11 +38,18 @@ export class StaffNotificationService {
   static async list(now: Date = new Date()) {
     const pickupUntil = new Date(now.getTime() + PICKUP_WINDOW_HOURS * 3_600_000);
 
-    const [inquiries, disputes, reviews, pickups, overdue, refunds, counts] = await Promise.all([
+    const [inquiries, tickets, disputes, reviews, pickups, overdue, refunds, counts] = await Promise.all([
       prisma.inquiry.findMany({
         where: { status: 'NEW' },
         select: { id: true, name: true, subject: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
+        take: PER_TYPE_LIMIT,
+      }),
+      // Customer support tickets waiting for a staff answer
+      prisma.supportTicket.findMany({
+        where: { status: 'OPEN' },
+        select: { id: true, ticketNumber: true, subject: true, priority: true, updatedAt: true, customer: { select: { fullName: true } } },
+        orderBy: { updatedAt: 'desc' },
         take: PER_TYPE_LIMIT,
       }),
       prisma.damage_charges.findMany({
@@ -137,7 +145,7 @@ export class StaffNotificationService {
         priority: 'NORMAL' as const,
         params: { booking: b.bookingNumber, customer: b.customer.fullName },
         at: b.createdAt,
-        link: `/admin/bookings?search=${encodeURIComponent(b.bookingNumber)}`,
+        link: `/admin/bookings?review=${b.id}`,
       })),
       ...refunds.map((r) => ({
         id: `refund:${r.id}`,
@@ -146,6 +154,14 @@ export class StaffNotificationService {
         params: { booking: r.payments.bookings.bookingNumber, amount: Number(r.amount), currency: r.payments.currency },
         at: r.createdAt,
         link: `/admin/bookings?search=${encodeURIComponent(r.payments.bookings.bookingNumber)}`,
+      })),
+      ...tickets.map((tk) => ({
+        id: `ticket:${tk.id}:${tk.updatedAt.getTime()}`,
+        type: 'TICKET_OPEN' as const,
+        priority: tk.priority === 'HIGH' || tk.priority === 'URGENT' ? ('HIGH' as const) : ('NORMAL' as const),
+        params: { ticket: tk.ticketNumber, name: tk.customer.fullName, subject: tk.subject },
+        at: tk.updatedAt,
+        link: `/admin/support?ticket=${tk.id}`,
       })),
       ...inquiries.map((q) => ({
         id: `inquiry:${q.id}`,
@@ -172,8 +188,9 @@ export class StaffNotificationService {
 
   /** Full numbers per kind (the list itself is limited). */
   private static async counts(now: Date, pickupUntil: Date): Promise<Record<StaffNotificationType, number>> {
-    const [inquiries, disputes, reviews, pickups, overdue, refunds] = await Promise.all([
+    const [inquiries, tickets, disputes, reviews, pickups, overdue, refunds] = await Promise.all([
       prisma.inquiry.count({ where: { status: 'NEW' } }),
+      prisma.supportTicket.count({ where: { status: 'OPEN' } }),
       prisma.damage_charges.count({ where: { status: 'DISPUTED' } }),
       prisma.booking.count({ where: { status: 'REQUIRES_REVIEW' } }),
       prisma.booking.count({
@@ -184,6 +201,7 @@ export class StaffNotificationService {
     ]);
     return {
       INQUIRY_NEW: inquiries,
+      TICKET_OPEN: tickets,
       DISPUTE_OPEN: disputes,
       BOOKING_REVIEW: reviews,
       PICKUP_DUE: pickups,

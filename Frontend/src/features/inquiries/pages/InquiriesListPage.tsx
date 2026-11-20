@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   MessageSquare,
   Search,
@@ -41,6 +41,18 @@ export function InquiriesListPage() {
   useEffect(() => {
     loadInquiries();
   }, [statusFilter]);
+
+  // Search as staff type, a moment after they stop typing (the Search button still works)
+  const firstSearch = useRef(true);
+  useEffect(() => {
+    if (firstSearch.current) {
+      firstSearch.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => void loadInquiries(searchQuery), 350);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const loadInquiries = async (search?: string) => {
     try {

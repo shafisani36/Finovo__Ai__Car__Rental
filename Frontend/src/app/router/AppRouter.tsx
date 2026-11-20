@@ -84,6 +84,7 @@ const DisputesPage = lazy(() => import('../../features/inspections/pages/Dispute
 const TrafficFinesPage = lazy(() => import('../../features/traffic-fines/pages/TrafficFinesPage').then((module) => ({ default: module.TrafficFinesPage })));
 const CustomerFinesPage = lazy(() => import('../../features/traffic-fines/pages/CustomerFinesPage').then((module) => ({ default: module.CustomerFinesPage })));
 const AuditLogsPage = lazy(() => import('../../features/audit-logs/pages/AuditLogsPage').then((module) => ({ default: module.AuditLogsPage })));
+const SupportTicketsPage = lazy(() => import('../../features/support/pages/SupportTicketsPage').then((module) => ({ default: module.SupportTicketsPage })));
 const InquiriesListPage = lazy(() => import('../../features/inquiries/pages/InquiriesListPage').then((module) => ({ default: module.InquiriesListPage })));
 const UsersManagementPage = lazy(() => import('../../features/users/pages/UsersManagementPage').then((module) => ({ default: module.UsersManagementPage })));
 const CustomersListPage = lazy(() => import('../../features/customers/pages/CustomersListPage').then((module) => ({ default: module.CustomersListPage })));
@@ -232,6 +233,7 @@ export function AppRouter() {
             <Route path="promo-codes" element={<PromoCodesPage />} />
 
             {/* Administration & Directory */}
+            <Route path="support" element={<SupportTicketsPage />} />
             <Route path="inquiries" element={<InquiriesListPage />} />
             <Route path="customers" element={<CustomersListPage />} />
             <Route path="users" element={<UsersManagementPage />} />

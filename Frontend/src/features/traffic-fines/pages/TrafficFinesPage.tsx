@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FileWarning, Plus, Search } from 'lucide-react';
@@ -135,6 +135,18 @@ export function TrafficFinesPage() {
     // Loads once when the page opens; filters reload explicitly
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Search as staff type, a moment after they stop typing
+  const firstSearch = useRef(true);
+  useEffect(() => {
+    if (firstSearch.current) {
+      firstSearch.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => void load(status, search), 350);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   // Shows who had the car at that moment while staff are still filling in the form
   const offenceIso = useMemo(() => {

@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { CustomerController } from '../../modules/customers/customer.controller';
 import { CustomerPortalController } from '../../modules/customers/customer-portal.controller';
+import { BookingApprovalController } from '../../modules/bookings/booking-approval.controller';
+import { AvailabilityAlertController } from '../../modules/bookings/availability-alert.controller';
 import { authenticate } from '../../middleware/authenticate';
 import { requireRole } from '../../middleware/authorize';
 
@@ -21,6 +23,14 @@ customerRouter.get('/portal/bookings/:id/check-in/qr', CustomerPortalController.
 customerRouter.get('/portal/bookings/:id/cancellation', CustomerPortalController.cancellationPreview);
 customerRouter.post('/portal/bookings/:id/cancel', CustomerPortalController.cancelBooking);
 customerRouter.post('/portal/bookings/:id/extend', CustomerPortalController.extendBooking);
+// Additional driver of a booking with that add-on (ownership is checked in the service)
+customerRouter.get('/portal/bookings/:id/drivers', BookingApprovalController.listDrivers);
+// "Tell me when this car is free" alerts
+customerRouter.get('/portal/availability-alerts', AvailabilityAlertController.list);
+customerRouter.post('/portal/availability-alerts', AvailabilityAlertController.create);
+customerRouter.delete('/portal/availability-alerts/:id', AvailabilityAlertController.cancel);
+customerRouter.post('/portal/bookings/:id/drivers', BookingApprovalController.addDriver);
+customerRouter.delete('/portal/bookings/:id/drivers/:driverId', BookingApprovalController.removeDriver);
 
 customerRouter.get('/portal/payments', CustomerPortalController.getPaymentsSummary);
 customerRouter.post('/portal/payments', CustomerPortalController.processPayment);

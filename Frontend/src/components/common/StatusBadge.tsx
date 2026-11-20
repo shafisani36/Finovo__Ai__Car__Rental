@@ -120,6 +120,13 @@ const STATUS_DICTIONARY: Record<string, StatusVisualConfig> = {
     dotColor: '#F59E0B',
     label: 'Pending Review',
   },
+  // Paid online booking waiting for staff to check the customer's documents
+  REQUIRES_REVIEW: {
+    bg: '#FFFBEB',
+    color: '#B45309',
+    dotColor: '#F59E0B',
+    label: 'Waiting for approval',
+  },
   APPROVED_CLAIM: {
     bg: '#FEE2E2',
     color: '#B91C1C',
@@ -160,6 +167,7 @@ const STATUS_KEY_MAP: Record<string, string> = {
   PRISTINE: 'common.status.pristine',
   DAMAGE_DETECTED: 'common.status.damageDetected',
   PENDING_REVIEW: 'common.status.pendingReview',
+  REQUIRES_REVIEW: 'portalPages.bookings.status.REQUIRES_REVIEW',
   APPROVED_CLAIM: 'common.status.approvedClaim',
   VERIFIED: 'common.status.verified',
   SUSPENDED: 'common.status.suspended',

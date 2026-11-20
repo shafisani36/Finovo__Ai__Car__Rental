@@ -22,11 +22,12 @@ import {
   type RefundOutcome,
 } from '../api/customerPortalApi';
 import { CancelBookingModal } from '../components/CancelBookingModal';
+import { AdditionalDriverCard } from '../components/AdditionalDriverCard';
 import { downloadProtectedFile } from '../../../utils/downloadFile';
 import { formatMoney } from '../../../utils/carImageHelper';
 import './CustomerPortal.css';
 
-const CANCELLABLE_STATUSES = ['PENDING', 'RESERVED', 'CONFIRMED', 'READY_FOR_PICKUP'];
+const CANCELLABLE_STATUSES = ['PENDING', 'RESERVED', 'REQUIRES_REVIEW', 'CONFIRMED', 'READY_FOR_PICKUP'];
 const COMPLETED_STATUSES = ['COMPLETED'];
 const STARTED_STATUSES = ['ACTIVE', 'RETURN_INSPECTION', 'COMPLETED'];
 
@@ -247,6 +248,51 @@ export function CustomerBookingDetailPage() {
         </div>
       </div>
 
+      {booking.status === 'REQUIRES_REVIEW' && (
+        <div
+          role="status"
+          style={{
+            background: 'rgba(250, 184, 38, 0.12)',
+            border: '1px solid rgba(250, 184, 38, 0.45)',
+            padding: '14px 16px',
+            borderRadius: '12px',
+            fontSize: '0.9rem',
+            color: 'var(--cp-primary)',
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <Clock size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <strong>{t('portalPages.bookingDetail.awaitingApprovalTitle')}</strong>
+            <div>{t('portalPages.bookingDetail.awaitingApprovalText')}</div>
+            <Link to="/customer/documents" style={{ fontWeight: 700, color: '#6C1E84' }}>
+              {t('portalPages.bookingDetail.checkDocuments')}
+            </Link>
+          </div>
+        </div>
+      )}
+      {booking.status === 'REJECTED' && (
+        <div
+          role="status"
+          style={{
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            padding: '14px 16px',
+            borderRadius: '12px',
+            fontSize: '0.9rem',
+            color: '#991B1B',
+          }}
+        >
+          <strong>{t('portalPages.bookingDetail.rejectedTitle')}</strong>
+          {booking.rejectionReason && <div>{t('portalPages.bookingDetail.rejectedReason', { reason: booking.rejectionReason })}</div>}
+          {Number(booking.refundAmount || 0) > 0 && (
+            <div>{t('portalPages.bookingDetail.rejectedRefund', { amount: formatMoney(Number(booking.refundAmount), booking.currency, 2) })}</div>
+          )}
+        </div>
+      )}
+
       {cancelResult && (
         <div
           role="status"
@@ -407,6 +453,8 @@ export function CustomerBookingDetailPage() {
               </button>
             </div>
           )}
+
+          <AdditionalDriverCard bookingId={booking.id} returnDateTime={booking.returnDateTime} />
 
           {/* Manage Trip Actions */}
           <div className="cp-card">

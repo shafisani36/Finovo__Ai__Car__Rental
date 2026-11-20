@@ -2,6 +2,7 @@ import { initMonitoring, captureError, flushMonitoring } from './infrastructure/
 import { createApp } from './bootstrap/app';
 import { env, validateEnv } from './config/env.config';
 import { prisma } from './infrastructure/prisma/prisma.client';
+import { AvailabilityAlertService } from './modules/bookings/availability-alert.service';
 import { MessagingService } from './modules/notifications/messaging.service';
 import { normalizeStoredCurrency } from './infrastructure/prisma/currency-normalizer';
 
@@ -34,6 +35,8 @@ async function bootstrap() {
 
   // SMS / WhatsApp pickup and return reminders
   MessagingService.startReminderScheduler();
+  // "Tell me when this car is free" alerts
+  AvailabilityAlertService.startScheduler();
 
   const shutdown = async (signal: string) => {
     console.log(`\nReceived ${signal}. Gracefully shutting down...`);

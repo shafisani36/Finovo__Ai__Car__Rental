@@ -3,6 +3,7 @@
 
 
 import { prisma } from '../../infrastructure/prisma/prisma.client';
+import { AvailabilityAlertService } from '../bookings/availability-alert.service';
 import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import { AuditService } from '../audit/audit.service';
@@ -31,6 +32,11 @@ import type {
   DamageSeverity,
   DamageStatus,
 } from '@prisma/client';
+
+/** Jobs that keep a car off the market now: work in progress, or scheduled for today or earlier (not future services) */
+function dueMaintenanceWhere(vehicleId: string): Prisma.VehicleMaintenanceWhereInput {
+  return { vehicleId, OR: [{ status: 'IN_PROGRESS' }, { status: 'SCHEDULED', scheduledDate: { lte: new Date() } }] };
+}
 
 export class VehicleService {
   private static async validateFeatureIds(featureIds: string[] = []) {
@@ -1303,6 +1309,105 @@ export class VehicleService {
   // MAINTENANCE & REPAIRS MANAGEMENT
   // ==========================================
 
+  /** Puts a car in maintenance back on the market once it has no open maintenance job left. */
+  private static async releaseFromMaintenanceIfDone(vehicleId: string): Promise<boolean> {
+    const open = await prisma.vehicleMaintenance.count({ where: dueMaintenanceWhere(vehicleId) });
+    if (open > 0) return false;
+    const released = await prisma.vehicle.updateMany({ where: { id: vehicleId, status: 'MAINTENANCE' }, data: { status: 'AVAILABLE' } });
+    if (released.count > 0) void AvailabilityAlertService.checkVehicle(vehicleId);
+    return released.count > 0;
+  }
+
+  /**
+   * Finishes the maintenance of a car and makes it available for rent again: every open maintenance job is marked
+   * as completed (a record is created when the car was sent to maintenance without one).
+   */
+  static async finishMaintenance(
+    vehicleId: string,
+    input: { notes?: string | null; cost?: number | null; odometerReading?: number | null },
+    adminUserId?: string
+  ) {
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+    if (!vehicle) throw AppError.notFound('Vehicle not found');
+    if (vehicle.status !== 'MAINTENANCE') throw AppError.badRequest('This car is not in maintenance');
+
+    const notes = input.notes?.trim() ? input.notes.trim().slice(0, 2000) : null;
+    const odometer = input.odometerReading && input.odometerReading > 0 ? Math.round(input.odometerReading) : null;
+    if (odometer !== null && odometer < vehicle.mileage) {
+      throw AppError.badRequest(`The odometer cannot be lower than the last recorded reading (${vehicle.mileage} km)`);
+    }
+    const cost = input.cost !== null && input.cost !== undefined && input.cost >= 0 ? input.cost : null;
+    const now = new Date();
+
+    // Future scheduled services stay planned
+    const open = await prisma.vehicleMaintenance.findMany({
+      where: dueMaintenanceWhere(vehicleId),
+      orderBy: { scheduledDate: 'asc' },
+    });
+
+    const claimed = await prisma.$transaction(async (tx) => {
+      // Only one person can finish the job; a second click finds the car already available
+      const moved = await tx.vehicle.updateMany({
+        where: { id: vehicleId, status: 'MAINTENANCE' },
+        data: {
+          status: 'AVAILABLE',
+          lastServiceDate: now,
+          lastServiceMileage: odometer ?? vehicle.mileage,
+          ...(odometer !== null ? { mileage: odometer } : {}),
+        },
+      });
+      if (moved.count === 0) return false;
+
+      if (open.length === 0) {
+        await tx.vehicleMaintenance.create({
+          data: {
+            vehicleId,
+            maintenanceType: 'OTHER',
+            status: 'COMPLETED',
+            title: 'Maintenance finished, back in service',
+            scheduledDate: now,
+            startDate: now,
+            completedDate: now,
+            odometerReading: odometer,
+            cost,
+            currency: env.CURRENCY,
+            notes,
+            createdBy: (adminUserId || 'Staff').slice(0, 128),
+          },
+        });
+      } else {
+        for (const [index, job] of open.entries()) {
+          await tx.vehicleMaintenance.update({
+            where: { id: job.id },
+            data: {
+              status: 'COMPLETED',
+              completedDate: now,
+              startDate: job.startDate ?? job.scheduledDate,
+              odometerReading: odometer ?? job.odometerReading,
+              // The cost is recorded once, on the last job
+              ...(cost !== null && index === open.length - 1 ? { cost } : {}),
+              ...(notes ? { notes: job.notes ? `${job.notes}\n${notes}` : notes } : {}),
+            },
+          });
+        }
+      }
+      await tx.vehicleAuditLog.create({
+        data: {
+          vehicleId,
+          userId: adminUserId,
+          action: 'MAINTENANCE_FINISHED',
+          details: `Maintenance finished (${open.length || 1} job${open.length > 1 ? 's' : ''}); car is available for rent again`,
+        },
+      });
+      return true;
+    });
+    if (!claimed) throw AppError.conflict('This car was already put back in service. Refresh the page.');
+    // Customers waiting for this car can book it again
+    void AvailabilityAlertService.checkVehicle(vehicleId);
+
+    return prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { id: true, status: true, mileage: true, lastServiceDate: true } });
+  }
+
   static async listMaintenance(vehicleId: string) {
     return prisma.vehicleMaintenance.findMany({
       where: { vehicleId },
@@ -1326,7 +1431,7 @@ export class VehicleService {
         vehicleId,
         maintenanceType: input.maintenanceType as MaintenanceType,
         status: input.status as MaintenanceStatus,
-        title: input.title || input.description || 'Scheduled Maintenance',
+        title: (input.title || input.description || 'Scheduled maintenance').slice(0, 128),
         description: input.description || null,
         serviceProvider: input.serviceProvider || null,
         scheduledDate: new Date(
@@ -1352,25 +1457,23 @@ export class VehicleService {
       },
     });
 
-    if (
-      record.status === 'IN_PROGRESS' ||
-      record.status === 'SCHEDULED'
-    ) {
-      await prisma.vehicle.update({
-        where: { id: vehicleId },
-        data: { status: 'MAINTENANCE' },
-      });
+    const takesCarOffNow =
+      record.status === 'IN_PROGRESS' || (record.status === 'SCHEDULED' && record.scheduledDate <= new Date());
+    if (takesCarOffNow) {
+      // A car on a trip or reserved keeps its status; it goes to the garage once it is free
+      if (vehicle.status === 'AVAILABLE') {
+        await prisma.vehicle.update({ where: { id: vehicleId }, data: { status: 'MAINTENANCE' } });
+      }
     } else if (record.status === 'COMPLETED') {
       await prisma.vehicle.update({
         where: { id: vehicleId },
         data: {
-          status: 'AVAILABLE',
           lastServiceDate: record.completedDate || new Date(),
           lastServiceMileage: record.odometerReading || vehicle.mileage,
-          nextServiceMileage:
-            record.nextServiceDueMileage || undefined,
+          nextServiceMileage: record.nextServiceDueMileage || undefined,
         },
       });
+      await this.releaseFromMaintenanceIfDone(vehicleId);
     }
 
     await prisma.vehicleAuditLog.create({
@@ -1428,19 +1531,23 @@ export class VehicleService {
     });
 
     if (updated.status === 'COMPLETED') {
+      if (!updated.completedDate) {
+        await prisma.vehicleMaintenance.update({ where: { id: updated.id }, data: { completedDate: new Date() } });
+      }
       await prisma.vehicle.update({
         where: { id: existing.vehicleId },
         data: {
-          status: 'AVAILABLE',
           lastServiceDate: updated.completedDate || new Date(),
           lastServiceMileage: updated.odometerReading || undefined,
-          nextServiceMileage:
-            updated.nextServiceDueMileage || undefined,
+          nextServiceMileage: updated.nextServiceDueMileage || undefined,
         },
       });
+      await this.releaseFromMaintenanceIfDone(existing.vehicleId);
+    } else if (updated.status === 'CANCELLED') {
+      await this.releaseFromMaintenanceIfDone(existing.vehicleId);
     } else if (updated.status === 'IN_PROGRESS') {
-      await prisma.vehicle.update({
-        where: { id: existing.vehicleId },
+      await prisma.vehicle.updateMany({
+        where: { id: existing.vehicleId, status: 'AVAILABLE' },
         data: { status: 'MAINTENANCE' },
       });
     }
@@ -1472,6 +1579,8 @@ export class VehicleService {
     await prisma.vehicleMaintenance.delete({
       where: { id: maintenanceId },
     });
+    // Deleting the last open job must not leave the car stuck in maintenance
+    await this.releaseFromMaintenanceIfDone(existing.vehicleId);
 
     await prisma.vehicleAuditLog.create({
       data: {

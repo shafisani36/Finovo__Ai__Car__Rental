@@ -316,6 +316,14 @@ export const fleetApi = {
     );
   },
 
+  /** Completes every open maintenance job and makes the car available for rent again */
+  async finishMaintenance(
+    vehicleId: string,
+    data: { notes?: string; cost?: number | null; odometerReading?: number | null }
+  ): Promise<{ success: boolean; vehicle: { id: string; status: string; mileage: number } }> {
+    return authClient.request(`/vehicles/${vehicleId}/maintenance/finish`, { method: 'POST', body: JSON.stringify(data) });
+  },
+
   async deleteMaintenance(vehicleId: string, maintId: string): Promise<{ success: boolean; message: string }> {
     return authClient.request<{ success: boolean; message: string }>(
       `/vehicles/${vehicleId}/maintenance/${maintId}`,

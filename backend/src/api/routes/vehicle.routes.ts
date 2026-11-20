@@ -214,6 +214,13 @@ vehicleRouter.post(
   requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
   VehicleController.createMaintenance
 );
+// Finish all open maintenance jobs and make the car available for rent again
+vehicleRouter.post(
+  '/:id/maintenance/finish',
+  authenticate,
+  requireRole('ADMIN', 'SUPER_ADMIN', 'FLEET_MANAGER'),
+  VehicleController.finishMaintenance
+);
 vehicleRouter.patch(
   '/:id/maintenance/:maintId',
   authenticate,

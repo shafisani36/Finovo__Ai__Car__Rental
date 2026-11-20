@@ -834,70 +834,70 @@
 }
 
 /* Dark admin theme for the report sections, diagram, checklist and zoom */
-html[data-admin-theme='dark'] .admin-theme-scope .insp-car-details div,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-section-score,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-checklist-section ul,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-checklist-section li {
+html[data-theme='dark'] .app-theme-scope .insp-car-details div,
+html[data-theme='dark'] .app-theme-scope .insp-section-score,
+html[data-theme='dark'] .app-theme-scope .insp-checklist-section ul,
+html[data-theme='dark'] .app-theme-scope .insp-checklist-section li {
   border-color: var(--adm-border);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-car-details dd,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-capture-group h4,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-checklist-section h4,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-diagram-side h4,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-zoom-head button,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-chip-button {
+html[data-theme='dark'] .app-theme-scope .insp-car-details dd,
+html[data-theme='dark'] .app-theme-scope .insp-capture-group h4,
+html[data-theme='dark'] .app-theme-scope .insp-checklist-section h4,
+html[data-theme='dark'] .app-theme-scope .insp-diagram-side h4,
+html[data-theme='dark'] .app-theme-scope .insp-zoom-head button,
+html[data-theme='dark'] .app-theme-scope .insp-chip-button {
   color: var(--adm-text);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-car-details dt,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-zoom-head span,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-icon-button {
+html[data-theme='dark'] .app-theme-scope .insp-car-details dt,
+html[data-theme='dark'] .app-theme-scope .insp-zoom-head span,
+html[data-theme='dark'] .app-theme-scope .insp-icon-button {
   color: var(--adm-text-muted);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-bar {
+html[data-theme='dark'] .app-theme-scope .insp-bar {
   background: var(--adm-surface-3);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-checklist-section li.is-faulty {
+html[data-theme='dark'] .app-theme-scope .insp-checklist-section li.is-faulty {
   background: var(--adm-tint-red);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-ok {
+html[data-theme='dark'] .app-theme-scope .insp-ok {
   color: var(--adm-text-green);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-chip-button,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-icon-button,
-html[data-admin-theme='dark'] .admin-theme-scope .insp-zoom {
+html[data-theme='dark'] .app-theme-scope .insp-chip-button,
+html[data-theme='dark'] .app-theme-scope .insp-icon-button,
+html[data-theme='dark'] .app-theme-scope .insp-zoom {
   background: var(--adm-surface-2);
   border-color: var(--adm-border);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-diagram-body {
+html[data-theme='dark'] .app-theme-scope .insp-diagram-body {
   fill: var(--adm-surface-2);
   stroke: var(--adm-border);
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-diagram-panel {
+html[data-theme='dark'] .app-theme-scope .insp-diagram-panel {
   fill: var(--adm-surface-3);
   stroke: #5b4668;
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-diagram-glass_lights {
+html[data-theme='dark'] .app-theme-scope .insp-diagram-glass_lights {
   fill: #23324a;
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-diagram-wheels_tyres {
+html[data-theme='dark'] .app-theme-scope .insp-diagram-wheels_tyres {
   fill: #0d0710;
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-diagram-panel.is-damaged {
+html[data-theme='dark'] .app-theme-scope .insp-diagram-panel.is-damaged {
   fill: rgba(239, 68, 68, 0.35);
   stroke: #f87171;
 }
 
-html[data-admin-theme='dark'] .admin-theme-scope .insp-diagram-label {
+html[data-theme='dark'] .app-theme-scope .insp-diagram-label {
   fill: var(--adm-text-muted);
 }

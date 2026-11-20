@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Undo2,
   TimerOff,
+  LifeBuoy,
   type LucideIcon,
 } from 'lucide-react';
 import { apiClient } from '../../../api/client';
@@ -21,6 +22,7 @@ import './header-panels.css';
 
 type StaffNotificationType =
   | 'INQUIRY_NEW'
+  | 'TICKET_OPEN'
   | 'DISPUTE_OPEN'
   | 'BOOKING_REVIEW'
   | 'PICKUP_DUE'
@@ -54,6 +56,7 @@ const TYPE_STYLE: Record<StaffNotificationType, { icon: LucideIcon; tone: string
   BOOKING_REVIEW: { icon: ClipboardCheck, tone: 'blue' },
   REFUND_MANUAL: { icon: Undo2, tone: 'green' },
   INQUIRY_NEW: { icon: MessageSquare, tone: 'purple' },
+  TICKET_OPEN: { icon: LifeBuoy, tone: 'purple' },
 };
 
 const seenStorageKey = (userId: string) => `finovo_staff_seen_notifications:${userId}`;
@@ -191,6 +194,11 @@ export function StaffNotificationBell({ userId }: { userId: string }) {
         return {
           title: t('adminPages.staffNotifications.refundTitle', { amount: formatMoney(Number(p.amount), String(p.currency || ''), 2) }),
           desc: t('adminPages.staffNotifications.refundDesc', { booking: p.booking }),
+        };
+      case 'TICKET_OPEN':
+        return {
+          title: t('adminPages.staffNotifications.ticketTitle', { name: p.name }),
+          desc: t('adminPages.staffNotifications.ticketDesc', { ticket: p.ticket, subject: p.subject }),
         };
       case 'INQUIRY_NEW':
       default:

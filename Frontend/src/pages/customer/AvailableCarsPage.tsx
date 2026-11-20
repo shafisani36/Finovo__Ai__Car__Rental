@@ -128,6 +128,7 @@ export function AvailableCarsPage() {
 
   // Close dropdown on outside click
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLElement>(null);
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -765,8 +766,10 @@ export function AvailableCarsPage() {
               type="button"
               className="cars-apply-filters-btn"
               onClick={() => {
+                // Filters apply as they are picked; this closes any open list and shows the results
                 setOpenDropdown(null);
                 setCurrentPage(1);
+                resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
             >
               <span>{t('cars.applyFilters')}</span>
@@ -777,7 +780,7 @@ export function AvailableCarsPage() {
       </div>
 
       {/* 3. MAIN CATALOG SECTION */}
-      <main className="available-cars-container">
+      <main className="available-cars-container" ref={resultsRef} style={{ scrollMarginTop: '90px' }}>
         {/* Header Row: Results Count, Sort, Grid/List Toggles */}
         <div className="cars-catalog-header">
           <div className="cars-catalog-count-box">

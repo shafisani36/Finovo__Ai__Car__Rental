@@ -5,6 +5,8 @@ import { Header } from '../../components/layout/Header';
 import { Footer } from '../../components/layout/Footer';
 import { useAuth } from '../../features/auth/context';
 import { getDirectDashboardRoute } from '../../features/auth/utils/roleRouting';
+import '../../styles/admin-dark.css';
+import '../../styles/site-dark.css';
 
 export function RootLayout() {
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ export function RootLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
+    <div className="app-theme-scope public-site" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
       <Header onSignInClick={handleSignIn} />
       <div style={{ flex: 1 }}>
         <Suspense fallback={<LoadingState />}>

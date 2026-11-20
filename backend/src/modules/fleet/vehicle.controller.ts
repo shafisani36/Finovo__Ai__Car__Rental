@@ -1,3 +1,4 @@
+import { AppError } from '../../shared/errors/app-error';
 import { Request, Response, NextFunction } from 'express';
 import { VehicleService } from './vehicle.service';
 import { isStaffUser } from '../../middleware/authenticate';
@@ -263,6 +264,26 @@ export class VehicleController {
       res.status(201).json({ success: true, maintenance: record });
     } catch (err) {
       next(err);
+    }
+  }
+
+  static async finishMaintenance(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const body = req.body || {};
+      const toNumber = (value: unknown) => (value === undefined || value === null || value === '' ? null : Number(value));
+      const cost = toNumber(body.cost);
+      const odometerReading = toNumber(body.odometerReading);
+      if ((cost !== null && !Number.isFinite(cost)) || (odometerReading !== null && !Number.isFinite(odometerReading))) {
+        throw AppError.badRequest('Cost and odometer must be numbers');
+      }
+      const vehicle = await VehicleService.finishMaintenance(
+        String(req.params.id),
+        { notes: typeof body.notes === 'string' ? body.notes : null, cost, odometerReading },
+        req.user?.userId
+      );
+      res.status(200).json({ success: true, vehicle });
+    } catch (error) {
+      next(error);
     }
   }
 

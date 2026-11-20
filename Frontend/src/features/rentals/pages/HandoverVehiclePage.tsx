@@ -338,6 +338,24 @@ export function HandoverVehiclePage() {
                 </div>
               </div>
             )}
+            {booking.drivers && booking.drivers.length > 0 && (
+              <div style={{ padding: '12px', marginBottom: '12px', borderRadius: '12px', background: 'rgba(108, 30, 132, 0.06)' }}>
+                <div style={{ fontWeight: 700, color: '#1E0426', marginBottom: '6px' }}>{t('adminPages.rentals.additionalDrivers')}</div>
+                {booking.drivers.map((d) => (
+                  <div key={d.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.85rem' }}>
+                    <a href={d.licenceFrontUrl} target="_blank" rel="noreferrer">
+                      <img src={d.licenceFrontUrl} alt={t('adminPages.bookingReview.licenceFront')} width={72} height={46} style={{ objectFit: 'cover', borderRadius: '6px' }} />
+                    </a>
+                    <span style={{ fontWeight: 700, color: '#1E0426' }}>{d.fullName}</span>
+                    <span style={{ color: '#685D73' }}>{t('adminPages.bookingReview.licenceNumber', { number: d.licenceNumber })}</span>
+                    <span style={{ fontWeight: 700, color: d.status === 'VERIFIED' ? '#047857' : d.status === 'REJECTED' ? '#B91C1C' : '#B45309' }}>
+                      {t(`adminPages.bookingReview.status.${d.status}`)}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ fontSize: '0.8rem', color: '#685D73', marginTop: '6px' }}>{t('adminPages.rentals.additionalDriversHelp')}</div>
+              </div>
+            )}
             {[
               { checked: idVerified, set: setIdVerified, label: t('adminPages.rentals.checkId') },
               { checked: licenseVerified, set: setLicenseVerified, label: t('adminPages.rentals.checkLicense') },

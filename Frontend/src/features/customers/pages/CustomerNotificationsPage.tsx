@@ -14,6 +14,7 @@ import {
   notifyNotificationsUpdated,
   type CustomerNotificationItem,
 } from '../api/customerPortalApi';
+import { AvailabilityAlertsCard } from '../components/AvailabilityAlertsCard';
 import './CustomerPortal.css';
 import { useTranslation } from 'react-i18next';
 
@@ -124,6 +125,8 @@ export function CustomerNotificationsPage() {
           </div>
         )}
       </div>
+
+      <AvailabilityAlertsCard />
 
       {/* Categories Bar */}
       <div className="cp-card" style={{ padding: '16px 20px' }}>

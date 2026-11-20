@@ -7,7 +7,7 @@ import { Modal } from '../../components/common/Modal';
 import { TextTranslator } from '../../components/common/TextTranslator';
 import { useAuth } from '../../features/auth/context';
 import { BrandLogo } from '../../components/common/BrandLogo';
-import { useAdminTheme } from '../theme/useAdminTheme';
+import { useTheme } from '../theme/useTheme';
 import { StaffNotificationBell } from './components/StaffNotificationBell';
 import { AdminHelpMenu } from './components/AdminHelpMenu';
 import { AdminGlobalSearch } from './components/AdminGlobalSearch';
@@ -32,6 +32,7 @@ import {
   Layers,
   Tag,
   MessageSquare,
+  LifeBuoy,
   UserCog,
   Users,
   Languages,
@@ -45,7 +46,7 @@ export function AdminLayout() {
   const [translatorOpen, setTranslatorOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { isDark: isDarkMode, toggleTheme } = useAdminTheme();
+  const { isDark: isDarkMode, toggleTheme } = useTheme();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
 
@@ -166,6 +167,7 @@ export function AdminLayout() {
               { to: '/admin/disputes', icon: MessageSquareWarning, label: t('adminPages.disputes.navLabel') },
               { to: '/admin/traffic-fines', icon: FileWarning, label: t('adminPages.trafficFines.navLabel') },
               { to: '/admin/promo-codes', icon: TicketPercent, label: t('adminPages.promoCodes.navLabel') },
+              { to: '/admin/support', icon: LifeBuoy, label: t('adminPages.supportTickets.navLabel') },
               { to: '/admin/inquiries', icon: MessageSquare, label: t('nav.inquiries') },
               { to: '/admin/customers', icon: Users, label: t('nav.customers', 'Customers') },
               { to: '/admin/users', icon: UserCog, label: t('nav.manageUsers') },
@@ -323,7 +325,7 @@ export function AdminLayout() {
 
       {/* ================= RIGHT MAIN WRAPPER ================= */}
       <div
-        className="admin-main-wrapper admin-theme-scope"
+        className="admin-main-wrapper app-theme-scope"
         style={{
           flex: 1,
           display: 'flex',

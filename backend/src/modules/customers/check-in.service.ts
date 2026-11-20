@@ -4,6 +4,7 @@ import { env } from '../../config/env.config';
 import { AppError } from '../../shared/errors/app-error';
 import { EmailService } from '../../infrastructure/email/email.service';
 import { storeCustomerDocument } from './customer-portal.service';
+import { hasAdditionalDriver } from '../bookings/booking-approval.service';
 
 /** Online check-in opens this long before pickup. */
 const CHECK_IN_OPENS_BEFORE_PICKUP_MS = 72 * 3600 * 1000;
@@ -13,7 +14,7 @@ const IDENTITY_TYPES = ['NATIONAL_ID', 'PASSPORT'];
 
 export type CheckInProblem = 'MISSING' | 'REJECTED' | 'EXPIRES_BEFORE_RETURN';
 export interface CheckInRequirement {
-  key: 'DRIVER_LICENSE' | 'IDENTITY';
+  key: 'DRIVER_LICENSE' | 'IDENTITY' | 'ADDITIONAL_DRIVER';
   ok: boolean;
   problem: CheckInProblem | null;
 }
@@ -57,6 +58,8 @@ export class CheckInService {
           },
         },
         vehicle: { select: { brand: true, model: true, year: true } },
+        breakdownItems: { select: { lineType: true, description: true } },
+        drivers: { select: { status: true, licenceExpiresAt: true } },
       },
     });
     if (!booking) throw AppError.notFound('Booking not found');
@@ -70,6 +73,7 @@ export class CheckInService {
       requirement('DRIVER_LICENSE', booking.customer.documents, LICENCE_TYPES, true, booking.returnDateTime),
       requirement('IDENTITY', booking.customer.documents, IDENTITY_TYPES, false, booking.returnDateTime),
     ];
+    if (hasAdditionalDriver(booking.breakdownItems)) requirements.push(this.driverRequirement(booking));
     const statusAllows = CHECK_IN_STATUSES.includes(booking.status);
     return {
       bookingId: booking.id,
@@ -87,6 +91,16 @@ export class CheckInService {
     };
   }
 
+  /** The booked additional driver must be added with a licence that is not rejected and valid until return. */
+  private static driverRequirement(booking: Awaited<ReturnType<typeof CheckInService.ownBooking>>): CheckInRequirement {
+    const usable = booking.drivers.filter((d) => d.status !== 'REJECTED');
+    let problem: CheckInProblem | null = null;
+    if (booking.drivers.length === 0) problem = 'MISSING';
+    else if (usable.length === 0) problem = 'REJECTED';
+    else if (usable.some((d) => d.licenceExpiresAt < booking.returnDateTime)) problem = 'EXPIRES_BEFORE_RETURN';
+    return { key: 'ADDITIONAL_DRIVER', ok: problem === null, problem };
+  }
+
   /** Where staff land when they scan the customer's QR code. */
   static handoverUrl(bookingId: string): string {
     return `${env.CORS.ORIGIN}/admin/rentals/handover/${bookingId}`;
@@ -102,7 +116,9 @@ export class CheckInService {
     if (!state.statusAllows) throw AppError.badRequest(`A ${booking.status} booking cannot be checked in`);
     if (!state.open) throw AppError.badRequest('Online check-in opens 72 hours before pickup');
     if (state.requirements.some((r) => !r.ok)) {
-      throw AppError.badRequest('Upload a valid driving licence (both sides) and an ID card or passport first');
+      throw AppError.badRequest(
+        'Upload a valid driving licence (both sides) and an ID card or passport first, and add the additional driver if you booked one'
+      );
     }
     if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(payload?.selfie))) {
       throw AppError.badRequest('Please take a selfie photo');
