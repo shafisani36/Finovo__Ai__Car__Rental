@@ -73,7 +73,10 @@ class ApiClient {
     _accessToken = token;
   }
 
-  Future<Map<String, dynamic>> get(String path) => _request('GET', path);
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, String>? queryParameters,
+  }) => _request('GET', path, queryParameters: queryParameters);
 
   Future<Map<String, dynamic>> post(String path, Map<String, Object?> body) =>
       _request('POST', path, body: body);
@@ -82,15 +85,26 @@ class ApiClient {
     String method,
     String path, {
     Map<String, Object?>? body,
+    Map<String, String>? queryParameters,
     bool refreshOnUnauthorized = true,
   }) async {
-    var response = await _send(method, path, body);
+    var response = await _send(
+      method,
+      path,
+      body,
+      queryParameters: queryParameters,
+    );
     if (response.statusCode == 401 &&
         refreshOnUnauthorized &&
         _accessToken != null &&
         path != '/auth/login') {
       await _refreshAccessToken();
-      response = await _send(method, path, body);
+      response = await _send(
+        method,
+        path,
+        body,
+        queryParameters: queryParameters,
+      );
     }
     return _decodeResponse(response);
   }
@@ -98,12 +112,14 @@ class ApiClient {
   Future<http.Response> _send(
     String method,
     String path,
-    Map<String, Object?>? body,
-  ) async {
-    final request = http.Request(method, _resolve(path))
-      ..headers['Accept'] = 'application/json'
-      ..headers['X-Correlation-Id'] =
-          'mobile_${DateTime.now().microsecondsSinceEpoch}';
+    Map<String, Object?>? body, {
+    Map<String, String>? queryParameters,
+  }) async {
+    final request =
+        http.Request(method, _resolve(path, queryParameters: queryParameters))
+          ..headers['Accept'] = 'application/json'
+          ..headers['X-Correlation-Id'] =
+              'mobile_${DateTime.now().microsecondsSinceEpoch}';
 
     final token = _accessToken;
     if (token != null) {
@@ -134,13 +150,24 @@ class ApiClient {
     }
   }
 
-  Uri _resolve(String path) {
+  Uri _resolve(String path, {Map<String, String>? queryParameters}) {
     final prefix = _baseUri.path.endsWith('/')
         ? _baseUri.path.substring(0, _baseUri.path.length - 1)
         : _baseUri.path;
-    final suffix = path.startsWith('/') ? path : '/$path';
-    return _baseUri.replace(path: '$prefix$suffix');
+    final endpoint = Uri.parse(path);
+    final suffix = endpoint.path.startsWith('/')
+        ? endpoint.path
+        : '/${endpoint.path}';
+    final query = {...endpoint.queryParameters, ...?queryParameters};
+    return _baseUri.replace(
+      path: '$prefix$suffix',
+      query: query.isEmpty ? null : Uri(queryParameters: query).query,
+      fragment: null,
+    );
   }
+
+  Uri get serverOrigin =>
+      _baseUri.replace(path: '', query: null, fragment: null);
 
   Map<String, dynamic> _decodeResponse(http.Response response) {
     Object? decoded;

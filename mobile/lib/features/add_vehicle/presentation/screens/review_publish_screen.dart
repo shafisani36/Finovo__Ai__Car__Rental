@@ -73,7 +73,11 @@ class _ReviewPublishScreenState extends State<ReviewPublishScreen> {
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      final navigator = Navigator.of(context);
+      navigator.popUntil(
+        (route) => route.settings.name == addVehicleFlowRouteName,
+      );
+      navigator.pop(true);
       messenger.showSnackBar(
         const SnackBar(
           content: Text('Vehicle published successfully.'),

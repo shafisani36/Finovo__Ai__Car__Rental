@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import '../data/add_vehicle_repository.dart';
 
+const addVehicleFlowRouteName = '/home-add-vehicle';
+
 class AddVehicleDraft {
   String? brand;
   String model = '';

@@ -9,7 +9,9 @@ import 'package:rental_car/features/add_vehicle/presentation/screens/vehicle_inf
 import 'package:rental_car/features/auth/data/auth_repository.dart';
 
 class StaffLoginScreen extends StatefulWidget {
-  const StaffLoginScreen({super.key});
+  const StaffLoginScreen({super.key, this.continueToAddVehicle = true});
+
+  final bool continueToAddVehicle;
 
   @override
   State<StaffLoginScreen> createState() => _StaffLoginScreenState();
@@ -38,7 +40,11 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
         password: _passwordController.text,
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+      if (!widget.continueToAddVehicle) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+      Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => VehicleInfoScreen(draft: AddVehicleDraft()),
         ),
