@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:rental_car/app/theme/app_colors.dart';
 import 'package:rental_car/app/theme/app_text_theme.dart';
 import 'package:rental_car/core/network/api_client.dart';
