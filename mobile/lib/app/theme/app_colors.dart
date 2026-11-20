@@ -13,6 +13,7 @@ class AppColors {
   static const background = Color(0xffffffff);
   static const white = Color(0xffffffff);
   static const black = Color(0xff000000);
+  static const red = Color(0xffFF0000);
   static const textPrimary = Color(0xff1C1A33);
   static const textSecondary = Color(0xff837E9C);
   static const button = Color(0xffFDC230);

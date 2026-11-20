@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rental_car/app/theme/app_colors.dart';
+import 'package:rental_car/app/theme/app_text_theme.dart';
+import 'package:rental_car/core/widgets/app_text_field.dart';
+import 'package:rental_car/core/widgets/custom_button.dart';
 import 'package:rental_car/features/add_vehicle/data/add_vehicle_repository.dart';
 import 'package:rental_car/features/add_vehicle/models/add_vehicle_draft.dart';
 import 'package:rental_car/features/add_vehicle/presentation/widgets/form_card.dart';
@@ -160,7 +163,7 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.primary10,
                     border: Border.all(color: AppColors.primary),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -171,18 +174,26 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
                         size: 30,
                       ),
                       const SizedBox(height: 8),
-                      const Text('Choose photos from your device'),
-                      Text(
+                      const Text(
+                        'Choose photos from your device',
+                        style: AppTextStyles.subtitle3,
+                      ),
+                      const Text(
                         'PNG, JPG or WEBP (max 10MB each)',
                         style: TextStyle(
                           fontSize: 10,
                           color: AppColors.textSecondary,
+                          fontWeight: .w600,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      OutlinedButton(
-                        onPressed: _choosePhotos,
-                        child: const Text('Choose file'),
+                      Padding(
+                        padding: const .symmetric(horizontal: 12),
+                        child: CustomButton(
+                          label: "Choose file",
+                          onPressed: _choosePhotos,
+                          variant: .outlined,
+                        ),
                       ),
                     ],
                   ),
@@ -219,7 +230,7 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
                                 ),
                                 padding: EdgeInsets.zero,
                                 style: IconButton.styleFrom(
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: AppColors.white,
                                   foregroundColor: Colors.red,
                                 ),
                                 icon: const Icon(Icons.close, size: 17),
@@ -236,11 +247,10 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     '${photos.length} of 4-6 photos selected',
-                    style: TextStyle(
+                    style: AppTextStyles.subtitle3.copyWith(
                       color: photos.length >= 4
                           ? AppColors.textSecondary
-                          : Colors.red.shade700,
-                      fontSize: 11,
+                          : AppColors.red,
                     ),
                   ),
                 ),
@@ -255,9 +265,9 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const FieldLabel('Notes'),
-                FormInput(
+                AppTextField(
                   hint: 'Condition, history, standout features...',
+                  label: "Notes",
                   controller: _notesController,
                   maxLines: 4,
                 ),
@@ -274,7 +284,7 @@ class _PhotosDetailsScreenState extends State<PhotosDetailsScreen> {
                 contentPadding: EdgeInsets.zero,
                 title: const Text(
                   'Show in public catalog',
-                  style: TextStyle(fontSize: 12),
+                  style: AppTextStyles.subtitle3,
                 ),
                 value: _isPublicCatalog,
                 onChanged: (value) => setState(() => _isPublicCatalog = value),

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:rental_car/app/theme/app_colors.dart';
 import 'package:rental_car/app/theme/app_text_theme.dart';
@@ -116,7 +114,66 @@ class _ReviewPublishScreenState extends State<ReviewPublishScreen> {
             Navigator.popUntil(context, (route) => route.isFirst),
         child: Column(
           children: [
-            _previewCard(photoBytes),
+            FormCard(
+              title: "Live Catalog Preview",
+              subtitle: "Please preview before publishing",
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Color(0xffEDEDEF),
+                ),
+                child: Padding(
+                  padding: const .all(8.0),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: photoBytes == null
+                            ? Container(
+                                width: 74,
+                                height: 70,
+                                color: AppColors.primary10,
+                                child: const Icon(
+                                  Icons.directions_car,
+                                  size: 38,
+                                  color: AppColors.gray,
+                                ),
+                              )
+                            : Image.memory(
+                                photoBytes,
+                                width: 74,
+                                height: 70,
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${draft.brand ?? ''} ${draft.model} (${draft.year})',
+                              style: AppTextStyles.heading6,
+                            ),
+                            Text(
+                              draft.category?.name ?? '',
+                              style: AppTextStyles.subtitle3,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              '${_rate(draft.dailyRate)} / day',
+                              style: AppTextStyles.subtitle3.copyWith(
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 14),
             FormCard(
               title: 'Vehicle Summary',
@@ -169,82 +226,22 @@ class _ReviewPublishScreenState extends State<ReviewPublishScreen> {
     _ => 'Available',
   };
 
-  Widget _previewCard(Uint8List? photoBytes) {
-    final draft = widget.draft;
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: photoBytes == null
-                  ? Container(
-                      width: 74,
-                      height: 70,
-                      color: AppColors.primary10,
-                      child: const Icon(
-                        Icons.directions_car,
-                        size: 38,
-                        color: AppColors.gray,
-                      ),
-                    )
-                  : Image.memory(
-                      photoBytes,
-                      width: 74,
-                      height: 70,
-                      fit: BoxFit.cover,
-                    ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${draft.brand ?? ''} ${draft.model}',
-                    style: AppTextStyles.heading6,
-                  ),
-                  Text('${draft.year} · ${draft.category?.name ?? ''}'),
-                  const SizedBox(height: 5),
-                  Text(
-                    '${_rate(draft.dailyRate)} / day',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _summaryRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          SizedBox(
-            width: 85,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
+          Text(
+            label,
+            style: AppTextStyles.subtitle3.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              style: AppTextStyles.subtitle3,
             ),
           ),
         ],
